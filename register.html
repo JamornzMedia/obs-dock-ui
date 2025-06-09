@@ -1,59 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <title>สมัครใช้งาน Beta</title>
-  <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-  const sb = createClient('https://YOUR_PROJECT.supabase.co', 'YOUR_PUBLIC_ANON_KEY');
-
-  window.register = async function () {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const status = document.getElementById('status');
-    status.textContent = '';
-
-    console.log("[1] เริ่มสมัคร:", email);
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) {
-      console.error("[2] สมัครไม่สำเร็จ:", error);
-      alert("สมัครไม่สำเร็จ: " + error.message);
-      return;
-    }
-
-    console.log("[3] สมัครสำเร็จ:", data);
-    const { data: userData, error: userError } = await sb.auth.getUser();
-    const user = userData?.user;
-    if (!user || userError) {
-      console.error("[4] ไม่สามารถดึง user:", userError);
-      alert("สมัครเสร็จแล้ว กรุณาเข้าสู่ระบบผ่านหน้า Login");
-      return;
-    }
-
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 7);
-    const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-    console.log("[5] สร้าง license:", key);
-    const { error: licenseError } = await sb.from('license_keys').insert([{
-      key,
-      user_id: user.id,
-      is_active: true,
-      expires_at: expires.toISOString()
-    }]);
-    if (licenseError) {
-      console.error("[6] license error:", licenseError);
-      alert("สร้าง License Key ไม่สำเร็จ: " + licenseError.message);
-      return;
-    }
-
-    console.log("[7] เสร็จสิ้น → ไปหน้า login");
-    window.location.href = "index.html";
-  }
-</script>
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -133,36 +82,43 @@
     <div class="message" id="status"></div>
   </div>
 
-  <script>
-    const supabase = supabase.createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk');
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    async function register() {
+    const sb = createClient(
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+    );
+
+    window.register = async function () {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const status = document.getElementById('status');
       status.textContent = '';
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
-
+      console.log("[1] เริ่มสมัคร:", email);
+      const { data, error } = await sb.auth.signUp({ email, password });
       if (error) {
+        console.error("[2] สมัครไม่สำเร็จ:", error);
         status.textContent = "สมัครไม่สำเร็จ: " + error.message;
         return;
       }
 
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      console.log("[3] สมัครสำเร็จ:", data);
+      const { data: userData, error: userError } = await sb.auth.getUser();
       const user = userData?.user;
       if (!user || userError) {
+        console.error("[4] ไม่สามารถดึง user:", userError);
         status.textContent = "สมัครเสร็จแล้ว กรุณาเข้าสู่ระบบผ่านหน้า Login";
         return;
       }
 
-      const today = new Date();
       const expires = new Date();
-      expires.setDate(today.getDate() + 7);
-
+      expires.setDate(expires.getDate() + 7);
       const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      const { error: licenseError } = await supabase
+      console.log("[5] สร้าง license:", key);
+      const { error: licenseError } = await sb
         .from('license_keys')
         .insert([{
           key,
@@ -170,14 +126,15 @@
           is_active: true,
           expires_at: expires.toISOString()
         }]);
-
       if (licenseError) {
+        console.error("[6] license error:", licenseError);
         status.textContent = "สร้าง License Key ไม่สำเร็จ: " + licenseError.message;
         return;
       }
 
+      console.log("[7] เสร็จสิ้น → ไปหน้า login");
       window.location.href = "login.html";
-    }
+    };
   </script>
 </body>
 </html>
