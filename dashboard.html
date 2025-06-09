@@ -53,10 +53,7 @@
       const timeDiff = expiresAt - now;
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-      const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' <br>
-        📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')}<br>
-        ⏳ เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-      `;
+      const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' : '✅ License Key แบบถาวร';
 
       licenseEl.innerHTML = `
         ${licenseType}<br>
