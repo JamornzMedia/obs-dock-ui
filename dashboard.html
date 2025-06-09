@@ -4,68 +4,95 @@
   <meta charset="UTF-8">
   <title>แดชบอร์ด</title>
   <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const supabase = createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOi...');
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient('https://pxleazlrryctlovxuwil.supabase.co', 'YOUR_SUPABASE_KEY');
 
-async function init() {
-  const user = JSON.parse(localStorage.getItem("sb_user"));
-  const emailEl = document.getElementById("user-email");
-  const licenseEl = document.getElementById("license-status");
+    async function init() {
+      const user = JSON.parse(localStorage.getItem("sb_user"));
+      const emailEl = document.getElementById("email");
+      const licenseEl = document.getElementById("info");
 
-  if (!user || !user.id) {
-    window.location.href = "index.html";
-    return;
-  }
+      if (!user || !user.id) {
+        window.location.href = "index.html";
+        return;
+      }
 
-  emailEl.textContent = user.email;
+      emailEl.textContent = user.email;
 
-  const { data, error } = await supabase
-    .from("license_keys")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from("license_keys")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
 
-  if (error || !data) {
-    licenseEl.textContent = "❌ ไม่พบ License Key ที่ใช้งานได้";
-    return;
-  }
+      if (error || !data) {
+        licenseEl.textContent = "❌ ไม่พบ License Key ที่ใช้งานได้";
+        return;
+      }
 
-  const expiresAt = new Date(data.expires_at);
-  const now = new Date();
-  const timeDiff = expiresAt - now;
-  const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+      const expiresAt = new Date(data.expires_at);
+      const now = new Date();
+      const timeDiff = expiresAt - now;
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+      const formattedDate = expiresAt.toLocaleDateString('th-TH', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
 
-  if (data.key.startsWith("BETA-")) {
-    licenseEl.innerHTML = `
-      🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)<br>
-      ⏳ ใช้ได้ถึง: ${expiresAt.toLocaleString()}<br>
-      📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-    `;
-  } else {
-    licenseEl.innerHTML = `
-      ✅ License Key: ${data.key}<br>
-      ⏳ หมดอายุ: ${expiresAt.toLocaleString()}<br>
-      📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-    `;
-  }
-}
+      if (data.key.startsWith("BETA-")) {
+        licenseEl.innerHTML = `
+          🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)<br>
+          ⏳ ใช้ได้ถึง: ${formattedDate}<br>
+          📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
+        `;
+      } else {
+        licenseEl.innerHTML = `
+          ✅ License Key: ${data.key}<br>
+          ⏳ หมดอายุ: ${formattedDate}<br>
+          📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
+        `;
+      }
+    }
 
-document.getElementById("logout").onclick = () => {
-  localStorage.removeItem("sb_user");
-  window.location.href = "index.html";
-};
+    window.enterApp = () => {
+      window.location.href = "Football Control Panel.html";
+    };
 
-init();
-</script>
+    window.logout = () => {
+      localStorage.removeItem("sb_user");
+      window.location.href = "index.html";
+    };
+
+    init();
+  </script>
 
   <style>
-    body { background: #111; color: #fff; font-family: sans-serif; padding: 2em; text-align: center; }
-    button { padding: 10px 20px; margin: 10px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; }
-    .btn-app { background: #4caf50; color: #fff; }
-    .btn-logout { background: #f44336; color: #fff; }
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      padding: 2em;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    .btn-app {
+      background: #4caf50;
+      color: #fff;
+    }
+    .btn-logout {
+      background: #f44336;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
