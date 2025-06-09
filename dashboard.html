@@ -6,8 +6,9 @@
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
-  'https://pxleazlrryctlovxuwil.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk');
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+    );
 
     async function init() {
       const user = JSON.parse(localStorage.getItem("sb_user"));
@@ -33,11 +34,14 @@
       const now = new Date();
 
       if (error || !data) {
+        // ไม่มี License → แสดงเวอร์ชั่นทดลอง (ให้เข้าโปรแกรมได้)
+        const trialExpires = new Date();
+        trialExpires.setDate(trialExpires.getDate() + 15);
         licenseEl.innerHTML = `
           🧪 กำลังใช้งานเวอร์ชั่นทดลอง<br>
           📅 วันที่หมดอายุ: ${trialExpires.toLocaleDateString('th-TH')}
         `;
-        btnApp.disabled = false; // ให้เข้าได้แม้ไม่มี license (เวอร์ชั่นทดลอง)
+        btnApp.disabled = false;
         return;
       }
 
@@ -55,7 +59,9 @@
       const timeDiff = expiresAt - now;
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-      const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' : '✅ License Key แบบถาวร';
+      const licenseType = data.plan_type === 'beta'
+        ? '🧪 คุณกำลังใช้งานเวอร์ชั่นทดลอง (Beta)'
+        : '✅ License Key แบบถาวร';
 
       licenseEl.innerHTML = `
         ${licenseType}<br>
