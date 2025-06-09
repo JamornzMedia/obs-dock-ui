@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>สมัครใช้งาน Beta</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -54,9 +54,10 @@
     button:hover {
       background-color: #e6b800;
     }
-    p {
-      margin-top: 1em;
-      text-align: center;
+    .message {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #ff6666;
     }
     a {
       color: #66ccff;
@@ -64,11 +65,6 @@
     }
     a:hover {
       text-decoration: underline;
-    }
-    .message {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      color: #ff6666;
     }
   </style>
 </head>
@@ -91,12 +87,12 @@
     );
 
     window.register = async function () {
-      const email = document.getElementById('email').value;
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const status = document.getElementById('status');
       status.textContent = '';
 
-      const email = document.getElementById('email').value.trim();
+      // ตรวจสอบรูปแบบอีเมล
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         status.textContent = "รูปแบบอีเมลไม่ถูกต้อง";
