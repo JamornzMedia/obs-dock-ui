@@ -96,6 +96,14 @@
       font-size: 2em;
     }
   </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userEmail = localStorage.getItem("email");
+      if (!userEmail) {
+        window.location.href = "index.html";
+      }
+    });
+  </script>
 </head>
 <body>
 <div class="container">
