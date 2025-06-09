@@ -27,34 +27,31 @@
         .limit(1)
         .maybeSingle();
 
+      const now = new Date();
+
       if (error || !data) {
-        licenseEl.textContent = "❌ ไม่พบ License Key ที่ใช้งานได้";
+        licenseEl.innerHTML = `
+          ❌ ไม่พบ License Key ที่ใช้งานได้<br>
+          📅 วันที่วันนี้: ${now.toLocaleDateString('th-TH')}<br>
+          📆 เวลา: ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+        `;
         return;
       }
 
       const expiresAt = new Date(data.expires_at);
-      const now = new Date();
       const timeDiff = expiresAt - now;
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-      const formattedDate = expiresAt.toLocaleDateString('th-TH', {
-        day: 'numeric', month: 'long', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      });
+      const formattedDate = `${expiresAt.getDate()}/${expiresAt.getMonth() + 1}/${expiresAt.getFullYear()} ${expiresAt.getHours().toString().padStart(2, '0')}:${expiresAt.getMinutes().toString().padStart(2, '0')}`;
 
-      if (data.key.startsWith("BETA-")) {
-        licenseEl.innerHTML = `
-          🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)<br>
-          ⏳ ใช้ได้ถึง: ${formattedDate}<br>
-          📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-        `;
-      } else {
-        licenseEl.innerHTML = `
-          ✅ License Key: ${data.key}<br>
-          ⏳ หมดอายุ: ${formattedDate}<br>
-          📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-        `;
-      }
+      const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' : '✅ License Key แบบถาวร';
+
+      licenseEl.innerHTML = `
+        ${licenseType}<br>
+        🔑 Key: ${data.key}<br>
+        ⏳ หมดอายุ: ${formattedDate}<br>
+        📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
+      `;
     }
 
     window.enterApp = () => {
