@@ -97,107 +97,220 @@
     }
   </style>
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    let sheetData = [], currentFile = null, imageFolder = "C:/OBSAssets/logos";
+    let scoreA = 0, scoreB = 0, half = '1st', timer = 0, interval = null;
+    const obs = new OBSWebSocket();
+    
+    window.addEventListener("DOMContentLoaded", () => {
       const userEmail = localStorage.getItem("email");
       if (!userEmail) {
         window.location.href = "index.html";
+        return;
       }
+
+      obs.connect('ws://localhost:4455').catch(console.error);
     });
+
+    function setText(source, text) {
+      obs.call('SetInputSettings', { inputName: source, inputSettings: { text: text.toString() } }).catch(console.warn);
+    }
+    function setImage(source, filename) {
+      const ext = filename.endsWith('.jpg') || filename.endsWith('.png') ? '' : '.png';
+      const path = `${imageFolder}/${filename}${ext}`;
+      const img = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
+      img.src = path;
+      obs.call('SetInputSettings', { inputName: source, inputSettings: { file: path } }).catch(console.warn);
+    }
+    function setColor(name, hex) {
+      const rgb = parseInt(hex.replace('#', ''), 16);
+      obs.call('SetInputSettings', {
+        inputName: name,
+        inputSettings: {
+          color: rgb
+        }
+      }).catch(console.warn);
+    }
+    function changeScore(team, delta) {
+      if (team === 'A') {
+        scoreA = Math.max(0, scoreA + delta);
+        document.getElementById('scoreA').textContent = scoreA;
+        setText('score_team_a', scoreA);
+      } else {
+        scoreB = Math.max(0, scoreB + delta);
+        document.getElementById('scoreB').textContent = scoreB;
+        setText('score_team_b', scoreB);
+      }
+    }
+    function resetScore() {
+      scoreA = 0; scoreB = 0;
+      document.getElementById('scoreA').textContent = '0';
+      document.getElementById('scoreB').textContent = '0';
+      setText('score_team_a', '0');
+      setText('score_team_b', '0');
+    }
+    function toggleHalf() {
+      half = (half === '1st') ? '2nd' : '1st';
+      document.getElementById('halfText').textContent = half;
+      setText('half_text', half);
+    }
+    function startTimer() {
+      if (interval) return;
+      interval = setInterval(() => {
+        timer++;
+        const m = String(Math.floor(timer / 60)).padStart(2, '0');
+        const s = String(timer % 60).padStart(2, '0');
+        document.getElementById('timerText').textContent = `${m}:${s}`;
+        setText('time_counter', `${m}:${s}`);
+      }, 1000);
+    }
+    function stopTimer() {
+      clearInterval(interval); interval = null;
+    }
+    function resetTimer() {
+      stopTimer(); timer = 0;
+      document.getElementById('timerText').textContent = '00:00';
+      setText('time_counter', '00:00');
+    }
+    function setTime() {
+      const input = prompt("Set time in MM:SS format", "00:00");
+      if (!input) return;
+      const [m, s] = input.split(":");
+      timer = parseInt(m) * 60 + parseInt(s);
+      document.getElementById('timerText').textContent = input;
+      setText('time_counter', input);
+    }
+    function handleExcel() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.xlsx';
+      input.onchange = e => {
+        currentFile = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = evt => {
+          const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          applyMatch();
+        };
+        reader.readAsArrayBuffer(currentFile);
+      };
+      input.click();
+    }
+    function chooseImageFolder() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.webkitdirectory = true;
+      input.onchange = e => {
+        const path = e.target.files[0].path.replace(/\\[^\\]+$/, '');
+        imageFolder = path;
+        alert('📂 เลือกโฟลเดอร์รูปภาพแล้ว: ' + path);
+      };
+      input.click();
+    }
+    function applyMatch() {
+      const id = parseInt(document.getElementById('matchID').value);
+      const header = sheetData[0];
+      const rows = sheetData.slice(1);
+      const match = rows.find(r => parseInt(r[0]) === id);
+      if (!match) return alert('ไม่พบ Match ID');
+      const get = key => match[header.indexOf(key)] || '';
+      document.getElementById('nameA').textContent = get('TeamA');
+      document.getElementById('nameB').textContent = get('TeamB');
+      document.getElementById('label1').textContent = get('label1');
+      document.getElementById('label2').textContent = get('label2');
+      document.getElementById('label3').textContent = get('label3');
+      setText('name_team_a', get('TeamA'));
+      setText('name_team_b', get('TeamB'));
+      setText('label_1', get('label1'));
+      setText('label_2', get('label2'));
+      setText('label_3', get('label3'));
+      setImage('logo_team_a', get('LogoA'));
+      setImage('logo_team_b', get('LogoB'));
+    }
+    function showHelp() {
+      alert(`📘 วิธีใช้งาน\n1. Upload Excel\n2. เลือก Match ID\n3. เลือกโฟลเดอร์รูป\n4. ปรับคะแนน สี เวลา\n\nOBS ต้องมี Sources:\n- logo_team_a / logo_team_b\n- name_team_a / name_team_b\n- label_1 / label_2 / label_3\n- score_team_a / score_team_b\n- half_text / time_counter\n- team_a_colorbox / team_a_colorbox2\n- team_b_colorbox / team_b_colorbox2`);
+    }
   </script>
 </head>
 <body>
-<div class="container">
-  <div class="row center">
-    <button onclick="handleExcel()">Upload Excel File</button>
-    <button onclick="chooseImageFolder()">เลือกโฟลเดอร์รูป</button>
-  </div>
-
-  <div class="section-divider"></div>
-
-  <div class="row center">
-    <label style="align-self:center;">Match ID</label>
-    <input type="number" id="matchID" min="1" value="1">
-    <button onclick="applyMatch()">Load</button>
-  </div>
-
-  <div class="section-divider"></div>
-
-  <div class="logo-row">
-    <div class="logo-name">
-      <img id="logoA" src="" alt="Logo A">
-      <div class="name" id="nameA">Team A</div>
+  <div class="container">
+    <div class="row center">
+      <button onclick="handleExcel()">Upload Excel File</button>
+      <button onclick="chooseImageFolder()">เลือกโฟลเดอร์รูป</button>
     </div>
-    <div class="logo-name">
-      <img id="logoB" src="" alt="Logo B">
-      <div class="name" id="nameB">Team B</div>
+    <div class="section-divider"></div>
+    <div class="row center">
+      <label style="align-self:center;">Match ID</label>
+      <input type="number" id="matchID" min="1" value="1">
+      <button onclick="applyMatch()">Load</button>
     </div>
-  </div>
-
-  <div class="label-row">
-    <div id="label1">Label 1</div>
-    <div id="label2">Label 2</div>
-    <div id="label3">Label 3</div>
-  </div>
-
-  <div class="section-divider"></div>
-
-  <div class="color-row">
-    <div class="color-col">
-      <label>Team A Colors</label>
-      <div class="color-pair">
-        <input type="color" onchange="setColor('team_a_colorbox', this.value)">
-        <input type="color" onchange="setColor('team_a_colorbox2', this.value)">
+    <div class="section-divider"></div>
+    <div class="logo-row">
+      <div class="logo-name">
+        <img id="logoA" src="" alt="Logo A">
+        <div class="name" id="nameA">Team A</div>
+      </div>
+      <div class="logo-name">
+        <img id="logoB" src="" alt="Logo B">
+        <div class="name" id="nameB">Team B</div>
       </div>
     </div>
-    <div class="color-col">
-      <label>Team B Colors</label>
-      <div class="color-pair">
-        <input type="color" onchange="setColor('team_b_colorbox', this.value)">
-        <input type="color" onchange="setColor('team_b_colorbox2', this.value)">
+    <div class="label-row">
+      <div id="label1">Label 1</div>
+      <div id="label2">Label 2</div>
+      <div id="label3">Label 3</div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="color-row">
+      <div class="color-col">
+        <label>Team A Colors</label>
+        <div class="color-pair">
+          <input type="color" onchange="setColor('team_a_colorbox', this.value)">
+          <input type="color" onchange="setColor('team_a_colorbox2', this.value)">
+        </div>
+      </div>
+      <div class="color-col">
+        <label>Team B Colors</label>
+        <div class="color-pair">
+          <input type="color" onchange="setColor('team_b_colorbox', this.value)">
+          <input type="color" onchange="setColor('team_b_colorbox2', this.value)">
+        </div>
       </div>
     </div>
-  </div>
-
-  <div class="section-divider"></div>
-
-  <div class="score-row">
-    <div class="score-box">
-      <div class="score" id="scoreA">0</div>
-      <button class="plus" onclick="changeScore('A', 1)">+1</button>
-      <button class="minus" onclick="changeScore('A', -1)">-1</button>
-    </div>
-    <div class="score-box">
-      <div class="score" id="scoreB">0</div>
-      <button class="plus" onclick="changeScore('B', 1)">+1</button>
-      <button class="minus" onclick="changeScore('B', -1)">-1</button>
-    </div>
-  </div>
-
-  <div class="center">
-    <button onclick="resetScore()">Reset Scores</button>
-  </div>
-
-  <div class="section-divider"></div>
-
-  <div class="footer-row">
-    <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
-    <div style="flex:1;text-align:center">
-      <div id="timerText">00:00</div>
-      <div>
-        <button onclick="startTimer()">Start</button>
-        <button onclick="stopTimer()">Stop</button>
-        <button onclick="resetTimer()">Reset</button>
-        <button onclick="setTime()">Set Time</button>
+    <div class="section-divider"></div>
+    <div class="score-row">
+      <div class="score-box">
+        <div class="score" id="scoreA">0</div>
+        <button class="plus" onclick="changeScore('A', 1)">+1</button>
+        <button class="minus" onclick="changeScore('A', -1)">-1</button>
+      </div>
+      <div class="score-box">
+        <div class="score" id="scoreB">0</div>
+        <button class="plus" onclick="changeScore('B', 1)">+1</button>
+        <button class="minus" onclick="changeScore('B', -1)">-1</button>
       </div>
     </div>
+    <div class="center">
+      <button onclick="resetScore()">Reset Scores</button>
+    </div>
+    <div class="section-divider"></div>
+    <div class="footer-row">
+      <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
+      <div style="flex:1;text-align:center">
+        <div id="timerText">00:00</div>
+        <div>
+          <button onclick="startTimer()">Start</button>
+          <button onclick="stopTimer()">Stop</button>
+          <button onclick="resetTimer()">Reset</button>
+          <button onclick="setTime()">Set Time</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="center">
+      <button onclick="showHelp()">Help</button>
+      <button onclick="window.location.href='dashboard.html'">ย้อนกลับ</button>
+    </div>
   </div>
-
-  <div class="section-divider"></div>
-
-  <div class="center">
-    <button onclick="showHelp()">Help</button>
-    <button onclick="window.location.href='dashboard.html'">ย้อนกลับ</button>
-  </div>
-</div>
 </body>
 </html>
