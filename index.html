@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login</title>
+  <meta charset="UTF-8">
+  <title>สมัครใช้งาน Beta</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -24,6 +24,10 @@
       padding: 2em;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    h2 {
+      margin-top: 0;
+      color: #ffcc00;
     }
     input {
       width: 100%;
@@ -49,33 +53,88 @@
       cursor: pointer;
       margin-top: 10px;
     }
-    .error { color: #ff6666; margin-top: 1em; }
-    a { color: #66ccff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    button:hover {
+      background-color: #e6b800;
+    }
+    p {
+      margin-top: 1em;
+      text-align: center;
+    }
+    a {
+      color: #66ccff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .message {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #ff6666;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>เข้าสู่ระบบ</h2>
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required />
-    <button onclick="login()">Login</button>
-    <p style="text-align:center;">ยังไม่มีบัญชี? <a href="register.html">สมัครใหม่</a></p>
-    <p class="error" id="error"></p>
+    <h2>สมัครใช้งาน Beta 7 วัน</h2>
+    <input type="email" id="email" placeholder="อีเมล" required />
+    <input type="password" id="password" placeholder="รหัสผ่าน" required />
+    <button onclick="register()">สมัครใช้งาน</button>
+    <p><a href="index.html">กลับไปหน้า Login</a></p>
+    <div class="message" id="status"></div>
   </div>
+
   <script>
-    const supabase = supabase.createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk');
-    async function login() {
+    const supabase = supabase.createClient('https://YOUR_PROJECT.supabase.co', 'YOUR_PUBLIC_ANON_KEY');
+
+    async function register() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('error');
-      errorEl.textContent = '';
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const status = document.getElementById('status');
+      status.textContent = '';
+
+      console.log("[1] เริ่มสมัคร:", email);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
       if (error) {
-        errorEl.textContent = error.message;
+        console.error("[2] สมัครไม่สำเร็จ:", error);
+        alert("สมัครไม่สำเร็จ: " + error.message);
         return;
       }
-      window.location.href = 'dashboard.html';
+
+      console.log("[3] สมัครสำเร็จ, user data:", data);
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user || userError) {
+        console.error("[4] ไม่สามารถดึง user.id ได้:", userError);
+        alert("สมัครสำเร็จแล้ว กรุณาเข้าสู่ระบบผ่านหน้า Login");
+        return;
+      }
+
+      const today = new Date();
+      const expires = new Date();
+      expires.setDate(today.getDate() + 7);
+      const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      console.log("[5] เตรียมสร้าง License:", key);
+      const { error: licenseError } = await supabase
+        .from('license_keys')
+        .insert([{
+          key,
+          user_id: user.id,
+          is_active: true,
+          expires_at: expires.toISOString()
+        }]);
+
+      if (licenseError) {
+        console.error("[6] สร้าง License ไม่สำเร็จ:", licenseError);
+        alert("สร้าง License Key ไม่สำเร็จ: " + licenseError.message);
+        return;
+      }
+
+      console.log("[7] สำเร็จทั้งหมด → ไปหน้า login");
+      window.location.href = "index.html";
     }
   </script>
 </body>
