@@ -1,107 +1,60 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>แดชบอร์ด</title>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+    const user = JSON.parse(localStorage.getItem('sb_user'));
 
-    const sb = createClient(
-      'https://pxleazlrryctlovxuwil.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
-    );
+    if (!user) location.href = 'index.html';
 
-    async function loadLicense() {
-      const { data: { user }, error } = await sb.auth.getUser();
-      if (!user) {
-        window.location.href = "login.html";
+    document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('email').textContent = user.email;
+      const { data, error } = await supabase
+        .from('license_keys')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('expires_at', { ascending: false })
+        .limit(1);
+
+      if (error || !data.length) {
+        document.getElementById('info').textContent = "ไม่พบ License Key ที่ใช้งานได้";
         return;
       }
 
-      const { data, error: licenseError } = await sb
-        .from("license_keys")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .order("expires_at", { ascending: false })
-        .limit(1)
-        .single();
+      const expires = new Date(data[0].expires_at);
+      const now = new Date();
+      const diff = expires - now;
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
 
-      const infoEl = document.getElementById("licenseInfo");
-      const button = document.getElementById("enterButton");
-
-      if (licenseError || !data) {
-        infoEl.textContent = "ไม่พบ License Key กรุณาติดต่อผู้ดูแลระบบ";
-        return;
-      }
-
-      const expires = new Date(data.expires_at);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      expires.setHours(0, 0, 0, 0);
-
-      const diff = Math.ceil((expires - today) / (1000 * 60 * 60 * 24));
-
-      infoEl.innerHTML = `
-        License: <strong>${data.key}</strong><br>
-        ใช้งานได้ถึง: ${expires.toLocaleDateString()}<br>
-        เหลืออีก: <strong>${diff}</strong> วัน
+      document.getElementById('info').innerHTML = `
+        ใช้ได้ถึง: ${expires.toLocaleString()}<br/>
+        เหลือเวลา: ${days} วัน ${hours} ชั่วโมง
       `;
+    });
 
-      if (diff > 0) {
-        button.disabled = false;
-        button.onclick = () => {
-          window.location.href = "your-ui.html"; // เปลี่ยนเป็นลิงก์ Dock UI จริงของคุณ
-        };
-      } else {
-        infoEl.innerHTML += `<br><span style="color:red;">(หมดอายุแล้ว)</span>`;
-      }
-    }
-
-    loadLicense();
+    window.logout = () => {
+      localStorage.removeItem('sb_user');
+      location.href = 'index.html';
+    };
+    window.enterApp = () => location.href = 'Football Control Panel.html';
   </script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2em;
-    }
-    .container {
-      width: 100%;
-      max-width: 400px;
-      background-color: #1e1e1e;
-      padding: 2em;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-      text-align: center;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      background-color: #ffcc00;
-      color: #000000;
-      cursor: pointer;
-      margin-top: 1em;
-    }
-    button:disabled {
-      background-color: #666;
-      cursor: not-allowed;
-    }
+    body { background: #111; color: #fff; font-family: sans-serif; padding: 2em; text-align: center; }
+    button { padding: 10px 20px; margin: 10px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; }
+    .btn-app { background: #4caf50; color: #fff; }
+    .btn-logout { background: #f44336; color: #fff; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>ยินดีต้อนรับ</h2>
-    <p id="licenseInfo">กำลังโหลดข้อมูล...</p>
-    <button id="enterButton" disabled>เริ่มใช้งาน</button>
-  </div>
+  <h2>ยินดีต้อนรับ</h2>
+  <p id="email"></p>
+  <p id="info"></p>
+  <button class="btn-app" onclick="enterApp()">เข้าโปรแกรม</button>
+  <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
 </body>
 </html>

@@ -1,82 +1,44 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <title>เข้าสู่ระบบ</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+
+    window.login = async function () {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const status = document.getElementById('status');
+      status.textContent = '';
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        status.textContent = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
+        return;
+      }
+
+      localStorage.setItem('sb_user', JSON.stringify(data.user));
+      window.location.href = "dashboard.html";
+    }
+  </script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
-      color: #ffffff;
-      margin: 0;
-      padding: 2em;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 400px;
-      background-color: #1e1e1e;
-      padding: 2em;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-    }
-    input {
-      width: 100%;
-      padding: 14px;
-      margin: 10px 0;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      background-color: #2a2a2a;
-      color: #ffffff;
-    }
-    input:focus {
-      outline: 2px solid #ffcc00;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      background-color: #ffcc00;
-      color: #000000;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    .error { color: #ff6666; margin-top: 1em; }
-    a { color: #66ccff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    body { font-family: sans-serif; background: #111; color: #fff; padding: 2em; text-align: center; }
+    input, button { padding: 0.6em; margin: 0.5em; width: 90%; max-width: 300px; border-radius: 8px; border: none; }
+    button { background: #ffd700; color: #000; font-weight: bold; }
+    .container { background: #222; padding: 2em; border-radius: 12px; display: inline-block; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>เข้าสู่ระบบ</h2>
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required />
-    <button onclick="login()">Login</button>
-    <p style="text-align:center;">ยังไม่มีบัญชี? <a href="register.html">สมัครใหม่</a></p>
-    <p class="error" id="error"></p>
+    <input type="email" id="email" placeholder="อีเมล" /><br />
+    <input type="password" id="password" placeholder="รหัสผ่าน" /><br />
+    <button onclick="login()">เข้าสู่ระบบ</button><br />
+    <a href="register.html" style="color:#66ccff">สมัครใช้งาน</a>
+    <div id="status" style="color: salmon; margin-top: 1em;"></div>
   </div>
-  <script>
-    const supabase = supabase.createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk');
-    async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('error');
-      errorEl.textContent = '';
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        errorEl.textContent = error.message;
-        return;
-      }
-      window.location.href = 'dashboard.html';
-    }
-  </script>
 </body>
 </html>
