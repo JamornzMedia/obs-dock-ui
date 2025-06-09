@@ -34,25 +34,24 @@
         licenseEl.innerHTML = `
           ❌ ไม่พบ License Key ที่ใช้งานได้<br>
           📅 วันที่วันนี้: ${now.toLocaleDateString('th-TH')}<br>
-          📆 เวลา: ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+          🕒 เวลา: ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
         `;
         btnApp.disabled = true;
         return;
       }
 
       const expiresAt = new Date(data.expires_at);
-      const timeDiff = expiresAt - now;
 
-      if (timeDiff <= 0) {
+      if (now >= expiresAt) {
         licenseEl.innerHTML = `
-          ❌ License Key ของคุณหมดอายุแล้ว<br>
-          📅 วันที่หมดอายุ: ${expiresAt.toLocaleString('th-TH')}<br>
-          🔁 กรุณาติดต่อผู้ดูแลเพื่อขอต่ออายุการใช้งาน
+          ❌ หมดอายุการใช้งาน กรุณาต่ออายุ<br>
+          📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')}
         `;
         btnApp.disabled = true;
         return;
       }
 
+      const timeDiff = expiresAt - now;
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
       const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' : '✅ License Key แบบถาวร';
@@ -60,7 +59,7 @@
       licenseEl.innerHTML = `
         ${licenseType}<br>
         🔑 Key: ${data.key}<br>
-        📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')} ${expiresAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}<br>
+        📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')}<br>
         ⏳ เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
       `;
     }
