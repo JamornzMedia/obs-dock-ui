@@ -6,15 +6,21 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
       background: #121212;
       color: white;
       font-family: 'Segoe UI', sans-serif;
+      overflow: auto;
+    }
+    .container {
       padding: 10px;
-      margin: 0;
-      width: 310px;
-      height: 480px;
-      overflow: hidden;
+      max-width: 360px;
+      margin: auto;
     }
     input, select, button {
       font-size: 0.9rem;
@@ -28,14 +34,17 @@
       cursor: pointer;
     }
     button:hover { background: #1b7f45; }
-    .row { display: flex; gap: 5px; margin-bottom: 5px; }
-    .logo-row, .label-row, .score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .row, .logo-row, .label-row, .score-row, .footer-row, .color-row, .center {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
+    }
     .logo-name {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
     }
     .logo-name img {
       width: 50px;
@@ -46,113 +55,47 @@
     }
     .logo-name .name {
       font-size: 0.7rem;
-      line-height: 1em;
-      max-height: 2em;
       text-align: center;
-      overflow: hidden;
     }
-    .label-row div {
+    .label-row div, .color-col label {
       flex: 1;
       background: #1e1e1e;
-      color: #ccc;
       text-align: center;
-      padding: 4px;
       font-size: 0.7rem;
       border-radius: 4px;
-      margin: 0 2px;
     }
-    .score-row { margin-top: 4px; }
     .score-box {
       flex: 1;
       text-align: center;
     }
     .score-box .score {
       font-size: 2em;
-      margin-bottom: 4px;
     }
     .score-box button { width: 42%; }
-    .plus { background: #27ae60; font-size: 1rem; }
-    .minus { background: #c0392b; font-size: 0.8rem; }
-    .center { text-align: center; margin-top: 6px; }
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 5px;
-    }
-    .half-btn {
-      font-size: 0.9rem;
-      padding: 6px 8px;
-    }
-    .time-group {
-      text-align: center;
-    }
-    .time-group span {
-      display: block;
-      font-size: 1.4rem;
-      margin-bottom: 3px;
-    }
-    .time-group button {
-      margin: 0 1px;
-      padding: 3px 6px;
-      font-size: 0.8rem;
-    }
-    .time-group .start-btn { font-size: 0.9rem; font-weight: bold; }
-    .color-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
+    .plus { background: #27ae60; }
+    .minus { background: #c0392b; }
     .color-col {
       display: flex;
       flex-direction: column;
-      gap: 4px;
       flex: 1;
-    }
-    .color-col label {
-      font-size: 0.7rem;
-      margin-bottom: 2px;
-    }
-    .color-pair {
-      display: flex;
-      justify-content: space-between;
     }
     .color-pair input {
       width: 48%;
       height: 30px;
-      padding: 0;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-    [title] {
-      position: relative;
-    }
-    [title]:hover::after {
-      content: attr(title);
-      position: absolute;
-      background: #333;
-      color: #fff;
-      font-size: 0.7rem;
-      padding: 4px 6px;
-      border-radius: 4px;
-      top: -30px;
-      left: 0;
-      white-space: nowrap;
-      z-index: 99;
     }
   </style>
 </head>
 <body>
+<div class="container">
   <div class="row">
     <button onclick="handleExcel()">Upload Excel File</button>
-    <button onclick="reloadMatch()">Reload</button>
+    <button onclick="chooseImageFolder()">เลือกโฟลเดอร์รูป</button>
   </div>
   <div class="row">
-    <label style="margin-right:4px;align-self:center;">Match ID</label>
+    <label style="align-self:center;">Match ID</label>
     <input type="number" id="matchID" min="1" value="1">
     <button onclick="applyMatch()">Load</button>
   </div>
-
   <div class="logo-row">
     <div class="logo-name">
       <img id="logoA" src="" alt="Logo A">
@@ -163,194 +106,183 @@
       <div class="name" id="nameB">Team B</div>
     </div>
   </div>
-
   <div class="label-row">
-    <div id="label1" title="label_1">Label 1</div>
-    <div id="label2" title="label_2">Label 2</div>
-    <div id="label3" title="label_3">Label 3</div>
+    <div id="label1">Label 1</div>
+    <div id="label2">Label 2</div>
+    <div id="label3">Label 3</div>
   </div>
-
   <div class="color-row">
     <div class="color-col">
       <label>Team A Colors</label>
-      <div class="color-pair" >
+      <div class="color-pair">
         <input type="color" onchange="setColor('team_a_colorbox', this.value)">
         <input type="color" onchange="setColor('team_a_colorbox2', this.value)">
       </div>
     </div>
     <div class="color-col">
       <label>Team B Colors</label>
-      <div class="color-pair" >
+      <div class="color-pair">
         <input type="color" onchange="setColor('team_b_colorbox', this.value)">
         <input type="color" onchange="setColor('team_b_colorbox2', this.value)">
       </div>
     </div>
   </div>
-
   <div class="score-row">
-    <div class="score-box" title="score_team_a">
+    <div class="score-box">
       <div class="score" id="scoreA">0</div>
       <button class="plus" onclick="changeScore('A', 1)">+1</button>
       <button class="minus" onclick="changeScore('A', -1)">-1</button>
     </div>
-    <div class="score-box" title="score_team_b">
+    <div class="score-box">
       <div class="score" id="scoreB">0</div>
       <button class="plus" onclick="changeScore('B', 1)">+1</button>
       <button class="minus" onclick="changeScore('B', -1)">-1</button>
     </div>
   </div>
-
   <div class="center">
     <button onclick="resetScore()">Reset Scores</button>
   </div>
-
   <div class="footer-row">
-    <button class="half-btn" onclick="toggleHalf()" title="half_text">ครึ่ง <span id="halfText">1st</span></button>
-    <div class="time-group" title="time_counter">
-      <span id="timerText">00:00</span>
+    <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
+    <div style="flex:1;text-align:center">
+      <div id="timerText">00:00</div>
       <div>
-        <button class="start-btn" onclick="startTimer()">Start</button>
+        <button onclick="startTimer()">Start</button>
         <button onclick="stopTimer()">Stop</button>
         <button onclick="resetTimer()">Reset</button>
+        <button onclick="setTime()">Set Time</button>
       </div>
     </div>
   </div>
-
   <div class="center">
     <button onclick="showHelp()">Help</button>
+    <button onclick="window.location.href='dashboard.html'">ย้อนกลับ</button>
   </div>
+</div>
+<script>
+  let sheetData = [], currentFile = null, imageFolder = "C:/OBSAssets/logos";
+  let scoreA = 0, scoreB = 0, half = '1st', timer = 0, interval = null;
+  const obs = new OBSWebSocket();
+  obs.connect('ws://localhost:4455').catch(console.error);
 
-  <script>
-    let sheetData = [];
-    let currentFile = null;
-    let scoreA = 0, scoreB = 0;
-    let half = '1st', timer = 0, interval = null;
-    const obs = new OBSWebSocket();
-    obs.connect('ws://localhost:4455').catch(console.error);
-
-    function setText(source, text) {
-      obs.call('SetInputSettings', { inputName: source, inputSettings: { text: text.toString() } }).catch(console.warn);
-    }
-    function setImage(source, filename) {
-      const img = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
-      img.src = `C:/OBSAssets/logos/${filename}.png`;
-      obs.call('SetInputSettings', {
-        inputName: source,
-        inputSettings: {
-          file: `C:/OBSAssets/logos/${filename}.png`
-        }
-      }).catch(console.warn);
-    }
-
-
-
-function setColor(name, hex) {
-  const rgb = parseInt(hex.replace('#', ''), 16);
-
-  obs.call('SetInputSettings', {
-    inputName: name,
-    inputSettings: {
-      color: rgb,
-      opacity: 100  // <--- เพิ่มบรรทัดนี้เพื่อให้โปร่งใสน้อยที่สุด (100%)
-    },
-    overlay: true
-  }).catch(console.warn);
-}
-
-
-
-
-    function changeScore(team, delta) {
-      if (team === 'A') {
-        scoreA = Math.max(0, scoreA + delta);
-        document.getElementById('scoreA').textContent = scoreA;
-        setText('score_team_a', scoreA);
-      } else {
-        scoreB = Math.max(0, scoreB + delta);
-        document.getElementById('scoreB').textContent = scoreB;
-        setText('score_team_b', scoreB);
+  function setText(source, text) {
+    obs.call('SetInputSettings', { inputName: source, inputSettings: { text: text.toString() } }).catch(console.warn);
+  }
+  function setImage(source, filename) {
+    const ext = filename.endsWith('.jpg') || filename.endsWith('.png') ? '' : '.png';
+    const path = `${imageFolder}/${filename}${ext}`;
+    const img = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
+    img.src = path;
+    obs.call('SetInputSettings', { inputName: source, inputSettings: { file: path } }).catch(console.warn);
+  }
+  function setColor(name, hex) {
+    const rgb = parseInt(hex.replace('#', ''), 16);
+    obs.call('SetInputSettings', {
+      inputName: name,
+      inputSettings: {
+        color: rgb
       }
+    }).catch(console.warn);
+  }
+  function changeScore(team, delta) {
+    if (team === 'A') {
+      scoreA = Math.max(0, scoreA + delta);
+      document.getElementById('scoreA').textContent = scoreA;
+      setText('score_team_a', scoreA);
+    } else {
+      scoreB = Math.max(0, scoreB + delta);
+      document.getElementById('scoreB').textContent = scoreB;
+      setText('score_team_b', scoreB);
     }
-    function resetScore() {
-      scoreA = 0; scoreB = 0;
-      document.getElementById('scoreA').textContent = '0';
-      document.getElementById('scoreB').textContent = '0';
-      setText('score_team_a', '0');
-      setText('score_team_b', '0');
-    }
-    function toggleHalf() {
-      half = (half === '1st') ? '2nd' : '1st';
-      document.getElementById('halfText').textContent = half;
-      setText('half_text', half);
-    }
-    function startTimer() {
-      if (interval) return;
-      interval = setInterval(() => {
-        timer++;
-        const m = String(Math.floor(timer / 60)).padStart(2, '0');
-        const s = String(timer % 60).padStart(2, '0');
-        document.getElementById('timerText').textContent = `${m}:${s}`;
-        setText('time_counter', `${m}:${s}`);
-      }, 1000);
-    }
-    function stopTimer() { clearInterval(interval); interval = null; }
-    function resetTimer() {
-      stopTimer(); timer = 0;
-      document.getElementById('timerText').textContent = '00:00';
-      setText('time_counter', '00:00');
-    }
-    function handleExcel() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.xlsx';
-      input.onchange = e => {
-        currentFile = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          applyMatch();
-        };
-        reader.readAsArrayBuffer(currentFile);
+  }
+  function resetScore() {
+    scoreA = 0; scoreB = 0;
+    document.getElementById('scoreA').textContent = '0';
+    document.getElementById('scoreB').textContent = '0';
+    setText('score_team_a', '0');
+    setText('score_team_b', '0');
+  }
+  function toggleHalf() {
+    half = (half === '1st') ? '2nd' : '1st';
+    document.getElementById('halfText').textContent = half;
+    setText('half_text', half);
+  }
+  function startTimer() {
+    if (interval) return;
+    interval = setInterval(() => {
+      timer++;
+      const m = String(Math.floor(timer / 60)).padStart(2, '0');
+      const s = String(timer % 60).padStart(2, '0');
+      document.getElementById('timerText').textContent = `${m}:${s}`;
+      setText('time_counter', `${m}:${s}`);
+    }, 1000);
+  }
+  function stopTimer() {
+    clearInterval(interval); interval = null;
+  }
+  function resetTimer() {
+    stopTimer(); timer = 0;
+    document.getElementById('timerText').textContent = '00:00';
+    setText('time_counter', '00:00');
+  }
+  function setTime() {
+    const input = prompt("Set time in MM:SS format", "00:00");
+    const [m, s] = input.split(":".padEnd(2, '0'));
+    timer = parseInt(m) * 60 + parseInt(s);
+    document.getElementById('timerText').textContent = input;
+    setText('time_counter', input);
+  }
+  function handleExcel() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx';
+    input.onchange = e => {
+      currentFile = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        applyMatch();
       };
-      input.click();
-    }
-    function reloadMatch() {
-      if (currentFile) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          applyMatch();
-        };
-        reader.readAsArrayBuffer(currentFile);
-      } else alert('ยังไม่มีไฟล์ Excel ที่โหลดไว้');
-    }
-    function applyMatch() {
-      const id = parseInt(document.getElementById('matchID').value);
-      const header = sheetData[0];
-      const rows = sheetData.slice(1);
-      const match = rows.find(row => parseInt(row[0]) === id);
-      if (!match) return alert('ไม่พบ Match ID');
-      const get = key => match[header.indexOf(key)] || '';
-      document.getElementById('nameA').textContent = get('TeamA');
-      document.getElementById('nameB').textContent = get('TeamB');
-      document.getElementById('label1').textContent = get('label1');
-      document.getElementById('label2').textContent = get('label2');
-      document.getElementById('label3').textContent = get('label3');
-      setText('name_team_a', get('TeamA'));
-      setText('name_team_b', get('TeamB'));
-      setText('label_1', get('label1'));
-      setText('label_2', get('label2'));
-      setText('label_3', get('label3'));
-      setImage('logo_team_a', get('LogoA'));
-      setImage('logo_team_b', get('LogoB'));
-    }
-    function showHelp() {
-      alert(`📘 วิธีใช้งานโดยย่อ:\n\n1. คลิก 'Upload Excel File' เพื่อเลือกไฟล์ .xlsx\n2. ป้อน Match ID และกด Load\n3. ปรับคะแนน, เวลา, สี และครึ่งเกม\n4. หากแก้ Excel แล้วต้องการรีโหลดให้กดปุ่ม Reload\n\n📺 Sources ที่ต้องมีใน OBS:\n- logo_team_a / logo_team_b\n- name_team_a / name_team_b\n- label_1 / label_2 / label_3\n- score_team_a / score_team_b\n- half_text / time_counter\n- team_a_colorbox / team_a_colorbox2\n- team_ฺb_colorbox / team_ฺb_colorbox2`);
-    }
-  </script>
+      reader.readAsArrayBuffer(currentFile);
+    };
+    input.click();
+  }
+  function chooseImageFolder() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.webkitdirectory = true;
+    input.onchange = e => {
+      const path = e.target.files[0].path.replace(/\\[^\\]+$/, '');
+      imageFolder = path;
+      alert('📂 เลือกโฟลเดอร์รูปภาพแล้ว: ' + path);
+    };
+    input.click();
+  }
+  function applyMatch() {
+    const id = parseInt(document.getElementById('matchID').value);
+    const header = sheetData[0];
+    const rows = sheetData.slice(1);
+    const match = rows.find(r => parseInt(r[0]) === id);
+    if (!match) return alert('ไม่พบ Match ID');
+    const get = key => match[header.indexOf(key)] || '';
+    document.getElementById('nameA').textContent = get('TeamA');
+    document.getElementById('nameB').textContent = get('TeamB');
+    document.getElementById('label1').textContent = get('label1');
+    document.getElementById('label2').textContent = get('label2');
+    document.getElementById('label3').textContent = get('label3');
+    setText('name_team_a', get('TeamA'));
+    setText('name_team_b', get('TeamB'));
+    setText('label_1', get('label1'));
+    setText('label_2', get('label2'));
+    setText('label_3', get('label3'));
+    setImage('logo_team_a', get('LogoA'));
+    setImage('logo_team_b', get('LogoB'));
+  }
+  function showHelp() {
+    alert(`\u{1F4D8} วิธีใช้งาน\n1. Upload Excel\n2. เลือก Match ID\n3. เลือกโฟลเดอร์รูป\n4. ปรับคะแนน สี เวลา\n\nOBS ต้องมี Sources:\n- logo_team_a / logo_team_b\n- name_team_a / name_team_b\n- label_1 / label_2 / label_3\n- score_team_a / score_team_b\n- half_text / time_counter\n- team_a_colorbox / team_a_colorbox2\n- team_b_colorbox / team_b_colorbox2`);
+  }
+</script>
 </body>
 </html>
