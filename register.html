@@ -96,6 +96,13 @@
       const status = document.getElementById('status');
       status.textContent = '';
 
+      const email = document.getElementById('email').value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        status.textContent = "รูปแบบอีเมลไม่ถูกต้อง";
+        return;
+      }
+
       console.log("[1] เริ่มสมัคร:", email);
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) {
