@@ -1,14 +1,69 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const sb = createClient(
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+    );
+
+    async function loadLicense() {
+      const { data: { user }, error } = await sb.auth.getUser();
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { data, error: licenseError } = await sb
+        .from("license_keys")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("expires_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      const infoEl = document.getElementById("licenseInfo");
+      const button = document.getElementById("enterButton");
+
+      if (licenseError || !data) {
+        infoEl.textContent = "ไม่พบ License Key กรุณาติดต่อผู้ดูแลระบบ";
+        return;
+      }
+
+      const expires = new Date(data.expires_at);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      expires.setHours(0, 0, 0, 0);
+
+      const diff = Math.ceil((expires - today) / (1000 * 60 * 60 * 24));
+
+      infoEl.innerHTML = `
+        License: <strong>${data.key}</strong><br>
+        ใช้งานได้ถึง: ${expires.toLocaleDateString()}<br>
+        เหลืออีก: <strong>${diff}</strong> วัน
+      `;
+
+      if (diff > 0) {
+        button.disabled = false;
+        button.onclick = () => {
+          window.location.href = "your-ui.html"; // เปลี่ยนเป็นลิงก์ Dock UI จริงของคุณ
+        };
+      } else {
+        infoEl.innerHTML += `<br><span style="color:red;">(หมดอายุแล้ว)</span>`;
+      }
+    }
+
+    loadLicense();
+  </script>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background-color: #121212;
       color: #ffffff;
       display: flex;
@@ -25,10 +80,6 @@
       box-shadow: 0 0 15px rgba(0,0,0,0.4);
       text-align: center;
     }
-    .info {
-      margin-bottom: 1em;
-      font-size: 1rem;
-    }
     button {
       width: 100%;
       padding: 14px;
@@ -38,41 +89,19 @@
       background-color: #ffcc00;
       color: #000000;
       cursor: pointer;
+      margin-top: 1em;
     }
     button:disabled {
-      background-color: #999;
+      background-color: #666;
       cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>ยินดีต้อนรับ!</h2>
-    <p class="info" id="licenseInfo">กำลังโหลดข้อมูล...</p>
-    <button id="enterButton" onclick="enterApp()" disabled>เข้าโปรแกรม</button>
+    <h2>ยินดีต้อนรับ</h2>
+    <p id="licenseInfo">กำลังโหลดข้อมูล...</p>
+    <button id="enterButton" disabled>เริ่มใช้งาน</button>
   </div>
-  <script>
-    const supabase = supabase.createClient('https://pxleazlrryctlovxuwil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk');
-    async function loadLicense() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = 'login.html'; return; }
-      const { data, error } = await supabase.from('license_keys').select('*')
-        .eq('user_id', user.id).eq('is_active', true).order('expires_at', { ascending: false }).limit(1).single();
-      const infoEl = document.getElementById('licenseInfo');
-      const button = document.getElementById('enterButton');
-      if (error || !data) {
-        infoEl.textContent = "ไม่พบ License Key ของคุณ กรุณาติดต่อผู้ดูแลระบบ";
-        return;
-      }
-      const expires = new Date(data.expires_at);
-      const today = new Date(); today.setHours(0,0,0,0); expires.setHours(0,0,0,0);
-      const diffTime = expires.getTime() - today.getTime();
-      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      infoEl.innerHTML = `License Key: <strong>${data.key}</strong><br>ใช้งานได้ถึง: <strong>${expires.toLocaleDateString()}</strong><br>เหลืออีก: <strong>${daysLeft}</strong> วัน`;
-      if (daysLeft > 0) button.disabled = false; else infoEl.innerHTML += `<br><span style="color:red;">หมดอายุแล้ว</span>`;
-    }
-    function enterApp() { window.location.href = "https://your-dock-ui-url.com"; }
-    loadLicense();
-  </script>
 </body>
 </html>
