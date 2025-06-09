@@ -11,6 +11,7 @@
       const user = JSON.parse(localStorage.getItem("sb_user"));
       const emailEl = document.getElementById("email");
       const licenseEl = document.getElementById("info");
+      const btnApp = document.getElementById("btnApp");
 
       if (!user || !user.id) {
         window.location.href = "index.html";
@@ -35,27 +36,40 @@
           📅 วันที่วันนี้: ${now.toLocaleDateString('th-TH')}<br>
           📆 เวลา: ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
         `;
+        btnApp.disabled = true;
         return;
       }
 
       const expiresAt = new Date(data.expires_at);
       const timeDiff = expiresAt - now;
+
+      if (timeDiff <= 0) {
+        licenseEl.innerHTML = `
+          ❌ License Key ของคุณหมดอายุแล้ว<br>
+          📅 วันที่หมดอายุ: ${expiresAt.toLocaleString('th-TH')}<br>
+          🔁 กรุณาติดต่อผู้ดูแลเพื่อขอต่ออายุการใช้งาน
+        `;
+        btnApp.disabled = true;
+        return;
+      }
+
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-      const formattedDate = `${expiresAt.getDate()}/${expiresAt.getMonth() + 1}/${expiresAt.getFullYear()} ${expiresAt.getHours().toString().padStart(2, '0')}:${expiresAt.getMinutes().toString().padStart(2, '0')}`;
-
       const licenseType = data.type === 'rental' ? '🧪 คุณกำลังใช้งานรุ่นทดลอง (Beta)' : '✅ License Key แบบถาวร';
 
       licenseEl.innerHTML = `
         ${licenseType}<br>
         🔑 Key: ${data.key}<br>
-        📆 วันที่หมดอายุ: ${formattedDate}<br>
-        📅 เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
+        📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')} ${expiresAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}<br>
+        ⏳ เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
       `;
     }
 
     window.enterApp = () => {
-      window.location.href = "Football Control Panel.html";
+      const btn = document.getElementById("btnApp");
+      if (!btn.disabled) {
+        window.location.href = "Football Control Panel.html";
+      }
     };
 
     window.logout = () => {
@@ -65,7 +79,6 @@
 
     init();
   </script>
-
   <style>
     body {
       background: #111;
@@ -86,6 +99,10 @@
       background: #4caf50;
       color: #fff;
     }
+    .btn-app:disabled {
+      background: #777;
+      cursor: not-allowed;
+    }
     .btn-logout {
       background: #f44336;
       color: #fff;
@@ -96,7 +113,7 @@
   <h2>ยินดีต้อนรับ</h2>
   <p id="email"></p>
   <p id="info"></p>
-  <button class="btn-app" onclick="enterApp()">เข้าโปรแกรม</button>
+  <button id="btnApp" class="btn-app" onclick="enterApp()">เข้าโปรแกรม</button>
   <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
 </body>
 </html>
