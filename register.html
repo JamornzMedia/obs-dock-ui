@@ -73,7 +73,7 @@
     <h2>สมัครใช้งาน Beta 7 วัน</h2>
     <input type="email" id="email" placeholder="อีเมล" required />
     <input type="password" id="password" placeholder="รหัสผ่าน" required />
-    <button onclick="register()">สมัครใช้งาน</button>
+    <button id="register-btn">สมัครใช้งาน</button>
     <p><a href="login.html">กลับไปหน้า Login</a></p>
     <div class="message" id="status"></div>
   </div>
@@ -86,32 +86,28 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
     );
 
-    window.register = async function () {
-      const email = document.getElementById('email').value.trim();
+    async function register() {
+      const emailValue = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const status = document.getElementById('status');
       status.textContent = '';
 
-      // ตรวจสอบรูปแบบอีเมล
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(emailValue)) {
         status.textContent = "รูปแบบอีเมลไม่ถูกต้อง";
         return;
       }
 
-      console.log("[1] เริ่มสมัคร:", email);
-      const { data, error } = await sb.auth.signUp({ email, password });
+      const { data, error } = await sb.auth.signUp({ email: emailValue, password });
       if (error) {
-        console.error("[2] สมัครไม่สำเร็จ:", error);
+        console.error("สมัครไม่สำเร็จ:", error);
         status.textContent = "สมัครไม่สำเร็จ: " + error.message;
         return;
       }
 
-      console.log("[3] สมัครสำเร็จ:", data);
       const { data: userData, error: userError } = await sb.auth.getUser();
       const user = userData?.user;
       if (!user || userError) {
-        console.error("[4] ไม่สามารถดึง user:", userError);
         status.textContent = "สมัครเสร็จแล้ว กรุณาเข้าสู่ระบบผ่านหน้า Login";
         return;
       }
@@ -120,7 +116,6 @@
       expires.setDate(expires.getDate() + 7);
       const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      console.log("[5] สร้าง license:", key);
       const { error: licenseError } = await sb
         .from('license_keys')
         .insert([{
@@ -130,14 +125,14 @@
           expires_at: expires.toISOString()
         }]);
       if (licenseError) {
-        console.error("[6] license error:", licenseError);
         status.textContent = "สร้าง License Key ไม่สำเร็จ: " + licenseError.message;
         return;
       }
 
-      console.log("[7] เสร็จสิ้น → ไปหน้า login");
       window.location.href = "login.html";
-    };
+    }
+
+    document.getElementById("register-btn").addEventListener("click", register);
   </script>
 </body>
 </html>
