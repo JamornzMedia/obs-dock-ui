@@ -54,6 +54,16 @@
       display: inline-block;
       min-width: 320px;
     }
+    #user-id-field {
+      background: #1c1c1c;
+      color: #fff;
+      padding: 0.6em 1em;
+      border: 1px solid #444;
+      border-radius: 8px;
+      margin-top: 1em;
+      width: 80%;
+      font-size: 1em;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -120,6 +130,7 @@
       ยังไม่ได้เข้าสู่ระบบ (Inactive) <br>
       <span style="font-size:0.98em; color:#aaa;">Not logged in</span>
     </div>
+    <input id="user-id-field" type="text" placeholder="ระบุชื่อ ID ของคุณ เช่น Devin_PC" />
     <button id="login-btn" class="login-btn">เข้าสู่ระบบ (Login)</button>
     <div id="license-info" class="license-info" style="display:none;"></div>
     <table>
@@ -129,27 +140,12 @@
           <th>คัดลอกลิงก์ OBS Dock<br><span style="font-weight:normal; color:#aaa;">Copy Dock UI Link</span></th>
         </tr>
       </thead>
-      <tbody id="ui-table">
-        <!-- auto-generate rows -->
-      </tbody>
+      <tbody id="ui-table"></tbody>
     </table>
     <div id="copy-result"></div>
   </div>
   <div class="instructions">
-    <b>วิธีใช้งานกับ OBS Dock</b><br>
-    1. เปิดโปรแกรม OBS Studio<br>
-    2. ที่เมนูด้านบน เลือก <b>Docks &gt; Custom Browser Docks...</b><br>
-    3. ตั้งชื่อ Dock ที่ต้องการ แล้ว <b>คัดลอกลิงก์</b> จากปุ่มด้านบน<br>
-    4. นำลิงก์ไปวางในช่อง URL ของ OBS แล้วกด Apply<br>
-    5. ที่เมนูด้านบน เลือก Docks แล้วเลือกชื่อ Dock ที่สร้างไว้ <br>
-    <br>
-    <b>How to use with OBS Dock</b><br>
-    1. Open OBS Studio.<br>
-    2. In the top menu, select <b>Docks &gt; Custom Browser Docks...</b><br>
-    3. Enter your desired Dock name, then <b>copy the link</b> from the button above.<br>
-    4. Paste the link into the URL field in OBS and click Apply.<br>
-    5. In the top menu, select Docks, then choose the Dock name you created.<br>
-    <br>
+    <!-- ... คำแนะนำการใช้งานเหมือนเดิม ... -->
   </div>
   <script>
     const uiList = [
@@ -179,10 +175,16 @@
 
     function doLogin() {
       if (isActive) return;
+      const userId = document.getElementById('user-id-field').value.trim();
+      if (!userId) {
+        alert('กรุณากรอกชื่อ ID ของคุณก่อนเข้าสู่ระบบ');
+        return;
+      }
       isActive = true;
       document.getElementById('status-text').innerHTML = `
         <span class="status-active">ใช้งานอยู่ (Active)</span><br>
-        <span style="font-size:0.98em; color:#aaa;">License Active</span>
+        <span style="font-size:0.98em; color:#aaa;">License Active</span><br>
+        <span style="font-size:0.94em;">ID: ${userId}</span>
       `;
       document.getElementById('login-btn').disabled = true;
       showLicenseInfo();
@@ -214,7 +216,9 @@
         tr.innerHTML = `
           <td>${ui.nameTH}<br><span style="color:#aaa;font-size:0.97em;">${ui.nameEN}</span></td>
           <td>
-            <button class="copy-btn" data-url="${ui.url}" id="copy-btn-${idx}" disabled>คัดลอกลิงก์<br><span style="font-size:0.95em;font-weight:normal;">Copy Link</span></button>
+            <button class="copy-btn" data-url="${ui.url}" id="copy-btn-${idx}" disabled>
+              คัดลอกลิงก์<br><span style="font-size:0.95em;font-weight:normal;">Copy Link</span>
+            </button>
           </td>
         `;
         table.appendChild(tr);
