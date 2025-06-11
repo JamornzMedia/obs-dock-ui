@@ -152,30 +152,26 @@
     <br>
   </div>
   <script>
-    // ======= CONFIG =======
-    // รายการ UI ทั้งหมดที่ต้องการโชว์ (เพิ่ม/แก้ไขได้ในอนาคต)
     const uiList = [
       {
         nameTH: "แผงควบคุมการแข่งขันฟุตบอล",
         nameEN: "Football Control Panel",
-        url: "obs-dock-ui/Football-Control-Panel.html"
+        url: "https://jamornzmedia.github.io/obs-dock-ui/Football-Control-Panel.html"
       },
       {
         nameTH: "แผงควบคุมจุดโทษฟุตบอล",
         nameEN: "Penalty Shootout",
-        url: "obs-dock-ui/Penalty-Shootout.html"
+        url: "https://jamornzmedia.github.io/obs-dock-ui/Penalty-Shootout.html"
       }
     ];
 
-    // จำลอง License สำหรับตัวอย่าง (ในของจริงจะต้อง fetch จาก server หรือ Supabase)
     let license = {
       typeTH: "ทดลองฟรี 15 วัน",
       typeEN: "Free Trial 15 Days",
-      expiresAt: addDays(new Date(), 15), // ปรับเป็น addDays(new Date(), 15) สำหรับทดลองฟรี
+      expiresAt: addDays(new Date(), 15),
     };
     let isActive = false;
 
-    // ======= DOM Ready =======
     document.addEventListener('DOMContentLoaded', () => {
       renderTable();
       document.getElementById('login-btn').onclick = doLogin;
@@ -183,7 +179,6 @@
 
     function doLogin() {
       if (isActive) return;
-      // ปกติจะทำกระบวนการเชื่อมต่อ license/hardware id ที่นี่
       isActive = true;
       document.getElementById('status-text').innerHTML = `
         <span class="status-active">ใช้งานอยู่ (Active)</span><br>
@@ -219,12 +214,11 @@
         tr.innerHTML = `
           <td>${ui.nameTH}<br><span style="color:#aaa;font-size:0.97em;">${ui.nameEN}</span></td>
           <td>
-            <button class="copy-btn" data-url="${location.origin}/${encodeURIComponent(ui.url)}" id="copy-btn-${idx}" disabled>คัดลอกลิงก์<br><span style="font-size:0.95em;font-weight:normal;">Copy Link</span></button>
+            <button class="copy-btn" data-url="${ui.url}" id="copy-btn-${idx}" disabled>คัดลอกลิงก์<br><span style="font-size:0.95em;font-weight:normal;">Copy Link</span></button>
           </td>
         `;
         table.appendChild(tr);
       });
-      // set event for copy btn
       uiList.forEach((ui, idx) => {
         document.getElementById('copy-btn-' + idx).onclick = function() {
           copyToClipboard(this.getAttribute('data-url'), idx);
@@ -245,7 +239,6 @@
     }
 
     function showCopyOk(idx) {
-      // แสดงสถานะว่าคัดลอกสำเร็จ
       const old = document.getElementById('copy-ok-msg-' + idx);
       if (old) old.remove();
       const btn = document.getElementById('copy-btn-' + idx);
@@ -257,7 +250,6 @@
       setTimeout(()=>{ okMsg.remove(); },1500);
     }
 
-    // Utility: เพิ่มวันจากวันที่ปัจจุบัน
     function addDays(date, days) {
       let result = new Date(date);
       result.setDate(result.getDate() + days);
