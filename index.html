@@ -40,7 +40,6 @@
       font-size: 1.15em;
       font-weight: bold;
       cursor: pointer;
-      margin-bottom: 1em;
       margin-top: 0.7em;
       transition: background 0.2s;
     }
@@ -52,8 +51,7 @@
       padding: 1em;
       text-align: left;
       font-size: 1.08em;
-      display: inline-block;
-      min-width: 320px;
+      display: none;
     }
     #license-key-field, #user-id-field {
       background: #1c1c1c;
@@ -107,30 +105,19 @@
       font-size: 0.96em;
       margin-top: 0.1em;
     }
-    .instructions {
-      background: #202732;
-      border-radius: 10px;
-      padding: 1.2em;
-      margin-top: 1.2em;
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      font-size: 1.04em;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Jamornz Dock UI License Panel</h2>
     <div id="status-text" class="status-inactive">
-      ยังไม่ได้เข้าสู่ระบบ (Inactive) <br>
+      ยังไม่ได้เข้าสู่ระบบ (Inactive)<br>
       <span style="font-size:0.98em; color:#aaa;">Not logged in</span>
     </div>
-    <input id="license-key-field" type="text" placeholder="กรอก License Key ที่นี่" />
     <input id="user-id-field" type="text" placeholder="ระบุชื่อ ID ของคุณ เช่น Devin_PC" />
     <button id="login-btn" class="login-btn">เข้าสู่ระบบ (Login)</button>
-    <div id="license-info" class="license-info" style="display:none;"></div>
+    <input id="license-key-field" type="text" placeholder="(ไม่บังคับ) กรอก License Key ถ้ามี" />
+    <div id="license-info" class="license-info"></div>
     <table>
       <thead>
         <tr>
@@ -140,8 +127,8 @@
       </thead>
       <tbody id="ui-table"></tbody>
     </table>
-    <div id="copy-result"></div>
   </div>
+
   <script>
     const supabase = window.supabase.createClient(
       'https://pxleazlrryctlovxuwil.supabase.co',
@@ -178,8 +165,17 @@
       const userId = document.getElementById('user-id-field').value.trim();
       const deviceId = getDeviceId();
 
-      if (!licenseKey || !userId) {
-        alert('กรุณากรอก License Key และชื่อ ID ให้ครบ');
+      if (!userId) {
+        alert('กรุณากรอกชื่อ ID');
+        return;
+      }
+
+      if (!licenseKey) {
+        activateUI(userId, {
+          typeTH: "ทดลองฟรี 15 วัน",
+          typeEN: "Free Trial 15 Days",
+          expiresAt: addDays(new Date(), 15)
+        });
         return;
       }
 
@@ -204,14 +200,13 @@
           bound_device_id: deviceId,
           user_id: userId,
           last_login_at: new Date().toISOString(),
-          last_login_ip: 'auto', // หรือคุณจะใช้ API เพื่อดึง IP จริงก็ได้
+          last_login_ip: 'auto',
           last_browser_info: navigator.userAgent
         }).eq('id', data.id);
-        activateUI(userId);
+        activateUI(userId, data);
       } else {
         const confirmSwitch = confirm("License นี้ถูกใช้กับเครื่องอื่นแล้ว ต้องการย้ายเครื่องหรือไม่?");
         if (!confirmSwitch) return;
-
         await supabase.from('license_keys').update({
           bound_device_id: deviceId,
           user_id: userId,
@@ -219,11 +214,11 @@
           last_login_ip: 'auto',
           last_browser_info: navigator.userAgent
         }).eq('id', data.id);
-        activateUI(userId);
+        activateUI(userId, data);
       }
     }
 
-    function activateUI(userId) {
+    function activateUI(userId, license) {
       isActive = true;
       document.getElementById('status-text').innerHTML = `
         <span class="status-active">ใช้งานอยู่ (Active)</span><br>
@@ -231,7 +226,25 @@
         <span style="font-size:0.94em;">ID: ${userId}</span>
       `;
       document.getElementById('login-btn').disabled = true;
+      showLicenseInfo(license);
       enableCopyBtns();
+    }
+
+    function showLicenseInfo(license) {
+      let now = new Date();
+      let expires = new Date(license.expiresAt);
+      let msLeft = expires - now;
+      let days = Math.floor(msLeft / (1000 * 60 * 60 * 24));
+      let hours = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      let endDateStr = expires.toLocaleString('th-TH', {year:'numeric',month:'2-digit',day:'2-digit', hour:'2-digit',minute:'2-digit'});
+      let endDateStrEN = expires.toLocaleString('en-US', {year:'numeric',month:'2-digit',day:'2-digit', hour:'2-digit',minute:'2-digit'});
+
+      document.getElementById('license-info').style.display = 'block';
+      document.getElementById('license-info').innerHTML = `
+        <b>ประเภท License:</b> ${license.typeTH || 'N/A'} <span style="color:#aaa;">(${license.typeEN || 'N/A'})</span><br>
+        <b>วันหมดอายุ:</b> ${endDateStr} <span style="color:#aaa;">(${endDateStrEN})</span><br>
+        <b>เหลือเวลา:</b> ${days} วัน ${hours} ชม.<span style="color:#aaa;"> (${days} days, ${hours} hours left)</span>
+      `;
     }
 
     function renderTable() {
@@ -278,6 +291,12 @@
       okMsg.innerText = 'คัดลอกแล้ว! (Copied)';
       btn.parentNode.appendChild(okMsg);
       setTimeout(()=>{ okMsg.remove(); },1500);
+    }
+
+    function addDays(date, days) {
+      let result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
     }
   </script>
 </body>
