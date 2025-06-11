@@ -102,14 +102,16 @@
     const obs = new OBSWebSocket();
     
     window.addEventListener("DOMContentLoaded", () => {
-      const userEmail = localStorage.getItem("email");
-      if (!userEmail) {
-        window.location.href = "index.html";
-        return;
-      }
+  // 🔒 ปิดการตรวจสอบอีเมลชั่วคราว เพื่อให้สามารถใช้งานได้ทันที
+  // const userEmail = localStorage.getItem("email");
+  // if (!userEmail) {
+  //   window.location.href = "index.html";
+  //   return;
+  // }
 
-      obs.connect('ws://localhost:4455').catch(console.error);
-    });
+  obs.connect('ws://localhost:4455').catch(console.error);
+  });
+
 
     function setText(source, text) {
       obs.call('SetInputSettings', { inputName: source, inputSettings: { text: text.toString() } }).catch(console.warn);
