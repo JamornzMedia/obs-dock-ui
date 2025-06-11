@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Penalty Shootout UI</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: white;
+      font-family: sans-serif;
+      padding: 1rem;
+      text-align: center;
+    }
+    .row { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+    .team { flex: 1; }
+    .dots { display: flex; justify-content: center; gap: 8px; margin: 0.5rem 0; }
+    .dot { width: 20px; height: 20px; border-radius: 50%; background-color: transparent; border: 2px solid #666; opacity: 0.5; }
+    .dot.goal { background-color: limegreen; opacity: 1; }
+    .dot.miss { background-color: crimson; opacity: 1; }
+    .score { font-size: 1.1rem; font-weight: bold; margin-top: 0.3rem; }
+    .controls.vertical { display: flex; flex-direction: row; justify-content: center; gap: 40px; margin-top: 0.5rem; }
+    .controls .side { display: flex; flex-direction: column; gap: 10px; }
+    button { padding: 0.4rem 0.8rem; font-size: 0.9rem; border-radius: 6px; border: none; cursor: pointer; }
+    .goal-btn { background-color: #4CAF50; color: white; }
+    .miss-btn { background-color: #F44336; color: white; }
+    .undo-btn { background-color: #888; color: white; }
+    .reset { margin-top: 1rem; background-color: darkred; color: white; }
+    dialog { background: #2c2c2c; color: white; border: none; border-radius: 8px; padding: 1rem; }
+    .setting-panel input { width: 60px; padding: 0.2rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <div class="team">
+      <h3>Team A</h3>
+      <div class="dots" id="dotsA"></div>
+      <div class="score">Score: <span id="scoreA">0</span></div>
+    </div>
+    <div class="team">
+      <h3>Team B</h3>
+      <div class="dots" id="dotsB"></div>
+      <div class="score">Score: <span id="scoreB">0</span></div>
+    </div>
+  </div>
+
+  <div id="controlPanel" class="controls vertical">
+    <div class="side">
+      <button class="goal-btn" onclick="shoot('A', true)">Goal A</button>
+      <button class="miss-btn" onclick="shoot('A', false)">Miss A</button>
+      <button class="undo-btn" onclick="undo('A')">Undo A</button>
+    </div>
+    <div class="side">
+      <button class="goal-btn" onclick="shoot('B', true)">Goal B</button>
+      <button class="miss-btn" onclick="shoot('B', false)">Miss B</button>
+      <button class="undo-btn" onclick="undo('B')">Undo B</button>
+    </div>
+  </div>
+
+  <button class="reset" onclick="reset()">Reset All</button>
+  <button onclick="document.getElementById('settingDialog').showModal()">⚙️ Settings</button>
+
+  <dialog id="settingDialog">
+    <form method="dialog">
+      <div class="setting-panel">
+        <label>Dot Size: <input type="number" id="dotSize" min="10" max="100"> px</label><br>
+        <label>Dot Gap: <input type="number" id="dotGap" min="0" max="100"> px</label><br>
+        <label>Team Gap: <input type="number" id="teamGap" min="0" max="200"> px</label><br><br>
+        <button type="button" onclick="updateSettings()">Apply</button>
+        <button type="submit">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const MAX_SHOTS = 5;
+    let shots = { A: [], B: [] };
+    let scores = { A: 0, B: 0 };
+    const channel = new BroadcastChannel("penalty_channel");
+    let obs;
+
+    const OBS_URL = "ws://localhost:4455";
+    const OBS_PASSWORD = "supersecret"; // 🔒 ตั้งตามที่ตั้งไว้ใน OBS WebSocket
+
+    function connectOBS() {
+      obs = new WebSocket(OBS_URL);
+
+      obs.onopen = () => {
+        console.log("🟡 Connecting to OBS...");
+      };
+
+      obs.onmessage = async (event) => {
+        const message = JSON.parse(event.data);
+        if (message.op === 0) {
+          // Hello from OBS
+          const authRequest = {
+            op: 1,
+            d: {
+              rpcVersion: 1,
+              authentication: OBS_PASSWORD ? {
+                password: OBS_PASSWORD
+              } : undefined
+            }
+          };
+          obs.send(JSON.stringify(authRequest));
+        } else if (message.op === 2) {
+          console.log("✅ Connected to OBS WebSocket!");
+        } else if (message.op === 5) {
+          console.log("OBS Event:", message.d.eventType);
+        }
+      };
+
+      obs.onerror = (err) => {
+        console.error("❌ OBS WebSocket error:", err);
+      };
+    }
+
+    function updateOBSScore(team, value) {
+      if (!obs || obs.readyState !== 1) return;
+      const sourceName = team === 'A' ? "Score_A" : "Score_B";
+      obs.send(JSON.stringify({
+        op: 6,
+        d: {
+          requestType: "SetInputSettings",
+          requestId: `update-score-${team}`,
+          requestData: {
+            inputName: sourceName,
+            inputSettings: { text: value.toString() },
+            overlay: true
+          }
+        }
+      }));
+    }
+
+    function render(team) {
+      const container = document.getElementById("dots" + team);
+      const scoreDisplay = document.getElementById("score" + team);
+      container.innerHTML = "";
+
+      const latest = shots[team].slice(-MAX_SHOTS);
+      for (let i = 0; i < MAX_SHOTS; i++) {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        const shot = latest[i];
+        if (shot === true) dot.classList.add("goal");
+        else if (shot === false) dot.classList.add("miss");
+        container.appendChild(dot);
+      }
+
+      scoreDisplay.textContent = scores[team];
+      updateOBSScore(team, scores[team]);
+    }
+
+    function update(team) {
+      channel.postMessage({
+        type: "update",
+        team,
+        shots: shots[team],
+        settings: getSettings()
+      });
+    }
+
+    function shoot(team, isGoal) {
+      if (shots[team].length >= MAX_SHOTS) {
+        shots.A = [];
+        shots.B = [];
+      }
+
+      shots[team].push(isGoal);
+      if (isGoal) scores[team]++;
+      render('A');
+      render('B');
+      update('A');
+      update('B');
+    }
+
+    function undo(team) {
+      const last = shots[team].pop();
+      if (last === true) scores[team]--;
+      render(team);
+      update(team);
+    }
+
+    function reset() {
+      shots = { A: [], B: [] };
+      scores = { A: 0, B: 0 };
+      render('A');
+      render('B');
+      update('A');
+      update('B');
+    }
+
+    function getSettings() {
+      return {
+        dotSize: document.getElementById('dotSize').value,
+        dotGap: document.getElementById('dotGap').value,
+        teamGap: document.getElementById('teamGap').value
+      };
+    }
+
+    function updateSettings() {
+      const settings = getSettings();
+      localStorage.setItem("penalty_settings", JSON.stringify(settings));
+      update('A');
+      update('B');
+    }
+
+    function loadSettings() {
+      const saved = JSON.parse(localStorage.getItem("penalty_settings"));
+      if (saved) {
+        document.getElementById('dotSize').value = saved.dotSize;
+        document.getElementById('dotGap').value = saved.dotGap;
+        document.getElementById('teamGap').value = saved.teamGap;
+        updateSettings();
+      } else {
+        document.getElementById('dotSize').value = 20;
+        document.getElementById('dotGap').value = 8;
+        document.getElementById('teamGap').value = 80;
+      }
+    }
+
+    connectOBS();
+    loadSettings();
+    reset();
+  </script>
+</body>
+</html>
