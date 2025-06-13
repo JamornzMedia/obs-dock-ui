@@ -8,7 +8,8 @@
       font-family: Arial, sans-serif;
       background: #1e1e1e;
       color: white;
-      padding: 20px;
+      padding: 20px 10px;
+      margin: 0;
     }
     h1 {
       text-align: center;
@@ -17,8 +18,8 @@
     table {
       margin: 40px auto;
       border-collapse: collapse;
-      width: 95%;
-      max-width: 800px;
+      width: 100%;
+      max-width: 1200px;
       background-color: #2a2a2a;
       border-radius: 10px;
       overflow: hidden;
@@ -26,7 +27,7 @@
       table-layout: fixed;
     }
     th, td {
-      padding: 12px;
+      padding: 12px 8px;
       border: 1px solid #444;
       text-align: center;
       overflow-wrap: break-word;
@@ -50,16 +51,17 @@
       background-color: #444;
       font-size: 1.2em;
     }
-    /* ความกว้างคงที่ */
-    .col-time { width: 18%; }
-    .col-match { width: 14%; }
-    .col-team { width: 24%; }
-    .col-vs { width: 20%; }
 
-    @media screen and (max-width: 600px) {
+    /* แบ่งความกว้างแบบ 13 ส่วน */
+    .col-time  { width: 7.69%; }
+    .col-match { width: 7.69%; }
+    .col-team  { width: 38.46%; }
+    .col-vs    { width: 7.69%; }
+
+    @media screen and (max-width: 768px) {
       th, td {
         font-size: 14px;
-        padding: 8px;
+        padding: 8px 6px;
       }
     }
   </style>
@@ -108,7 +110,7 @@
                   <th>เวลา</th>
                   <th>คู่ที่</th>
                   <th>ทีม A</th>
-                  <th></th>
+                  <th>Score</th>
                   <th>ทีม B</th>
                 </tr>
               </thead>
