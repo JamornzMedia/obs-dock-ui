@@ -60,20 +60,21 @@
       .then(data => {
         const rows = data.trim().split("\n");
         const content = document.getElementById("content");
+
         let table = null;
         let tbody = null;
 
         rows.forEach((line, index) => {
           const cols = line.split(",");
 
-          const isEmpty = cols.every(c => c.trim() === "");
-          if (isEmpty) return; // ข้ามแถวว่าง
+          const isEmptyRow = cols.every(col => col.trim() === "");
+          if (isEmptyRow) return;
 
-          const isRoundHeader = cols[0] && cols.slice(1).every(c => c.trim() === "");
-          if (isRoundHeader) {
-            // เริ่มรอบใหม่: สร้างตารางใหม่
-            const roundName = cols[0].trim();
+          const isRoundTitle = cols[3] && cols.filter((val, i) => i !== 3).every(col => col.trim() === "");
+          if (isRoundTitle) {
+            const roundName = cols[3].trim();
 
+            // สร้างตารางใหม่
             table = document.createElement("table");
             tbody = document.createElement("tbody");
             table.innerHTML = `
@@ -92,14 +93,20 @@
             `;
             table.appendChild(tbody);
             content.appendChild(table);
-          } else if (table && tbody) {
+          } else if (index > 1 && table && tbody) {
+            const time = cols[0] || "";
+            const matchNo = cols[1] || "";
+            const teamA = cols[3] || "";
+            const vsText = cols[4] || "VS";
+            const teamB = cols[6] || "";
+
             const html = `
               <tr>
-                <td>${cols[0]}</td>
-                <td>${cols[1]}</td>
-                <td>${cols[3]}</td>
-                <td class="vs">${cols[4]}</td>
-                <td>${cols[6]}</td>
+                <td>${time}</td>
+                <td>${matchNo}</td>
+                <td>${teamA}</td>
+                <td class="vs">${vsText}</td>
+                <td>${teamB}</td>
               </tr>
             `;
             tbody.insertAdjacentHTML("beforeend", html);
