@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Football Match Schedule</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 95%;
+      background-color: #2a2a2a;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #444;
+    }
+    th {
+      background-color: #3a3a3a;
+    }
+    tr:hover {
+      background-color: #444;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚽ ตารางการแข่งขันฟุตบอล</h1>
+  <table id="matchTable">
+    <thead>
+      <tr>
+        <th>เวลา</th>
+        <th>คู่ที่</th>
+        <th>ทีม A</th>
+        <th></th>
+        <th>ทีม B</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQSZbVexF7pzfb79q0EBrBBfpYxzcnSgnmBE-556Hxnif6_Kiz2PbeC4Ug-x-AG97x_WdBY4WE88fvo/pub?gid=0&single=true&output=csv";
+
+    fetch(sheetURL)
+      .then(res => res.text())
+      .then(data => {
+        const rows = data.trim().split("\n").slice(1); // skip header
+        const tableBody = document.querySelector("#matchTable tbody");
+
+        rows.forEach(row => {
+          const cols = row.split(",");
+          const html = `
+            <tr>
+              <td>${cols[0]}</td>
+              <td>${cols[1]}</td>
+              <td>${cols[3]}</td>
+              <td>VS</td>
+              <td>${cols[6]}</td>
+            </tr>
+          `;
+          tableBody.insertAdjacentHTML("beforeend", html);
+        });
+      });
+  </script>
+</body>
+</html>
