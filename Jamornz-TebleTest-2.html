@@ -10,7 +10,7 @@
       color: white;
       padding: 20px;
     }
-    h1, h2 {
+    h1 {
       text-align: center;
     }
     table {
@@ -45,7 +45,18 @@
 </head>
 <body>
   <h1>⚽ รายการเศรษฐีอริยทรัพย์กำแพงเพชร ซุปเปอร์คัพ ครั้งที่ 4</h1>
-  <div id="content"></div>
+  <table id="matchTable">
+    <thead>
+      <tr>
+        <th>เวลา</th>
+        <th>คู่ที่</th>
+        <th>ทีม A</th>
+        <th></th>
+        <th>ทีม B</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQSZbVexF7pzfb79q0EBrBBfpYxzcnSgnmBE-556Hxnif6_Kiz2PbeC4Ug-x-AG97x_WdBY4WE88fvo/pub?gid=0&single=true&output=csv";
@@ -53,56 +64,23 @@
     fetch(sheetURL)
       .then(res => res.text())
       .then(data => {
-        const rows = data.trim().split("\n");
-        const content = document.getElementById("content");
-        let currentGroup = null;
-        let table = null;
-        let tbody = null;
+        const rows = data.trim().split("\n").slice(1); // ข้ามหัวตาราง
+        const tbody = document.querySelector("#matchTable tbody");
 
-        rows.forEach((line, index) => {
-          const cols = line.split(",");
-          if (cols.filter(c => c.trim() === "").length === cols.length) {
-            // แถวว่าง – ปิดตาราง
-            table = null;
-            tbody = null;
-            currentGroup = null;
-            return;
-          }
+        rows.forEach(row => {
+          const cols = row.split(",");
+          if (cols.filter(c => c.trim() === "").length === cols.length) return; // ข้ามแถวว่าง
 
-          if (index === 0 || (cols[0] && cols[1] === "" && cols[2] === "")) {
-            // หัวข้อใหม่
-            currentGroup = cols[0];
-            const heading = document.createElement("h2");
-            heading.textContent = currentGroup;
-            content.appendChild(heading);
-
-            table = document.createElement("table");
-            tbody = document.createElement("tbody");
-            table.innerHTML = `
-              <thead>
-                <tr>
-                  <th>เวลา</th>
-                  <th>คู่ที่</th>
-                  <th>ทีม A</th>
-                  <th></th>
-                  <th>ทีม B</th>
-                </tr>
-              </thead>
-            `;
-            table.appendChild(tbody);
-            content.appendChild(table);
-          } else if (table && tbody) {
-            const html = `
-              <tr>
-                <td>${cols[0]}</td>
-                <td>${cols[1]}</td>
-                <td>${cols[3]}</td>
-                <td class="vs">${cols[4]}</td>
-                <td>${cols[6]}</td>
-              </tr>
-            `;
-            tbody.insertAdjacentHTML("beforeend", html);
-          }
+          const html = `
+            <tr>
+              <td>${cols[0]}</td>
+              <td>${cols[1]}</td>
+              <td>${cols[3]}</td>
+              <td class="vs">${cols[4]}</td>
+              <td>${cols[6]}</td>
+            </tr>
+          `;
+          tbody.insertAdjacentHTML("beforeend", html);
         });
       });
   </script>
