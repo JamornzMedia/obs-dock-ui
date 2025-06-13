@@ -12,9 +12,10 @@
     }
     h1 {
       text-align: center;
+      margin-bottom: 40px;
     }
     table {
-      margin: 20px auto;
+      margin: 40px auto;
       border-collapse: collapse;
       width: 95%;
       background-color: #2a2a2a;
@@ -41,22 +42,15 @@
       font-weight: bold;
       color: #fff;
     }
+    thead tr:first-child th {
+      background-color: #444;
+      font-size: 1.2em;
+    }
   </style>
 </head>
 <body>
   <h1>⚽ รายการเศรษฐีอริยทรัพย์กำแพงเพชร ซุปเปอร์คัพ ครั้งที่ 4</h1>
-  <table id="matchTable">
-    <thead>
-      <tr>
-        <th>เวลา</th>
-        <th>คู่ที่</th>
-        <th>ทีม A</th>
-        <th></th>
-        <th>ทีม B</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div id="content"></div>
 
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQSZbVexF7pzfb79q0EBrBBfpYxzcnSgnmBE-556Hxnif6_Kiz2PbeC4Ug-x-AG97x_WdBY4WE88fvo/pub?gid=0&single=true&output=csv";
@@ -64,23 +58,52 @@
     fetch(sheetURL)
       .then(res => res.text())
       .then(data => {
-        const rows = data.trim().split("\n").slice(1); // ข้ามหัวตาราง
-        const tbody = document.querySelector("#matchTable tbody");
+        const rows = data.trim().split("\n");
+        const content = document.getElementById("content");
+        let table = null;
+        let tbody = null;
 
-        rows.forEach(row => {
-          const cols = row.split(",");
-          if (cols.filter(c => c.trim() === "").length === cols.length) return; // ข้ามแถวว่าง
+        rows.forEach((line, index) => {
+          const cols = line.split(",");
 
-          const html = `
-            <tr>
-              <td>${cols[0]}</td>
-              <td>${cols[1]}</td>
-              <td>${cols[3]}</td>
-              <td class="vs">${cols[4]}</td>
-              <td>${cols[6]}</td>
-            </tr>
-          `;
-          tbody.insertAdjacentHTML("beforeend", html);
+          const isEmpty = cols.every(c => c.trim() === "");
+          if (isEmpty) return; // ข้ามแถวว่าง
+
+          const isRoundHeader = cols[0] && cols.slice(1).every(c => c.trim() === "");
+          if (isRoundHeader) {
+            // เริ่มรอบใหม่: สร้างตารางใหม่
+            const roundName = cols[0].trim();
+
+            table = document.createElement("table");
+            tbody = document.createElement("tbody");
+            table.innerHTML = `
+              <thead>
+                <tr>
+                  <th colspan="5">🏆 ${roundName}</th>
+                </tr>
+                <tr>
+                  <th>เวลา</th>
+                  <th>คู่ที่</th>
+                  <th>ทีม A</th>
+                  <th></th>
+                  <th>ทีม B</th>
+                </tr>
+              </thead>
+            `;
+            table.appendChild(tbody);
+            content.appendChild(table);
+          } else if (table && tbody) {
+            const html = `
+              <tr>
+                <td>${cols[0]}</td>
+                <td>${cols[1]}</td>
+                <td>${cols[3]}</td>
+                <td class="vs">${cols[4]}</td>
+                <td>${cols[6]}</td>
+              </tr>
+            `;
+            tbody.insertAdjacentHTML("beforeend", html);
+          }
         });
       });
   </script>
