@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Penalty Dots AB</title>
+  <style>
+    html, body {
+      margin: 0;
+      background-color: transparent;
+    }
+
+    .overlay-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--team-gap, 80px);
+      padding: 12px;
+    }
+
+    .team-dots {
+      display: flex;
+      gap: var(--dot-gap, 8px);
+    }
+
+    .dot {
+      width: var(--dot-size, 20px);
+      height: var(--dot-size, 20px);
+      border-radius: 50%;
+      background-color: transparent;
+      border: 2px solid #666;
+      opacity: 0.4;
+    }
+
+    .dot.goal {
+      background-color: limegreen;
+      opacity: 1;
+    }
+
+    .dot.miss {
+      background-color: crimson;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="team-dots" id="dotsA"></div>
+    <div class="team-dots" id="dotsB"></div>
+  </div>
+
+  <script>
+    const MAX_SHOTS = 5;
+    const dotsA = document.getElementById('dotsA');
+    const dotsB = document.getElementById('dotsB');
+    const channel = new BroadcastChannel("penalty_channel");
+
+    function renderDots(container, shots) {
+      container.innerHTML = '';
+      const latest = shots.slice(-MAX_SHOTS);
+      for (let i = 0; i < MAX_SHOTS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        const shot = latest[i];
+        if (shot === true) dot.classList.add('goal');
+        else if (shot === false) dot.classList.add('miss');
+        container.appendChild(dot);
+      }
+    }
+
+    function applySettings(settings) {
+      document.documentElement.style.setProperty('--dot-size', settings.dotSize + 'px');
+      document.documentElement.style.setProperty('--dot-gap', settings.dotGap + 'px');
+      document.documentElement.style.setProperty('--team-gap', settings.teamGap + 'px');
+    }
+
+    channel.onmessage = (e) => {
+      const { type, team, shots, settings } = e.data;
+      if (type !== 'update') return;
+
+      if (settings) applySettings(settings);
+      if (team === 'A') renderDots(dotsA, shots);
+      if (team === 'B') renderDots(dotsB, shots);
+    };
+  </script>
+</body>
+</html>
