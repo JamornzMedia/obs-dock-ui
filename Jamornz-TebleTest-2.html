@@ -18,15 +18,18 @@
       margin: 40px auto;
       border-collapse: collapse;
       width: 95%;
+      max-width: 800px;
       background-color: #2a2a2a;
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 0 10px rgba(0,0,0,0.8);
+      table-layout: fixed;
     }
     th, td {
       padding: 12px;
       border: 1px solid #444;
       text-align: center;
+      overflow-wrap: break-word;
     }
     th {
       background-color: #3a3a3a;
@@ -41,10 +44,23 @@
       background-color: #111;
       font-weight: bold;
       color: #fff;
+      white-space: nowrap;
     }
     thead tr:first-child th {
       background-color: #444;
       font-size: 1.2em;
+    }
+    /* ความกว้างคงที่ */
+    .col-time { width: 18%; }
+    .col-match { width: 14%; }
+    .col-team { width: 24%; }
+    .col-vs { width: 20%; }
+
+    @media screen and (max-width: 600px) {
+      th, td {
+        font-size: 14px;
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -74,10 +90,16 @@
           if (isRoundTitle) {
             const roundName = cols[3].trim();
 
-            // สร้างตารางใหม่
             table = document.createElement("table");
             tbody = document.createElement("tbody");
             table.innerHTML = `
+              <colgroup>
+                <col class="col-time">
+                <col class="col-match">
+                <col class="col-team">
+                <col class="col-vs">
+                <col class="col-team">
+              </colgroup>
               <thead>
                 <tr>
                   <th colspan="5">🏆 ${roundName}</th>
