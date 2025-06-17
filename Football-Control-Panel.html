@@ -3,45 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <title>Football Scoreboard Controller</title>
+
+  <!-- Excel → JSON -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- OBS WebSocket (v5 API) -->
+  <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+
   <style>
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%;
-      background: #121212; color: white; font-family: 'Segoe UI', sans-serif;
+      background: #121212; color: #fff; font-family: 'Segoe UI', sans-serif;
     }
     .container { max-width: 500px; margin: auto; padding: 10px; }
-    .row, .logo-row, .label-row, .score-row, .footer-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+    .row, .logo-row, .label-row, .score-row, .footer-row {
+      display: flex; gap: 6px; margin-bottom: 9px; flex-wrap: wrap;
+    }
     .center { justify-content: center; }
-    input, select, button { padding: 6px; border-radius: 4px; font-size: 0.9rem; border: none; }
-    button { background: #219653; color: white; cursor: pointer; }
+
+    input, button {
+      padding: 6px; border-radius: 4px; font-size: .9rem; border: none;
+    }
+    button { background: #219653; color: #fff; cursor: pointer; }
     button:hover { background: #1b7f45; }
+
     .logo-name { flex: 1; display: flex; flex-direction: column; align-items: center; }
     .logo-name img { width: 60px; height: 60px; object-fit: contain; background: #2a2a2a; border-radius: 6px; }
-    .logo-name .name { font-size: 0.75rem; text-align: center; height: 2.4em; overflow: hidden; }
+    .logo-name .name { font-size: .75rem; text-align: center; height: 2.4em; overflow: hidden; }
+
     .label-row div {
-      flex: 1; background: #1e1e1e; text-align: center; font-size: 0.75rem; border-radius: 4px; padding: 4px;
+      flex: 1; background: #1e1e1e; text-align: center; font-size: .75rem;
+      border-radius: 4px; padding: 4px;
     }
-    .score-box, .button-col {
-      display: flex; flex-direction: column; align-items: center; flex: 1;
-    }
+
+    .score-box, .button-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
     .score-box .score { font-size: 2.2em; margin-bottom: 6px; }
     .button-col button.plus { width: 90%; font-size: 1.2rem; height: 40px; }
-    .button-col button.minus {
-      width: 90%; font-size: 0.9rem; height: 25px; background: #c0392b;
-    }
+    .button-col button.minus { width: 90%; font-size: .9rem; height: 25px; background: #c0392b; }
+
     .section-divider { border-top: 1px solid #555; margin: 12px 0; }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- ====== FILE & MATCH SELECTION ====== -->
     <div class="row">
       <button onclick="handleExcel()">📂 Upload Excel</button>
       <label>Match ID:</label>
-      <input type="number" id="matchID" min="1" value="1" style="width:60px;">
+      <input type="number" id="matchID" min="1" value="1" style="width:65px;">
       <button onclick="applyMatch()">Load</button>
     </div>
 
     <div class="section-divider"></div>
+
+    <!-- ====== TEAMS & LABELS ====== -->
     <div class="logo-row">
       <div class="logo-name">
         <img id="logoA" src="" alt="Logo A">
@@ -52,6 +67,7 @@
         <div class="name" id="nameB">Team B</div>
       </div>
     </div>
+
     <div class="label-row">
       <div id="label1">Label 1</div>
       <div id="label2">Label 2</div>
@@ -59,16 +75,18 @@
     </div>
 
     <div class="section-divider"></div>
+
+    <!-- ====== SCORES ====== -->
     <div><strong>คะแนน</strong></div>
     <div class="score-row">
       <div class="score-box"><div class="score" id="scoreA">0</div></div>
       <div class="button-col">
-        <button class="plus" onclick="changeScore('A', 1)">+1</button>
+        <button class="plus"  onclick="changeScore('A',  1)">+1</button>
         <button class="minus" onclick="changeScore('A', -1)">-1</button>
       </div>
       <div class="score-box"><div class="score" id="scoreB">0</div></div>
       <div class="button-col">
-        <button class="plus" onclick="changeScore('B', 1)">+1</button>
+        <button class="plus"  onclick="changeScore('B',  1)">+1</button>
         <button class="minus" onclick="changeScore('B', -1)">-1</button>
       </div>
     </div>
@@ -77,9 +95,12 @@
     </div>
 
     <div class="section-divider"></div>
+
+    <!-- ====== TIME & HALF ====== -->
     <div><strong>เวลา</strong></div>
     <div class="footer-row">
       <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
+
       <div style="flex:1;text-align:center">
         <div id="timerText" style="font-size:2em;">00:00</div>
         <div style="margin-top:5px;">
@@ -92,6 +113,8 @@
     </div>
 
     <div class="section-divider"></div>
+
+    <!-- ====== DETAILS & HELP ====== -->
     <div class="center">
       <button onclick="openDetails()">✏️ ตั้งค่ารายละเอียด</button>
       <button onclick="copyDetails()">📋 คัดลอกรายละเอียด</button>
@@ -99,9 +122,13 @@
     </div>
   </div>
 
-  <div id="detailsPopup" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#1e1e1e; padding:20px; border-radius:10px; width:90%; max-width:400px;">
+  <!-- ====== DETAILS POPUP ====== -->
+  <div id="detailsPopup"
+       style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%);
+              background:#1e1e1e; padding:20px; border-radius:10px;
+              width:90%; max-width:400px;">
     <h3>ตั้งค่าข้อความประกาศ</h3>
-    <p>ใช้แท็ก: &lt;TeamA&gt;, &lt;TeamB&gt;, &lt;label1&gt;, &lt;label2&gt;, &lt;label3&gt;, &lt;score_team_a&gt;, &lt;score_team_b&gt;</p>
+    <p>ใช้แท็ก: &lt;TeamA&gt;, &lt;TeamB&gt;, &lt;label1&gt;–&lt;label3&gt;, &lt;score_team_a&gt;, &lt;score_team_b&gt;, &lt;time_counter&gt;, &lt;half_text&gt;</p>
     <textarea id="detailsText" style="width:100%; height:80px;"></textarea>
     <div class="row center">
       <button onclick="saveDetails()">💾 บันทึก</button>
@@ -109,19 +136,22 @@
     </div>
   </div>
 
+  <!-- ========================================================= -->
+  <!-- ====================== SCRIPT ZONE ====================== -->
+  <!-- ========================================================= -->
   <script>
-    let sheetData = [], scoreA = 0, scoreB = 0, timer = 0, interval = null, half = '1st';
-
+    /* ---------- Excel / Match data ---------- */
+    let sheetData = [];
     function handleExcel() {
       const input = document.createElement('input');
-      input.type = 'file'; input.accept = '.xlsx';
+      input.type = 'file';
+      input.accept = '.xlsx';
       input.onchange = e => {
         const reader = new FileReader();
-        reader.onload = function(evt) {
-          const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          alert("📁 โหลดไฟล์สำเร็จแล้ว กรุณากด Load");
+        reader.onload = evt => {
+          const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+          sheetData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          alert('📁 โหลดไฟล์สำเร็จแล้ว กรุณากด Load');
         };
         reader.readAsArrayBuffer(e.target.files[0]);
       };
@@ -129,145 +159,153 @@
     }
 
     function applyMatch() {
-      const id = parseInt(document.getElementById('matchID').value);
+      if (!sheetData.length) return alert('โปรด Upload ไฟล์ก่อน');
+      const id     = parseInt(document.getElementById('matchID').value);
       const header = sheetData[0];
-      const rows = sheetData.slice(1);
-      const match = rows.find(row => parseInt(row[0]) === id);
-      if (!match) return alert('ไม่พบ Match ID');
+      const rows   = sheetData.slice(1);
+      const match  = rows.find(r => parseInt(r[0]) === id);
+      if (!match) return alert('ไม่พบ Match ID นี้');
+
       const get = key => match[header.indexOf(key)] || '';
-      const path = "C:/OBSAssets/logos";
-      document.getElementById('nameA').textContent = get('TeamA');
-      document.getElementById('nameB').textContent = get('TeamB');
-      document.getElementById('label1').textContent = get('label1');
-      document.getElementById('label2').textContent = get('label2');
-      document.getElementById('label3').textContent = get('label3');
-      document.getElementById('logoA').src = `${path}/${get('LogoA')}`;
-      document.getElementById('logoB').src = `${path}/${get('LogoB')}`;
+      const logoPath = 'C:/OBSAssets/logos';
+
+      // หน้า UI
+      nameA.textContent = get('TeamA');
+      nameB.textContent = get('TeamB');
+      label1.textContent = get('label1');
+      label2.textContent = get('label2');
+      label3.textContent = get('label3');
+      logoA.src = `${logoPath}/${get('LogoA')}`;
+      logoB.src = `${logoPath}/${get('LogoB')}`;
+
+      // ส่งไป OBS
+      setText('name_team_a',  get('TeamA'));
+      setText('name_team_b',  get('TeamB'));
+      setText('label_1',      get('label1'));
+      setText('label_2',      get('label2'));
+      setText('label_3',      get('label3'));
+      setImage('logo_team_a', get('LogoA'));
+      setImage('logo_team_b', get('LogoB'));
     }
 
+    /* ---------- Score ---------- */
+    let scoreA = 0, scoreB = 0;
     function changeScore(team, delta) {
       if (team === 'A') {
         scoreA = Math.max(0, scoreA + delta);
-        document.getElementById('scoreA').textContent = scoreA;
+        scoreA_el.textContent = scoreA;
+        setText('score_team_a', scoreA);
       } else {
         scoreB = Math.max(0, scoreB + delta);
-        document.getElementById('scoreB').textContent = scoreB;
+        scoreB_el.textContent = scoreB;
+        setText('score_team_b', scoreB);
       }
     }
-
     function resetScore() {
-      scoreA = 0; scoreB = 0;
-      document.getElementById('scoreA').textContent = "0";
-      document.getElementById('scoreB').textContent = "0";
+      scoreA = scoreB = 0;
+      scoreA_el.textContent = '0';
+      scoreB_el.textContent = '0';
+      setText('score_team_a', '0');
+      setText('score_team_b', '0');
     }
 
-    function startTimer() {
-      if (interval) return;
+    /* ---------- Timer & Half ---------- */
+    let timer = 0, interval = null, half = '1st';
+    function updateTimerDisplay() {
+      const m = String(Math.floor(timer / 60)).padStart(2,'0');
+      const s = String(timer % 60).padStart(2,'0');
+      timerText.textContent = `${m}:${s}`;
+      setText('time_counter', `${m}:${s}`);
+    }
+    function startTimer() { if (interval) return;
       interval = setInterval(() => { timer++; updateTimerDisplay(); }, 1000);
     }
-
-    function stopTimer() {
-      clearInterval(interval); interval = null;
-    }
-
-    function resetTimer() {
-      stopTimer(); timer = 0; updateTimerDisplay();
-    }
-
-    function setTime() {
-      const input = prompt("Set time (MM:SS)", "00:00");
-      if (!input) return;
-      const [m, s] = input.split(":");
-      timer = parseInt(m) * 60 + parseInt(s);
+    function stopTimer()  { clearInterval(interval); interval = null; }
+    function resetTimer() { stopTimer(); timer = 0; updateTimerDisplay(); }
+    function setTime()    {
+      const t = prompt('Set time (MM:SS)', '00:00');
+      if (!t) return;
+      const [m,s] = t.split(':').map(Number);
+      timer = m*60 + s;
       updateTimerDisplay();
     }
-
-    function updateTimerDisplay() {
-      const m = String(Math.floor(timer / 60)).padStart(2, '0');
-      const s = String(timer % 60).padStart(2, '0');
-      document.getElementById('timerText').textContent = `${m}:${s}`;
-    }
-
     function toggleHalf() {
       half = (half === '1st') ? '2nd' : '1st';
-      document.getElementById('halfText').textContent = half;
+      halfText.textContent = half;
+      setText('half_text', half);
     }
 
+    /* ---------- Details / Copy ---------- */
     function openDetails() {
-      document.getElementById("detailsText").value = localStorage.getItem("detailsText") || "";
-      document.getElementById("detailsPopup").style.display = "block";
+      detailsText.value = localStorage.getItem('detailsText') || '';
+      detailsPopup.style.display = 'block';
     }
-
-    function closeDetails() {
-      document.getElementById("detailsPopup").style.display = "none";
-    }
-
-    function saveDetails() {
-      localStorage.setItem("detailsText", document.getElementById("detailsText").value);
+    function closeDetails() { detailsPopup.style.display = 'none'; }
+    function saveDetails()  {
+      localStorage.setItem('detailsText', detailsText.value);
       closeDetails();
     }
-
     function copyDetails() {
-      const base = localStorage.getItem("detailsText") || "";
-      const id = parseInt(document.getElementById('matchID').value);
-      const header = sheetData[0];
-      const rows = sheetData.slice(1);
-      const match = rows.find(row => parseInt(row[0]) === id);
-      if (!match) return alert("ยังไม่ได้เลือกแถว");
-      const dict = {}; header.forEach((k, i) => dict[k] = match[i] || "");
-
-      const alias = {
-        name_team_a: 'TeamA',
-        name_team_b: 'TeamB',
-        team_a: 'TeamA',
-        team_b: 'TeamB',
-        score_team_a: 'scoreA',
-        score_team_b: 'scoreB',
-        time_counter: 'timerText',
-        half_text: 'halfText'
-      };
-
-      const output = base.replace(/<([^>]+)>/g, (_, key) => {
-        const realKey = alias[key] || key;
-        return dict[realKey] || document.getElementById(realKey)?.textContent || "";
-      });
-      navigator.clipboard.writeText(output).then(() => alert("📋 คัดลอกแล้ว"));
+      const template = localStorage.getItem('detailsText') || '';
+      const filled = template
+        .replace(/<TeamA>/gi,        nameA.textContent)
+        .replace(/<TeamB>/gi,        nameB.textContent)
+        .replace(/<label1>/gi,       label1.textContent)
+        .replace(/<label2>/gi,       label2.textContent)
+        .replace(/<label3>/gi,       label3.textContent)
+        .replace(/<score_team_a>/gi, scoreA)
+        .replace(/<score_team_b>/gi, scoreB)
+        .replace(/<time_counter>/gi, timerText.textContent)
+        .replace(/<half_text>/gi,    halfText.textContent);
+      navigator.clipboard.writeText(filled)
+        .then(() => alert('📋 คัดลอกแล้ว'))
+        .catch(console.error);
     }
 
     function showHelp() {
-      alert("🧾 ใช้แท็กได้ในข้อความ เช่น <TeamA>, <label1>, <score_team_a>, <time_counter>, <half_text>");
+      alert(
+        '🧾 วิธีใช้คร่าว ๆ\n\n' +
+        '1) 📂 Upload ไฟล์ Excel แล้วกด Load\n' +
+        '2) ปรับคะแนน เวลาหรือครึ่งเกมได้ตามปุ่ม\n' +
+        '3) OBS Sources ที่ต้องมี (ชื่อตรงเวอร์ชันแรก):\n' +
+        '   • logo_team_a / logo_team_b\n' +
+        '   • name_team_a / name_team_b\n' +
+        '   • label_1 – label_3\n' +
+        '   • score_team_a / score_team_b\n' +
+        '   • half_text / time_counter'
+      );
     }
 
-    // 🔌 เชื่อม OBS WebSocket Server
-    let obs;
-    function connectOBS() {
-      obs = new WebSocket("ws://localhost:4455");
-      obs.onopen = () => {
-        console.log("✅ OBS WebSocket Connected");
-        const identifyPayload = {
-          op: 1,
-          d: {
-            rpcVersion: 1,
-            authentication: ""
-          }
-        };
-        obs.send(JSON.stringify(identifyPayload));
-      };
-      obs.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        console.log("📨 OBS Message:", data);
-      };
-      obs.onerror = (err) => {
-        console.error("❌ OBS Error:", err);
-      };
-      obs.onclose = () => {
-        console.log("🔌 OBS Disconnected");
-      };
-    }
-
-    window.addEventListener("load", () => {
-      connectOBS();
+    /* ---------- OBS WebSocket ---------- */
+    const obs = new OBSWebSocket();
+    obs.connect('ws://localhost:4455').catch(err => {
+      console.warn('OBS WebSocket error:', err);
     });
+
+    function setText(source, text) {
+      obs.call('SetInputSettings', {
+        inputName:    source,
+        inputSettings:{ text: text.toString() },
+        overlay:      true
+      }).catch(console.warn);
+    }
+
+    function setImage(source, filename) {
+      const filePath = `C:/OBSAssets/logos/${filename}`;
+      obs.call('SetInputSettings', {
+        inputName:    source,
+        inputSettings:{ file: filePath },
+        overlay:      true
+      }).catch(console.warn);
+    }
+
+    /* ---------- DOM Shortcuts ---------- */
+    const $ = id => document.getElementById(id);
+    const nameA = $('nameA'), nameB = $('nameB');
+    const label1 = $('label1'), label2 = $('label2'), label3 = $('label3');
+    const logoA  = $('logoA'),  logoB  = $('logoB');
+    const scoreA_el = $('scoreA'), scoreB_el = $('scoreB');
+    const timerText = $('timerText'), halfText = $('halfText');
   </script>
 </body>
 </html>
