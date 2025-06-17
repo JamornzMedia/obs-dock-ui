@@ -237,6 +237,37 @@
     function showHelp() {
       alert("🧾 ใช้แท็กได้ในข้อความ เช่น <TeamA>, <label1>, <score_team_a>, <time_counter>, <half_text>");
     }
+
+    // 🔌 เชื่อม OBS WebSocket Server
+    let obs;
+    function connectOBS() {
+      obs = new WebSocket("ws://localhost:4455");
+      obs.onopen = () => {
+        console.log("✅ OBS WebSocket Connected");
+        const identifyPayload = {
+          op: 1,
+          d: {
+            rpcVersion: 1,
+            authentication: ""
+          }
+        };
+        obs.send(JSON.stringify(identifyPayload));
+      };
+      obs.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        console.log("📨 OBS Message:", data);
+      };
+      obs.onerror = (err) => {
+        console.error("❌ OBS Error:", err);
+      };
+      obs.onclose = () => {
+        console.log("🔌 OBS Disconnected");
+      };
+    }
+
+    window.addEventListener("load", () => {
+      connectOBS();
+    });
   </script>
 </body>
 </html>
