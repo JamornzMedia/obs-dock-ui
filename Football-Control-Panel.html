@@ -1,251 +1,53 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <title>Football Scoreboard Controller</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      box-sizing: border-box;
-      background: #121212;
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
-      overflow: auto;
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #121212; color: white; font-family: 'Segoe UI', sans-serif;
     }
-    .container {
-      padding: 10px;
-      max-width: 360px;
-      margin: auto;
-    }
-    input, select, button {
-      font-size: 0.9rem;
-      border: none;
-      border-radius: 4px;
-      padding: 6px;
-    }
-    button {
-      background: #219653;
-      color: white;
-      cursor: pointer;
-    }
+    .container { max-width: 500px; margin: auto; padding: 10px; }
+    .row, .logo-row, .label-row, .score-row, .footer-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+    .center { justify-content: center; }
+    input, select, button { padding: 6px; border-radius: 4px; font-size: 0.9rem; border: none; }
+    button { background: #219653; color: white; cursor: pointer; }
     button:hover { background: #1b7f45; }
-    .row, .logo-row, .label-row, .score-row, .footer-row, .color-row, .center {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 5px;
-      flex-wrap: wrap;
+    .logo-name { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .logo-name img { width: 60px; height: 60px; object-fit: contain; background: #2a2a2a; border-radius: 6px; }
+    .logo-name .name { font-size: 0.75rem; text-align: center; height: 2.4em; overflow: hidden; }
+    .label-row div {
+      flex: 1; background: #1e1e1e; text-align: center; font-size: 0.75rem; border-radius: 4px; padding: 4px;
     }
-    .section-divider {
-      border-top: 1px solid #555;
-      margin: 10px 0;
+    .score-box, .button-col {
+      display: flex; flex-direction: column; align-items: center; flex: 1;
     }
-    .center {
-      justify-content: center;
+    .score-box .score { font-size: 2.2em; margin-bottom: 6px; }
+    .button-col button.plus { width: 90%; font-size: 1.2rem; height: 40px; }
+    .button-col button.minus {
+      width: 90%; font-size: 0.9rem; height: 25px; background: #c0392b;
     }
-    .logo-name {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .logo-name img {
-      width: 50px;
-      height: 50px;
-      object-fit: contain;
-      background: #2a2a2a;
-      border-radius: 6px;
-    }
-    .logo-name .name {
-      font-size: 0.7rem;
-      text-align: center;
-      height: 2.2em;
-      overflow: hidden;
-    }
-    .label-row div, .color-col label {
-      flex: 1;
-      background: #1e1e1e;
-      text-align: center;
-      font-size: 0.7rem;
-      border-radius: 4px;
-    }
-    .score-box {
-      flex: 1;
-      text-align: center;
-    }
-    .score-box .score {
-      font-size: 2em;
-    }
-    .score-box button { width: 42%; }
-    .plus { background: #27ae60; }
-    .minus { background: #c0392b; }
-    .color-col {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    .color-pair input {
-      width: 48%;
-      height: 30px;
-    }
-    #timerText {
-      font-size: 2em;
-    }
+    .section-divider { border-top: 1px solid #555; margin: 12px 0; }
+    .popup { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1e1e1e; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
+    .popup textarea { width: 100%; height: 80px; margin-top: 6px; }
+    .popup input { width: 100%; margin-bottom: 6px; }
+    .small { font-size: 0.75rem; color: #ccc; }
+    #copyBtn { flex: 1.5; font-size: 0.85rem; }
+    .popup-title { margin: 10px 0 5px; font-weight: bold; border-top: 1px solid #444; padding-top: 5px; }
   </style>
-  <script>
-    let sheetData = [], currentFile = null, imageFolder = "C:/OBSAssets/logos";
-    let scoreA = 0, scoreB = 0, half = '1st', timer = 0, interval = null;
-    const obs = new OBSWebSocket();
-    
-    window.addEventListener("DOMContentLoaded", () => {
-  // 🔒 ปิดการตรวจสอบอีเมลชั่วคราว เพื่อให้สามารถใช้งานได้ทันที
-  // const userEmail = localStorage.getItem("email");
-  // if (!userEmail) {
-  //   window.location.href = "index.html";
-  //   return;
-  // }
-
-  obs.connect('ws://localhost:4455').catch(console.error);
-  });
-
-
-    function setText(source, text) {
-      obs.call('SetInputSettings', { inputName: source, inputSettings: { text: text.toString() } }).catch(console.warn);
-    }
-    function setImage(source, filename) {
-      const ext = filename.endsWith('.jpg') || filename.endsWith('.png') ? '' : '.png';
-      const path = `${imageFolder}/${filename}${ext}`;
-      const img = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
-      img.src = path;
-      obs.call('SetInputSettings', { inputName: source, inputSettings: { file: path } }).catch(console.warn);
-    }
-    function setColor(name, hex) {
-      const rgb = parseInt(hex.replace('#', ''), 16);
-      obs.call('SetInputSettings', {
-        inputName: name,
-        inputSettings: {
-          color: rgb
-        }
-      }).catch(console.warn);
-    }
-    function changeScore(team, delta) {
-      if (team === 'A') {
-        scoreA = Math.max(0, scoreA + delta);
-        document.getElementById('scoreA').textContent = scoreA;
-        setText('score_team_a', scoreA);
-      } else {
-        scoreB = Math.max(0, scoreB + delta);
-        document.getElementById('scoreB').textContent = scoreB;
-        setText('score_team_b', scoreB);
-      }
-    }
-    function resetScore() {
-      scoreA = 0; scoreB = 0;
-      document.getElementById('scoreA').textContent = '0';
-      document.getElementById('scoreB').textContent = '0';
-      setText('score_team_a', '0');
-      setText('score_team_b', '0');
-    }
-    function toggleHalf() {
-      half = (half === '1st') ? '2nd' : '1st';
-      document.getElementById('halfText').textContent = half;
-      setText('half_text', half);
-    }
-    function startTimer() {
-      if (interval) return;
-      interval = setInterval(() => {
-        timer++;
-        const m = String(Math.floor(timer / 60)).padStart(2, '0');
-        const s = String(timer % 60).padStart(2, '0');
-        document.getElementById('timerText').textContent = `${m}:${s}`;
-        setText('time_counter', `${m}:${s}`);
-      }, 1000);
-    }
-    function stopTimer() {
-      clearInterval(interval); interval = null;
-    }
-    function resetTimer() {
-      stopTimer(); timer = 0;
-      document.getElementById('timerText').textContent = '00:00';
-      setText('time_counter', '00:00');
-    }
-    function setTime() {
-      const input = prompt("Set time in MM:SS format", "00:00");
-      if (!input) return;
-      const [m, s] = input.split(":");
-      timer = parseInt(m) * 60 + parseInt(s);
-      document.getElementById('timerText').textContent = input;
-      setText('time_counter', input);
-    }
-    function handleExcel() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.xlsx';
-      input.onchange = e => {
-        currentFile = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = evt => {
-          const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-          const sheet = wb.Sheets[wb.SheetNames[0]];
-          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          applyMatch();
-        };
-        reader.readAsArrayBuffer(currentFile);
-      };
-      input.click();
-    }
-    function chooseImageFolder() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.webkitdirectory = true;
-      input.onchange = e => {
-        const path = e.target.files[0].path.replace(/\\[^\\]+$/, '');
-        imageFolder = path;
-        alert('📂 เลือกโฟลเดอร์รูปภาพแล้ว: ' + path);
-      };
-      input.click();
-    }
-    function applyMatch() {
-      const id = parseInt(document.getElementById('matchID').value);
-      const header = sheetData[0];
-      const rows = sheetData.slice(1);
-      const match = rows.find(r => parseInt(r[0]) === id);
-      if (!match) return alert('ไม่พบ Match ID');
-      const get = key => match[header.indexOf(key)] || '';
-      document.getElementById('nameA').textContent = get('TeamA');
-      document.getElementById('nameB').textContent = get('TeamB');
-      document.getElementById('label1').textContent = get('label1');
-      document.getElementById('label2').textContent = get('label2');
-      document.getElementById('label3').textContent = get('label3');
-      setText('name_team_a', get('TeamA'));
-      setText('name_team_b', get('TeamB'));
-      setText('label_1', get('label1'));
-      setText('label_2', get('label2'));
-      setText('label_3', get('label3'));
-      setImage('logo_team_a', get('LogoA'));
-      setImage('logo_team_b', get('LogoB'));
-    }
-    function showHelp() {
-      alert(`📘 วิธีใช้งาน\n1. Upload Excel\n2. เลือก Match ID\n3. เลือกโฟลเดอร์รูป\n4. ปรับคะแนน สี เวลา\n\nOBS ต้องมี Sources:\n- logo_team_a / logo_team_b\n- name_team_a / name_team_b\n- label_1 / label_2 / label_3\n- score_team_a / score_team_b\n- half_text / time_counter\n- team_a_colorbox / team_a_colorbox2\n- team_b_colorbox / team_b_colorbox2`);
-    }
-  </script>
 </head>
 <body>
   <div class="container">
-    <div class="row center">
-      <button onclick="handleExcel()">Upload Excel File</button>
-      <button onclick="chooseImageFolder()">เลือกโฟลเดอร์รูป</button>
+    <div class="row">
+      <label>Row:</label>
+      <input type="number" id="rowIndex" value="1" style="width:60px;">
+      <button onclick="applyRow()">Load</button>
+      <button id="copyBtn" onclick="copyDetails()">📋 คัดลอกรายละเอียด</button>
     </div>
-    <div class="section-divider"></div>
-    <div class="row center">
-      <label style="align-self:center;">Match ID</label>
-      <input type="number" id="matchID" min="1" value="1">
-      <button onclick="applyMatch()">Load</button>
-    </div>
+
     <div class="section-divider"></div>
     <div class="logo-row">
       <div class="logo-name">
@@ -262,32 +64,17 @@
       <div id="label2">Label 2</div>
       <div id="label3">Label 3</div>
     </div>
+
     <div class="section-divider"></div>
-    <div class="color-row">
-      <div class="color-col">
-        <label>Team A Colors</label>
-        <div class="color-pair">
-          <input type="color" onchange="setColor('team_a_colorbox', this.value)">
-          <input type="color" onchange="setColor('team_a_colorbox2', this.value)">
-        </div>
-      </div>
-      <div class="color-col">
-        <label>Team B Colors</label>
-        <div class="color-pair">
-          <input type="color" onchange="setColor('team_b_colorbox', this.value)">
-          <input type="color" onchange="setColor('team_b_colorbox2', this.value)">
-        </div>
-      </div>
-    </div>
-    <div class="section-divider"></div>
+    <div><strong>คะแนน</strong></div>
     <div class="score-row">
-      <div class="score-box">
-        <div class="score" id="scoreA">0</div>
+      <div class="score-box"><div class="score" id="scoreA">0</div></div>
+      <div class="button-col">
         <button class="plus" onclick="changeScore('A', 1)">+1</button>
         <button class="minus" onclick="changeScore('A', -1)">-1</button>
       </div>
-      <div class="score-box">
-        <div class="score" id="scoreB">0</div>
+      <div class="score-box"><div class="score" id="scoreB">0</div></div>
+      <div class="button-col">
         <button class="plus" onclick="changeScore('B', 1)">+1</button>
         <button class="minus" onclick="changeScore('B', -1)">-1</button>
       </div>
@@ -295,24 +82,201 @@
     <div class="center">
       <button onclick="resetScore()">Reset Scores</button>
     </div>
+
     <div class="section-divider"></div>
+    <div><strong>เวลา</strong></div>
     <div class="footer-row">
       <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
       <div style="flex:1;text-align:center">
-        <div id="timerText">00:00</div>
-        <div>
+        <div id="timerText" style="font-size:2em;">00:00</div>
+        <div style="margin-top:5px;">
           <button onclick="startTimer()">Start</button>
           <button onclick="stopTimer()">Stop</button>
           <button onclick="resetTimer()">Reset</button>
-          <button onclick="setTime()">Set Time</button>
+          <button onclick="setTime()">Set</button>
         </div>
       </div>
     </div>
+
     <div class="section-divider"></div>
+    <div><strong>ตั้งค่ารายละเอียด</strong></div>
     <div class="center">
-      <button onclick="showHelp()">Help</button>
-      <button onclick="window.location.href='dashboard.html'">ย้อนกลับ</button>
+      <button onclick="openDetails()">✏️ ตั้งค่า</button>
+      <button onclick="showHelp()">📘 Help</button>
+      <button onclick="openSettings()">⚙️ ตั้งค่าขั้นสูง</button>
     </div>
   </div>
+
+  <!-- Details popup -->
+  <div class="popup" id="detailsPopup">
+    <div class="popup-title">ตั้งค่าข้อความประกาศ</div>
+    <p class="small">ใช้แท็ก: &lt;name_team_a&gt;, &lt;name_team_b&gt;, &lt;label1&gt;–&lt;label3&gt;</p>
+    <textarea id="detailsText"></textarea>
+    <div class="row center">
+      <button onclick="saveDetails()">💾 บันทึก</button>
+      <button onclick="closeDetails()">❌ ปิด</button>
+    </div>
+  </div>
+
+  <!-- Settings popup -->
+  <div class="popup" id="settingsPopup">
+    <div class="popup-title">ตั้งค่าขั้นสูง</div>
+    <label>Image Folder Path</label>
+    <input type="text" id="imagePath" value="C:/OBSAssets/logos">
+    <label>Data Source</label>
+    <select id="dataSource" onchange="toggleSource()">
+      <option value="excel">Excel</option>
+      <option value="google">Google Sheets</option>
+    </select>
+    <input type="text" id="sheetURL" placeholder="Google Sheet URL or ID" style="display:none;">
+    <div class="row center">
+      <button onclick="loadData()">โหลดข้อมูล</button>
+      <button onclick="closeSettings()">❌ ปิด</button>
+    </div>
+  </div>
+
+  <script>
+    let data = [], scoreA = 0, scoreB = 0, timer = 0, interval = null, half = "1st";
+
+    function toggleSource() {
+      document.getElementById("sheetURL").style.display =
+        document.getElementById("dataSource").value === "google" ? "block" : "none";
+    }
+
+    function loadData() {
+      const source = document.getElementById("dataSource").value;
+      const path = document.getElementById("sheetURL").value.trim();
+      if (!path) return alert("กรุณาระบุไฟล์หรือ URL");
+      if (source === 'excel') {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = '.xlsx';
+        input.onchange = e => {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = evt => {
+            const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          };
+          reader.readAsArrayBuffer(file);
+        };
+        input.click();
+      } else {
+        const gid = path.includes("docs.google") ? path.split("/d/")[1].split("/")[0] : path;
+        fetch(`https://docs.google.com/spreadsheets/d/${gid}/gviz/tq?tqx=out:csv`)
+          .then(r => r.text()).then(t => {
+            const rows = t.split("\n").map(line => line.split(","));
+            data = rows;
+          }).catch(err => alert("โหลด Google Sheet ไม่สำเร็จ"));
+      }
+    }
+
+    function applyRow() {
+      const i = parseInt(document.getElementById('rowIndex').value);
+      const row = data[i], header = data[0];
+      if (!row) return alert("ไม่พบแถวนี้");
+      const get = key => row[header.indexOf(key)] || "";
+      document.getElementById("nameA").textContent = get("TeamA");
+      document.getElementById("nameB").textContent = get("TeamB");
+      document.getElementById("label1").textContent = get("label1");
+      document.getElementById("label2").textContent = get("label2");
+      document.getElementById("label3").textContent = get("label3");
+      const path = document.getElementById("imagePath").value;
+      document.getElementById("logoA").src = `${path}/${get("LogoA")}`;
+      document.getElementById("logoB").src = `${path}/${get("LogoB")}`;
+    }
+
+    function changeScore(team, delta) {
+      if (team === 'A') {
+        scoreA = Math.max(0, scoreA + delta);
+        document.getElementById('scoreA').textContent = scoreA;
+      } else {
+        scoreB = Math.max(0, scoreB + delta);
+        document.getElementById('scoreB').textContent = scoreB;
+      }
+    }
+
+    function resetScore() {
+      scoreA = 0; scoreB = 0;
+      document.getElementById('scoreA').textContent = "0";
+      document.getElementById('scoreB').textContent = "0";
+    }
+
+    function startTimer() {
+      if (interval) return;
+      interval = setInterval(() => { timer++; updateTimerDisplay(); }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(interval); interval = null;
+    }
+
+    function resetTimer() {
+      stopTimer(); timer = 0; updateTimerDisplay();
+    }
+
+    function setTime() {
+      const input = prompt("Set time (MM:SS)", "00:00");
+      if (!input) return;
+      const [m, s] = input.split(":");
+      timer = parseInt(m) * 60 + parseInt(s);
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const m = String(Math.floor(timer / 60)).padStart(2, '0');
+      const s = String(timer % 60).padStart(2, '0');
+      document.getElementById('timerText').textContent = `${m}:${s}`;
+    }
+
+    function toggleHalf() {
+      half = (half === '1st') ? '2nd' : '1st';
+      document.getElementById('halfText').textContent = half;
+    }
+
+    function openDetails() {
+      document.getElementById("detailsText").value = localStorage.getItem("detailsText") || "";
+      document.getElementById("detailsPopup").style.display = "block";
+    }
+
+    function closeDetails() {
+      document.getElementById("detailsPopup").style.display = "none";
+    }
+
+    function saveDetails() {
+      localStorage.setItem("detailsText", document.getElementById("detailsText").value);
+      closeDetails();
+    }
+
+    function copyDetails() {
+      const base = localStorage.getItem("detailsText") || "";
+      const i = parseInt(document.getElementById('rowIndex').value);
+      const header = data[0], rowData = data[i];
+      if (!rowData) return alert("ยังไม่ได้เลือกแถว");
+      const dict = {}; header.forEach((k, idx) => dict[k] = rowData[idx] || "");
+      const output = base.replace(/<([^>]+)>/g, (_, key) => dict[key] || "");
+      navigator.clipboard.writeText(output).then(() => alert("📋 คัดลอกแล้ว"));
+    }
+
+    function showHelp() {
+      const sources = [
+        "logo_team_a", "logo_team_b", "name_team_a", "name_team_b",
+        "label_1", "label_2", "label_3", "score_team_a", "score_team_b",
+        "half_text", "time_counter"
+      ];
+      let msg = "📘 OBS Sources ที่ต้องมี:
+
+" + sources.map(s => `- ${s}`).join("\n");
+      alert(msg);
+    }
+
+    function openSettings() {
+      document.getElementById("settingsPopup").style.display = "block";
+    }
+
+    function closeSettings() {
+      document.getElementById("settingsPopup").style.display = "none";
+    }
+  </script>
 </body>
 </html>
