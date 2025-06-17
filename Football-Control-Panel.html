@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -31,21 +30,15 @@
       width: 90%; font-size: 0.9rem; height: 25px; background: #c0392b;
     }
     .section-divider { border-top: 1px solid #555; margin: 12px 0; }
-    .popup { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1e1e1e; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
-    .popup textarea { width: 100%; height: 80px; margin-top: 6px; }
-    .popup input { width: 100%; margin-bottom: 6px; }
-    .small { font-size: 0.75rem; color: #ccc; }
-    #copyBtn { flex: 1.5; font-size: 0.85rem; }
-    .popup-title { margin: 10px 0 5px; font-weight: bold; border-top: 1px solid #444; padding-top: 5px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="row">
-      <label>Row:</label>
-      <input type="number" id="rowIndex" value="1" style="width:60px;">
-      <button onclick="applyRow()">Load</button>
-      <button id="copyBtn" onclick="copyDetails()">📋 คัดลอกรายละเอียด</button>
+      <button onclick="handleExcel()">📂 Upload Excel</button>
+      <label>Match ID:</label>
+      <input type="number" id="matchID" min="1" value="1" style="width:60px;">
+      <button onclick="applyMatch()">Load</button>
     </div>
 
     <div class="section-divider"></div>
@@ -99,91 +92,57 @@
     </div>
 
     <div class="section-divider"></div>
-    <div><strong>ตั้งค่ารายละเอียด</strong></div>
     <div class="center">
-      <button onclick="openDetails()">✏️ ตั้งค่า</button>
+      <button onclick="openDetails()">✏️ ตั้งค่ารายละเอียด</button>
+      <button onclick="copyDetails()">📋 คัดลอกรายละเอียด</button>
       <button onclick="showHelp()">📘 Help</button>
-      <button onclick="openSettings()">⚙️ ตั้งค่าขั้นสูง</button>
     </div>
   </div>
 
-  <!-- Details popup -->
-  <div class="popup" id="detailsPopup">
-    <div class="popup-title">ตั้งค่าข้อความประกาศ</div>
-    <p class="small">ใช้แท็ก: &lt;name_team_a&gt;, &lt;name_team_b&gt;, &lt;label1&gt;–&lt;label3&gt;</p>
-    <textarea id="detailsText"></textarea>
+  <div id="detailsPopup" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#1e1e1e; padding:20px; border-radius:10px; width:90%; max-width:400px;">
+    <h3>ตั้งค่าข้อความประกาศ</h3>
+    <p>ใช้แท็ก: &lt;TeamA&gt;, &lt;TeamB&gt;, &lt;label1&gt;, &lt;label2&gt;, &lt;label3&gt;, &lt;score_team_a&gt;, &lt;score_team_b&gt;</p>
+    <textarea id="detailsText" style="width:100%; height:80px;"></textarea>
     <div class="row center">
       <button onclick="saveDetails()">💾 บันทึก</button>
       <button onclick="closeDetails()">❌ ปิด</button>
     </div>
   </div>
 
-  <!-- Settings popup -->
-  <div class="popup" id="settingsPopup">
-    <div class="popup-title">ตั้งค่าขั้นสูง</div>
-    <label>Image Folder Path</label>
-    <input type="text" id="imagePath" value="C:/OBSAssets/logos">
-    <label>Data Source</label>
-    <select id="dataSource" onchange="toggleSource()">
-      <option value="excel">Excel</option>
-      <option value="google">Google Sheets</option>
-    </select>
-    <input type="text" id="sheetURL" placeholder="Google Sheet URL or ID" style="display:none;">
-    <div class="row center">
-      <button onclick="loadData()">โหลดข้อมูล</button>
-      <button onclick="closeSettings()">❌ ปิด</button>
-    </div>
-  </div>
-
   <script>
-    let data = [], scoreA = 0, scoreB = 0, timer = 0, interval = null, half = "1st";
+    let sheetData = [], scoreA = 0, scoreB = 0, timer = 0, interval = null, half = '1st';
 
-    function toggleSource() {
-      document.getElementById("sheetURL").style.display =
-        document.getElementById("dataSource").value === "google" ? "block" : "none";
-    }
-
-    function loadData() {
-      const source = document.getElementById("dataSource").value;
-      const path = document.getElementById("sheetURL").value.trim();
-      if (!path) return alert("กรุณาระบุไฟล์หรือ URL");
-      if (source === 'excel') {
-        const input = document.createElement('input');
-        input.type = 'file'; input.accept = '.xlsx';
-        input.onchange = e => {
-          const file = e.target.files[0];
-          const reader = new FileReader();
-          reader.onload = evt => {
-            const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-            const sheet = wb.Sheets[wb.SheetNames[0]];
-            data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          };
-          reader.readAsArrayBuffer(file);
+    function handleExcel() {
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = '.xlsx';
+      input.onchange = e => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          alert("📁 โหลดไฟล์สำเร็จแล้ว กรุณากด Load");
         };
-        input.click();
-      } else {
-        const gid = path.includes("docs.google") ? path.split("/d/")[1].split("/")[0] : path;
-        fetch(`https://docs.google.com/spreadsheets/d/${gid}/gviz/tq?tqx=out:csv`)
-          .then(r => r.text()).then(t => {
-            const rows = t.split("\n").map(line => line.split(","));
-            data = rows;
-          }).catch(err => alert("โหลด Google Sheet ไม่สำเร็จ"));
-      }
+        reader.readAsArrayBuffer(e.target.files[0]);
+      };
+      input.click();
     }
 
-    function applyRow() {
-      const i = parseInt(document.getElementById('rowIndex').value);
-      const row = data[i], header = data[0];
-      if (!row) return alert("ไม่พบแถวนี้");
-      const get = key => row[header.indexOf(key)] || "";
-      document.getElementById("nameA").textContent = get("TeamA");
-      document.getElementById("nameB").textContent = get("TeamB");
-      document.getElementById("label1").textContent = get("label1");
-      document.getElementById("label2").textContent = get("label2");
-      document.getElementById("label3").textContent = get("label3");
-      const path = document.getElementById("imagePath").value;
-      document.getElementById("logoA").src = `${path}/${get("LogoA")}`;
-      document.getElementById("logoB").src = `${path}/${get("LogoB")}`;
+    function applyMatch() {
+      const id = parseInt(document.getElementById('matchID').value);
+      const header = sheetData[0];
+      const rows = sheetData.slice(1);
+      const match = rows.find(row => parseInt(row[0]) === id);
+      if (!match) return alert('ไม่พบ Match ID');
+      const get = key => match[header.indexOf(key)] || '';
+      const path = "C:/OBSAssets/logos";
+      document.getElementById('nameA').textContent = get('TeamA');
+      document.getElementById('nameB').textContent = get('TeamB');
+      document.getElementById('label1').textContent = get('label1');
+      document.getElementById('label2').textContent = get('label2');
+      document.getElementById('label3').textContent = get('label3');
+      document.getElementById('logoA').src = `${path}/${get('LogoA')}`;
+      document.getElementById('logoB').src = `${path}/${get('LogoB')}`;
     }
 
     function changeScore(team, delta) {
@@ -250,32 +209,33 @@
 
     function copyDetails() {
       const base = localStorage.getItem("detailsText") || "";
-      const i = parseInt(document.getElementById('rowIndex').value);
-      const header = data[0], rowData = data[i];
-      if (!rowData) return alert("ยังไม่ได้เลือกแถว");
-      const dict = {}; header.forEach((k, idx) => dict[k] = rowData[idx] || "");
-      const output = base.replace(/<([^>]+)>/g, (_, key) => dict[key] || "");
+      const id = parseInt(document.getElementById('matchID').value);
+      const header = sheetData[0];
+      const rows = sheetData.slice(1);
+      const match = rows.find(row => parseInt(row[0]) === id);
+      if (!match) return alert("ยังไม่ได้เลือกแถว");
+      const dict = {}; header.forEach((k, i) => dict[k] = match[i] || "");
+
+      const alias = {
+        name_team_a: 'TeamA',
+        name_team_b: 'TeamB',
+        team_a: 'TeamA',
+        team_b: 'TeamB',
+        score_team_a: 'scoreA',
+        score_team_b: 'scoreB',
+        time_counter: 'timerText',
+        half_text: 'halfText'
+      };
+
+      const output = base.replace(/<([^>]+)>/g, (_, key) => {
+        const realKey = alias[key] || key;
+        return dict[realKey] || document.getElementById(realKey)?.textContent || "";
+      });
       navigator.clipboard.writeText(output).then(() => alert("📋 คัดลอกแล้ว"));
     }
 
     function showHelp() {
-      const sources = [
-        "logo_team_a", "logo_team_b", "name_team_a", "name_team_b",
-        "label_1", "label_2", "label_3", "score_team_a", "score_team_b",
-        "half_text", "time_counter"
-      ];
-      let msg = "📘 OBS Sources ที่ต้องมี:
-
-" + sources.map(s => `- ${s}`).join("\n");
-      alert(msg);
-    }
-
-    function openSettings() {
-      document.getElementById("settingsPopup").style.display = "block";
-    }
-
-    function closeSettings() {
-      document.getElementById("settingsPopup").style.display = "none";
+      alert("🧾 ใช้แท็กได้ในข้อความ เช่น <TeamA>, <label1>, <score_team_a>, <time_counter>, <half_text>");
     }
   </script>
 </body>
