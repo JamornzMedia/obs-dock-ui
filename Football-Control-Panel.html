@@ -59,11 +59,11 @@
     <!-- ====== TEAMS & LABELS ====== -->
     <div class="logo-row">
       <div class="logo-name">
-        <img id="logoA" src="" alt="Logo A">
+        <!-- <img id="logoA" src="" alt="Logo A"> -->
         <div class="name" id="nameA">Team A</div>
       </div>
       <div class="logo-name">
-        <img id="logoB" src="" alt="Logo B">
+        <!-- <img id="logoB" src="" alt="Logo B"> -->
         <div class="name" id="nameB">Team B</div>
       </div>
     </div>
@@ -77,8 +77,7 @@
     <div class="section-divider"></div>
 
     <!-- ====== SCORES ====== -->
-    <div><strong>คะแนน</strong></div>
-    <div class="score-row">
+      <div class="score-row">
       <div class="score-box"><div class="score" id="scoreA">0</div></div>
       <div class="button-col">
         <button class="plus"  onclick="changeScore('A',  1)">+1</button>
@@ -97,8 +96,7 @@
     <div class="section-divider"></div>
 
     <!-- ====== TIME & HALF ====== -->
-    <div><strong>เวลา</strong></div>
-    <div class="footer-row">
+      <div class="footer-row">
       <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
 
       <div style="flex:1;text-align:center">
@@ -117,7 +115,7 @@
     <!-- ====== DETAILS & HELP ====== -->
     <div class="center">
       <button onclick="openDetails()">✏️ ตั้งค่ารายละเอียด</button>
-      <button onclick="copyDetails()">📋 คัดลอกรายละเอียด</button>
+      <button onclick="copyDetails()">📋 คัดลอก</button>
       <button onclick="showHelp()">📘 Help</button>
     </div>
   </div>
@@ -265,14 +263,16 @@
     function showHelp() {
       alert(
         '🧾 วิธีใช้คร่าว ๆ\n\n' +
-        '1) 📂 Upload ไฟล์ Excel แล้วกด Load\n' +
-        '2) ปรับคะแนน เวลาหรือครึ่งเกมได้ตามปุ่ม\n' +
-        '3) OBS Sources ที่ต้องมี (ชื่อตรงเวอร์ชันแรก):\n' +
+        '1) ไฟล์ Logo นำไปไว้ที่ไดร์ฟ C:/OBSAssets/logos \n' +
+        '2) 📂 Upload ไฟล์ Excel แล้วกด Load\n' +
+        '3) ปรับคะแนน เวลาหรือครึ่งเกมได้ตามปุ่ม\n' +
+        '4) OBS Sources ที่ต้องมี (ชื่อตรงเวอร์ชันแรก):\n' +
         '   • logo_team_a / logo_team_b\n' +
         '   • name_team_a / name_team_b\n' +
         '   • label_1 – label_3\n' +
         '   • score_team_a / score_team_b\n' +
-        '   • half_text / time_counter'
+        '   • half_text / time_counter\n' +
+        
       );
     }
 
