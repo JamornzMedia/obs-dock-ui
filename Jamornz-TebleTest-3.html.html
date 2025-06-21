@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ตารางแข่ง สานสัมพันธ์ 7&9 EP 13</title>
+
+  <!-- 1️⃣  CSS (ธีมเข้มและสัดส่วนคอลัมน์ตามเดิม) -->
+  <style>
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      background:#1e1e1e;color:#fff;margin:0;padding:20px 10px
+    }
+    h1, h2{margin:0;text-align:center}
+    h1{margin-bottom:4px;font-size:1.4rem}
+    h2{font-weight:400;margin-bottom:24px;font-size:0.95rem;line-height:1.4}
+    #controls{display:flex;justify-content:center;margin-bottom:16px}
+    select{padding:6px 10px;font-size:1rem;border-radius:6px;border:1px solid #555;background:#2b2b2b;color:#fff}
+
+    table{
+      width:100%;max-width:1200px;margin:36px auto;border-collapse:collapse;
+      background:#2a2a2a;border-radius:10px;overflow:hidden;
+      box-shadow:0 0 10px rgba(0,0,0,.8);table-layout:fixed
+    }
+    col.col-time  {width:7.69%}
+    col.col-match {width:7.69%}
+    col.col-team  {width:38.46%}
+    col.col-vs    {width:7.69%}
+
+    th,td{padding:12px 8px;border:1px solid #444;text-align:center;overflow-wrap:break-word}
+    th{background:#3a3a3a}
+    thead tr:first-child th{background:#444;font-size:1.15em}
+    td.vs{background:#111;font-weight:bold;white-space:nowrap}
+    tr:nth-child(even){background:#2f2f2f}
+    tr:nth-child(odd){background:#262626}
+
+    @media(max-width:768px){
+      th,td{padding:8px 6px;font-size:13px}
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 2️⃣  หัวเรื่องรายการ -->
+  <h1>รายการ สานสัมพันธ์ 7&9 EP 13</h1>
+  <h2>📅 แข่งขันวันอาทิตย์ที่ 22 มิถุนายน 2568<br>⚽ ณ สนาม SML หนองหัวยาง &amp; บ้านไผ่วงศ์ • 📌 อำเภอเมือง จังหวัดพิษณุโลก</h2>
+
+  <!-- 3️⃣  ปุ่มเลือกสนาม -->
+  <div id="controls">
+    <label style="margin-right:8px">เลือกสนาม:</label>
+    <select id="fieldSelect"></select>
+  </div>
+
+  <!-- 4️⃣  พื้นที่วางตาราง -->
+  <div id="content"></div>
+
+  <!-- 5️⃣  PapaParse สำหรับแยก CSV แบบปลอดภัย (มี , หรือ " ก็ไม่พัง) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- 6️⃣  JavaScript หลัก -->
+  <script>
+    // 🔗 ลิงก์ CSV (ทั้งเอกสาร)
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxQVDSQZxKIkP2v60gYVw5tbmRbmSwKnHGXF2g7HXUj9FYHZl1d6_JJ8wH-3ArPgT8Us5DJHibP56d/pub?output=csv";
+
+    // ฟังก์ชันโหลด & สร้างตาราง
+    async function loadSchedule() {
+      const res   = await fetch(CSV_URL);
+      const csv   = await res.text();
+      const data  = Papa.parse(csv, {header:true, skipEmptyLines:true}).data;
+
+      // 👉 หา label3 (ชื่อสนาม) ที่มีอยู่ทั้งหมด
+      const fields = [...new Set(data.map(r => r.label3.trim()).filter(Boolean))];
+
+      // เติม drop-down
+      const sel = document.getElementById("fieldSelect");
+      sel.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join("");
+      sel.onchange  = () => renderTable(data, sel.value);
+
+      // render ครั้งแรก (เลือกค่าแรก)
+      renderTable(data, fields[0]);
+    }
+
+    // ฟังก์ชันสร้าง / อัปเดต HTML ตาราง
+    function renderTable(rows, selectedField) {
+      const content = document.getElementById("content");
+      content.innerHTML = "";               // ล้างของเดิม
+
+      let currentRound = null;              // ใช้ตรวจเปลี่ยนรอบ
+      let table, tbody;
+
+      rows.forEach(r => {
+        if (r.label3.trim() !== selectedField) return;   // กรองตามสนาม
+
+        const round = r.label1.trim();                   // รอบ (หัวตาราง)
+
+        // ถ้าเปลี่ยนรอบ → สร้างตารางใหม่
+        if (round !== currentRound) {
+          currentRound = round;
+
+          table = document.createElement("table");
+          table.innerHTML = `
+            <colgroup>
+              <col class="col-time">
+              <col class="col-match">
+              <col class="col-team">
+              <col class="col-vs">
+              <col class="col-team">
+            </colgroup>
+            <thead>
+              <tr><th colspan="5">🏆 ${currentRound}</th></tr>
+              <tr>
+                <th>เวลา</th>
+                <th>คู่ที่</th>
+                <th>ทีม A</th>
+                <th>Score</th>
+                <th>ทีม B</th>
+              </tr>
+            </thead>
+          `;
+          tbody = document.createElement("tbody");
+          table.appendChild(tbody);
+          content.appendChild(table);
+        }
+
+        // แปะข้อมูลแต่ละบรรทัด
+        const htmlRow = `
+          <tr>
+            <td>${r.Time || ""}</td>
+            <td>${r.label2 || ""}</td>
+            <td>${r.TeamA  || ""}</td>
+            <td class="vs">${r.Score || "VS"}</td>
+            <td>${r.TeamB  || ""}</td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", htmlRow);
+      });
+
+      // ถ้าไม่มีข้อมูลสำหรับสนามนั้น
+      if (!content.children.length) {
+        content.innerHTML = `<p style="text-align:center">ไม่พบข้อมูลสำหรับ ${selectedField}</p>`;
+      }
+    }
+
+    // เริ่มทำงาน
+    loadSchedule();
+  </script>
+</body>
+</html>
