@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -12,26 +11,16 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
     );
 
-    window.login = async function () {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const status = document.getElementById('status');
-      status.textContent = '';
-
-      if (!email || !password) {
-        status.textContent = "กรุณากรอกอีเมลและรหัสผ่าน";
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    window.loginWithGoogle = async function () {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard.html'
+        }
+      });
       if (error) {
-        status.textContent = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
-        return;
+        document.getElementById('status').textContent = "เกิดข้อผิดพลาด: " + error.message;
       }
-
-      const user = data.user;
-      localStorage.setItem('sb_user', JSON.stringify(user));
-      window.location.href = "dashboard.html";
     }
   </script>
   <style>
@@ -52,24 +41,33 @@
       text-align: center;
       width: 90%;
       max-width: 350px;
+      box-shadow: 0 4px 20px #0004;
     }
-    input, button {
-      padding: 0.6em;
-      margin: 0.5em 0;
+    button {
+      padding: 0.8em;
       width: 100%;
       border-radius: 8px;
       border: none;
-      font-size: 1em;
-    }
-    button {
-      background: #ffd700;
-      color: #000;
+      font-size: 1.1em;
       font-weight: bold;
+      background: #fff;
+      color: #444;
+      margin: 1.5em 0 0.5em 0;
+      cursor: pointer;
+      transition: background 0.15s;
+      box-shadow: 0 2px 8px #0002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
     }
-    a {
-      color: #66ccff;
-      display: inline-block;
-      margin-top: 1em;
+    button:hover {
+      background: #eee;
+    }
+    .google-icon {
+      width: 1.2em;
+      height: 1.2em;
+      vertical-align: middle;
     }
     #status {
       color: salmon;
@@ -80,10 +78,10 @@
 <body>
   <div class="container">
     <h2>เข้าสู่ระบบ</h2>
-    <input type="email" id="email" placeholder="อีเมล หรือ ID" />
-    <input type="password" id="password" placeholder="รหัสผ่าน" />
-    <button onclick="login()">เข้าสู่ระบบ</button>
-    <a href="register.html">ยังไม่มีบัญชี? สมัครสมาชิก</a>
+    <button onclick="loginWithGoogle()">
+      <img class="google-icon" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" />
+      Sign in with Google
+    </button>
     <div id="status"></div>
   </div>
 </body>
