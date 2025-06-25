@@ -1,303 +1,90 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <title>Jamornz Dock UI License Panel</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>เข้าสู่ระบบ</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+    );
+
+    window.login = async function () {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const status = document.getElementById('status');
+      status.textContent = '';
+
+      if (!email || !password) {
+        status.textContent = "กรุณากรอกอีเมลและรหัสผ่าน";
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        status.textContent = "เข้าสู่ระบบไม่สำเร็จ: " + error.message;
+        return;
+      }
+
+      const user = data.user;
+      localStorage.setItem('sb_user', JSON.stringify(user));
+      window.location.href = "dashboard.html";
+    }
+  </script>
   <style>
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #121212;
+      font-family: sans-serif;
+      background: #0f0f0f;
       color: #fff;
-      text-align: center;
-      margin: 0; padding: 0;
-      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
     .container {
-      background: #222;
-      border-radius: 18px;
+      background: #1e1e1e;
       padding: 2em;
-      max-width: 600px;
-      margin: 2em auto;
-      box-shadow: 0 0 32px #0007;
-    }
-    .status-inactive {
-      color: #ff5050;
-      font-weight: bold;
-      margin-bottom: 0.7em;
-    }
-    .status-active {
-      color: #24d159;
-      font-weight: bold;
-      margin-bottom: 0.7em;
-    }
-    .login-btn {
-      padding: 0.7em 2.5em;
-      border-radius: 10px;
-      border: none;
-      background: #ffd700;
-      color: #222;
-      font-size: 1.15em;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 0.7em;
-      transition: background 0.2s;
-    }
-    .login-btn:active { background: #fffcae; }
-    .license-info {
-      background: #161f27;
-      border-radius: 10px;
-      margin: 1.3em 0;
-      padding: 1em;
-      text-align: left;
-      font-size: 1.08em;
-      display: none;
-    }
-    #license-key-field, #user-id-field {
-      background: #1c1c1c;
-      color: #fff;
-      padding: 0.6em 1em;
-      border: 1px solid #444;
-      border-radius: 8px;
-      margin-top: 1em;
-      width: 80%;
-      font-size: 1em;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 2em;
-      margin-bottom: 1.5em;
-      background: #181c21;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    th, td {
-      padding: 0.9em 0.4em;
+      border-radius: 12px;
       text-align: center;
-      border-bottom: 1px solid #222;
-      font-size: 1.02em;
+      width: 90%;
+      max-width: 350px;
     }
-    th {
-      background: #2a3442;
-      color: #ffd700;
-    }
-    tr:last-child td { border-bottom: none; }
-    .copy-btn {
-      background: #ffd700;
-      color: #222;
-      font-weight: bold;
-      padding: 0.55em 1.5em;
-      border-radius: 7px;
+    input, button {
+      padding: 0.6em;
+      margin: 0.5em 0;
+      width: 100%;
+      border-radius: 8px;
       border: none;
-      cursor: pointer;
       font-size: 1em;
-      transition: background 0.18s;
     }
-    .copy-btn:disabled {
-      background: #aaa;
-      color: #666;
-      cursor: not-allowed;
-      opacity: 0.5;
+    button {
+      background: #ffd700;
+      color: #000;
+      font-weight: bold;
     }
-    .copy-ok {
-      color: #24d159;
-      font-size: 0.96em;
-      margin-top: 0.1em;
+    a {
+      color: #66ccff;
+      display: inline-block;
+      margin-top: 1em;
+    }
+    #status {
+      color: salmon;
+      margin-top: 1em;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Jamornz Dock UI License Panel</h2>
-    <div id="status-text" class="status-inactive">
-      ยังไม่ได้เข้าสู่ระบบ (Inactive)<br>
-      <span style="font-size:0.98em; color:#aaa;">Not logged in</span>
-    </div>
-    <input id="user-id-field" type="text" placeholder="ระบุชื่อ ID ของคุณ เช่น Devin_PC" />
-    <button id="login-btn" class="login-btn">เข้าสู่ระบบ (Login)</button>
-    <input id="license-key-field" type="text" placeholder="(ไม่บังคับ) กรอก License Key ถ้ามี" />
-    <div id="license-info" class="license-info"></div>
-    <table>
-      <thead>
-        <tr>
-          <th>UI รายการ<br><span style="font-weight:normal; color:#aaa;">UI Name</span></th>
-          <th>คัดลอกลิงก์ OBS Dock<br><span style="font-weight:normal; color:#aaa;">Copy Dock UI Link</span></th>
-        </tr>
-      </thead>
-      <tbody id="ui-table"></tbody>
-    </table>
+    <h2>เข้าสู่ระบบ</h2>
+    <input type="email" id="email" placeholder="อีเมล หรือ ID" />
+    <input type="password" id="password" placeholder="รหัสผ่าน" />
+    <button onclick="login()">เข้าสู่ระบบ</button>
+    <a href="register.html">ยังไม่มีบัญชี? สมัครสมาชิก</a>
+    <div id="status"></div>
   </div>
-
-  <script>
-    const supabase = window.supabase.createClient(
-      'https://pxleazlrryctlovxuwil.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
-    );
-
-    const uiList = [
-      {
-        nameTH: "แผงควบคุมการแข่งขันฟุตบอล",
-        nameEN: "Football Control Panel",
-        url: "https://jamornzmedia.github.io/obs-dock-ui/Football-Control-Panel.html"
-      },
-      {
-        nameTH: "แผงควบคุมจุดโทษฟุตบอล",
-        nameEN: "Penalty Shootout",
-        url: "https://jamornzmedia.github.io/obs-dock-ui/Penalty-Shootout.html"
-      }
-    ];
-
-    const getDeviceId = () => {
-      return btoa(navigator.userAgent + navigator.platform + screen.width + screen.height);
-    }
-
-    let isActive = false;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      renderTable();
-      document.getElementById('login-btn').onclick = doLogin;
-    });
-
-    async function doLogin() {
-      if (isActive) return;
-      const licenseKey = document.getElementById('license-key-field').value.trim();
-      const userId = document.getElementById('user-id-field').value.trim();
-      const deviceId = getDeviceId();
-
-      if (!userId) {
-        alert('กรุณากรอกชื่อ ID');
-        return;
-      }
-
-      if (!licenseKey) {
-        activateUI(userId, {
-          typeTH: "ทดลองฟรี 15 วัน",
-          typeEN: "Free Trial 15 Days",
-          expiresAt: addDays(new Date(), 15)
-        });
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('license_keys')
-        .select('*')
-        .eq('key', licenseKey)
-        .single();
-
-      if (error || !data) {
-        alert('License ไม่ถูกต้อง');
-        return;
-      }
-
-      if (data.is_revoked) {
-        alert('License นี้ถูกยกเลิกแล้ว');
-        return;
-      }
-
-      if (!data.bound_device_id || data.bound_device_id === deviceId) {
-        await supabase.from('license_keys').update({
-          bound_device_id: deviceId,
-          user_id: userId,
-          last_login_at: new Date().toISOString(),
-          last_login_ip: 'auto',
-          last_browser_info: navigator.userAgent
-        }).eq('id', data.id);
-        activateUI(userId, data);
-      } else {
-        const confirmSwitch = confirm("License นี้ถูกใช้กับเครื่องอื่นแล้ว ต้องการย้ายเครื่องหรือไม่?");
-        if (!confirmSwitch) return;
-        await supabase.from('license_keys').update({
-          bound_device_id: deviceId,
-          user_id: userId,
-          last_login_at: new Date().toISOString(),
-          last_login_ip: 'auto',
-          last_browser_info: navigator.userAgent
-        }).eq('id', data.id);
-        activateUI(userId, data);
-      }
-    }
-
-    function activateUI(userId, license) {
-      isActive = true;
-      document.getElementById('status-text').innerHTML = `
-        <span class="status-active">ใช้งานอยู่ (Active)</span><br>
-        <span style="font-size:0.98em; color:#aaa;">License Active</span><br>
-        <span style="font-size:0.94em;">ID: ${userId}</span>
-      `;
-      document.getElementById('login-btn').disabled = true;
-      showLicenseInfo(license);
-      enableCopyBtns();
-    }
-
-    function showLicenseInfo(license) {
-      let now = new Date();
-      let expires = new Date(license.expiresAt);
-      let msLeft = expires - now;
-      let days = Math.floor(msLeft / (1000 * 60 * 60 * 24));
-      let hours = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      let endDateStr = expires.toLocaleString('th-TH', {year:'numeric',month:'2-digit',day:'2-digit', hour:'2-digit',minute:'2-digit'});
-      let endDateStrEN = expires.toLocaleString('en-US', {year:'numeric',month:'2-digit',day:'2-digit', hour:'2-digit',minute:'2-digit'});
-
-      document.getElementById('license-info').style.display = 'block';
-      document.getElementById('license-info').innerHTML = `
-        <b>ประเภท License:</b> ${license.typeTH || 'N/A'} <span style="color:#aaa;">(${license.typeEN || 'N/A'})</span><br>
-        <b>วันหมดอายุ:</b> ${endDateStr} <span style="color:#aaa;">(${endDateStrEN})</span><br>
-        <b>เหลือเวลา:</b> ${days} วัน ${hours} ชม.<span style="color:#aaa;"> (${days} days, ${hours} hours left)</span>
-      `;
-    }
-
-    function renderTable() {
-      const table = document.getElementById('ui-table');
-      table.innerHTML = '';
-      uiList.forEach((ui, idx) => {
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${ui.nameTH}<br><span style="color:#aaa;font-size:0.97em;">${ui.nameEN}</span></td>
-          <td>
-            <button class="copy-btn" data-url="${ui.url}" id="copy-btn-${idx}" disabled>
-              คัดลอกลิงก์<br><span style="font-size:0.95em;font-weight:normal;">Copy Link</span>
-            </button>
-          </td>
-        `;
-        table.appendChild(tr);
-      });
-      uiList.forEach((ui, idx) => {
-        document.getElementById('copy-btn-' + idx).onclick = function() {
-          copyToClipboard(this.getAttribute('data-url'), idx);
-        }
-      });
-    }
-
-    function enableCopyBtns() {
-      uiList.forEach((ui, idx) => {
-        document.getElementById('copy-btn-' + idx).disabled = false;
-      });
-    }
-
-    function copyToClipboard(text, idx) {
-      navigator.clipboard.writeText(text).then(() => {
-        showCopyOk(idx);
-      });
-    }
-
-    function showCopyOk(idx) {
-      const old = document.getElementById('copy-ok-msg-' + idx);
-      if (old) old.remove();
-      const btn = document.getElementById('copy-btn-' + idx);
-      let okMsg = document.createElement('div');
-      okMsg.className = 'copy-ok';
-      okMsg.id = 'copy-ok-msg-' + idx;
-      okMsg.innerText = 'คัดลอกแล้ว! (Copied)';
-      btn.parentNode.appendChild(okMsg);
-      setTimeout(()=>{ okMsg.remove(); },1500);
-    }
-
-    function addDays(date, days) {
-      let result = new Date(date);
-      result.setDate(result.getDate() + days);
-      return result;
-    }
-  </script>
 </body>
 </html>

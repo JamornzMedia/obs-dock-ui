@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -10,116 +11,72 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
     );
 
-    async function init() {
-      const user = JSON.parse(localStorage.getItem("sb_user"));
-      const emailEl = document.getElementById("email");
-      const licenseEl = document.getElementById("info");
-      const btnApp = document.getElementById("btnApp");
-
-      if (!user || !user.id) {
-        window.location.href = "index.html";
+    window.onload = async function () {
+      const user = JSON.parse(localStorage.getItem('sb_user'));
+      if (!user) {
+        window.location.href = 'index.html';
         return;
       }
-
-      emailEl.textContent = user.email;
 
       const { data, error } = await supabase
-        .from("license_keys")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
+        .from('license_keys')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      const now = new Date();
-
-      if (error || !data) {
-        // ไม่มี License → แสดงเวอร์ชั่นทดลอง (ให้เข้าโปรแกรมได้)
-        const trialExpires = new Date();
-        trialExpires.setDate(trialExpires.getDate() + 15);
-        licenseEl.innerHTML = `
-          🧪 กำลังใช้งานเวอร์ชั่นทดลอง<br>
-          📅 วันที่หมดอายุ: ${trialExpires.toLocaleDateString('th-TH')}
-        `;
-        btnApp.disabled = false;
+      if (error) {
+        document.getElementById('info').textContent = 'ไม่พบข้อมูล License';
         return;
       }
 
-      const expiresAt = new Date(data.expires_at);
-
-      if (now >= expiresAt) {
-        licenseEl.innerHTML = `
-          ❌ หมดอายุการใช้งาน กรุณาต่ออายุ<br>
-          📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')}
-        `;
-        btnApp.disabled = true;
-        return;
-      }
-
-      const timeDiff = expiresAt - now;
-      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
-      const licenseType = data.plan_type === 'beta'
-        ? '🧪 คุณกำลังใช้งานเวอร์ชั่นทดลอง (Beta)'
-        : '✅ License Key แบบถาวร';
-
-      licenseEl.innerHTML = `
-        ${licenseType}<br>
-        🔑 Key: ${data.key}<br>
-        📅 วันที่หมดอายุ: ${expiresAt.toLocaleDateString('th-TH')}<br>
-        ⏳ เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
-      `;
+      document.getElementById('uid').textContent = user.id;
+      document.getElementById('email').textContent = user.email;
+      document.getElementById('expire').textContent = new Date(data.expires_at).toLocaleString();
     }
 
-    window.enterApp = () => {
-      const btn = document.getElementById("btnApp");
-      if (!btn.disabled) {
-        window.location.href = "Football Control Panel.html";
-      }
-    };
-
-    window.logout = () => {
-      localStorage.removeItem("sb_user");
-      window.location.href = "index.html";
-    };
-
-    init();
+    window.submitKey = async function () {
+      alert('ฟีเจอร์นี้ยังไม่เปิดใช้งาน');
+    }
   </script>
   <style>
     body {
+      font-family: sans-serif;
       background: #111;
       color: #fff;
-      font-family: sans-serif;
       padding: 2em;
       text-align: center;
     }
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      border: none;
+    .card {
+      background: #222;
+      padding: 2em;
+      border-radius: 12px;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, button {
+      margin-top: 1em;
+      padding: 0.6em;
+      width: 90%;
+      max-width: 300px;
       border-radius: 8px;
-      font-size: 1em;
-      cursor: pointer;
+      border: none;
     }
-    .btn-app {
-      background: #4caf50;
-      color: #fff;
-    }
-    .btn-app:disabled {
-      background: #777;
-      cursor: not-allowed;
-    }
-    .btn-logout {
-      background: #f44336;
-      color: #fff;
+    button {
+      background: #ffd700;
+      color: #000;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>ยินดีต้อนรับ</h2>
-  <p id="email"></p>
-  <p id="info"></p>
-  <button id="btnApp" class="btn-app" onclick="enterApp()">เข้าโปรแกรม</button>
-  <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+  <div class="card">
+    <h2>ข้อมูลสมาชิก</h2>
+    <p><strong>ID:</strong> <span id="uid"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>หมดอายุ:</strong> <span id="expire"></span></p>
+    <input type="text" placeholder="ใส่ License Key ใหม่" />
+    <button onclick="submitKey()">ยืนยัน</button>
+    <div id="info" style="margin-top:1em;"></div>
+  </div>
 </body>
 </html>
