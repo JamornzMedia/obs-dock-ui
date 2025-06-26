@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>สมัครใช้งาน</title>
+  <title>สมัครใช้งาน - Jamornz Media Project</title>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
@@ -40,7 +40,6 @@
         return;
       }
 
-      // สร้าง License Key ประเภท beta อัตโนมัติ ใช้งานได้ 15 วัน
       const expires = new Date();
       expires.setDate(expires.getDate() + 15);
       const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -49,7 +48,7 @@
         user_id: user.id,
         is_active: true,
         expires_at: expires.toISOString(),
-        plan_type: 'beta'
+        type: 'beta'
       }]);
 
       localStorage.setItem('sb_user', JSON.stringify(user));
@@ -87,6 +86,7 @@
 </head>
 <body>
   <div class="container">
+    <h1>Jamornz Media Project</h1>
     <h2>สมัครสมาชิก</h2>
     <input type="email" id="email" placeholder="อีเมล" /><br />
     <input type="password" id="password" placeholder="รหัสผ่าน" /><br />
