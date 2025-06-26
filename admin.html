@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MDkzNzMsImV4cCI6MjA2NjM4NTM3M30.2H0ld9hxz9VZlb3Bcu8gO4X8N0vdDLoCjCHvSOMj9js'
+    );
+
+    window.onload = async function () {
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult.data?.session?.user;
+      if (!user || user.email !== 'your-admin@email.com') {
+        document.body.innerHTML = '<h2>Access Denied</h2>';
+        return;
+      }
+    }
+
+    window.generateKey = async function () {
+      const days = parseInt(document.getElementById("days").value);
+      const key = 'KEY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      const { error } = await supabase.from("key_store").insert([{
+        key,
+        days,
+        is_used: false,
+        created_at: new Date().toISOString()
+      }]);
+
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert("Key สร้างแล้ว: " + key);
+      }
+    }
+  </script>
+</head>
+<body>
+  <h2>Admin สร้าง Key</h2>
+  <input type="number" id="days" placeholder="จำนวนวัน" />
+  <button onclick="generateKey()">สร้าง Key</button>
+</body>
+</html>
