@@ -19,38 +19,16 @@
         return;
       }
 
-      let { data, error: licenseError } = await supabase
+      const { data, error: licenseError } = await supabase
         .from('license_keys')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
       if (licenseError || !data) {
-        const { error: insertError } = await supabase
-          .from('license_keys')
-          .insert({
-            user_id: user.id,
-            email: user.email,
-            expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-          });
-
-        if (insertError) {
-          document.getElementById('info').textContent = 'สร้าง License ไม่สำเร็จ: ' + insertError.message;
-          return;
-        }
-
-        const { data: newData, error: newError } = await supabase
-          .from('license_keys')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (newError || !newData) {
-          document.getElementById('info').textContent = 'ดึงข้อมูลไม่สำเร็จ: ' + newError.message;
-          return;
-        }
-
-        data = newData;
+        await supabase.auth.signOut(); // ลบ session ในเครื่อง
+        window.location.href = 'index.html';
+        return;
       }
 
       document.getElementById('uid').textContent = user.id;
