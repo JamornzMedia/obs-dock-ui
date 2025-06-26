@@ -18,21 +18,35 @@
         return;
       }
 
-      // ดึง License Key ตาม user.id
-      const { data, error: licenseError } = await supabase
+      let { data: license, error: licenseError } = await supabase
         .from('license_keys')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (licenseError || !data) {
-        document.getElementById('info').textContent = 'ไม่พบข้อมูล License';
-        return;
+      if (!license) {
+        const expires = new Date();
+        expires.setDate(expires.getDate() + 15);
+        const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        const { data: insertData, error: insertError } = await supabase.from('license_keys').insert([{
+          key,
+          user_id: user.id,
+          is_active: true,
+          expires_at: expires.toISOString(),
+          plan_type: 'beta'
+        }]).select().single();
+
+        license = insertData;
+        if (insertError) {
+          document.getElementById('info').textContent = 'เกิดข้อผิดพลาดในการสร้าง License';
+          return;
+        }
       }
 
       document.getElementById('uid').textContent = user.id;
       document.getElementById('email').textContent = user.email;
-      document.getElementById('expire').textContent = new Date(data.expires_at).toLocaleString();
+      document.getElementById('expire').textContent = new Date(license.expires_at).toLocaleString();
     }
 
     window.submitKey = async function () {
