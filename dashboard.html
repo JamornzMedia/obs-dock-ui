@@ -1,4 +1,3 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -42,17 +41,17 @@
       let { data: { session } } = await supabase.auth.getSession();
       let user = session?.user;
 
-      if (!user) {
-        await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 10 && !user; i++) {
+        await new Promise(r => setTimeout(r, 500));
         const retry = await supabase.auth.getSession();
-          user = retry.data?.session?.user;
-        if (!user) {
-          console.error("ยังไม่ได้รับ user session เลยครับ!");
-          alert("ยังไม่ได้รับ session");
-          return;
-        }
+        user = retry.data?.session?.user;
       }
 
+      if (!user) {
+        console.error("ยังไม่ได้รับ user session เลยครับ!");
+        alert("ยังไม่ได้รับ session");
+        return;
+      }
 
       const ip = await getPublicIP();
       const browser = getBrowserFingerprint();
@@ -82,6 +81,12 @@
         const expires = new Date();
         expires.setDate(expires.getDate() + 15);
         const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        console.log("typeof user_id:", typeof user.id);
+        console.log("typeof key:", typeof key);
+        console.log("typeof ip:", typeof ip);
+        console.log("typeof browser:", typeof browser);
+        console.log("typeof expires:", typeof expires);
 
         console.log("Preparing to insert license with:", {
           key,
