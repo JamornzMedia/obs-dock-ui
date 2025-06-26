@@ -12,10 +12,18 @@
     );
 
     window.onload = async function () {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      let { data: { user }, error } = await supabase.auth.getUser();
+
+      // fallback ถ้า user ยังไม่มา (OAuth delay)
       if (!user) {
-        window.location.href = 'index.html';
-        return;
+        const result = await supabase.auth.getSession();
+        const sessionUser = result.data.session?.user;
+        if (sessionUser) {
+          user = sessionUser;
+        } else {
+          window.location.href = 'index.html';
+          return;
+        }
       }
 
       let { data: license, error: licenseError } = await supabase
@@ -29,19 +37,22 @@
         expires.setDate(expires.getDate() + 15);
         const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        const { data: insertData, error: insertError } = await supabase.from('license_keys').insert([{
-          key,
-          user_id: user.id,
-          is_active: true,
-          expires_at: expires.toISOString(),
-          plan_type: 'beta'
-        }]).select().single();
+        const { data: insertData, error: insertError } = await supabase
+          .from('license_keys')
+          .insert([{
+            key,
+            user_id: user.id,
+            is_active: true,
+            expires_at: expires.toISOString(),
+            type: 'beta'
+          }]).select().single();
 
-        license = insertData;
         if (insertError) {
-          document.getElementById('info').textContent = 'เกิดข้อผิดพลาดในการสร้าง License';
+          document.getElementById('info').textContent = 'เกิดข้อผิดพลาด: ' + insertError.message;
           return;
         }
+
+        license = insertData;
       }
 
       document.getElementById('uid').textContent = user.id;
