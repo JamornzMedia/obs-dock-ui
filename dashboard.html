@@ -15,7 +15,7 @@
     window.onload = async function () {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (!user) {
-        window.location.href = 'index.html';
+        // window.location.href = 'index.html';
         return;
       }
 
@@ -27,7 +27,7 @@
 
       if (licenseError || !data) {
         await supabase.auth.signOut(); // ลบ session ในเครื่อง
-        window.location.href = 'index.html';
+        // window.location.href = 'index.html';
         return;
       }
 
