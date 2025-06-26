@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -7,10 +8,10 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://pxleazlrryctlovxuwil.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+      'YOUR_PUBLIC_ANON_KEY_HERE'
     );
 
-    // บังคับใช้ HTTPS ถ้าไม่ใช่ localhost
+    // Force HTTPS if not localhost
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
     }
@@ -31,31 +32,9 @@
     };
   </script>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #000;
-      color: #fff;
-      text-align: center;
-      padding: 3em;
-    }
-    .box {
-      background: #111;
-      padding: 2em;
-      border-radius: 1em;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 12px #0006;
-    }
-    button {
-      padding: 0.7em 2em;
-      font-size: 1em;
-      background: #ffd700;
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 1em;
-    }
+    body { font-family: sans-serif; background: #000; color: #fff; text-align: center; padding: 3em; }
+    .box { background: #111; padding: 2em; border-radius: 1em; max-width: 400px; margin: auto; box-shadow: 0 4px 12px #0006; }
+    button { padding: 0.7em 2em; font-size: 1em; background: #ffd700; color: #000; border: none; border-radius: 8px; cursor: pointer; margin-top: 1em; }
   </style>
 </head>
 <body>
@@ -63,6 +42,161 @@
     <h1>Jamornz Media Project</h1>
     <p>เข้าสู่ระบบด้วยบัญชี Google</p>
     <button id="login">Login with Google</button>
+  </div>
+</body>
+</html>
+
+
+<!-- dashboard.html -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>แดชบอร์ด</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://pxleazlrryctlovxuwil.supabase.co',
+      'YOUR_PUBLIC_ANON_KEY_HERE'
+    );
+
+    function getPublicIP() {
+      return fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => data.ip)
+        .catch(() => null);
+    }
+
+    function getBrowserFingerprint() {
+      return navigator.userAgent;
+    }
+
+    function showCountdown(expireAt) {
+      const end = new Date(expireAt);
+      const now = new Date();
+      const diff = end - now;
+      if (diff <= 0) {
+        document.getElementById('countdown').textContent = "หมดอายุแล้ว";
+        document.getElementById('countdown').style.color = 'red';
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      document.getElementById('countdown').textContent = `${days} วัน ${hours} ชม ${minutes} นาที`;
+      document.getElementById('countdown').style.color = 'red';
+    }
+
+    window.onload = async function () {
+      let { data: { session } } = await supabase.auth.getSession();
+      let user = session?.user;
+
+      if (!user) {
+        await new Promise(r => setTimeout(r, 1000));
+        const retry = await supabase.auth.getSession();
+        user = retry.data?.session?.user;
+        if (!user) {
+          window.location.href = 'index.html';
+          return;
+        }
+      }
+
+      const ip = await getPublicIP();
+      const browser = getBrowserFingerprint();
+
+      let { data: license, error } = await supabase
+        .from('license_keys')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!license) {
+        const exists = await supabase
+          .from('license_keys')
+          .select('id')
+          .or(`last_login_ip.eq.${ip},bound_device_id.eq.${browser}`)
+          .maybeSingle();
+
+        if (exists.data) {
+          document.getElementById('info').textContent = 'คุณเคยสมัครแล้วจากอุปกรณ์หรือ IP นี้';
+          return;
+        }
+
+        const expires = new Date();
+        expires.setDate(expires.getDate() + 15);
+        const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('license_keys')
+          .insert([{
+            key,
+            user_id: user.id,
+            is_active: true,
+            expires_at: expires.toISOString(),
+            type: 'trial',
+            user_name: user.user_metadata?.full_name || 'Unknown',
+            email: user.email,
+            created_at: new Date().toISOString(),
+            last_login_ip: ip,
+            bound_device_id: browser,
+            last_browser_info: browser
+          }]).select().single();
+
+        if (insertError) {
+          document.getElementById('info').textContent = 'เกิดข้อผิดพลาด: ' + insertError.message;
+          return;
+        }
+        license = inserted;
+      } else {
+        await supabase.from('license_keys')
+          .update({
+            last_login_ip: ip,
+            last_login_at: new Date().toISOString(),
+            last_browser_info: browser
+          })
+          .eq('user_id', user.id);
+      }
+
+      document.getElementById('uid').textContent = user.id;
+      document.getElementById('email').textContent = user.email;
+      document.getElementById('name').textContent = license.user_name;
+      document.getElementById('expire').textContent = new Date(license.expires_at).toLocaleString();
+      document.getElementById('keytype').textContent = license.type;
+      showCountdown(license.expires_at);
+      document.getElementById('note').textContent = license.notes || "-";
+    }
+
+    window.submitKey = async function () {
+      alert('ฟีเจอร์นี้ยังไม่เปิดใช้งาน');
+    }
+
+    window.logout = async function () {
+      await supabase.auth.signOut();
+      window.location.href = 'index.html';
+    }
+  </script>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #fff; padding: 2em; text-align: center; }
+    .card { background: #222; padding: 2em; border-radius: 12px; max-width: 400px; margin: auto; box-shadow: 0 4px 20px #0004; }
+    input, button { margin-top: 1em; padding: 0.6em; width: 90%; max-width: 300px; border-radius: 8px; border: none; }
+    button { background: #ffd700; color: #000; font-weight: bold; margin-bottom: 1em; }
+    .logout-btn { background: #444; color: #fff; margin-top: 1em; width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>ข้อมูลสมาชิก</h2>
+    <p><strong>ชื่อ:</strong> <span id="name"></span></p>
+    <p><strong>ID:</strong> <span id="uid"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>ประเภท:</strong> <span id="keytype"></span></p>
+    <p><strong>หมดอายุ:</strong> <span id="expire"></span></p>
+    <p><strong>เหลือเวลา:</strong> <span id="countdown"></span></p>
+    <p><strong>ข้อความจากระบบ:</strong> <span id="note"></span></p>
+    <input type="text" placeholder="ใส่ License Key ใหม่" />
+    <button onclick="submitKey()">ยืนยัน</button>
+    <div id="info" style="margin-top:1em;"></div>
+    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
   </div>
 </body>
 </html>
