@@ -45,15 +45,21 @@
       if (!user) {
         await new Promise(r => setTimeout(r, 1000));
         const retry = await supabase.auth.getSession();
-        user = retry.data?.session?.user;
+          user = retry.data?.session?.user;
         if (!user) {
-        //  window.location.href = 'index.html';
+          console.error("ยังไม่ได้รับ user session เลยครับ!");
+          alert("ยังไม่ได้รับ session");
           return;
         }
       }
 
+
       const ip = await getPublicIP();
       const browser = getBrowserFingerprint();
+
+      console.log("USER:", user);
+      console.log("IP:", ip);
+      console.log("Browser:", browser);
 
       let { data: license, error } = await supabase
         .from('license_keys')
@@ -77,6 +83,20 @@
         expires.setDate(expires.getDate() + 15);
         const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
+        console.log("Preparing to insert license with:", {
+          key,
+          user_id: user.id,
+          is_active: true,
+          expires_at: expires.toISOString(),
+          type: 'trial',
+          user_name: user.user_metadata?.full_name || 'Unknown',
+          email: user.email,
+          created_at: new Date().toISOString(),
+          last_login_ip: ip,
+          bound_device_id: browser,
+          last_browser_info: browser
+        });
+
         const { data: inserted, error: insertError } = await supabase
           .from('license_keys')
           .insert([{
@@ -93,10 +113,15 @@
             last_browser_info: browser
           }]).select().single();
 
+        console.log("Insert result:", inserted);
+        console.log("Insert error:", insertError);
+
         if (insertError) {
           document.getElementById('info').textContent = 'เกิดข้อผิดพลาด: ' + insertError.message;
+          alert('เกิดข้อผิดพลาด: ' + insertError.message);
           return;
         }
+
         license = inserted;
       } else {
         await supabase.from('license_keys')
