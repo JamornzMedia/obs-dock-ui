@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -11,12 +10,10 @@
       'YOUR_PUBLIC_ANON_KEY_HERE'
     );
 
-    // Force HTTPS if not localhost
     if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
       location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
     }
 
-    // Auto-login
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       window.location.href = "dashboard.html";
