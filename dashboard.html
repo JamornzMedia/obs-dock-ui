@@ -14,7 +14,6 @@
     window.onload = async function () {
       let { data: { user }, error } = await supabase.auth.getUser();
 
-      // fallback ถ้า user ยังไม่มา (OAuth delay)
       if (!user) {
         const result = await supabase.auth.getSession();
         const sessionUser = result.data.session?.user;
