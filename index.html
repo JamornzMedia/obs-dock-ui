@@ -18,18 +18,32 @@
     // ตรวจจับการ login สำเร็จจริง
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        const { data: license } = await supabase
+        console.log("✅ SIGNED_IN:", session.user.id);
+
+        const { data: license, error: selectError } = await supabase
           .from('license_keys')
           .select('id')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
+        if (selectError) {
+          console.error("❌ SELECT ERROR:", selectError.message);
+        }
+
         if (!license) {
-          await supabase.from('license_keys').insert({
+          const { error: insertError } = await supabase.from('license_keys').insert({
             user_id: session.user.id,
             email: session.user.email,
             expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
           });
+
+          if (insertError) {
+            console.error("❌ INSERT ERROR:", insertError.message);
+          } else {
+            console.log("✅ License inserted successfully");
+          }
+        } else {
+          console.log("✅ License already exists");
         }
 
         window.location.href = 'dashboard.html';
