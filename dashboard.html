@@ -1,3 +1,4 @@
+<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -7,8 +8,19 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://pxleazlrryctlovxuwil.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+      'YOUR_PUBLIC_ANON_KEY_HERE'
     );
+
+    function getPublicIP() {
+      return fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => data.ip)
+        .catch(() => null);
+    }
+
+    function getBrowserFingerprint() {
+      return navigator.userAgent;
+    }
 
     function showCountdown(expireAt) {
       const end = new Date(expireAt);
@@ -30,9 +42,8 @@
       let { data: { session } } = await supabase.auth.getSession();
       let user = session?.user;
 
-      // fallback หากยังไม่มี session
       if (!user) {
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1000));
         const retry = await supabase.auth.getSession();
         user = retry.data?.session?.user;
         if (!user) {
@@ -41,19 +52,32 @@
         }
       }
 
-      let { data: license, error: licenseError } = await supabase
+      const ip = await getPublicIP();
+      const browser = getBrowserFingerprint();
+
+      let { data: license, error } = await supabase
         .from('license_keys')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
       if (!license) {
+        const exists = await supabase
+          .from('license_keys')
+          .select('id')
+          .or(`last_login_ip.eq.${ip},bound_device_id.eq.${browser}`)
+          .maybeSingle();
+
+        if (exists.data) {
+          document.getElementById('info').textContent = 'คุณเคยสมัครแล้วจากอุปกรณ์หรือ IP นี้';
+          return;
+        }
+
         const expires = new Date();
         expires.setDate(expires.getDate() + 15);
         const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        const name = user.user_metadata?.full_name || 'Unknown';
 
-        const { data: insertData, error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from('license_keys')
           .insert([{
             key,
@@ -61,14 +85,27 @@
             is_active: true,
             expires_at: expires.toISOString(),
             type: 'trial',
-            user_name: name
+            user_name: user.user_metadata?.full_name || 'Unknown',
+            email: user.email,
+            created_at: new Date().toISOString(),
+            last_login_ip: ip,
+            bound_device_id: browser,
+            last_browser_info: browser
           }]).select().single();
 
         if (insertError) {
           document.getElementById('info').textContent = 'เกิดข้อผิดพลาด: ' + insertError.message;
           return;
         }
-        license = insertData;
+        license = inserted;
+      } else {
+        await supabase.from('license_keys')
+          .update({
+            last_login_ip: ip,
+            last_login_at: new Date().toISOString(),
+            last_browser_info: browser
+          })
+          .eq('user_id', user.id);
       }
 
       document.getElementById('uid').textContent = user.id;
@@ -77,6 +114,7 @@
       document.getElementById('expire').textContent = new Date(license.expires_at).toLocaleString();
       document.getElementById('keytype').textContent = license.type;
       showCountdown(license.expires_at);
+      document.getElementById('note').textContent = license.notes || "-";
     }
 
     window.submitKey = async function () {
@@ -89,41 +127,11 @@
     }
   </script>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #111;
-      color: #fff;
-      padding: 2em;
-      text-align: center;
-    }
-    .card {
-      background: #222;
-      padding: 2em;
-      border-radius: 12px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 20px #0004;
-    }
-    input, button {
-      margin-top: 1em;
-      padding: 0.6em;
-      width: 90%;
-      max-width: 300px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      background: #ffd700;
-      color: #000;
-      font-weight: bold;
-      margin-bottom: 1em;
-    }
-    .logout-btn {
-      background: #444;
-      color: #fff;
-      margin-top: 1em;
-      width: 100%;
-    }
+    body { font-family: sans-serif; background: #111; color: #fff; padding: 2em; text-align: center; }
+    .card { background: #222; padding: 2em; border-radius: 12px; max-width: 400px; margin: auto; box-shadow: 0 4px 20px #0004; }
+    input, button { margin-top: 1em; padding: 0.6em; width: 90%; max-width: 300px; border-radius: 8px; border: none; }
+    button { background: #ffd700; color: #000; font-weight: bold; margin-bottom: 1em; }
+    .logout-btn { background: #444; color: #fff; margin-top: 1em; width: 100%; }
   </style>
 </head>
 <body>
@@ -135,6 +143,7 @@
     <p><strong>ประเภท:</strong> <span id="keytype"></span></p>
     <p><strong>หมดอายุ:</strong> <span id="expire"></span></p>
     <p><strong>เหลือเวลา:</strong> <span id="countdown"></span></p>
+    <p><strong>ข้อความจากระบบ:</strong> <span id="note"></span></p>
     <input type="text" placeholder="ใส่ License Key ใหม่" />
     <button onclick="submitKey()">ยืนยัน</button>
     <div id="info" style="margin-top:1em;"></div>
