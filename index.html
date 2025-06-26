@@ -17,6 +17,21 @@
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
+      // ตรวจสอบว่า user มี license แล้วหรือยัง
+      const { data: license, error } = await supabase
+        .from('license_keys')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!license) {
+        await supabase.from('license_keys').insert({
+          user_id: session.user.id,
+          email: session.user.email,
+          expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      }
+
       window.location.href = "dashboard.html";
     }
 
