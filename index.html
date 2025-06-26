@@ -5,17 +5,22 @@
   <title>เข้าสู่ระบบ - Jamornz Media Project</title>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
     const supabase = createClient(
       'https://pxleazlrryctlovxuwil.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
     );
 
+    // auto redirect if already logged in
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      window.location.href = "dashboard.html";
+    }
+
     window.loginWithGoogle = async function () {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://jamornzmedia.github.io/obs-dock-ui/dashboard.html'
+          redirectTo: window.location.origin + '/dashboard.html'
         }
       });
       if (error) {
@@ -78,7 +83,7 @@
 <body>
   <div class="container">
     <h2>เข้าสู่ระบบด้วย Google</h2>
-    <p>ระบบนี้สำหรับสมาชิกของ <strong>Jamornz Media Project</strong></p>
+    <p>ระบบสำหรับสมาชิก <strong>Jamornz Media Project</strong></p>
     <button onclick="loginWithGoogle()">
       <img class="google-icon" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" />
       Sign in with Google
