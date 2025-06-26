@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -7,138 +8,154 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://pxleazlrryctlovxuwil.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4bGVhemxycnljdGxvdnh1d2lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NjQwMzUsImV4cCI6MjA2NTA0MDAzNX0.VETnD8QOp4ElIT8w-4ccC8QFV4nym52Yqc50Qhi2hqk'
+      'YOUR_PUBLIC_ANON_KEY_HERE'
     );
 
-    function showCountdown(expireAt) {
-      const end = new Date(expireAt);
-      const now = new Date();
-      const diff = end - now;
-      if (diff <= 0) {
-        document.getElementById('countdown').textContent = "หมดอายุแล้ว";
-        document.getElementById('countdown').style.color = 'red';
+    async function init() {
+      const user = JSON.parse(localStorage.getItem("sb_user"));
+      const emailEl = document.getElementById("email");
+      const licenseEl = document.getElementById("info");
+      const btnApp = document.getElementById("btnApp");
+
+      if (!user || !user.id) {
+        window.location.href = "index.html";
         return;
       }
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      document.getElementById('countdown').textContent = `${days} วัน ${hours} ชม ${minutes} นาที`;
-      document.getElementById('countdown').style.color = 'red';
-    }
 
-    window.onload = async function () {
-      let { data: { session } } = await supabase.auth.getSession();
-      let user = session?.user;
+      emailEl.textContent = user.email;
 
-      // fallback หากยังไม่มี session
-      if (!user) {
-        await new Promise((r) => setTimeout(r, 1000));
-        const retry = await supabase.auth.getSession();
-        user = retry.data?.session?.user;
-        if (!user) {
-          window.location.href = 'index.html';
-          return;
-        }
+      const { data, error } = await supabase
+        .from("license_keys")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      const now = new Date();
+
+      if (error || !data) {
+        const trialExpires = new Date();
+        trialExpires.setDate(trialExpires.getDate() + 15);
+        licenseEl.innerHTML = `
+          🧪 กำลังใช้งานเวอร์ชั่นทดลอง<br>
+          📅 วันที่หมดอายุ: ${trialExpires.toLocaleString()}<br>
+          ⏳ เหลือเวลาอีก: 15 วัน
+        `;
+        btnApp.disabled = false;
+        return;
       }
 
-      let { data: license, error: licenseError } = await supabase
-        .from('license_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      const expiresAt = new Date(data.expires_at);
 
-      if (!license) {
-        const expires = new Date();
-        expires.setDate(expires.getDate() + 15);
-        const key = 'BETA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-        const name = user.user_metadata?.full_name || 'Unknown';
-
-        const { data: insertData, error: insertError } = await supabase
-          .from('license_keys')
-          .insert([{
-            key,
-            user_id: user.id,
-            is_active: true,
-            expires_at: expires.toISOString(),
-            type: 'trial',
-            user_name: name
-          }]).select().single();
-
-        if (insertError) {
-          document.getElementById('info').textContent = 'เกิดข้อผิดพลาด: ' + insertError.message;
-          return;
-        }
-        license = insertData;
+      if (now >= expiresAt) {
+        licenseEl.innerHTML = `
+          ❌ หมดอายุการใช้งาน กรุณาต่ออายุ<br>
+          📅 วันที่หมดอายุ: ${expiresAt.toLocaleString()}
+        `;
+        btnApp.disabled = true;
+        return;
       }
 
-      document.getElementById('uid').textContent = user.id;
-      document.getElementById('email').textContent = user.email;
-      document.getElementById('name').textContent = license.user_name;
-      document.getElementById('expire').textContent = new Date(license.expires_at).toLocaleString();
-      document.getElementById('keytype').textContent = license.type;
-      showCountdown(license.expires_at);
+      const timeDiff = expiresAt - now;
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+      const licenseTypeMap = {
+        beta: '🧪 ทดลองฟรี 15 วัน',
+        rent15: '📦 เช่า 15 วัน',
+        rent30: '📦 เช่า 30 วัน',
+        rent365: '📦 เช่า 365 วัน',
+        lifetime: '✅ ถาวร'
+      };
+      const licenseType = licenseTypeMap[data.plan_type] || '🔑 ไม่ทราบประเภท';
+
+      licenseEl.innerHTML = `
+        ประเภท: ${licenseType}<br>
+        🔑 Key: ${data.key}<br>
+        📅 หมดอายุ: ${expiresAt.toLocaleString()}<br>
+        ⏳ เหลือเวลาอีก: ${days} วัน ${hours} ชั่วโมง
+      `;
     }
 
-    window.submitKey = async function () {
-      alert('ฟีเจอร์นี้ยังไม่เปิดใช้งาน');
-    }
+    window.enterApp = () => {
+      const btn = document.getElementById("btnApp");
+      if (!btn.disabled) {
+        window.location.href = "Football Control Panel.html";
+      }
+    };
 
-    window.logout = async function () {
-      await supabase.auth.signOut();
-      window.location.href = 'index.html';
-    }
+    window.logout = () => {
+      localStorage.removeItem("sb_user");
+      window.location.href = "index.html";
+    };
+
+    init();
   </script>
   <style>
     body {
-      font-family: sans-serif;
       background: #111;
       color: #fff;
+      font-family: sans-serif;
       padding: 2em;
       text-align: center;
     }
-    .card {
-      background: #222;
-      padding: 2em;
-      border-radius: 12px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 4px 20px #0004;
-    }
-    input, button {
-      margin-top: 1em;
-      padding: 0.6em;
-      width: 90%;
-      max-width: 300px;
-      border-radius: 8px;
-      border: none;
-    }
     button {
-      background: #ffd700;
-      color: #000;
-      font-weight: bold;
-      margin-bottom: 1em;
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
     }
-    .logout-btn {
-      background: #444;
+    .btn-app {
+      background: #4caf50;
       color: #fff;
-      margin-top: 1em;
-      width: 100%;
+    }
+    .btn-app:disabled {
+      background: #777;
+      cursor: not-allowed;
+    }
+    .btn-logout {
+      background: #f44336;
+      color: #fff;
+    }
+    table {
+      margin: 2em auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 600px;
+    }
+    th, td {
+      border: 1px solid #555;
+      padding: 8px;
+    }
+    th {
+      background: #333;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>ข้อมูลสมาชิก</h2>
-    <p><strong>ชื่อ:</strong> <span id="name"></span></p>
-    <p><strong>ID:</strong> <span id="uid"></span></p>
-    <p><strong>Email:</strong> <span id="email"></span></p>
-    <p><strong>ประเภท:</strong> <span id="keytype"></span></p>
-    <p><strong>หมดอายุ:</strong> <span id="expire"></span></p>
-    <p><strong>เหลือเวลา:</strong> <span id="countdown"></span></p>
-    <input type="text" placeholder="ใส่ License Key ใหม่" />
-    <button onclick="submitKey()">ยืนยัน</button>
-    <div id="info" style="margin-top:1em;"></div>
-    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
-  </div>
+  <h2>ยินดีต้อนรับ</h2>
+  <p id="email"></p>
+  <p id="info"></p>
+  <button id="btnApp" class="btn-app" onclick="enterApp()">เข้าโปรแกรม</button>
+  <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ประเภท</th>
+        <th>รายละเอียด</th>
+        <th>ราคา</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>ทดลองฟรี</td><td>ใช้งาน 15 วัน</td><td>ฟรี</td></tr>
+      <tr><td>เช่า 15 วัน</td><td>ใช้งานต่อเนื่อง 15 วัน</td><td>300 บาท</td></tr>
+      <tr><td>เช่า 30 วัน</td><td>ใช้งานต่อเนื่อง 30 วัน</td><td>450 บาท</td></tr>
+      <tr><td>เช่า 365 วัน</td><td>ใช้งานต่อเนื่อง 1 ปี</td><td>2,500 บาท</td></tr>
+      <tr><td>ถาวร</td><td>ไม่มีวันหมดอายุ</td><td>4,000 บาท</td></tr>
+    </tbody>
+  </table>
 </body>
 </html>
