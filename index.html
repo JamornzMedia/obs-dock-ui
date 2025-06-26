@@ -15,31 +15,32 @@
       location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      // ตรวจสอบว่า user มี license แล้วหรือยัง
-      const { data: license, error } = await supabase
-        .from('license_keys')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+    // ตรวจจับการ login สำเร็จจริง
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data: license } = await supabase
+          .from('license_keys')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
 
-      if (!license) {
-        await supabase.from('license_keys').insert({
-          user_id: session.user.id,
-          email: session.user.email,
-          expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-        });
+        if (!license) {
+          await supabase.from('license_keys').insert({
+            user_id: session.user.id,
+            email: session.user.email,
+            expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+          });
+        }
+
+        window.location.href = 'dashboard.html';
       }
-
-      window.location.href = "dashboard.html";
-    }
+    });
 
     document.getElementById("login").onclick = async () => {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://jamornzmedia.github.io/obs-dock-ui/dashboard.html'
+          redirectTo: 'https://jamornzmedia.github.io/obs-dock-ui/index.html'
         }
       });
     };
