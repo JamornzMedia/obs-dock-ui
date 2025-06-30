@@ -134,7 +134,9 @@
 
     window.logout = async function () {
       await supabase.auth.signOut();
-      window.location.href = 'index.html';
+      localStorage.clear(); // ลบ Local Storage
+      sessionStorage.clear(); // ลบ Session Storage
+      window.location.href = 'index.html'; // เปลี่ยนหน้าไปยังหน้าแรก
     }
   </script>
   <style>
