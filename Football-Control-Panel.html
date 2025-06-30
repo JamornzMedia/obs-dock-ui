@@ -42,16 +42,12 @@
     .button-col button.minus { width: 90%; font-size: .9rem; height: 25px; background: #c0392b; }
 
     .section-divider { border-top: 1px solid #555; margin: 12px 0; }
-
-    /* User Info Section */
-    .user-info { text-align: center; margin-top: 20px; font-size: 1.1rem; display: none; }
-    .refresh-btn { display: none; background-color: #F44336; color: #fff; font-size: 1.1rem; padding: 10px 20px; margin-top: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="container">
     <!-- ====== FILE & MATCH SELECTION ====== -->
-    <div class="row" id="content">
+    <div class="row">
       <button onclick="handleExcel()">📂 Upload Excel</button>
       <label>Match ID:</label>
       <input type="number" id="matchID" min="1" value="1" style="width:65px;">
@@ -61,7 +57,7 @@
     <div class="section-divider"></div>
 
     <!-- ====== TEAMS & LABELS ====== -->
-    <div class="logo-row" id="logoRow">
+    <div class="logo-row">
       <div class="logo-name">
         <img id="logoA" src="" alt="Logo A">
         <div class="name" id="nameA">Team A</div>
@@ -72,7 +68,7 @@
       </div>
     </div>
 
-    <div class="label-row" id="labelRow">
+    <div class="label-row">
       <div id="label1">Label 1</div>
       <div id="label2">Label 2</div>
       <div id="label3">Label 3</div>
@@ -81,7 +77,7 @@
     <div class="section-divider"></div>
 
     <!-- ====== SCORES ====== -->
-    <div class="score-row" id="scoreRow">
+      <div class="score-row">
       <div class="score-box"><div class="score" id="scoreA">0</div></div>
       <div class="button-col">
         <button class="plus"  onclick="changeScore('A',  1)">+1</button>
@@ -100,7 +96,7 @@
     <div class="section-divider"></div>
 
     <!-- ====== TIME & HALF ====== -->
-    <div class="footer-row" id="footerRow">
+      <div class="footer-row">
       <button onclick="toggleHalf()">ครึ่ง <span id="halfText">1st</span></button>
 
       <div style="flex:1;text-align:center">
@@ -117,27 +113,33 @@
     <div class="section-divider"></div>
 
     <!-- ====== DETAILS & HELP ====== -->
-    <div class="center" id="helpRow">
+    <div class="center">
       <button onclick="openDetails()">✏️ ตั้งค่ารายละเอียด</button>
       <button onclick="copyDetails()">📋 คัดลอก</button>
       <button onclick="showHelp()">📘 Help</button>
     </div>
-
-    <!-- ====== USER INFO SECTION ====== -->
-    <div class="user-info" id="userInfo">
-      <p><strong>ชื่อผู้ใช้:</strong> <span id="userName"></span></p>
-      <p><strong>ID ผู้ใช้:</strong> <span id="userID"></span></p>
-      <p><strong>วันหมดอายุ:</strong> <span id="expireDate"></span></p>
-    </div>
-
-    <!-- ====== REFRESH BUTTON ====== -->
-    <button id="refreshBtn" class="refresh-btn" onclick="refreshPage()">Refresh</button>
   </div>
 
-  <script>
-    let sheetData = [];
+  <!-- ====== DETAILS POPUP ====== -->
+  <div id="detailsPopup"
+       style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%);
+              background:#1e1e1e; padding:20px; border-radius:10px;
+              width:90%; max-width:400px;">
+    <h3>ตั้งค่าข้อความประกาศ</h3>
+    <p>ใช้แท็ก: &lt;TeamA&gt;, &lt;TeamB&gt;, &lt;label1&gt;–&lt;label3&gt;, &lt;score_team_a&gt;, &lt;score_team_b&gt;, &lt;time_counter&gt;, &lt;half_text&gt;</p>
+    <textarea id="detailsText" style="width:100%; height:80px;"></textarea>
+    <div class="row center">
+      <button onclick="saveDetails()">💾 บันทึก</button>
+      <button onclick="closeDetails()">❌ ปิด</button>
+    </div>
+  </div>
 
+  <!-- ========================================================= -->
+  <!-- ====================== SCRIPT ZONE ====================== -->
+  <!-- ========================================================= -->
+  <script>
     /* ---------- Excel / Match data ---------- */
+    let sheetData = [];
     function handleExcel() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -231,43 +233,81 @@
       setText('half_text', half);
     }
 
-    /* ---------- User Info ---------- */
-    async function fetchUserInfo() {
-      const sessionToken = localStorage.getItem('session_token');
-      if (sessionToken) {
-        const { data: user } = await supabase.auth.api.getUser(sessionToken);
-        if (user) {
-          document.getElementById('userName').textContent = user.user_metadata.full_name;
-          document.getElementById('userID').textContent = user.id;
-          document.getElementById('expireDate').textContent = new Date(user.expires_at).toLocaleDateString();
-          document.getElementById('userInfo').style.display = 'block'; // แสดงข้อมูลผู้ใช้
-          document.getElementById('content').style.display = 'block';  // แสดงเนื้อหา
-          document.getElementById('logoRow').style.display = 'block'; // แสดงทีม
-          document.getElementById('labelRow').style.display = 'block'; // แสดงป้าย
-          document.getElementById('scoreRow').style.display = 'block'; // แสดงคะแนน
-          document.getElementById('footerRow').style.display = 'block'; // แสดงเวลา
-          document.getElementById('helpRow').style.display = 'block'; // แสดงปุ่มช่วยเหลือ
-        } else {
-          showError("กรุณาล็อกอินใหม่");
-        }
-      } else {
-        showError("กรุณาล็อกอินใหม่");
-      }
+    /* ---------- Details / Copy ---------- */
+    function openDetails() {
+      detailsText.value = localStorage.getItem('detailsText') || '';
+      detailsPopup.style.display = 'block';
+    }
+    function closeDetails() { detailsPopup.style.display = 'none'; }
+    function saveDetails()  {
+      localStorage.setItem('detailsText', detailsText.value);
+      closeDetails();
+    }
+    function copyDetails() {
+      const template = localStorage.getItem('detailsText') || '';
+      const filled = template
+        .replace(/<TeamA>/gi,        nameA.textContent)
+        .replace(/<TeamB>/gi,        nameB.textContent)
+        .replace(/<label1>/gi,       label1.textContent)
+        .replace(/<label2>/gi,       label2.textContent)
+        .replace(/<label3>/gi,       label3.textContent)
+        .replace(/<score_team_a>/gi, scoreA)
+        .replace(/<score_team_b>/gi, scoreB)
+        .replace(/<time_counter>/gi, timerText.textContent)
+        .replace(/<half_text>/gi,    halfText.textContent);
+      navigator.clipboard.writeText(filled)
+        .then(() => alert('📋 คัดลอกแล้ว'))
+        .catch(console.error);
     }
 
-    function showError(message) {
-      document.getElementById('content').style.display = 'none';  // ซ่อนเนื้อหา
-      document.getElementById('refreshBtn').style.display = 'block';  // แสดงปุ่ม Refresh
-      alert(message);
+    function showHelp() {
+      alert(
+        '🧾 วิธีใช้คร่าว ๆ\n\n' +
+        '1) ไฟล์ Logo นำไปไว้ที่ไดร์ฟ C:/OBSAssets/logos \n' +
+        '2) 📂 Upload ไฟล์ Excel แล้วกด Load\n' +
+        '3) ปรับคะแนน เวลาหรือครึ่งเกมได้ตามปุ่ม\n' +
+        '4) OBS Sources ที่ต้องมี (ชื่อตรงเวอร์ชันแรก):\n' +
+        '   • logo_team_a / logo_team_b\n' +
+        '   • name_team_a / name_team_b\n' +
+        '   • label_1 – label_3\n' +
+        '   • score_team_a / score_team_b\n' +
+        '   • half_text / time_counter\n' 
+      );
     }
 
-    function refreshPage() {
-      window.location.reload(); // รีเฟรชหน้า
-    }
+    /* ---------- OBS WebSocket ---------- */
+    const obs = new OBSWebSocket();
+    obs.connect('ws://localhost:4455').catch(err => {
+      console.warn('OBS WebSocket error:', err);
+    });
 
-    window.onload = async function () {
-      await fetchUserInfo(); // ดึงข้อมูลผู้ใช้เมื่อโหลดหน้า
-    };
+    function setText(source, text) {
+  obs.call('SetInputSettings', {
+    inputName: source,
+    inputSettings: { text: String(text) }
+  }).catch(console.warn);
+}
+
+    function setImage(source, filename) {
+  // If filename does not include extension, assume .png
+  const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
+  const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
+  // Update preview in UI if element exists
+  const preview = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
+  if (preview) preview.src = filePath;
+  obs.call('SetInputSettings', {
+    inputName: source,
+    inputSettings: { file: filePath }
+  }).catch(console.warn);
+}
+
+    /* ---------- DOM Shortcuts ---------- */
+    const $ = id => document.getElementById(id);
+    const nameA = $('nameA'), nameB = $('nameB');
+    const label1 = $('label1'), label2 = $('label2'), label3 = $('label3');
+    const logoA  = $('logoA'),  logoB  = $('logoB');
+    const scoreA_el = $('scoreA'), scoreB_el = $('scoreB');
+    const timerText = $('timerText'), halfText = $('halfText');
   </script>
 </body>
 </html>
