@@ -282,24 +282,24 @@
     });
 
     function setText(source, text) {
-  obs.call('SetInputSettings', {
-    inputName: source,
-    inputSettings: { text: String(text) }
-  }).catch(console.warn);
-}
+      obs.call('SetInputSettings', {
+        inputName: source,
+        inputSettings: { text: String(text) }
+      }).catch(console.warn);
+    }
 
     function setImage(source, filename) {
-  // If filename does not include extension, assume .png
-  const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
-  const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
-  // Update preview in UI if element exists
-  const preview = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
-  if (preview) preview.src = filePath;
-  obs.call('SetInputSettings', {
-    inputName: source,
-    inputSettings: { file: filePath }
-  }).catch(console.warn);
-}
+      // If filename does not include extension, assume .png
+      const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
+      const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
+      // Update preview in UI if element exists
+      const preview = document.getElementById(source === 'logo_team_a' ? 'logoA' : 'logoB');
+      if (preview) preview.src = filePath;
+      obs.call('SetInputSettings', {
+        inputName: source,
+        inputSettings: { file: filePath }
+      }).catch(console.warn);
+    }
 
     /* ---------- DOM Shortcuts ---------- */
     const $ = id => document.getElementById(id);
