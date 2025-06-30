@@ -50,6 +50,9 @@
       const ip = await getPublicIP();
       const browser = getBrowserFingerprint();
 
+      // เก็บ Session Token ใน LocalStorage
+      localStorage.setItem('session_token', sessionResult.data.session.access_token);
+
       let { data: license, error } = await supabase
         .from('license_keys')
         .select('*')
