@@ -90,7 +90,6 @@
 
       currentLicense = license;
 
-      document.getElementById('uid').textContent = user.id;
       document.getElementById('email').textContent = user.email;
       document.getElementById('name').textContent = license.user_name;
       document.getElementById('expire').textContent = new Date(license.expires_at).toLocaleString();
@@ -140,6 +139,23 @@
       sessionStorage.clear(); // ลบ Session Storage
       window.location.href = 'index.html'; // เปลี่ยนหน้าไปยังหน้าแรก
     }
+
+    // ฟังก์ชันเพื่อแสดง/ซ่อน ID
+    function toggleID() {
+      const uidElement = document.getElementById('uid');
+      const showText = document.getElementById('show-id-text');
+      
+      if (uidElement.style.display === 'none') {
+        // แสดง ID
+        uidElement.style.display = 'inline';
+        uidElement.textContent = user.id;  // แสดง ID ที่นี่
+        showText.textContent = "คลิกเพื่อซ่อน ID"; // เปลี่ยนข้อความ
+      } else {
+        // ซ่อน ID
+        uidElement.style.display = 'none';
+        showText.textContent = "คลิกเพื่อโชว์ ID"; // เปลี่ยนข้อความ
+      }
+    }
   </script>
   <style>
     body { font-family: sans-serif; background: #111; color: #fff; padding: 2em; text-align: center; }
@@ -154,6 +170,9 @@
     <h2>ข้อมูลสมาชิก</h2>
     <p><strong>ชื่อ:</strong> <span id="name"></span></p>
     <p><strong>ID:</strong> <span id="uid" style="display: none;"></span></p>
+    <!-- เพิ่มข้อความ "คลิกเพื่อโชว์ ID" ที่สามารถคลิกได้ -->
+    <p><span id="show-id-text" style="color: blue; cursor: pointer;" onclick="toggleID()">คลิกเพื่อโชว์ ID</span></p>
+
     <p><strong>Email:</strong> <span id="email"></span></p>
     <p><strong>ประเภท:</strong> <span id="keytype"></span></p>
     <p><strong>หมดอายุ:</strong> <span id="expire"></span></p>
@@ -165,5 +184,4 @@
     <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
   </div>
 </body>
-
 </html>
