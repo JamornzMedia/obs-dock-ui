@@ -42,6 +42,8 @@
     .button-col button.minus { width: 90%; font-size: .9rem; height: 25px; background: #c0392b; }
 
     .section-divider { border-top: 1px solid #555; margin: 12px 0; }
+
+    .user-info { text-align: center; margin-top: 20px; font-size: 1.1rem; }
   </style>
 </head>
 <body>
@@ -134,12 +136,20 @@
     </div>
   </div>
 
+  <!-- ====== USER INFO SECTION ====== -->
+  <div class="user-info" id="userInfo" style="display:none;">
+    <p><strong>ชื่อผู้ใช้:</strong> <span id="userName"></span></p>
+    <p><strong>ID ผู้ใช้:</strong> <span id="userID"></span></p>
+    <p><strong>วันหมดอายุ:</strong> <span id="expireDate"></span></p>
+  </div>
+
   <!-- ========================================================= -->
   <!-- ====================== SCRIPT ZONE ====================== -->
   <!-- ========================================================= -->
   <script>
-    /* ---------- Excel / Match data ---------- */
     let sheetData = [];
+
+    /* ---------- Excel / Match data ---------- */
     function handleExcel() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -232,6 +242,26 @@
       halfText.textContent = half;
       setText('half_text', half);
     }
+
+    /* ---------- User Info ---------- */
+    async function fetchUserInfo() {
+      const sessionToken = localStorage.getItem('session_token');
+      if (sessionToken) {
+        const { data: user } = await supabase.auth.api.getUser(sessionToken);
+        if (user) {
+          document.getElementById('userName').textContent = user.user_metadata.full_name;
+          document.getElementById('userID').textContent = user.id;
+          document.getElementById('expireDate').textContent = new Date(user.expires_at).toLocaleDateString();
+          document.getElementById('userInfo').style.display = 'block'; // แสดงข้อมูลผู้ใช้
+        } else {
+          alert('กรุณาล็อกอินใหม่');
+        }
+      }
+    }
+
+    window.onload = async function () {
+      await fetchUserInfo(); // ดึงข้อมูลผู้ใช้เมื่อโหลดหน้า
+    };
 
     /* ---------- Details / Copy ---------- */
     function openDetails() {
