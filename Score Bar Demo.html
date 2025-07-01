@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Score Bar Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    
+    /* กรอบของ Score Bar */
+    #scoreBar {
+      position: fixed;
+      bottom: -100px; /* เริ่มต้นอยู่ข้างล่างสุด */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      background-color: #219653;
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: bottom 0.5s, opacity 0.5s;
+    }
+
+    /* กราฟิกการแสดงคะแนน */
+    #scoreText {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    /* ปุ่มเปิด/ปิด */
+    #toggleButton {
+      background-color: #ff5733;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    #toggleButton:hover {
+      background-color: #c03d2e;
+    }
+
+    /* กราฟิกเลื่อนเข้ามา */
+    .show {
+      bottom: 20px; /* เลื่อนขึ้นมา */
+      opacity: 1;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Score Bar -->
+  <div id="scoreBar">
+    <div id="scoreText">คะแนน: 0</div>
+    <button id="toggleButton" onclick="toggleScoreBar()">เปิด</button>
+  </div>
+
+  <!-- สคริปต์ -->
+  <script>
+    let score = 0; // กำหนดคะแนนเริ่มต้น
+    let scoreBarVisible = false; // ตัวแปรเช็คการแสดงของ Score Bar
+
+    // ฟังก์ชันเปิด/ปิด Score Bar
+    function toggleScoreBar() {
+      const scoreBar = document.getElementById('scoreBar');
+      const button = document.getElementById('toggleButton');
+
+      if (scoreBarVisible) {
+        scoreBar.classList.remove('show');
+        button.textContent = 'เปิด';
+        scoreBarVisible = false;
+      } else {
+        scoreBar.classList.add('show');
+        button.textContent = 'ปิด';
+        scoreBarVisible = true;
+      }
+    }
+
+    // ฟังก์ชันเปลี่ยนคะแนน (ตัวอย่าง)
+    function updateScore(newScore) {
+      score = newScore;
+      document.getElementById('scoreText').textContent = `คะแนน: ${score}`;
+    }
+
+    // ตัวอย่างการเพิ่มคะแนนทุก 2 วินาที
+    setInterval(() => {
+      updateScore(score + 1);
+    }, 2000);
+  </script>
+</body>
+</html>
