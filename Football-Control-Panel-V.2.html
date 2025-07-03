@@ -9,16 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <script type="text/javascript">
-      var sc_project=13147874;
-      var sc_invisible=0;
-      var sc_security="550e33c0";
-      var scJsHost = "https://";
+      var sc_project=13147874; var sc_invisible=0; var sc_security="550e33c0"; var scJsHost = "https://";
       document.write("<sc"+"ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></"+"script>");
     </script>
-    <noscript><div class="statcounter"><a title="web statistics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/13147874/0/550e33c0/0/" alt="web statistics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
 
     <style>
-        /* --- Modern Color Palette & Base Styles --- */
+        /* --- Compact & Scalable UI for OBS Docks --- */
         :root {
             --bg-color: #1a1a1a;
             --card-bg-color: #242424;
@@ -31,52 +27,39 @@
             --success-color: #22c55e;
             --success-hover-color: #16a34a;
             --border-color: #3a3a3a;
-            --border-radius: 8px;
+            --border-radius: 6px;
         }
 
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
             background: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            font-size: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px; /* Smaller base font for docks */
             box-sizing: border-box;
+            overflow: auto;
         }
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
+        *, *:before, *:after { box-sizing: inherit; }
 
         .container {
-            max-width: 550px;
-            margin: 20px auto;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
         }
 
-        h2 {
-            text-align: center;
-            color: var(--text-color);
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-
-        /* --- Card Layout --- */
         .card {
             background-color: var(--card-bg-color);
             border-radius: var(--border-radius);
-            padding: 20px;
+            padding: 12px;
             border: 1px solid var(--border-color);
         }
         
         .row {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
             align-items: center;
             flex-wrap: wrap;
         }
@@ -84,179 +67,107 @@
         .center { justify-content: center; }
         .space-between { justify-content: space-between; }
 
-        /* --- Buttons & Inputs --- */
         input[type="number"] {
-            padding: 8px 12px;
+            padding: 6px 8px;
             border-radius: var(--border-radius);
             border: 1px solid var(--border-color);
             background: var(--bg-color);
             color: var(--text-color);
-            font-size: 1rem;
-            width: 80px;
+            font-size: 0.9rem;
+            width: 60px;
             text-align: center;
         }
 
         button {
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: var(--border-radius);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             font-weight: 500;
             transition: background-color 0.2s ease;
         }
         .btn-primary { background: var(--accent-color); color: #fff; }
         .btn-primary:hover { background: var(--accent-hover-color); }
-
         .btn-secondary { background: #4a4a4a; color: #fff; }
         .btn-secondary:hover { background: #5a5a5a; }
-
         .btn-danger { background: var(--danger-color); color: #fff; }
         .btn-danger:hover { background: var(--danger-hover-color); }
 
-        /* --- Team Info --- */
-        .team-info {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            text-align: center;
-        }
-        .team {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-        .team img {
-            width: 70px;
-            height: 70px;
-            object-fit: contain;
-            background: #333;
+        /* --- Team Info & Logo Fallback --- */
+        .team-info { display: flex; justify-content: space-around; align-items: center; }
+        .team { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+        .team .logo-container {
+            width: 60px; height: 60px;
             border-radius: 50%;
+            background: #333;
             border: 2px solid var(--border-color);
-        }
-        .team .name {
-            font-size: 1rem;
-            font-weight: 600;
-            height: 2.5em;
-            overflow: hidden;
-        }
-        
-        .labels-row {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
-        .labels-row div {
-            flex: 1;
-            background: var(--bg-color);
-            text-align: center;
-            font-size: .8rem;
-            border-radius: var(--border-radius);
-            padding: 8px;
+        .team .logo-container img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+        .team .logo-initials { /* Fallback text (e.g., MU for Manchester United) */
+            font-size: 1.8rem;
+            font-weight: bold;
             color: var(--text-muted-color);
+            display: none; /* Hidden by default */
+        }
+        .team .name { font-size: 0.9rem; font-weight: 600; text-align: center; }
+        
+        .labels-row { display: flex; gap: 8px; margin-top: 10px; }
+        .labels-row div {
+            flex: 1; background: var(--bg-color); text-align: center;
+            font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color);
         }
 
-        /* --- Score Control --- */
-        .score-control {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* --- Score Control (Bigger Plus Button) --- */
+        .score-control { display: flex; align-items: center; justify-content: space-between; }
+        .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
+        .score-buttons { display: flex; flex-direction: column; gap: 6px; }
+        .score-buttons .plus {
+            width: 48px; height: 48px; font-size: 1.8rem;
+            background: var(--success-color); color: #fff;
         }
-        .score-display {
-            font-size: 3.5em;
-            font-weight: 700;
-            flex-basis: 120px;
-            text-align: center;
-        }
-        .score-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .score-buttons button {
-            width: 50px;
-            height: 50px;
-            font-size: 1.5rem;
-        }
-        .score-buttons .plus { background: var(--success-color); color: #fff; }
         .score-buttons .plus:hover { background: var(--success-hover-color); }
-        .score-buttons .minus { background: var(--danger-color); color: #fff; font-size: 1.2rem; }
+        .score-buttons .minus {
+            width: 48px; height: 32px; font-size: 1.2rem;
+            background: var(--danger-color); color: #fff;
+        }
         .score-buttons .minus:hover { background: var(--danger-hover-color); }
 
         /* --- Timer --- */
-        .timer-display {
-            font-size: 2.8em;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 15px;
-            letter-spacing: 2px;
-        }
+        .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
 
         /* --- Popup --- */
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 99;
-        }
+        .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
         #detailsPopup {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--card-bg-color);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            width: 90%;
-            max-width: 450px;
-            border: 1px solid var(--border-color);
-            z-index: 100;
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: var(--card-bg-color);
+            padding: 20px; border-radius: var(--border-radius); width: 90%;
+            max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
         }
-        #detailsPopup h3 { margin-top: 0; }
-        #detailsPopup p { font-size: 0.9rem; color: var(--text-muted-color); }
-        #detailsPopup textarea {
-            width: 100%;
-            height: 100px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: var(--border-radius);
-            padding: 10px;
-            font-size: 1rem;
-            margin-bottom: 15px;
-        }
+        #detailsPopup h3 { margin-top: 0; font-size: 1.1rem; }
+        #detailsPopup p { font-size: 0.85rem; color: var(--text-muted-color); }
+        #detailsPopup textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
 
         /* --- Toast Notifications --- */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 101;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .toast {
-            padding: 15px 20px;
-            border-radius: var(--border-radius);
-            color: #fff;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateX(100%);
-            animation: slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards;
-        }
+        #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
+        .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
         .toast.success { background-color: var(--success-color); }
         .toast.error { background-color: var(--danger-color); }
         .toast.info { background-color: var(--accent-color); }
-
-        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-        @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
-
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -264,13 +175,11 @@
     <div id="toast-container"></div>
     
     <div class="container">
-        <h2><i class="fas fa-futbol"></i> Football Scoreboard Control</h2>
-
         <div class="card">
             <div class="row space-between">
-                <button class="btn-secondary" onclick="handleExcel()"><i class="fas fa-file-excel"></i> Upload Excel</button>
-                <div class="row">
-                    <label for="matchID">Match ID:</label>
+                <button class="btn-secondary" onclick="handleExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                <div class="row" style="margin-bottom:0;">
+                    <label for="matchID" style="font-size:0.85rem;">ID:</label>
                     <input type="number" id="matchID" min="1" value="1">
                     <button class="btn-primary" onclick="applyMatch()"><i class="fas fa-check"></i> Load</button>
                 </div>
@@ -280,19 +189,23 @@
         <div class="card">
             <div class="team-info">
                 <div class="team">
-                    <img id="logoA" src="" alt="Logo A">
+                    <div class="logo-container">
+                        <img id="logoA" src="" alt="">
+                        <div class="logo-initials" id="initialsA">A</div>
+                    </div>
                     <div class="name" id="nameA">Team A</div>
                 </div>
-                <div style="font-size: 1.5rem; color: var(--text-muted-color);">VS</div>
+                <div style="font-size: 1.2rem; color: var(--text-muted-color);">VS</div>
                 <div class="team">
-                    <img id="logoB" src="" alt="Logo B">
+                    <div class="logo-container">
+                        <img id="logoB" src="" alt="">
+                        <div class="logo-initials" id="initialsB">B</div>
+                    </div>
                     <div class="name" id="nameB">Team B</div>
                 </div>
             </div>
             <div class="labels-row">
-                <div id="label1">Label 1</div>
-                <div id="label2">Label 2</div>
-                <div id="label3">Label 3</div>
+                <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
             </div>
         </div>
 
@@ -309,16 +222,17 @@
                     <button class="minus" onclick="changeScore('B', -1)">-</button>
                 </div>
             </div>
-            <div class="row center" style="margin-top: 20px;">
-                <button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset Scores</button>
+            <div class="row center" style="margin-top: 12px;">
+                <button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button>
             </div>
         </div>
 
         <div class="card">
             <div class="row">
                 <div style="flex: 1;">
-                    <button class="btn-secondary" onclick="toggleHalf()" style="width: 100%;">
-                        <i class="fas fa-flag"></i> ครึ่ง <span id="halfText">1st</span>
+                    <button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
+                        <span style="font-size:0.8rem">ครึ่ง</span>
+                        <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
                     </button>
                 </div>
                 <div style="flex: 2; text-align:center;">
@@ -327,25 +241,25 @@
                         <button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button>
                         <button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button>
                         <button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button>
-                        <button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i> Set</button>
+                        <button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button>
                     </div>
                 </div>
             </div>
         </div>
         
         <div class="card">
-            <div class="row center" style="gap: 15px;">
-                <button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i> ตั้งค่ารายละเอียด</button>
-                <button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i> คัดลอก</button>
-                <button class="btn-info" onclick="showHelp()"><i class="fas fa-question-circle"></i> Help</button>
+            <div class="row center" style="gap: 10px;">
+                <button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button>
+                <button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button>
+                <button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button>
             </div>
         </div>
     </div>
 
     <div id="popupOverlay" class="popup-overlay" onclick="closeDetails()"></div>
-    <div id="detailsPopup" style="display:none;">
+    <div id="detailsPopup">
         <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
-        <p>ใช้แท็ก: &lt;TeamA&gt;, &lt;TeamB&gt;, &lt;label1&gt;–&lt;label3&gt;, &lt;score_team_a&gt;, &lt;score_team_b&gt;, &lt;time_counter&gt;, &lt;half_text&gt;</p>
+        <p>ใช้ Tags เพื่อดึงข้อมูลอัตโนมัติ</p>
         <textarea id="detailsText"></textarea>
         <div class="row center">
             <button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button>
@@ -354,31 +268,27 @@
     </div>
 
     <script>
-        /* ---------- DOM Shortcuts ---------- */
         const $ = id => document.getElementById(id);
-        const nameA_el = $('nameA'), nameB_el = $('nameB');
-        const label1_el = $('label1'), label2_el = $('label2'), label3_el = $('label3');
-        const logoA_el = $('logoA'), logoB_el = $('logoB');
-        const scoreA_el = $('scoreA'), scoreB_el = $('scoreB');
-        const timerText_el = $('timerText'), halfText_el = $('halfText');
-        const detailsPopup = $('detailsPopup'), popupOverlay = $('popupOverlay');
-        const detailsText_el = $('detailsText');
-        const matchID_input = $('matchID');
-        const toastContainer = $('toast-container');
+        const [
+            nameA_el, nameB_el, label1_el, label2_el, label3_el,
+            logoA_el, logoB_el, initialsA_el, initialsB_el,
+            scoreA_el, scoreB_el, timerText_el, halfText_el,
+            detailsPopup, popupOverlay, detailsText_el, matchID_input, toastContainer
+        ] = [
+            "nameA", "nameB", "label1", "label2", "label3",
+            "logoA", "logoB", "initialsA", "initialsB",
+            "scoreA", "scoreB", "timerText", "halfText",
+            "detailsPopup", "popupOverlay", "detailsText", "matchID", "toast-container"
+        ].map($);
 
-
-        /* ---------- Toast Notification System ---------- */
-        function showToast(message, type = 'info') { // types: 'success', 'error', 'info'
+        function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 5000); // Remove after 5 seconds
+            setTimeout(() => toast.remove(), 5000);
         }
 
-        /* ---------- Excel / Match data ---------- */
         let sheetData = [];
         function handleExcel() {
             const input = document.createElement('input');
@@ -390,10 +300,9 @@
                     try {
                         const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
                         sheetData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                        showToast('📁 โหลดไฟล์สำเร็จแล้ว กรุณากด Load', 'success');
+                        showToast('โหลดไฟล์สำเร็จ', 'success');
                     } catch (err) {
-                        console.error("Error reading Excel file:", err);
-                        showToast('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel', 'error');
+                        showToast('อ่านไฟล์ Excel ผิดพลาด', 'error');
                     }
                 };
                 reader.readAsArrayBuffer(e.target.files[0]);
@@ -401,41 +310,49 @@
             input.click();
         }
 
+        function getTeamInitials(name) {
+            if (!name) return '';
+            const words = name.split(' ').filter(Boolean);
+            if (words.length >= 2) {
+                return (words[0][0] + words[1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+
         function applyMatch() {
-            if (!sheetData.length) return showToast('โปรด Upload ไฟล์ Excel ก่อน', 'error');
+            if (!sheetData.length) return showToast('โปรด Upload ไฟล์ก่อน', 'error');
             const id = parseInt(matchID_input.value);
             const header = sheetData[0];
-            const rows = sheetData.slice(1);
-            const match = rows.find(r => parseInt(r[0]) === id);
+            const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
             if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
-            const get = key => {
-                const index = header.indexOf(key);
-                return index !== -1 ? (match[index] || '') : '';
-            }
-            const logoPath = 'C:/OBSAssets/logos';
+            const get = key => match[header.indexOf(key)] || '';
+            
+            const teamAName = get('TeamA');
+            const teamBName = get('TeamB');
+            const logoAFile = get('LogoA');
+            const logoBFile = get('LogoB');
 
-            // Update UI
-            nameA_el.textContent = get('TeamA');
-            nameB_el.textContent = get('TeamB');
+            nameA_el.textContent = teamAName;
+            nameB_el.textContent = teamBName;
             label1_el.textContent = get('label1');
             label2_el.textContent = get('label2');
             label3_el.textContent = get('label3');
-            logoA_el.src = `${logoPath}/${get('LogoA')}`;
-            logoB_el.src = `${logoPath}/${get('LogoB')}`;
+            
+            // --- Logic แสดงผลโลโก้ ---
+            // ตั้งค่าสำหรับส่งไป OBS (ใช้ Path ตรงๆ)
+            setImage('logo_team_a', logoAFile, logoA_el, initialsA_el, teamAName);
+            setImage('logo_team_b', logoBFile, logoB_el, initialsB_el, teamBName);
 
-            // Send to OBS
-            setText('name_team_a', get('TeamA'));
-            setText('name_team_b', get('TeamB'));
+            // ส่งข้อมูล Text อื่นๆไป OBS
+            setText('name_team_a', teamAName);
+            setText('name_team_b', teamBName);
             setText('label_1', get('label1'));
             setText('label_2', get('label2'));
             setText('label_3', get('label3'));
-            setImage('logo_team_a', get('LogoA'));
-            setImage('logo_team_b', get('LogoB'));
-            showToast(`โหลดข้อมูล Match ID: ${id} สำเร็จ`, 'success');
+            showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        /* ---------- Score ---------- */
         let scoreA = 0, scoreB = 0;
         function changeScore(team, delta) {
             if (team === 'A') {
@@ -457,7 +374,6 @@
             showToast('รีเซ็ตคะแนนแล้ว', 'info');
         }
 
-        /* ---------- Timer & Half ---------- */
         let timer = 0, interval = null, half = '1st';
         function updateTimerDisplay() {
             const m = String(Math.floor(timer / 60)).padStart(2, '0');
@@ -466,24 +382,14 @@
             timerText_el.textContent = timeString;
             setText('time_counter', timeString);
         }
-        function startTimer() {
-            if (interval) return;
-            interval = setInterval(() => { timer++; updateTimerDisplay(); }, 1000);
-        }
-        function stopTimer() {
-            clearInterval(interval);
-            interval = null;
-        }
-        function resetTimer() {
-            stopTimer();
-            timer = 0;
-            updateTimerDisplay();
-        }
+        function startTimer() { if (!interval) interval = setInterval(() => { timer++; updateTimerDisplay(); }, 1000); }
+        function stopTimer()  { clearInterval(interval); interval = null; }
+        function resetTimer() { stopTimer(); timer = 0; updateTimerDisplay(); }
         function setTime() {
             const t = prompt('Set time (MM:SS)', '00:00');
             if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return;
             const [m, s] = t.split(':').map(Number);
-            timer = m * 60 + s;
+            timer = (m * 60) + s;
             updateTimerDisplay();
         }
         function toggleHalf() {
@@ -492,7 +398,6 @@
             setText('half_text', half);
         }
 
-        /* ---------- Details / Copy ---------- */
         function openDetails() {
             detailsText_el.value = localStorage.getItem('detailsText') || '';
             popupOverlay.style.display = 'block';
@@ -505,7 +410,7 @@
         function saveDetails() {
             localStorage.setItem('detailsText', detailsText_el.value);
             closeDetails();
-            showToast('บันทึกข้อความเรียบร้อย', 'success');
+            showToast('บันทึกแล้ว', 'success');
         }
         function copyDetails() {
             const template = localStorage.getItem('detailsText') || '';
@@ -521,33 +426,28 @@
                 .replace(/<half_text>/gi, halfText_el.textContent);
             
             navigator.clipboard.writeText(filled)
-                .then(() => showToast('📋 คัดลอกข้อความแล้ว', 'info'))
-                .catch(err => {
-                    console.error('Copy failed:', err);
-                    showToast('การคัดลอกล้มเหลว', 'error');
-                });
+                .then(() => showToast('คัดลอกแล้ว', 'info'))
+                .catch(err => showToast('คัดลอกล้มเหลว', 'error'));
         }
 
         function showHelp() {
-            // Using the custom popup for help might be a nice future improvement
             alert(
-                '🧾 วิธีใช้คร่าว ๆ\n\n' +
-                '1) ไฟล์ Logo นำไปไว้ที่ไดร์ฟ C:/OBSAssets/logos \n' +
-                '2) 📂 Upload ไฟล์ Excel แล้วกด Load\n' +
-                '3) ปรับคะแนน เวลาหรือครึ่งเกมได้ตามปุ่ม\n' +
-                '4) OBS Sources ที่ต้องมี (ชื่อตรงเวอร์ชันแรก):\n' +
-                '   • logo_team_a / logo_team_b\n' +
-                '   • name_team_a / name_team_b\n' +
-                '   • label_1 – label_3\n' +
-                '   • score_team_a / score_team_b\n' +
-                '   • half_text / time_counter\n'
+                'วิธีใช้:\n\n' +
+                '1) ไฟล์ Logo เก็บไว้ที่ C:/OBSAssets/logos\n' +
+                '2) กดปุ่ม "Excel" เพื่อเลือกไฟล์ แล้วกด "Load"\n' +
+                '3) ข้อมูลจะถูกส่งไปที่ OBS อัตโนมัติ\n\n' +
+                'รายชื่อ OBS Sources ที่ต้องมี:\n' +
+                '• logo_team_a, logo_team_b\n' +
+                '• name_team_a, name_team_b\n' +
+                '• label_1, label_2, label_3\n' +
+                '• score_team_a, score_team_b\n' +
+                '• half_text, time_counter'
             );
         }
 
         /* ---------- OBS WebSocket ---------- */
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => {
-            console.warn('OBS WebSocket connection error:', err);
             showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error');
         });
 
@@ -555,21 +455,27 @@
             obs.call('SetInputSettings', {
                 inputName: source,
                 inputSettings: { text: String(text) }
-            }).catch(err => console.warn(`OBS: Could not set text for ${source}`, err));
+            }).catch(err => {}); // Fail silently
         }
 
-        function setImage(source, filename) {
+        function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
+            // --- ส่วนสำหรับแสดงผลใน Dock UI ---
+            // เนื่องจากข้อจำกัดด้านความปลอดภัย browser ใน dock จะไม่สามารถโหลดรูปจาก C:/ ได้
+            // เราจึงแสดงตัวย่อแทนเมื่อรูปโหลดไม่ขึ้น (ซึ่งจะเกิดขึ้นเสมอ)
+            imgElement.style.display = 'none';
+            initialsElement.style.display = 'block';
+            initialsElement.textContent = getTeamInitials(teamName);
+
+            // --- ส่วนสำหรับส่งคำสั่งไปที่ OBS ---
+            // OBS สามารถใช้ path นี้ได้ปกติ ไม่ต้องแก้ไขส่วนนี้
             if (!filename) return;
             const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
             
-            const previewEl = source === 'logo_team_a' ? logoA_el : logoB_el;
-            if (previewEl) previewEl.src = filePath;
-
             obs.call('SetInputSettings', {
-                inputName: source,
+                inputName: sourceName,
                 inputSettings: { file: filePath }
-            }).catch(err => console.warn(`OBS: Could not set image for ${source}`, err));
+            }).catch(err => {}); // Fail silently
         }
     </script>
 </body>
