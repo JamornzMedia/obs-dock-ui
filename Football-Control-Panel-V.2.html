@@ -148,25 +148,25 @@
         /* --- Timer --- */
         .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
 
-        /* --- Popup --- */
+        /* --- Popups --- */
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
-        #detailsPopup {
+        .popup-modal {
             display: none; position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%); background: var(--card-bg-color);
             padding: 20px; border-radius: var(--border-radius); width: 90%;
             max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
         }
-        #detailsPopup h3 { margin-top: 0; font-size: 1.1rem; }
-        #detailsPopup p { font-size: 0.85rem; color: var(--text-muted-color); margin-bottom:12px; }
-        #detailsPopup textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
+        .popup-modal h3 { margin-top: 0; font-size: 1.1rem; }
+        .popup-modal p { font-size: 0.9rem; color: var(--text-muted-color); margin-bottom:12px; }
+        .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
 
-        /* --- NEW: Popup Tag List Styles --- */
-        #detailsPopup .tag-list {
+        /* --- Reusable Item List Style (for Tags and Sources) --- */
+        .item-list {
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px solid var(--border-color);
         }
-        #detailsPopup .tag-list h4 {
+        .item-list h4 {
             margin: 0 0 10px 0;
             font-size: 0.95rem;
             color: var(--text-color);
@@ -175,7 +175,7 @@
             align-items: center;
             gap: 6px;
         }
-        #detailsPopup .tag-item {
+        .item-list-item {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -183,7 +183,7 @@
             margin-bottom: 5px;
             color: var(--text-muted-color);
         }
-        #detailsPopup .tag-item code {
+        .item-list-item code {
             background-color: var(--bg-color);
             padding: 2px 6px;
             border-radius: 4px;
@@ -218,7 +218,6 @@
                 </div>
             </div>
         </div>
-        
         <div class="card">
             <div class="team-info">
                 <div class="team">
@@ -241,7 +240,6 @@
                 <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
             </div>
         </div>
-
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons">
@@ -259,7 +257,6 @@
                 <button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button>
             </div>
         </div>
-
         <div class="card">
             <div class="row">
                 <div style="flex: 1;">
@@ -279,7 +276,6 @@
                 </div>
             </div>
         </div>
-        
         <div class="card">
             <div class="row center" style="gap: 10px;">
                 <button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button>
@@ -289,30 +285,53 @@
         </div>
     </div>
 
-    <div id="popupOverlay" class="popup-overlay" onclick="closeDetails()"></div>
-    <div id="detailsPopup">
+    <div id="popupOverlay" class="popup-overlay" onclick="closeAllPopups()"></div>
+
+    <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
         <p>สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ</p>
         <textarea id="detailsText" placeholder="เช่น: เริ่มการแข่งขันครึ่งหลัง <TeamA> vs <TeamB>"></textarea>
         
-        <div class="tag-list">
+        <div class="item-list">
             <h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
-            <div class="tag-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div>
-            <div class="tag-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
-            <div class="tag-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div>
-            <div class="tag-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
-            <div class="tag-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div>
-            <div class="tag-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
-            <div class="tag-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div>
-            <div class="tag-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div>
-            <div class="tag-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
+            <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div>
+            <div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
+            <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div>
+            <div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
+            <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div>
+            <div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
+            <div class="item-list-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div>
+            <div class="item-list-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div>
+            <div class="item-list-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
         </div>
 
         <div class="row center" style="margin-top: 15px;">
             <button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button>
-            <button class="btn-secondary" onclick="closeDetails()"><i class="fas fa-times"></i> ปิด</button>
+            <button class="btn-secondary" onclick="closeAllPopups()"><i class="fas fa-times"></i> ปิด</button>
         </div>
     </div>
+
+    <div id="helpPopup" class="popup-modal">
+        <h3><i class="fas fa-question-circle"></i> วิธีการใช้งาน</h3>
+        <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p>
+        <p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p>
+        <p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
+
+        <div class="item-list">
+            <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
+            <div class="item-list-item"><code>logo_team_a/b</code> <span>- รูปภาพโลโก้ทีม</span></div>
+            <div class="item-list-item"><code>name_team_a/b</code> <span>- Text (GDI+) ชื่อทีม</span></div>
+            <div class="item-list-item"><code>score_team_a/b</code> <span>- Text (GDI+) คะแนน</span></div>
+            <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับ</span></div>
+            <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
+            <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
+        </div>
+
+        <div class="row center" style="margin-top: 15px;">
+            <button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
 
     <script>
         const $ = id => document.getElementById(id);
@@ -320,12 +339,12 @@
             nameA_el, nameB_el, label1_el, label2_el, label3_el,
             logoA_el, logoB_el, initialsA_el, initialsB_el,
             scoreA_el, scoreB_el, timerText_el, halfText_el,
-            detailsPopup, popupOverlay, detailsText_el, matchID_input, toastContainer
+            detailsPopup, helpPopup, popupOverlay, detailsText_el, matchID_input, toastContainer
         ] = [
             "nameA", "nameB", "label1", "label2", "label3",
             "logoA", "logoB", "initialsA", "initialsB",
             "scoreA", "scoreB", "timerText", "halfText",
-            "detailsPopup", "popupOverlay", "detailsText", "matchID", "toast-container"
+            "detailsPopup", "helpPopup", "popupOverlay", "detailsText", "matchID", "toast-container"
         ].map($);
 
         function showToast(message, type = 'info') {
@@ -386,12 +405,9 @@
             label2_el.textContent = get('label2');
             label3_el.textContent = get('label3');
             
-            // --- Logic แสดงผลโลโก้ ---
-            // ตั้งค่าสำหรับส่งไป OBS (ใช้ Path ตรงๆ)
             setImage('logo_team_a', logoAFile, logoA_el, initialsA_el, teamAName);
             setImage('logo_team_b', logoBFile, logoB_el, initialsB_el, teamBName);
 
-            // ส่งข้อมูล Text อื่นๆไป OBS
             setText('name_team_a', teamAName);
             setText('name_team_b', teamBName);
             setText('label_1', get('label1'));
@@ -445,18 +461,24 @@
             setText('half_text', half);
         }
 
+        /* --- Popup Management --- */
+        function closeAllPopups() {
+            popupOverlay.style.display = 'none';
+            detailsPopup.style.display = 'none';
+            helpPopup.style.display = 'none';
+        }
         function openDetails() {
             detailsText_el.value = localStorage.getItem('detailsText') || '';
             popupOverlay.style.display = 'block';
             detailsPopup.style.display = 'block';
         }
-        function closeDetails() {
-            popupOverlay.style.display = 'none';
-            detailsPopup.style.display = 'none';
+        function showHelp() {
+            popupOverlay.style.display = 'block';
+            helpPopup.style.display = 'block';
         }
         function saveDetails() {
             localStorage.setItem('detailsText', detailsText_el.value);
-            closeDetails();
+            closeAllPopups();
             showToast('บันทึกแล้ว', 'success');
         }
         function copyDetails() {
@@ -478,21 +500,6 @@
                 .catch(err => showToast('คัดลอกล้มเหลว', 'error'));
         }
 
-        function showHelp() {
-            alert(
-                'วิธีใช้:\n\n' +
-                '1) ไฟล์ Logo เก็บไว้ที่ C:/OBSAssets/logos\n' +
-                '2) กดปุ่ม "Excel" เพื่อเลือกไฟล์ แล้วกด "Load"\n' +
-                '3) ข้อมูลจะถูกส่งไปที่ OBS อัตโนมัติ\n\n' +
-                'รายชื่อ OBS Sources ที่ต้องมี:\n' +
-                '• logo_team_a, logo_team_b\n' +
-                '• name_team_a, name_team_b\n' +
-                '• label_1, label_2, label_3\n' +
-                '• score_team_a, score_team_b\n' +
-                '• half_text, time_counter'
-            );
-        }
-
         /* ---------- OBS WebSocket ---------- */
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => {
@@ -507,15 +514,10 @@
         }
 
         function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
-            // --- ส่วนสำหรับแสดงผลใน Dock UI ---
-            // เนื่องจากข้อจำกัดด้านความปลอดภัย browser ใน dock จะไม่สามารถโหลดรูปจาก C:/ ได้
-            // เราจึงแสดงตัวย่อแทนเมื่อรูปโหลดไม่ขึ้น (ซึ่งจะเกิดขึ้นเสมอ)
             imgElement.style.display = 'none';
             initialsElement.style.display = 'block';
             initialsElement.textContent = getTeamInitials(teamName);
 
-            // --- ส่วนสำหรับส่งคำสั่งไปที่ OBS ---
-            // OBS สามารถใช้ path นี้ได้ปกติ ไม่ต้องแก้ไขส่วนนี้
             if (!filename) return;
             const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
