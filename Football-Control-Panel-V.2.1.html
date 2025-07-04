@@ -209,10 +209,14 @@
         <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
         <div class="item-list">
             <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
-            <div class="item-list-item"><code>Color_Team_A/B</code> <span>- **Color Source** สำหรับควบคุมสีทีม</span></div>
-            <div class="item-list-item"><code>logo_team_a/b</code> <span>- **Image Source** สำหรับโลโก้ทีม</span></div>
-            <div class="item-list-item"><code>name_team_a/b</code> <span>- **Text (GDI+)** สำหรับชื่อทีม</span></div>
-            <div class="item-list-item"><code>score_team_a/b</code> <span>- **Text (GDI+)** สำหรับคะแนน</span></div>
+            <div class="item-list-item"><code>Color_Team_A</code> <span>- **Color Source** สำหรับสีทีม A</span></div>
+            <div class="item-list-item"><code>Color_Team_B</code> <span>- **Color Source** สำหรับสีทีม B</span></div>
+            <div class="item-list-item"><code>logo_team_a</code> <span>- **Image Source** สำหรับโลโก้ทีม A</span></div>
+            <div class="item-list-item"><code>logo_team_b</code> <span>- **Image Source** สำหรับโลโก้ทีม B</span></div>
+            <div class="item-list-item"><code>name_team_a</code> <span>- **Text (GDI+)** สำหรับชื่อทีม A</span></div>
+            <div class="item-list-item"><code>name_team_b</code> <span>- **Text (GDI+)** สำหรับชื่อทีม B</span></div>
+            <div class="item-list-item"><code>score_team_a</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม A</span></div>
+            <div class="item-list-item"><code>score_team_b</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม B</span></div>
             <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับต่างๆ</span></div>
             <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
             <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
@@ -235,15 +239,12 @@
         
         function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
 
-        // CORRECTED: Converts #RRGGBB to an OBS-compatible BGR decimal value
         function hexToObsColor(hex) {
             const cleanHex = hex.substring(1);
             const r = cleanHex.substring(0, 2);
             const g = cleanHex.substring(2, 4);
             const b = cleanHex.substring(4, 6);
-            // Rearrange to BBGGRR and prepend FF for alpha (AABBGGRR format)
             const obsHex = "FF" + b + g + r;
-            // Parse the rearranged hex string to a decimal integer
             return parseInt(obsHex, 16);
         }
 
@@ -272,7 +273,6 @@
             
             setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
             setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
-
             setText('name_team_a', teamAName.replace(/\//g, '\n'));
             setText('name_team_b', teamBName.replace(/\//g, '\n'));
             setSourceColor('A', colorA);
@@ -284,7 +284,6 @@
             showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        /* --- Team Name & Color Editor Logic --- */
         function toggleEditMode(team) {
             const isA = team === 'A';
             const nameDiv = isA ? elements.nameA : elements.nameB;
@@ -325,7 +324,6 @@
         elements.lhInputB.addEventListener('input', (e) => { elements.nameB.style.lineHeight = e.target.value; });
         elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
         elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
-
 
         let scoreA = 0, scoreB = 0;
         let timer = 0, interval = null, half = '1st';
