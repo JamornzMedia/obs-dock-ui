@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Football Scoreboard Controller</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <script type="text/javascript">
+      var sc_project=13147874; var sc_invisible=0; var sc_security="550e33c0"; var scJsHost = "https://";
+      document.write("<sc"+"ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></"+"script>");
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a1a; --card-bg-color: #242424; --text-color: #e0e0e0;
+            --text-muted-color: #a0a0a0; --accent-color: #3b82f6; --accent-hover-color: #2563eb;
+            --danger-color: #ef4444; --danger-hover-color: #dc2626; --success-color: #22c55e;
+            --success-hover-color: #16a34a; --border-color: #3a3a3a; --border-radius: 6px;
+        }
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color);
+            color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px; box-sizing: border-box; overflow: auto;
+        }
+        *, *:before, *:after { box-sizing: inherit; }
+        .container { padding: 8px; display: flex; flex-direction: column; gap: 10px; }
+        .card {
+            background-color: var(--card-bg-color); border-radius: var(--border-radius);
+            padding: 12px; border: 1px solid var(--border-color);
+        }
+        .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+        .row:last-child { margin-bottom: 0; }
+        .center { justify-content: center; }
+        .space-between { justify-content: space-between; }
+        input[type="number"] {
+            padding: 6px 8px; border-radius: var(--border-radius); border: 1px solid var(--border-color);
+            background: var(--bg-color); color: var(--text-color); font-size: 0.9rem;
+            width: 60px; text-align: center;
+        }
+        button {
+            padding: 6px 12px; border-radius: var(--border-radius); font-size: 0.9rem; border: none;
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; font-weight: 500; transition: background-color 0.2s ease;
+        }
+        .btn-primary { background: var(--accent-color); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover-color); }
+        .btn-secondary { background: #4a4a4a; color: #fff; }
+        .btn-secondary:hover { background: #5a5a5a; }
+        .btn-danger { background: var(--danger-color); color: #fff; }
+        .btn-danger:hover { background: var(--danger-hover-color); }
+        
+        /* --- NEW Team Editor Layout --- */
+        .team-editor { display: flex; flex-direction: column; gap: 10px; }
+        .team-row { display: flex; align-items: center; gap: 10px; }
+        .team-row .logo-container {
+            width: 48px; height: 48px; border-radius: 50%; background: #333;
+            border: 2px solid var(--border-color); display: flex; align-items: center;
+            justify-content: center; position: relative; flex-shrink: 0;
+        }
+        .team-row .logo-container img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+        .team-row .logo-initials { font-size: 1.5rem; font-weight: bold; color: var(--text-muted-color); display: none; }
+        .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; }
+        .team-row .name { font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2; }
+        .team-row .name.can-wrap { white-space: normal; } /* Allow wrapping when editing */
+        .team-row .name-input {
+            display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
+            border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; font-size: 0.95rem;
+        }
+        .team-row .edit-checkbox { margin-left: auto; flex-shrink: 0; }
+        .team-row .line-height-control { display: none; }
+        .team-row .line-height-control input[type="number"] { width: 65px; text-align: left; padding: 6px; }
+
+        .labels-row { display: flex; gap: 8px; margin-top: 10px; }
+        .labels-row div {
+            flex: 1; background: var(--bg-color); text-align: center;
+            font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color);
+        }
+
+        .score-control { display: flex; align-items: center; justify-content: space-between; }
+        .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
+        .score-buttons { display: flex; flex-direction: column; gap: 6px; }
+        .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
+        .score-buttons .plus:hover { background: var(--success-hover-color); }
+        .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
+        .score-buttons .minus:hover { background: var(--danger-hover-color); }
+        .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
+
+        .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
+        .popup-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius);
+            width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
+        }
+        .popup-modal h3 { margin-top: 0; font-size: 1.1rem; }
+        .popup-modal p { font-size: 0.9rem; color: var(--text-muted-color); margin-bottom:12px; }
+        .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
+        .item-list { margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+        .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-color); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .item-list-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-muted-color); }
+        .item-list-item code { background-color: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
+        
+        #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
+        .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
+        .toast.success { background-color: var(--success-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--accent-color); }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div class="container">
+        <div class="card">
+            <div class="row space-between">
+                <button class="btn-secondary" onclick="handleExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                <div class="row" style="margin-bottom:0;">
+                    <label for="matchID" style="font-size:0.85rem;">ID:</label>
+                    <input type="number" id="matchID" min="1" value="1">
+                    <button class="btn-primary" onclick="applyMatch()"><i class="fas fa-check"></i> Load</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="team-editor">
+                <div class="team-row">
+                    <div class="logo-container">
+                        <img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div>
+                    </div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameA">Team A</div>
+                        <input type="text" class="name-input" id="nameA-input">
+                    </div>
+                    <input type="checkbox" class="edit-checkbox" id="editCheckA" title="แก้ไขชื่อ/จัดรูปแบบ">
+                    <div class="line-height-control" id="lhControlA">
+                        <input type="number" id="lhInputA" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด">
+                    </div>
+                </div>
+                <div class="team-row">
+                    <div class="logo-container">
+                        <img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div>
+                    </div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameB">Team B</div>
+                        <input type="text" class="name-input" id="nameB-input">
+                    </div>
+                    <input type="checkbox" class="edit-checkbox" id="editCheckB" title="แก้ไขชื่อ/จัดรูปแบบ">
+                    <div class="line-height-control" id="lhControlB">
+                        <input type="number" id="lhInputB" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด">
+                    </div>
+                </div>
+            </div>
+            <div class="labels-row">
+                <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="score-control">
+                <div class="score-buttons"><button class="plus" onclick="changeScore('A', 1)">+</button><button class="minus" onclick="changeScore('A', -1)">-</button></div>
+                <div class="score-display" id="scoreA">0</div><div class="score-display" id="scoreB">0</div>
+                <div class="score-buttons"><button class="plus" onclick="changeScore('B', 1)">+</button><button class="minus" onclick="changeScore('B', -1)">-</button></div>
+            </div>
+            <div class="row center" style="margin-top: 12px;"><button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button></div>
+        </div>
+
+        <div class="card">
+            <div class="row">
+                <div style="flex: 1;"><button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem">ครึ่ง</span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
+                <div style="flex: 2; text-align:center;">
+                    <div id="timerText" class="timer-display">00:00</div>
+                    <div class="row center"><button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button><button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button><button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button><button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="row center" style="gap: 10px;"><button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button><button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button><button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button></div>
+        </div>
+    </div>
+
+    <div id="popupOverlay" class="popup-overlay" onclick="closeAllPopups()"></div>
+    <div id="detailsPopup" class="popup-modal">
+        <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
+        <p>สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ</p>
+        <textarea id="detailsText" placeholder="เช่น: เริ่มการแข่งขันครึ่งหลัง <TeamA> vs <TeamB>"></textarea>
+        <div class="item-list">
+            <h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
+            <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div><div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
+            <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div><div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
+            <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div><div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
+            <div class="item-list-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div><div class="item-list-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div><div class="item-list-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
+        </div>
+        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button><button class="btn-secondary" onclick="closeAllPopups()"><i class="fas fa-times"></i> ปิด</button></div>
+    </div>
+    <div id="helpPopup" class="popup-modal">
+        <h3><i class="fas fa-question-circle"></i> วิธีการใช้งาน</h3>
+        <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
+        <div class="item-list">
+            <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
+            <div class="item-list-item"><code>logo_team_a</code> <span>- รูปภาพโลโก้ทีม A</span></div><div class="item-list-item"><code>logo_team_b</code> <span>- รูปภาพโลโก้ทีม B</span></div>
+            <div class="item-list-item"><code>name_team_a</code> <span>- Text (GDI+) ชื่อทีม A</span></div><div class="item-list-item"><code>name_team_b</code> <span>- Text (GDI+) ชื่อทีม B</span></div>
+            <div class="item-list-item"><code>score_team_a</code> <span>- Text (GDI+) คะแนนทีม A</span></div><div class="item-list-item"><code>score_team_b</code> <span>- Text (GDI+) คะแนนทีม B</span></div>
+            <div class="item-list-item"><code>label_1</code>, <code>label_2</code>, <code>label_3</code> <span>- Text (GDI+) ป้ายกำกับ</span></div>
+            <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div><div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
+        </div>
+        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button></div>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+        const elements = [
+            "nameA", "nameB", "label1", "label2", "label3",
+            "logoA", "logoB", "initialsA", "initialsB",
+            "scoreA", "scoreB", "timerText", "halfText",
+            "detailsPopup", "helpPopup", "popupOverlay", "detailsText", "matchID", "toast-container",
+            "editCheckA", "nameA-input", "lhControlA", "lhInputA",
+            "editCheckB", "nameB-input", "lhControlB", "lhInputB"
+        ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
+
+        function showToast(message, type = 'info') { /* ... Toast logic ... */ }
+        let sheetData = [];
+        function handleExcel() { /* ... Excel handling ... */ }
+
+        function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
+
+        function applyMatch() {
+            if (!sheetData.length) return showToast('โปรด Upload ไฟล์ก่อน', 'error');
+            const id = parseInt(elements.matchID.value);
+            const header = sheetData[0];
+            const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
+            if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
+
+            // Reset edit states before loading new data
+            if (elements.editCheckA.checked) { elements.editCheckA.click(); }
+            if (elements.editCheckB.checked) { elements.editCheckB.click(); }
+            
+            const get = key => match[header.indexOf(key)] || '';
+            const teamAName = get('TeamA'); const teamBName = get('TeamB');
+            const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
+
+            elements.nameA.innerHTML = teamAName; elements.nameB.innerHTML = teamBName;
+            elements.label1.textContent = get('label1'); elements.label2.textContent = get('label2'); elements.label3.textContent = get('label3');
+            
+            setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
+            setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
+
+            setText('name_team_a', teamAName); setText('name_team_b', teamBName);
+            setText('label_1', get('label1')); setText('label_2', get('label2')); setText('label_3', get('label3'));
+            showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
+        }
+
+        /* --- Team Name Editor Logic --- */
+        function toggleEditMode(team) {
+            const isA = team === 'A';
+            const check = isA ? elements.editCheckA : elements.editCheckB;
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const lhControl = isA ? elements.lhControlA : elements.lhControlB;
+
+            if (check.checked) {
+                // Enter edit mode
+                nameDiv.style.display = 'none';
+                nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/'); // Convert <br> back to /
+                nameInput.style.display = 'block';
+                lhControl.style.display = 'flex';
+                nameDiv.classList.add('can-wrap');
+            } else {
+                // Exit edit mode and apply changes
+                applyEditedName(team);
+                nameDiv.style.display = 'block';
+                nameInput.style.display = 'none';
+                lhControl.style.display = 'none';
+                nameDiv.classList.remove('can-wrap');
+            }
+        }
+
+        function applyEditedName(team) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
+
+            // Update UI with <br> for line breaks
+            nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
+
+            // Send plain text (with space instead of /) to OBS
+            setText(obsSourceName, nameInput.value.replace(/\//g, ' '));
+        }
+
+        elements.editCheckA.addEventListener('change', () => toggleEditMode('A'));
+        elements.editCheckB.addEventListener('change', () => toggleEditMode('B'));
+        elements.lhInputA.addEventListener('input', (e) => { elements.nameA.style.lineHeight = e.target.value; });
+        elements.lhInputB.addEventListener('input', (e) => { elements.nameB.style.lineHeight = e.target.value; });
+
+
+        let scoreA = 0, scoreB = 0;
+        function changeScore(team, delta) { /* ... Score logic ... */ }
+        function resetScore() { /* ... Reset logic ... */ }
+        let timer = 0, interval = null, half = '1st';
+        function updateTimerDisplay() { /* ... Timer display ... */ }
+        function startTimer() { /* ... Timer start ... */ }
+        function stopTimer() { /* ... Timer stop ... */ }
+        function resetTimer() { /* ... Timer reset ... */ }
+        function setTime() { /* ... Timer set ... */ }
+        function toggleHalf() { /* ... Half toggle ... */ }
+        function closeAllPopups() { /* ... Popup close ... */ }
+        function openDetails() { /* ... Popup open ... */ }
+        function showHelp() { /* ... Popup show ... */ }
+        function saveDetails() { /* ... Popup save ... */ }
+        function copyDetails() { /* ... Copy logic ... */ }
+        const obs = new OBSWebSocket();
+        obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
+        function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
+        function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
+            imgElement.style.display = 'none';
+            initialsElement.style.display = 'block';
+            initialsElement.textContent = getTeamInitials(teamName);
+            if (!filename) return;
+            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
+            const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
+        }
+        
+        // Minified functions for brevity
+        showToast = (m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
+        handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
+        changeScore=(t,e)=>{'A'===t?(scoreA=Math.max(0,scoreA+e),elements.scoreA.textContent=scoreA,setText('score_team_a',scoreA)):(scoreB=Math.max(0,scoreB+e),elements.scoreB.textContent=scoreB,setText('score_team_b',scoreB))};
+        resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
+        updateTimerDisplay=()=>{const t=String(Math.floor(timer/60)).padStart(2,'0'),e=String(timer%60).padStart(2,'0'),n=`${t}:${e}`;elements.timerText.textContent=n,setText('time_counter',n)};
+        startTimer=()=>{interval||(interval=setInterval(()=>{timer++,updateTimerDisplay()},1e3))};stopTimer=()=>{clearInterval(interval),interval=null};resetTimer=()=>{stopTimer(),timer=0,updateTimerDisplay()};
+        setTime=()=>{const t=prompt('Set time (MM:SS)','00:00');if(!t||!/^\d{1,2}:\d{2}$/.test(t))return;const[e,n]=t.split(':').map(Number);timer=60*e+n,updateTimerDisplay()};
+        toggleHalf=()=>{half='1st'===half?'2nd':'1st',elements.halfText.textContent=half,setText('half_text',half)};
+        closeAllPopups=()=>{elements.popupOverlay.style.display='none',elements.detailsPopup.style.display='none',elements.helpPopup.style.display='none'};
+        openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
+        showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
+        saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
+        copyDetails=()=>{const t=localStorage.getItem('detailsText')||'';if(!t.trim())return showToast('ไม่มีข้อความให้คัดลอก','error');const e=t.replace(/<TeamA>/gi,elements.nameA.textContent).replace(/<TeamB>/gi,elements.nameB.textContent).replace(/<label1>/gi,elements.label1.textContent).replace(/<label2>/gi,elements.label2.textContent).replace(/<label3>/gi,elements.label3.textContent).replace(/<score_team_a>/gi,scoreA).replace(/<score_team_b>/gi,scoreB).replace(/<time_counter>/gi,elements.timerText.textContent).replace(/<half_text>/gi,elements.halfText.textContent);navigator.clipboard.writeText(e).then(()=>showToast('คัดลอกแล้ว','info')).catch(t=>showToast('คัดลอกล้มเหลว','error'))};
+    </script>
+</body>
+</html>
