@@ -97,6 +97,10 @@
         .score-buttons .minus:hover { background: var(--danger-hover-color); }
         .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
 
+        .timer-controls { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .countdown-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-muted-color); cursor: pointer; }
+
+
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
         .popup-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -178,7 +182,16 @@
                 <div style="flex: 1;"><button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem">ครึ่ง</span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
                 <div style="flex: 2; text-align:center;">
                     <div id="timerText" class="timer-display">00:00</div>
-                    <div class="row center"><button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button><button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button><button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button><button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button></div>
+                    <div class="timer-controls">
+                        <button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button>
+                        <button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button>
+                        <button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button>
+                        <button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button>
+                        <label class="countdown-toggle">
+                            <input type="checkbox" id="countdownCheck" title="นับถอยหลัง">
+                            <span>Down</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -229,7 +242,8 @@
             "scoreA", "scoreB", "timerText", "halfText", "detailsPopup", "helpPopup", "popupOverlay",
             "detailsText", "matchID", "toast-container", "colorA", "colorB",
             "editBtnA", "okBtnA", "nameA-input",
-            "editBtnB", "okBtnB", "nameB-input"
+            "editBtnB", "okBtnB", "nameB-input",
+            "countdownCheck"
         ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
 
         let sheetData = [];
@@ -315,7 +329,10 @@
         elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
         elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
 
-        let scoreA = 0, scoreB = 0; let timer = 0, interval = null, half = '1st';
+        let scoreA = 0, scoreB = 0;
+        let timer = 0, interval = null, half = '1st';
+        let isCountdown = false, countdownStartTime = 0;
+        
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
 
@@ -343,21 +360,48 @@
                 .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
             navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
         }
-        function setTime() {
-            const t = prompt('Set time (MM:SS หรือ MMM:SS)', '45:00');
-            if (!t || !/^\d+:\d{2}$/.test(t)) return; // CORRECTED: Allows more than 2 digits for minutes
-            const [m, s] = t.split(':').map(Number);
-            timer = (m * 60) + s;
+
+        // --- Timer Logic ---
+        function updateTimerDisplay() {
+            const m = String(Math.floor(timer / 60)).padStart(2, '0');
+            const s = String(timer % 60).padStart(2, '0');
+            elements.timerText.textContent = `${m}:${s}`;
+            setText('time_counter', `${m}:${s}`);
+        }
+        function startTimer() {
+            if (interval) return;
+            interval = setInterval(() => {
+                if (isCountdown) {
+                    if (timer > 0) { timer--; } else { stopTimer(); }
+                } else { timer++; }
+                updateTimerDisplay();
+            }, 1000);
+        }
+        function stopTimer() { clearInterval(interval); interval = null; }
+        function resetTimer() {
+            stopTimer();
+            timer = isCountdown ? countdownStartTime : 0;
             updateTimerDisplay();
         }
-        
+        function setTime() {
+            const t = prompt('Set time (MM:SS หรือ MMM:SS)', '45:00');
+            if (!t || !/^\d+:\d{2}$/.test(t)) return;
+            const [m, s] = t.split(':').map(Number);
+            const newTime = (m * 60) + s;
+            timer = newTime;
+            countdownStartTime = newTime;
+            updateTimerDisplay();
+        }
+        elements.countdownCheck.addEventListener('change', (e) => {
+            isCountdown = e.target.checked;
+            resetTimer(); // Reset to the correct start value when mode is toggled
+        });
+
         // Minified functions for brevity
         showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
         handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
         changeScore=(t,e)=>{'A'===t?(scoreA=Math.max(0,scoreA+e),elements.scoreA.textContent=scoreA,setText('score_team_a',scoreA)):(scoreB=Math.max(0,scoreB+e),elements.scoreB.textContent=scoreB,setText('score_team_b',scoreB))};
         resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
-        updateTimerDisplay=()=>{const t=String(Math.floor(timer/60)).padStart(2,'0'),e=String(timer%60).padStart(2,'0'),n=`${t}:${e}`;elements.timerText.textContent=n,setText('time_counter',n)};
-        startTimer=()=>{interval||(interval=setInterval(()=>{timer++,updateTimerDisplay()},1e3))};stopTimer=()=>{clearInterval(interval),interval=null};resetTimer=()=>{stopTimer(),timer=0,updateTimerDisplay()};
         toggleHalf=()=>{half='1st'===half?'2nd':'1st',elements.halfText.textContent=half,setText('half_text',half)};
         closeAllPopups=()=>{elements.popupOverlay.style.display='none',elements.detailsPopup.style.display='none',elements.helpPopup.style.display='none'};
         openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
