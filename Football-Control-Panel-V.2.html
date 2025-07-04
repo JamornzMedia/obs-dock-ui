@@ -14,82 +14,36 @@
     </script>
 
     <style>
-        /* --- Compact & Scalable UI for OBS Docks --- */
         :root {
-            --bg-color: #1a1a1a;
-            --card-bg-color: #242424;
-            --text-color: #e0e0e0;
-            --text-muted-color: #a0a0a0;
-            --accent-color: #3b82f6;
-            --accent-hover-color: #2563eb;
-            --danger-color: #ef4444;
-            --danger-hover-color: #dc2626;
-            --success-color: #22c55e;
-            --success-hover-color: #16a34a;
-            --border-color: #3a3a3a;
-            --border-radius: 6px;
+            --bg-color: #1a1a1a; --card-bg-color: #242424; --text-color: #e0e0e0;
+            --text-muted-color: #a0a0a0; --accent-color: #3b82f6; --accent-hover-color: #2563eb;
+            --danger-color: #ef4444; --danger-hover-color: #dc2626; --success-color: #22c55e;
+            --success-hover-color: #16a34a; --border-color: #3a3a3a; --border-radius: 6px;
         }
-
         html, body {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 14px; /* Smaller base font for docks */
-            box-sizing: border-box;
-            overflow: auto;
+            margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color);
+            color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px; box-sizing: border-box; overflow: auto;
         }
         *, *:before, *:after { box-sizing: inherit; }
-
-        .container {
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
+        .container { padding: 8px; display: flex; flex-direction: column; gap: 10px; }
         .card {
-            background-color: var(--card-bg-color);
-            border-radius: var(--border-radius);
-            padding: 12px;
-            border: 1px solid var(--border-color);
+            background-color: var(--card-bg-color); border-radius: var(--border-radius);
+            padding: 12px; border: 1px solid var(--border-color);
         }
-        
-        .row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
         .row:last-child { margin-bottom: 0; }
         .center { justify-content: center; }
         .space-between { justify-content: space-between; }
-
         input[type="number"] {
-            padding: 6px 8px;
-            border-radius: var(--border-radius);
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-size: 0.9rem;
-            width: 60px;
-            text-align: center;
+            padding: 6px 8px; border-radius: var(--border-radius); border: 1px solid var(--border-color);
+            background: var(--bg-color); color: var(--text-color); font-size: 0.9rem;
+            width: 60px; text-align: center;
         }
-
         button {
-            padding: 6px 12px;
-            border-radius: var(--border-radius);
-            font-size: 0.9rem;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
+            padding: 6px 12px; border-radius: var(--border-radius); font-size: 0.9rem; border: none;
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; font-weight: 500; transition: background-color 0.2s ease;
         }
         .btn-primary { background: var(--accent-color); color: #fff; }
         .btn-primary:hover { background: var(--accent-hover-color); }
@@ -97,116 +51,75 @@
         .btn-secondary:hover { background: #5a5a5a; }
         .btn-danger { background: var(--danger-color); color: #fff; }
         .btn-danger:hover { background: var(--danger-hover-color); }
-
-        /* --- Team Info & Logo Fallback --- */
-        .team-info { display: flex; justify-content: space-around; align-items: center; }
-        .team { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
-        .team .logo-container {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            background: #333;
-            border: 2px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .team .logo-container img {
-            width: 100%; height: 100%;
-            object-fit: contain;
-            border-radius: 50%;
-        }
-        .team .logo-initials { /* Fallback text (e.g., MU for Manchester United) */
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--text-muted-color);
-            display: none; /* Hidden by default */
-        }
-        .team .name { font-size: 0.9rem; font-weight: 600; text-align: center; }
         
-        .labels-row { display: flex; gap: 8px; margin-top: 10px; }
-        .labels-row div {
-            flex: 1; background: var(--bg-color); text-align: center;
-            font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color);
+        /* --- Team Editor Layout --- */
+        .team-editor { display: flex; flex-direction: column; gap: 10px; }
+        .team-row { display: flex; align-items: center; gap: 10px; }
+        .team-row .color-picker {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            width: 28px; height: 28px; background-color: transparent;
+            border: none; cursor: pointer; padding: 0;
         }
+        .team-row .color-picker::-webkit-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
+        .team-row .color-picker::-moz-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
 
-        /* --- Score Control (Bigger Plus Button) --- */
+        .team-row .logo-container {
+            width: 48px; height: 48px; border-radius: 50%; background: #333;
+            border: 2px solid var(--border-color); display: flex; align-items: center;
+            justify-content: center; position: relative; flex-shrink: 0;
+        }
+        .team-row .logo-container img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+        .team-row .logo-initials { font-size: 1.5rem; font-weight: bold; color: var(--text-muted-color); display: none; }
+        .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .team-row .name {
+            font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2;
+            white-space: normal; word-break: break-word;
+        }
+        .team-row .name-input {
+            display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
+            border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; font-size: 0.95rem;
+        }
+        .edit-btn { background: transparent; padding: 4px 8px; }
+        .edit-btn:hover { background: #5a5a5a; }
+        .ok-btn { display: none; padding: 4px 12px; font-weight: bold; background: var(--success-color); color: #fff; }
+        .ok-btn:hover { background: var(--success-hover-color); }
+
+
+        .labels-row { display: flex; gap: 8px; margin-top: 10px; }
+        .labels-row div { flex: 1; background: var(--bg-color); text-align: center; font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color); }
+
         .score-control { display: flex; align-items: center; justify-content: space-between; }
         .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
         .score-buttons { display: flex; flex-direction: column; gap: 6px; }
-        .score-buttons .plus {
-            width: 48px; height: 48px; font-size: 1.8rem;
-            background: var(--success-color); color: #fff;
-        }
+        .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .plus:hover { background: var(--success-hover-color); }
-        .score-buttons .minus {
-            width: 48px; height: 32px; font-size: 1.2rem;
-            background: var(--danger-color); color: #fff;
-        }
+        .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
         .score-buttons .minus:hover { background: var(--danger-hover-color); }
-
-        /* --- Timer --- */
         .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
 
-        /* --- Popups --- */
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
         .popup-modal {
-            display: none; position: fixed; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); background: var(--card-bg-color);
-            padding: 20px; border-radius: var(--border-radius); width: 90%;
-            max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius);
+            width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
         }
         .popup-modal h3 { margin-top: 0; font-size: 1.1rem; }
         .popup-modal p { font-size: 0.9rem; color: var(--text-muted-color); margin-bottom:12px; }
         .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
-
-        /* --- Reusable Item List Style (for Tags and Sources) --- */
-        .item-list {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-color);
-        }
-        .item-list h4 {
-            margin: 0 0 10px 0;
-            font-size: 0.95rem;
-            color: var(--text-color);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .item-list-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-            color: var(--text-muted-color);
-        }
-        .item-list-item code {
-            background-color: var(--bg-color);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-            color: var(--accent-color);
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        /* --- Toast Notifications --- */
+        .item-list { margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border-color); }
+        .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-color); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .item-list-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-muted-color); }
+        .item-list-item code { background-color: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
+        
         #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
         .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
-        .toast.success { background-color: var(--success-color); }
-        .toast.error { background-color: var(--danger-color); }
-        .toast.info { background-color: var(--accent-color); }
+        .toast.success { background-color: var(--success-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--accent-color); }
         @keyframes fadeIn { to { opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
-
     <div id="toast-container"></div>
-    
     <div class="container">
         <div class="card">
             <div class="row space-between">
@@ -218,318 +131,238 @@
                 </div>
             </div>
         </div>
+        
         <div class="card">
-            <div class="team-info">
-                <div class="team">
+            <div class="team-editor">
+                <div class="team-row">
+                    <input type="color" class="color-picker" id="colorA" value="#ffffff" title="เลือกสีทีม A">
                     <div class="logo-container">
-                        <img id="logoA" src="" alt="">
-                        <div class="logo-initials" id="initialsA">A</div>
+                        <img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div>
                     </div>
-                    <div class="name" id="nameA">Team A</div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameA">Team A</div>
+                        <input type="text" class="name-input" id="nameA-input">
+                    </div>
+                    <button class="edit-btn" id="editBtnA" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnA">OK</button>
                 </div>
-                <div style="font-size: 1.2rem; color: var(--text-muted-color);">VS</div>
-                <div class="team">
+                <div class="team-row">
+                    <input type="color" class="color-picker" id="colorB" value="#ffffff" title="เลือกสีทีม B">
                     <div class="logo-container">
-                        <img id="logoB" src="" alt="">
-                        <div class="logo-initials" id="initialsB">B</div>
+                        <img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div>
                     </div>
-                    <div class="name" id="nameB">Team B</div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameB">Team B</div>
+                        <input type="text" class="name-input" id="nameB-input">
+                    </div>
+                    <button class="edit-btn" id="editBtnB" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnB">OK</button>
                 </div>
             </div>
             <div class="labels-row">
                 <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
             </div>
         </div>
+
         <div class="card">
             <div class="score-control">
-                <div class="score-buttons">
-                    <button class="plus" onclick="changeScore('A', 1)">+</button>
-                    <button class="minus" onclick="changeScore('A', -1)">-</button>
-                </div>
-                <div class="score-display" id="scoreA">0</div>
-                <div class="score-display" id="scoreB">0</div>
-                <div class="score-buttons">
-                    <button class="plus" onclick="changeScore('B', 1)">+</button>
-                    <button class="minus" onclick="changeScore('B', -1)">-</button>
-                </div>
+                <div class="score-buttons"><button class="plus" onclick="changeScore('A', 1)">+</button><button class="minus" onclick="changeScore('A', -1)">-</button></div>
+                <div class="score-display" id="scoreA">0</div><div class="score-display" id="scoreB">0</div>
+                <div class="score-buttons"><button class="plus" onclick="changeScore('B', 1)">+</button><button class="minus" onclick="changeScore('B', -1)">-</button></div>
             </div>
-            <div class="row center" style="margin-top: 12px;">
-                <button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button>
-            </div>
+            <div class="row center" style="margin-top: 12px;"><button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button></div>
         </div>
+
         <div class="card">
             <div class="row">
-                <div style="flex: 1;">
-                    <button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
-                        <span style="font-size:0.8rem">ครึ่ง</span>
-                        <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
-                    </button>
-                </div>
+                <div style="flex: 1;"><button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem">ครึ่ง</span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
                 <div style="flex: 2; text-align:center;">
                     <div id="timerText" class="timer-display">00:00</div>
-                    <div class="row center">
-                        <button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button>
-                        <button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button>
-                        <button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button>
-                        <button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button>
-                    </div>
+                    <div class="row center"><button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button><button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button><button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button><button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button></div>
                 </div>
             </div>
         </div>
+
         <div class="card">
-            <div class="row center" style="gap: 10px;">
-                <button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button>
-                <button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button>
-                <button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button>
-            </div>
+            <div class="row center" style="gap: 10px;"><button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button><button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button><button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button></div>
         </div>
     </div>
 
     <div id="popupOverlay" class="popup-overlay" onclick="closeAllPopups()"></div>
-
     <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
         <p>สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ</p>
         <textarea id="detailsText" placeholder="เช่น: เริ่มการแข่งขันครึ่งหลัง <TeamA> vs <TeamB>"></textarea>
-        
         <div class="item-list">
             <h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
-            <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div>
-            <div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
-            <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div>
-            <div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
-            <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div>
-            <div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
-            <div class="item-list-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div>
-            <div class="item-list-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div>
-            <div class="item-list-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
+            <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div><div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
+            <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div><div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
+            <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div><div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
+            <div class="item-list-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div><div class="item-list-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div><div class="item-list-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
         </div>
-
-        <div class="row center" style="margin-top: 15px;">
-            <button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button>
-            <button class="btn-secondary" onclick="closeAllPopups()"><i class="fas fa-times"></i> ปิด</button>
-        </div>
+        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button><button class="btn-secondary" onclick="closeAllPopups()"><i class="fas fa-times"></i> ปิด</button></div>
     </div>
-
     <div id="helpPopup" class="popup-modal">
         <h3><i class="fas fa-question-circle"></i> วิธีการใช้งาน</h3>
-        <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p>
-        <p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p>
-        <p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
-
+        <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
         <div class="item-list">
             <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
-            <div class="item-list-item"><code>logo_team_a</code> <span>- รูปภาพโลโก้ทีม A</span></div>
-            <div class="item-list-item"><code>logo_team_b</code> <span>- รูปภาพโลโก้ทีม B</span></div>
-            <div class="item-list-item"><code>name_team_a</code> <span>- Text (GDI+) ชื่อทีม A</span></div>
-            <div class="item-list-item"><code>name_team_b</code> <span>- Text (GDI+) ชื่อทีม B</span></div>
-            <div class="item-list-item"><code>score_team_a</code> <span>- Text (GDI+) คะแนนทีม A</span></div>
-            <div class="item-list-item"><code>score_team_b</code> <span>- Text (GDI+) คะแนนทีม B</span></div>
-            <div class="item-list-item"><code>label_1</code>, <code>label_2</code>, <code>label_3</code> <span>- Text (GDI+) ป้ายกำกับ</span></div>
+            <div class="item-list-item"><code>Color_Team_A</code> <span>- **Color Source** สำหรับสีทีม A</span></div>
+            <div class="item-list-item"><code>Color_Team_B</code> <span>- **Color Source** สำหรับสีทีม B</span></div>
+            <div class="item-list-item"><code>logo_team_a</code> <span>- **Image Source** สำหรับโลโก้ทีม A</span></div>
+            <div class="item-list-item"><code>logo_team_b</code> <span>- **Image Source** สำหรับโลโก้ทีม B</span></div>
+            <div class="item-list-item"><code>name_team_a</code> <span>- **Text (GDI+)** สำหรับชื่อทีม A</span></div>
+            <div class="item-list-item"><code>name_team_b</code> <span>- **Text (GDI+)** สำหรับชื่อทีม B</span></div>
+            <div class="item-list-item"><code>score_team_a</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม A</span></div>
+            <div class="item-list-item"><code>score_team_b</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม B</span></div>
+            <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับต่างๆ</span></div>
             <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
             <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
         </div>
-
-        <div class="row center" style="margin-top: 15px;">
-            <button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button>
-        </div>
+        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button></div>
     </div>
-
 
     <script>
         const $ = id => document.getElementById(id);
-        const [
-            nameA_el, nameB_el, label1_el, label2_el, label3_el,
-            logoA_el, logoB_el, initialsA_el, initialsB_el,
-            scoreA_el, scoreB_el, timerText_el, halfText_el,
-            detailsPopup, helpPopup, popupOverlay, detailsText_el, matchID_input, toastContainer
-        ] = [
-            "nameA", "nameB", "label1", "label2", "label3",
-            "logoA", "logoB", "initialsA", "initialsB",
-            "scoreA", "scoreB", "timerText", "halfText",
-            "detailsPopup", "helpPopup", "popupOverlay", "detailsText", "matchID", "toast-container"
-        ].map($);
-
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
+        const elements = [
+            "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
+            "scoreA", "scoreB", "timerText", "halfText", "detailsPopup", "helpPopup", "popupOverlay",
+            "detailsText", "matchID", "toast-container", "colorA", "colorB",
+            "editBtnA", "okBtnA", "nameA-input",
+            "editBtnB", "okBtnB", "nameB-input"
+        ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
 
         let sheetData = [];
-        function handleExcel() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.xlsx, .xls';
-            input.onchange = e => {
-                const reader = new FileReader();
-                reader.onload = evt => {
-                    try {
-                        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-                        sheetData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                        showToast('โหลดไฟล์สำเร็จ', 'success');
-                    } catch (err) {
-                        showToast('อ่านไฟล์ Excel ผิดพลาด', 'error');
-                    }
-                };
-                reader.readAsArrayBuffer(e.target.files[0]);
-            };
-            input.click();
-        }
+        
+        function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
 
-        function getTeamInitials(name) {
-            if (!name) return '';
-            const words = name.split(' ').filter(Boolean);
-            if (words.length >= 2) {
-                return (words[0][0] + words[1][0]).toUpperCase();
-            }
-            return name.substring(0, 2).toUpperCase();
+        function hexToObsColor(hex) {
+            const cleanHex = hex.substring(1); const r = cleanHex.substring(0, 2); const g = cleanHex.substring(2, 4); const b = cleanHex.substring(4, 6);
+            return parseInt("FF" + b + g + r, 16);
         }
 
         function applyMatch() {
             if (!sheetData.length) return showToast('โปรด Upload ไฟล์ก่อน', 'error');
-            const id = parseInt(matchID_input.value);
+            const id = parseInt(elements.matchID.value);
             const header = sheetData[0];
             const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
             if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
+            if (elements.okBtnA.style.display !== 'none') { exitEditMode('A', false); }
+            if (elements.okBtnB.style.display !== 'none') { exitEditMode('B', false); }
+            
             const get = key => match[header.indexOf(key)] || '';
-            
-            const teamAName = get('TeamA');
-            const teamBName = get('TeamB');
-            const logoAFile = get('LogoA');
-            const logoBFile = get('LogoB');
+            const teamAName = get('TeamA') || 'Team A'; const teamBName = get('TeamB') || 'Team B';
+            const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
+            const colorA = get('ColorA') || '#ffffff'; const colorB = get('ColorB') || '#ffffff';
 
-            nameA_el.textContent = teamAName;
-            nameB_el.textContent = teamBName;
-            label1_el.textContent = get('label1');
-            label2_el.textContent = get('label2');
-            label3_el.textContent = get('label3');
+            elements.nameA.innerHTML = teamAName.replace(/\//g, '<br>');
+            elements.nameB.innerHTML = teamBName.replace(/\//g, '<br>');
+            elements.label1.textContent = get('label1'); elements.label2.textContent = get('label2'); elements.label3.textContent = get('label3');
+            elements.colorA.value = colorA; elements.colorB.value = colorB;
             
-            setImage('logo_team_a', logoAFile, logoA_el, initialsA_el, teamAName);
-            setImage('logo_team_b', logoBFile, logoB_el, initialsB_el, teamBName);
-
-            setText('name_team_a', teamAName);
-            setText('name_team_b', teamBName);
-            setText('label_1', get('label1'));
-            setText('label_2', get('label2'));
-            setText('label_3', get('label3'));
+            setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
+            setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
+            setText('name_team_a', teamAName.replace(/\//g, '\n'));
+            setText('name_team_b', teamBName.replace(/\//g, '\n'));
+            setSourceColor('A', colorA); setSourceColor('B', colorB);
+            setText('label_1', get('label1')); setText('label_2', get('label2')); setText('label_3', get('label3'));
             showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        let scoreA = 0, scoreB = 0;
-        function changeScore(team, delta) {
-            if (team === 'A') {
-                scoreA = Math.max(0, scoreA + delta);
-                scoreA_el.textContent = scoreA;
-                setText('score_team_a', scoreA);
-            } else {
-                scoreB = Math.max(0, scoreB + delta);
-                scoreB_el.textContent = scoreB;
-                setText('score_team_b', scoreB);
-            }
-        }
-        function resetScore() {
-            scoreA = scoreB = 0;
-            scoreA_el.textContent = '0';
-            scoreB_el.textContent = '0';
-            setText('score_team_a', '0');
-            setText('score_team_b', '0');
-            showToast('รีเซ็ตคะแนนแล้ว', 'info');
+        function enterEditMode(team) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
+            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
+
+            nameDiv.style.display = 'none'; editBtn.style.display = 'none';
+            nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
+            nameInput.style.display = 'block'; okBtn.style.display = 'inline-flex';
+            nameInput.focus();
         }
 
-        let timer = 0, interval = null, half = '1st';
-        function updateTimerDisplay() {
-            const m = String(Math.floor(timer / 60)).padStart(2, '0');
-            const s = String(timer % 60).padStart(2, '0');
-            const timeString = `${m}:${s}`;
-            timerText_el.textContent = timeString;
-            setText('time_counter', timeString);
-        }
-        function startTimer() { if (!interval) interval = setInterval(() => { timer++; updateTimerDisplay(); }, 1000); }
-        function stopTimer()  { clearInterval(interval); interval = null; }
-        function resetTimer() { stopTimer(); timer = 0; updateTimerDisplay(); }
-        function setTime() {
-            const t = prompt('Set time (MM:SS)', '00:00');
-            if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return;
-            const [m, s] = t.split(':').map(Number);
-            timer = (m * 60) + s;
-            updateTimerDisplay();
-        }
-        function toggleHalf() {
-            half = (half === '1st') ? '2nd' : '1st';
-            halfText_el.textContent = half;
-            setText('half_text', half);
+        function exitEditMode(team, applyChanges = true) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
+            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
+            if(applyChanges) { applyEditedName(team); }
+            nameDiv.style.display = 'block'; editBtn.style.display = 'inline-flex';
+            nameInput.style.display = 'none'; okBtn.style.display = 'none';
         }
 
-        /* --- Popup Management --- */
-        function closeAllPopups() {
-            popupOverlay.style.display = 'none';
-            detailsPopup.style.display = 'none';
-            helpPopup.style.display = 'none';
+        function applyEditedName(team) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
+            nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
+            setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
         }
-        function openDetails() {
-            detailsText_el.value = localStorage.getItem('detailsText') || '';
-            popupOverlay.style.display = 'block';
-            detailsPopup.style.display = 'block';
-        }
-        function showHelp() {
-            popupOverlay.style.display = 'block';
-            helpPopup.style.display = 'block';
-        }
-        function saveDetails() {
-            localStorage.setItem('detailsText', detailsText_el.value);
-            closeAllPopups();
-            showToast('บันทึกแล้ว', 'success');
-        }
-        function copyDetails() {
-            const template = localStorage.getItem('detailsText') || '';
-            if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
-            const filled = template
-                .replace(/<TeamA>/gi, nameA_el.textContent)
-                .replace(/<TeamB>/gi, nameB_el.textContent)
-                .replace(/<label1>/gi, label1_el.textContent)
-                .replace(/<label2>/gi, label2_el.textContent)
-                .replace(/<label3>/gi, label3_el.textContent)
-                .replace(/<score_team_a>/gi, scoreA)
-                .replace(/<score_team_b>/gi, scoreB)
-                .replace(/<time_counter>/gi, timerText_el.textContent)
-                .replace(/<half_text>/gi, halfText_el.textContent);
-            
-            navigator.clipboard.writeText(filled)
-                .then(() => showToast('คัดลอกแล้ว', 'info'))
-                .catch(err => showToast('คัดลอกล้มเหลว', 'error'));
+        function setSourceColor(team, hexColor) {
+            const isA = team === 'A';
+            const sourceName = isA ? 'Color_Team_A' : 'Color_Team_B';
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => {});
         }
 
-        /* ---------- OBS WebSocket ---------- */
+        elements.editBtnA.addEventListener('click', () => enterEditMode('A'));
+        elements.okBtnA.addEventListener('click', () => exitEditMode('A'));
+        elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
+        elements.okBtnB.addEventListener('click', () => exitEditMode('B'));
+        elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
+        elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
+
+        let scoreA = 0, scoreB = 0; let timer = 0, interval = null, half = '1st';
         const obs = new OBSWebSocket();
-        obs.connect('ws://localhost:4455').catch(err => {
-            showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error');
-        });
+        obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
 
-        function setText(source, text) {
-            obs.call('SetInputSettings', {
-                inputName: source,
-                inputSettings: { text: String(text) }
-            }).catch(err => {}); // Fail silently
-        }
-
+        function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
         function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
             imgElement.style.display = 'none';
             initialsElement.style.display = 'block';
             initialsElement.textContent = getTeamInitials(teamName);
-
             if (!filename) return;
             const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
-            
-            obs.call('SetInputSettings', {
-                inputName: sourceName,
-                inputSettings: { file: filePath }
-            }).catch(err => {}); // Fail silently
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
+        function copyDetails() {
+            const template = localStorage.getItem('detailsText') || '';
+            if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
+            let teamAName = (elements.okBtnA.style.display !== 'none') ? elements.nameAInput.value : elements.nameA.innerText;
+            let teamBName = (elements.okBtnB.style.display !== 'none') ? elements.nameBInput.value : elements.nameB.innerText;
+            teamAName = teamAName.replace(/\/|\n/g, ' ');
+            teamBName = teamBName.replace(/\/|\n/g, ' ');
+            const filled = template
+                .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
+            navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
+        }
+        function setTime() {
+            const t = prompt('Set time (MM:SS หรือ MMM:SS)', '45:00');
+            if (!t || !/^\d+:\d{2}$/.test(t)) return; // CORRECTED: Allows more than 2 digits for minutes
+            const [m, s] = t.split(':').map(Number);
+            timer = (m * 60) + s;
+            updateTimerDisplay();
+        }
+        
+        // Minified functions for brevity
+        showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
+        handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
+        changeScore=(t,e)=>{'A'===t?(scoreA=Math.max(0,scoreA+e),elements.scoreA.textContent=scoreA,setText('score_team_a',scoreA)):(scoreB=Math.max(0,scoreB+e),elements.scoreB.textContent=scoreB,setText('score_team_b',scoreB))};
+        resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
+        updateTimerDisplay=()=>{const t=String(Math.floor(timer/60)).padStart(2,'0'),e=String(timer%60).padStart(2,'0'),n=`${t}:${e}`;elements.timerText.textContent=n,setText('time_counter',n)};
+        startTimer=()=>{interval||(interval=setInterval(()=>{timer++,updateTimerDisplay()},1e3))};stopTimer=()=>{clearInterval(interval),interval=null};resetTimer=()=>{stopTimer(),timer=0,updateTimerDisplay()};
+        toggleHalf=()=>{half='1st'===half?'2nd':'1st',elements.halfText.textContent=half,setText('half_text',half)};
+        closeAllPopups=()=>{elements.popupOverlay.style.display='none',elements.detailsPopup.style.display='none',elements.helpPopup.style.display='none'};
+        openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
+        showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
+        saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
     </script>
 </body>
 </html>
