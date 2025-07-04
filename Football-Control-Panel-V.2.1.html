@@ -52,7 +52,7 @@
         .btn-danger { background: var(--danger-color); color: #fff; }
         .btn-danger:hover { background: var(--danger-hover-color); }
         
-        /* --- NEW Team Editor Layout --- */
+        /* --- Team Editor Layout --- */
         .team-editor { display: flex; flex-direction: column; gap: 10px; }
         .team-row { display: flex; align-items: center; gap: 10px; }
         .team-row .logo-container {
@@ -62,9 +62,13 @@
         }
         .team-row .logo-container img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
         .team-row .logo-initials { font-size: 1.5rem; font-weight: bold; color: var(--text-muted-color); display: none; }
-        .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; }
-        .team-row .name { font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2; }
-        .team-row .name.can-wrap { white-space: normal; } /* Allow wrapping when editing */
+        .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .team-row .name {
+            font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2;
+            /* CORRECTED: Always allow wrapping */
+            white-space: normal;
+            word-break: break-word;
+        }
         .team-row .name-input {
             display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
             border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; font-size: 0.95rem;
@@ -220,10 +224,8 @@
             "editCheckB", "nameB-input", "lhControlB", "lhInputB"
         ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
 
-        function showToast(message, type = 'info') { /* ... Toast logic ... */ }
         let sheetData = [];
-        function handleExcel() { /* ... Excel handling ... */ }
-
+        
         function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
 
         function applyMatch() {
@@ -233,47 +235,48 @@
             const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
             if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
-            // Reset edit states before loading new data
-            if (elements.editCheckA.checked) { elements.editCheckA.click(); }
-            if (elements.editCheckB.checked) { elements.editCheckB.click(); }
+            if (elements.editCheckA.checked) { toggleEditMode('A'); elements.editCheckA.checked = false; }
+            if (elements.editCheckB.checked) { toggleEditMode('B'); elements.editCheckB.checked = false; }
             
             const get = key => match[header.indexOf(key)] || '';
             const teamAName = get('TeamA'); const teamBName = get('TeamB');
             const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
 
-            elements.nameA.innerHTML = teamAName; elements.nameB.innerHTML = teamBName;
-            elements.label1.textContent = get('label1'); elements.label2.textContent = get('label2'); elements.label3.textContent = get('label3');
+            elements.nameA.innerHTML = teamAName.replace(/\//g, '<br>');
+            elements.nameB.innerHTML = teamBName.replace(/\//g, '<br>');
+            elements.label1.textContent = get('label1');
+            elements.label2.textContent = get('label2');
+            elements.label3.textContent = get('label3');
             
             setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
             setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
 
-            setText('name_team_a', teamAName); setText('name_team_b', teamBName);
-            setText('label_1', get('label1')); setText('label_2', get('label2')); setText('label_3', get('label3'));
+            setText('name_team_a', teamAName.replace(/\//g, '\n'));
+            setText('name_team_b', teamBName.replace(/\//g, '\n'));
+            setText('label_1', get('label1'));
+            setText('label_2', get('label2'));
+            setText('label_3', get('label3'));
             showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
         /* --- Team Name Editor Logic --- */
         function toggleEditMode(team) {
             const isA = team === 'A';
-            const check = isA ? elements.editCheckA : elements.editCheckB;
             const nameDiv = isA ? elements.nameA : elements.nameB;
             const nameInput = isA ? elements.nameAInput : elements.nameBInput;
             const lhControl = isA ? elements.lhControlA : elements.lhControlB;
+            const check = isA ? elements.editCheckA : elements.editCheckB;
 
             if (check.checked) {
-                // Enter edit mode
                 nameDiv.style.display = 'none';
-                nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/'); // Convert <br> back to /
+                nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
                 nameInput.style.display = 'block';
                 lhControl.style.display = 'flex';
-                nameDiv.classList.add('can-wrap');
             } else {
-                // Exit edit mode and apply changes
                 applyEditedName(team);
                 nameDiv.style.display = 'block';
                 nameInput.style.display = 'none';
                 lhControl.style.display = 'none';
-                nameDiv.classList.remove('can-wrap');
             }
         }
 
@@ -283,11 +286,9 @@
             const nameInput = isA ? elements.nameAInput : elements.nameBInput;
             const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
 
-            // Update UI with <br> for line breaks
             nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
-
-            // Send plain text (with space instead of /) to OBS
-            setText(obsSourceName, nameInput.value.replace(/\//g, ' '));
+            // For OBS GDI+ Text, newline character is \n
+            setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
         }
 
         elements.editCheckA.addEventListener('change', () => toggleEditMode('A'));
@@ -297,22 +298,10 @@
 
 
         let scoreA = 0, scoreB = 0;
-        function changeScore(team, delta) { /* ... Score logic ... */ }
-        function resetScore() { /* ... Reset logic ... */ }
         let timer = 0, interval = null, half = '1st';
-        function updateTimerDisplay() { /* ... Timer display ... */ }
-        function startTimer() { /* ... Timer start ... */ }
-        function stopTimer() { /* ... Timer stop ... */ }
-        function resetTimer() { /* ... Timer reset ... */ }
-        function setTime() { /* ... Timer set ... */ }
-        function toggleHalf() { /* ... Half toggle ... */ }
-        function closeAllPopups() { /* ... Popup close ... */ }
-        function openDetails() { /* ... Popup open ... */ }
-        function showHelp() { /* ... Popup show ... */ }
-        function saveDetails() { /* ... Popup save ... */ }
-        function copyDetails() { /* ... Copy logic ... */ }
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
+
         function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
         function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
             imgElement.style.display = 'none';
@@ -325,7 +314,7 @@
         }
         
         // Minified functions for brevity
-        showToast = (m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
+        showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
         handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
         changeScore=(t,e)=>{'A'===t?(scoreA=Math.max(0,scoreA+e),elements.scoreA.textContent=scoreA,setText('score_team_a',scoreA)):(scoreB=Math.max(0,scoreB+e),elements.scoreB.textContent=scoreB,setText('score_team_b',scoreB))};
         resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
