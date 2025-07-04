@@ -79,9 +79,11 @@
             display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
             border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; font-size: 0.95rem;
         }
-        .team-row .edit-checkbox { margin-left: auto; flex-shrink: 0; }
-        .team-row .line-height-control { display: none; }
-        .team-row .line-height-control input[type="number"] { width: 65px; text-align: left; padding: 6px; }
+        .edit-btn { background: transparent; padding: 4px 8px; }
+        .edit-btn:hover { background: #5a5a5a; }
+        .ok-btn { display: none; padding: 4px 12px; font-weight: bold; background: var(--success-color); color: #fff; }
+        .ok-btn:hover { background: var(--success-hover-color); }
+
 
         .labels-row { display: flex; gap: 8px; margin-top: 10px; }
         .labels-row div { flex: 1; background: var(--bg-color); text-align: center; font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color); }
@@ -141,10 +143,8 @@
                         <div class="name" id="nameA">Team A</div>
                         <input type="text" class="name-input" id="nameA-input">
                     </div>
-                    <input type="checkbox" class="edit-checkbox" id="editCheckA" title="แก้ไขชื่อ/จัดรูปแบบ">
-                    <div class="line-height-control" id="lhControlA">
-                        <input type="number" id="lhInputA" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด (เฉพาะหน้าควบคุม)">
-                    </div>
+                    <button class="edit-btn" id="editBtnA" title="แก้ไขชื่อ"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnA">OK</button>
                 </div>
                 <div class="team-row">
                     <input type="color" class="color-picker" id="colorB" value="#ffffff" title="เลือกสีทีม B">
@@ -155,10 +155,8 @@
                         <div class="name" id="nameB">Team B</div>
                         <input type="text" class="name-input" id="nameB-input">
                     </div>
-                    <input type="checkbox" class="edit-checkbox" id="editCheckB" title="แก้ไขชื่อ/จัดรูปแบบ">
-                    <div class="line-height-control" id="lhControlB">
-                        <input type="number" id="lhInputB" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด (เฉพาะหน้าควบคุม)">
-                    </div>
+                    <button class="edit-btn" id="editBtnB" title="แก้ไขชื่อ"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnB">OK</button>
                 </div>
             </div>
             <div class="labels-row">
@@ -227,12 +225,11 @@
     <script>
         const $ = id => document.getElementById(id);
         const elements = [
-            "nameA", "nameB", "label1", "label2", "label3",
-            "logoA", "logoB", "initialsA", "initialsB",
-            "scoreA", "scoreB", "timerText", "halfText",
-            "detailsPopup", "helpPopup", "popupOverlay", "detailsText", "matchID", "toast-container",
-            "editCheckA", "nameA-input", "lhControlA", "lhInputA", "colorA",
-            "editCheckB", "nameB-input", "lhControlB", "lhInputB", "colorB"
+            "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
+            "scoreA", "scoreB", "timerText", "halfText", "detailsPopup", "helpPopup", "popupOverlay",
+            "detailsText", "matchID", "toast-container", "colorA", "colorB",
+            "editBtnA", "okBtnA", "nameA-input",
+            "editBtnB", "okBtnB", "nameB-input"
         ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
 
         let sheetData = [];
@@ -240,12 +237,8 @@
         function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
 
         function hexToObsColor(hex) {
-            const cleanHex = hex.substring(1);
-            const r = cleanHex.substring(0, 2);
-            const g = cleanHex.substring(2, 4);
-            const b = cleanHex.substring(4, 6);
-            const obsHex = "FF" + b + g + r;
-            return parseInt(obsHex, 16);
+            const cleanHex = hex.substring(1); const r = cleanHex.substring(0, 2); const g = cleanHex.substring(2, 4); const b = cleanHex.substring(4, 6);
+            return parseInt("FF" + b + g + r, 16);
         }
 
         function applyMatch() {
@@ -255,54 +248,60 @@
             const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
             if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
-            if (elements.editCheckA.checked) { elements.editCheckA.click(); }
-            if (elements.editCheckB.checked) { elements.editCheckB.click(); }
+            if (elements.okBtnA.style.display !== 'none') { exitEditMode('A', false); }
+            if (elements.okBtnB.style.display !== 'none') { exitEditMode('B', false); }
             
             const get = key => match[header.indexOf(key)] || '';
-            const teamAName = get('TeamA'); const teamBName = get('TeamB');
+            const teamAName = get('TeamA') || 'Team A'; const teamBName = get('TeamB') || 'Team B';
             const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
             const colorA = get('ColorA') || '#ffffff'; const colorB = get('ColorB') || '#ffffff';
 
             elements.nameA.innerHTML = teamAName.replace(/\//g, '<br>');
             elements.nameB.innerHTML = teamBName.replace(/\//g, '<br>');
-            elements.label1.textContent = get('label1');
-            elements.label2.textContent = get('label2');
-            elements.label3.textContent = get('label3');
-            elements.colorA.value = colorA;
-            elements.colorB.value = colorB;
+            elements.label1.textContent = get('label1'); elements.label2.textContent = get('label2'); elements.label3.textContent = get('label3');
+            elements.colorA.value = colorA; elements.colorB.value = colorB;
             
             setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
             setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
             setText('name_team_a', teamAName.replace(/\//g, '\n'));
             setText('name_team_b', teamBName.replace(/\//g, '\n'));
-            setSourceColor('A', colorA);
-            setSourceColor('B', colorB);
-            
-            setText('label_1', get('label1'));
-            setText('label_2', get('label2'));
-            setText('label_3', get('label3'));
+            setSourceColor('A', colorA); setSourceColor('B', colorB);
+            setText('label_1', get('label1')); setText('label_2', get('label2')); setText('label_3', get('label3'));
             showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        function toggleEditMode(team) {
+        /* --- Team Name & Color Editor Logic --- */
+        function enterEditMode(team) {
             const isA = team === 'A';
             const nameDiv = isA ? elements.nameA : elements.nameB;
             const nameInput = isA ? elements.nameAInput : elements.nameBInput;
-            const lhControl = isA ? elements.lhControlA : elements.lhControlB;
-            const check = isA ? elements.editCheckA : elements.editCheckB;
+            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
+            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
 
-            if (check.checked) {
-                nameDiv.style.display = 'none';
-                nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
-                nameInput.style.display = 'block';
-                lhControl.style.display = 'flex';
-            } else {
-                applyEditedName(team);
-                nameDiv.style.display = 'block';
-                nameInput.style.display = 'none';
-                lhControl.style.display = 'none';
-            }
+            nameDiv.style.display = 'none';
+            editBtn.style.display = 'none';
+            nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
+            nameInput.style.display = 'block';
+            okBtn.style.display = 'inline-flex';
+            nameInput.focus();
         }
+
+        function exitEditMode(team, applyChanges = true) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
+            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
+
+            if(applyChanges) {
+                applyEditedName(team);
+            }
+            nameDiv.style.display = 'block';
+            editBtn.style.display = 'inline-flex';
+            nameInput.style.display = 'none';
+            okBtn.style.display = 'none';
+        }
+
         function applyEditedName(team) {
             const isA = team === 'A';
             const nameDiv = isA ? elements.nameA : elements.nameB;
@@ -314,14 +313,13 @@
         function setSourceColor(team, hexColor) {
             const isA = team === 'A';
             const sourceName = isA ? 'Color_Team_A' : 'Color_Team_B';
-            const obsColor = hexToObsColor(hexColor);
-            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: obsColor } }).catch(err => {});
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => {});
         }
 
-        elements.editCheckA.addEventListener('change', () => toggleEditMode('A'));
-        elements.editCheckB.addEventListener('change', () => toggleEditMode('B'));
-        elements.lhInputA.addEventListener('input', (e) => { elements.nameA.style.lineHeight = e.target.value; });
-        elements.lhInputB.addEventListener('input', (e) => { elements.nameB.style.lineHeight = e.target.value; });
+        elements.editBtnA.addEventListener('click', () => enterEditMode('A'));
+        elements.okBtnA.addEventListener('click', () => exitEditMode('A'));
+        elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
+        elements.okBtnB.addEventListener('click', () => exitEditMode('B'));
         elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
         elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
 
@@ -340,22 +338,16 @@
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
-        
         function copyDetails() {
             const template = localStorage.getItem('detailsText') || '';
             if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
-            const teamAName = elements.editCheckA.checked ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
-            const teamBName = elements.editCheckB.checked ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
+            const teamAName = elements.okBtnA.style.display !== 'none' ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
+            const teamBName = elements.okBtnB.style.display !== 'none' ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
             const filled = template
-                .replace(/<TeamA>/gi, teamAName)
-                .replace(/<TeamB>/gi, teamBName)
-                .replace(/<label1>/gi, elements.label1.textContent)
-                .replace(/<label2>/gi, elements.label2.textContent)
-                .replace(/<label3>/gi, elements.label3.textContent)
-                .replace(/<score_team_a>/gi, scoreA)
-                .replace(/<score_team_b>/gi, scoreB)
-                .replace(/<time_counter>/gi, elements.timerText.textContent)
-                .replace(/<half_text>/gi, elements.halfText.textContent);
+                .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
             navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
         }
         
