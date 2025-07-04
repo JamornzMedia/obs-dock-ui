@@ -65,9 +65,7 @@
         .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
         .team-row .name {
             font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2;
-            /* CORRECTED: Always allow wrapping */
-            white-space: normal;
-            word-break: break-word;
+            white-space: normal; word-break: break-word;
         }
         .team-row .name-input {
             display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
@@ -235,8 +233,8 @@
             const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
             if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
-            if (elements.editCheckA.checked) { toggleEditMode('A'); elements.editCheckA.checked = false; }
-            if (elements.editCheckB.checked) { toggleEditMode('B'); elements.editCheckB.checked = false; }
+            if (elements.editCheckA.checked) { elements.editCheckA.click(); }
+            if (elements.editCheckB.checked) { elements.editCheckB.click(); }
             
             const get = key => match[header.indexOf(key)] || '';
             const teamAName = get('TeamA'); const teamBName = get('TeamB');
@@ -287,7 +285,6 @@
             const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
 
             nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
-            // For OBS GDI+ Text, newline character is \n
             setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
         }
 
@@ -313,6 +310,30 @@
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
         
+        function copyDetails() {
+            const template = localStorage.getItem('detailsText') || '';
+            if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
+            
+            // CORRECTED: Get text from input if editing, otherwise from div's innerText
+            const teamAName = elements.editCheckA.checked ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
+            const teamBName = elements.editCheckB.checked ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
+
+            const filled = template
+                .replace(/<TeamA>/gi, teamAName)
+                .replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent)
+                .replace(/<label2>/gi, elements.label2.textContent)
+                .replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA)
+                .replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent)
+                .replace(/<half_text>/gi, elements.halfText.textContent);
+            
+            navigator.clipboard.writeText(filled)
+                .then(() => showToast('คัดลอกแล้ว', 'info'))
+                .catch(err => showToast('คัดลอกล้มเหลว', 'error'));
+        }
+
         // Minified functions for brevity
         showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
         handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
@@ -326,7 +347,6 @@
         openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
         showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
         saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
-        copyDetails=()=>{const t=localStorage.getItem('detailsText')||'';if(!t.trim())return showToast('ไม่มีข้อความให้คัดลอก','error');const e=t.replace(/<TeamA>/gi,elements.nameA.textContent).replace(/<TeamB>/gi,elements.nameB.textContent).replace(/<label1>/gi,elements.label1.textContent).replace(/<label2>/gi,elements.label2.textContent).replace(/<label3>/gi,elements.label3.textContent).replace(/<score_team_a>/gi,scoreA).replace(/<score_team_b>/gi,scoreB).replace(/<time_counter>/gi,elements.timerText.textContent).replace(/<half_text>/gi,elements.halfText.textContent);navigator.clipboard.writeText(e).then(()=>showToast('คัดลอกแล้ว','info')).catch(t=>showToast('คัดลอกล้มเหลว','error'))};
     </script>
 </body>
 </html>
