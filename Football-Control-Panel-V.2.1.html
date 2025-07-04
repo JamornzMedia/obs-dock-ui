@@ -60,8 +60,8 @@
             width: 28px; height: 28px; background-color: transparent;
             border: none; cursor: pointer; padding: 0;
         }
-        .team-row .color-picker::-webkit-color-swatch { border-radius: 50%; border: 2px solid var(--border-color); }
-        .team-row .color-picker::-moz-color-swatch { border-radius: 50%; border: 2px solid var(--border-color); }
+        .team-row .color-picker::-webkit-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
+        .team-row .color-picker::-moz-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
 
         .team-row .logo-container {
             width: 48px; height: 48px; border-radius: 50%; background: #333;
@@ -209,9 +209,10 @@
         <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
         <div class="item-list">
             <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
-            <div class="item-list-item"><code>logo_team_a/b</code> <span>- รูปภาพโลโก้ทีม</span></div>
-            <div class="item-list-item"><code>name_team_a/b</code> <span>- Text (GDI+) ชื่อทีม (ใช้แถบสีได้)</span></div>
-            <div class="item-list-item"><code>score_team_a/b</code> <span>- Text (GDI+) คะแนน (ใช้แถบสีได้)</span></div>
+            <div class="item-list-item"><code>Color_Team_A/B</code> <span>- **Color Source** สำหรับควบคุมสีทีม</span></div>
+            <div class="item-list-item"><code>logo_team_a/b</code> <span>- **Image Source** สำหรับโลโก้ทีม</span></div>
+            <div class="item-list-item"><code>name_team_a/b</code> <span>- **Text (GDI+)** สำหรับชื่อทีม</span></div>
+            <div class="item-list-item"><code>score_team_a/b</code> <span>- **Text (GDI+)** สำหรับคะแนน</span></div>
             <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับต่างๆ</span></div>
             <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
             <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
@@ -236,6 +237,7 @@
 
         function hexToObsColor(hex) {
             const cleanHex = hex.substring(1);
+            // Prepend FF for full alpha and convert to decimal integer
             const intColor = parseInt("FF" + cleanHex, 16);
             return intColor;
         }
@@ -307,12 +309,10 @@
         }
         function setSourceColor(team, hexColor) {
             const isA = team === 'A';
-            const nameSource = isA ? 'name_team_a' : 'name_team_b';
-            const scoreSource = isA ? 'score_team_a' : 'score_team_b';
+            const sourceName = isA ? 'Color_Team_A' : 'Color_Team_B';
             const obsColor = hexToObsColor(hexColor);
             
-            obs.call('SetInputSettings', { inputName: nameSource, inputSettings: { color: obsColor } }).catch(err => {});
-            obs.call('SetInputSettings', { inputName: scoreSource, inputSettings: { color: obsColor } }).catch(err => {});
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: obsColor } }).catch(err => {});
         }
 
         elements.editCheckA.addEventListener('change', () => toggleEditMode('A'));
@@ -339,7 +339,25 @@
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
         
-        function copyDetails() { /* ... copy logic ... */ }
+        function copyDetails() {
+            const template = localStorage.getItem('detailsText') || '';
+            if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
+            const teamAName = elements.editCheckA.checked ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
+            const teamBName = elements.editCheckB.checked ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
+
+            const filled = template
+                .replace(/<TeamA>/gi, teamAName)
+                .replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent)
+                .replace(/<label2>/gi, elements.label2.textContent)
+                .replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA)
+                .replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent)
+                .replace(/<half_text>/gi, elements.halfText.textContent);
+            
+            navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
+        }
         
         // Minified functions for brevity
         showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
@@ -354,7 +372,6 @@
         openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
         showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
         saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
-        copyDetails=()=>{const t=localStorage.getItem('detailsText')||'';if(!t.trim())return showToast('ไม่มีข้อความให้คัดลอก','error');const e=elements.editCheckA.checked?elements.nameAInput.value.replace(/\//g,'\n'):elements.nameA.innerText,n=elements.editCheckB.checked?elements.nameBInput.value.replace(/\//g,'\n'):elements.nameB.innerText,o=t.replace(/<TeamA>/gi,e).replace(/<TeamB>/gi,n).replace(/<label1>/gi,elements.label1.textContent).replace(/<label2>/gi,elements.label2.textContent).replace(/<label3>/gi,elements.label3.textContent).replace(/<score_team_a>/gi,scoreA).replace(/<score_team_b>/gi,scoreB).replace(/<time_counter>/gi,elements.timerText.textContent).replace(/<half_text>/gi,elements.halfText.textContent);navigator.clipboard.writeText(o).then(()=>showToast('คัดลอกแล้ว','info')).catch(t=>showToast('คัดลอกล้มเหลว','error'))};
     </script>
 </body>
 </html>
