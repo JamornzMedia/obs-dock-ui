@@ -270,7 +270,6 @@
             showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        /* --- Team Name & Color Editor Logic --- */
         function enterEditMode(team) {
             const isA = team === 'A';
             const nameDiv = isA ? elements.nameA : elements.nameB;
@@ -278,11 +277,9 @@
             const editBtn = isA ? elements.editBtnA : elements.editBtnB;
             const okBtn = isA ? elements.okBtnA : elements.okBtnB;
 
-            nameDiv.style.display = 'none';
-            editBtn.style.display = 'none';
+            nameDiv.style.display = 'none'; editBtn.style.display = 'none';
             nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
-            nameInput.style.display = 'block';
-            okBtn.style.display = 'inline-flex';
+            nameInput.style.display = 'block'; okBtn.style.display = 'inline-flex';
             nameInput.focus();
         }
 
@@ -292,14 +289,9 @@
             const nameInput = isA ? elements.nameAInput : elements.nameBInput;
             const editBtn = isA ? elements.editBtnA : elements.editBtnB;
             const okBtn = isA ? elements.okBtnA : elements.okBtnB;
-
-            if(applyChanges) {
-                applyEditedName(team);
-            }
-            nameDiv.style.display = 'block';
-            editBtn.style.display = 'inline-flex';
-            nameInput.style.display = 'none';
-            okBtn.style.display = 'none';
+            if(applyChanges) { applyEditedName(team); }
+            nameDiv.style.display = 'block'; editBtn.style.display = 'inline-flex';
+            nameInput.style.display = 'none'; okBtn.style.display = 'none';
         }
 
         function applyEditedName(team) {
@@ -323,11 +315,9 @@
         elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
         elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
 
-        let scoreA = 0, scoreB = 0;
-        let timer = 0, interval = null, half = '1st';
+        let scoreA = 0, scoreB = 0; let timer = 0, interval = null, half = '1st';
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
-
         function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
         function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
             imgElement.style.display = 'none';
@@ -338,16 +328,28 @@
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
+        
         function copyDetails() {
             const template = localStorage.getItem('detailsText') || '';
             if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
-            const teamAName = elements.okBtnA.style.display !== 'none' ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
-            const teamBName = elements.okBtnB.style.display !== 'none' ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
+            
+            // CORRECTED: Get current text and flatten it to a single line for copying
+            let teamAName = (elements.okBtnA.style.display !== 'none') ? elements.nameAInput.value : elements.nameA.innerText;
+            let teamBName = (elements.okBtnB.style.display !== 'none') ? elements.nameBInput.value : elements.nameB.innerText;
+            teamAName = teamAName.replace(/\/|\n/g, ' ');
+            teamBName = teamBName.replace(/\/|\n/g, ' ');
+            
             const filled = template
-                .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
-                .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
-                .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
-                .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
+                .replace(/<TeamA>/gi, teamAName)
+                .replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent)
+                .replace(/<label2>/gi, elements.label2.textContent)
+                .replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA)
+                .replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent)
+                .replace(/<half_text>/gi, elements.halfText.textContent);
+            
             navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
         }
         
