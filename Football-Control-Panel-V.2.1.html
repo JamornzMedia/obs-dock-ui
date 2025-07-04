@@ -52,8 +52,17 @@
         .btn-danger { background: var(--danger-color); color: #fff; }
         .btn-danger:hover { background: var(--danger-hover-color); }
         
+        /* --- Team Editor Layout --- */
         .team-editor { display: flex; flex-direction: column; gap: 10px; }
         .team-row { display: flex; align-items: center; gap: 10px; }
+        .team-row .color-picker {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            width: 28px; height: 28px; background-color: transparent;
+            border: none; cursor: pointer; padding: 0;
+        }
+        .team-row .color-picker::-webkit-color-swatch { border-radius: 50%; border: 2px solid var(--border-color); }
+        .team-row .color-picker::-moz-color-swatch { border-radius: 50%; border: 2px solid var(--border-color); }
+
         .team-row .logo-container {
             width: 48px; height: 48px; border-radius: 50%; background: #333;
             border: 2px solid var(--border-color); display: flex; align-items: center;
@@ -76,6 +85,7 @@
 
         .labels-row { display: flex; gap: 8px; margin-top: 10px; }
         .labels-row div { flex: 1; background: var(--bg-color); text-align: center; font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color); }
+
         .score-control { display: flex; align-items: center; justify-content: space-between; }
         .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
         .score-buttons { display: flex; flex-direction: column; gap: 6px; }
@@ -86,7 +96,11 @@
         .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
 
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
-        .popup-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius); width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100; }
+        .popup-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius);
+            width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
+        }
         .popup-modal h3 { margin-top: 0; font-size: 1.1rem; }
         .popup-modal p { font-size: 0.9rem; color: var(--text-muted-color); margin-bottom:12px; }
         .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
@@ -98,7 +112,8 @@
         #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
         .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
         .toast.success { background-color: var(--success-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--accent-color); }
-        @keyframes fadeIn { to { opacity: 1; } } @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -114,23 +129,43 @@
                 </div>
             </div>
         </div>
+        
         <div class="card">
             <div class="team-editor">
                 <div class="team-row">
-                    <div class="logo-container"><img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div></div>
-                    <div class="name-control-area"><div class="name" id="nameA">Team A</div><input type="text" class="name-input" id="nameA-input"></div>
+                    <input type="color" class="color-picker" id="colorA" value="#ffffff" title="เลือกสีทีม A">
+                    <div class="logo-container">
+                        <img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div>
+                    </div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameA">Team A</div>
+                        <input type="text" class="name-input" id="nameA-input">
+                    </div>
                     <input type="checkbox" class="edit-checkbox" id="editCheckA" title="แก้ไขชื่อ/จัดรูปแบบ">
-                    <div class="line-height-control" id="lhControlA"><input type="number" id="lhInputA" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด"></div>
+                    <div class="line-height-control" id="lhControlA">
+                        <input type="number" id="lhInputA" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด (เฉพาะหน้าควบคุม)">
+                    </div>
                 </div>
                 <div class="team-row">
-                    <div class="logo-container"><img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div></div>
-                    <div class="name-control-area"><div class="name" id="nameB">Team B</div><input type="text" class="name-input" id="nameB-input"></div>
+                    <input type="color" class="color-picker" id="colorB" value="#ffffff" title="เลือกสีทีม B">
+                    <div class="logo-container">
+                        <img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div>
+                    </div>
+                    <div class="name-control-area">
+                        <div class="name" id="nameB">Team B</div>
+                        <input type="text" class="name-input" id="nameB-input">
+                    </div>
                     <input type="checkbox" class="edit-checkbox" id="editCheckB" title="แก้ไขชื่อ/จัดรูปแบบ">
-                    <div class="line-height-control" id="lhControlB"><input type="number" id="lhInputB" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด"></div>
+                    <div class="line-height-control" id="lhControlB">
+                        <input type="number" id="lhInputB" value="1.2" step="0.1" min="0.5" title="ระยะห่างบรรทัด (เฉพาะหน้าควบคุม)">
+                    </div>
                 </div>
             </div>
-            <div class="labels-row"><div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div></div>
+            <div class="labels-row">
+                <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
+            </div>
         </div>
+
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons"><button class="plus" onclick="changeScore('A', 1)">+</button><button class="minus" onclick="changeScore('A', -1)">-</button></div>
@@ -139,6 +174,7 @@
             </div>
             <div class="row center" style="margin-top: 12px;"><button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button></div>
         </div>
+
         <div class="card">
             <div class="row">
                 <div style="flex: 1;"><button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem">ครึ่ง</span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
@@ -148,6 +184,7 @@
                 </div>
             </div>
         </div>
+
         <div class="card">
             <div class="row center" style="gap: 10px;"><button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button><button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button><button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button></div>
         </div>
@@ -158,7 +195,8 @@
         <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
         <p>สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ</p>
         <textarea id="detailsText" placeholder="เช่น: เริ่มการแข่งขันครึ่งหลัง <TeamA> vs <TeamB>"></textarea>
-        <div class="item-list"><h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
+        <div class="item-list">
+            <h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
             <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div><div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
             <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div><div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
             <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div><div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
@@ -169,85 +207,139 @@
     <div id="helpPopup" class="popup-modal">
         <h3><i class="fas fa-question-circle"></i> วิธีการใช้งาน</h3>
         <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
-        <div class="item-list"><h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
-            <div class="item-list-item"><code>logo_team_a</code> <span>- รูปภาพโลโก้ทีม A</span></div><div class="item-list-item"><code>logo_team_b</code> <span>- รูปภาพโลโก้ทีม B</span></div>
-            <div class="item-list-item"><code>name_team_a</code> <span>- Text (GDI+) ชื่อทีม A</span></div><div class="item-list-item"><code>name_team_b</code> <span>- Text (GDI+) ชื่อทีม B</span></div>
-            <div class="item-list-item"><code>score_team_a</code> <span>- Text (GDI+) คะแนนทีม A</span></div><div class="item-list-item"><code>score_team_b</code> <span>- Text (GDI+) คะแนนทีม B</span></div>
-            <div class="item-list-item"><code>label_1</code>, <code>label_2</code>, <code>label_3</code> <span>- Text (GDI+) ป้ายกำกับ</span></div>
-            <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div><div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
+        <div class="item-list">
+            <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
+            <div class="item-list-item"><code>logo_team_a/b</code> <span>- รูปภาพโลโก้ทีม</span></div>
+            <div class="item-list-item"><code>name_team_a/b</code> <span>- Text (GDI+) ชื่อทีม (ใช้แถบสีได้)</span></div>
+            <div class="item-list-item"><code>score_team_a/b</code> <span>- Text (GDI+) คะแนน (ใช้แถบสีได้)</span></div>
+            <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับต่างๆ</span></div>
+            <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
+            <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
         </div>
         <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button></div>
     </div>
 
     <script>
         const $ = id => document.getElementById(id);
-        const elements = ["nameA","nameB","label1","label2","label3","logoA","logoB","initialsA","initialsB","scoreA","scoreB","timerText","halfText","detailsPopup","helpPopup","popupOverlay","detailsText","matchID","toast-container","editCheckA","nameA-input","lhControlA","lhInputA","editCheckB","nameB-input","lhControlB","lhInputB"].reduce((acc,id)=>({...acc,[id.replace(/-(\w)/g,(m,p1)=>p1.toUpperCase())]:$(id)}),{});
+        const elements = [
+            "nameA", "nameB", "label1", "label2", "label3",
+            "logoA", "logoB", "initialsA", "initialsB",
+            "scoreA", "scoreB", "timerText", "halfText",
+            "detailsPopup", "helpPopup", "popupOverlay", "detailsText", "matchID", "toast-container",
+            "editCheckA", "nameA-input", "lhControlA", "lhInputA", "colorA",
+            "editCheckB", "nameB-input", "lhControlB", "lhInputB", "colorB"
+        ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
+
         let sheetData = [];
         
-        function getTeamInitials(name){return name?(name.split(' ').filter(Boolean).length>=2?name.split(' ')[0][0]+name.split(' ')[1][0]:name.substring(0,2)).toUpperCase():''}
+        function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
+
+        function hexToObsColor(hex) {
+            const cleanHex = hex.substring(1);
+            const intColor = parseInt("FF" + cleanHex, 16);
+            return intColor;
+        }
 
         function applyMatch() {
-            if(!sheetData.length)return showToast('โปรด Upload ไฟล์ก่อน','error');
-            const id=parseInt(elements.matchID.value),header=sheetData[0],match=sheetData.slice(1).find(r=>parseInt(r[0])===id);
-            if(!match)return showToast(`ไม่พบ Match ID: ${id}`,'error');
+            if (!sheetData.length) return showToast('โปรด Upload ไฟล์ก่อน', 'error');
+            const id = parseInt(elements.matchID.value);
+            const header = sheetData[0];
+            const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
+            if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
 
-            // --- CORRECTED LOGIC ---
-            const wasEditingA = elements.editCheckA.checked;
-            const wasEditingB = elements.editCheckB.checked;
-            if (wasEditingA) elements.editCheckA.click();
-            if (wasEditingB) elements.editCheckB.click();
+            if (elements.editCheckA.checked) { elements.editCheckA.click(); }
+            if (elements.editCheckB.checked) { elements.editCheckB.click(); }
             
-            const get=key=>match[header.indexOf(key)]||'';
-            const teamANameFromExcel=get('TeamA'),teamBNameFromExcel=get('TeamB');
-            const logoAFile=get('LogoA'),logoBFile=get('LogoB');
+            const get = key => match[header.indexOf(key)] || '';
+            const teamAName = get('TeamA'); const teamBName = get('TeamB');
+            const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
+            const colorA = get('ColorA') || '#ffffff'; const colorB = get('ColorB') || '#ffffff';
 
-            if (!wasEditingA) {
-                elements.nameA.innerHTML = teamANameFromExcel.replace(/\//g, '<br>');
-                setText('name_team_a', teamANameFromExcel.replace(/\//g, '\n'));
-            }
-            if (!wasEditingB) {
-                elements.nameB.innerHTML = teamBNameFromExcel.replace(/\//g, '<br>');
-                setText('name_team_b', teamBNameFromExcel.replace(/\//g, '\n'));
-            }
+            elements.nameA.innerHTML = teamAName.replace(/\//g, '<br>');
+            elements.nameB.innerHTML = teamBName.replace(/\//g, '<br>');
+            elements.label1.textContent = get('label1');
+            elements.label2.textContent = get('label2');
+            elements.label3.textContent = get('label3');
+            elements.colorA.value = colorA;
+            elements.colorB.value = colorB;
             
-            elements.label1.textContent=get('label1');elements.label2.textContent=get('label2');elements.label3.textContent=get('label3');
-            setImage('logo_team_a',logoAFile,elements.logoA,elements.initialsA,teamANameFromExcel);
-            setImage('logo_team_b',logoBFile,elements.logoB,elements.initialsB,teamBNameFromExcel);
-            setText('label_1',get('label1'));setText('label_2',get('label2'));setText('label_3',get('label3'));
-            showToast(`โหลด ID: ${id} สำเร็จ`,'success')
+            setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
+            setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
+
+            setText('name_team_a', teamAName.replace(/\//g, '\n'));
+            setText('name_team_b', teamBName.replace(/\//g, '\n'));
+            setSourceColor('A', colorA);
+            setSourceColor('B', colorB);
+            
+            setText('label_1', get('label1'));
+            setText('label_2', get('label2'));
+            setText('label_3', get('label3'));
+            showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
         }
 
-        function toggleEditMode(team){
-            const isA=team==='A',nameDiv=isA?elements.nameA:elements.nameB,nameInput=isA?elements.nameAInput:elements.nameBInput,lhControl=isA?elements.lhControlA:elements.lhControlB,check=isA?elements.editCheckA:elements.editCheckB;
-            if(check.checked){nameDiv.style.display='none',nameInput.value=nameDiv.innerHTML.replace(/<br\s*\/?>/gi,'/'),nameInput.style.display='block',lhControl.style.display='flex'}
-            else{applyEditedName(team),nameDiv.style.display='block',nameInput.style.display='none',lhControl.style.display='none'}
-        }
-        function applyEditedName(team){
-            const isA=team==='A',nameDiv=isA?elements.nameA:elements.nameB,nameInput=isA?elements.nameAInput:elements.nameBInput,obsSourceName=isA?'name_team_a':'name_team_b';
-            nameDiv.innerHTML=nameInput.value.replace(/\//g,'<br>');
-            setText(obsSourceName,nameInput.value.replace(/\//g,'\n'))
-        }
-        elements.editCheckA.addEventListener('change',()=>toggleEditMode('A'));
-        elements.editCheckB.addEventListener('change',()=>toggleEditMode('B'));
-        elements.lhInputA.addEventListener('input',e=>{elements.nameA.style.lineHeight=e.target.value});
-        elements.lhInputB.addEventListener('input',e=>{elements.nameB.style.lineHeight=e.target.value});
+        /* --- Team Name & Color Editor Logic --- */
+        function toggleEditMode(team) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const lhControl = isA ? elements.lhControlA : elements.lhControlB;
+            const check = isA ? elements.editCheckA : elements.editCheckB;
 
-        let scoreA=0,scoreB=0,timer=0,interval=null,half='1st';
-        const obs=new OBSWebSocket();
-        obs.connect('ws://localhost:4455').catch(err=>showToast('เชื่อมต่อ OBS ไม่สำเร็จ','error'));
-        function setText(source,text){obs.call('SetInputSettings',{inputName:source,inputSettings:{text:String(text)}}).catch(err=>{})}
-        function setImage(sourceName,filename,imgElement,initialsElement,teamName){
-            imgElement.style.display='none';initialsElement.style.display='block';initialsElement.textContent=getTeamInitials(teamName);if(!filename)return;
-            const hasExt=/\.(png|jpe?g|gif|webp)$/i.test(filename),filePath=`C:/OBSAssets/logos/${filename}${hasExt?'':'.png'}`;
-            obs.call('SetInputSettings',{inputName:sourceName,inputSettings:{file:filePath}}).catch(err=>{})
+            if (check.checked) {
+                nameDiv.style.display = 'none';
+                nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
+                nameInput.style.display = 'block';
+                lhControl.style.display = 'flex';
+            } else {
+                applyEditedName(team);
+                nameDiv.style.display = 'block';
+                nameInput.style.display = 'none';
+                lhControl.style.display = 'none';
+            }
         }
-        function copyDetails(){
-            const template=localStorage.getItem('detailsText')||'';if(!template.trim())return showToast('ไม่มีข้อความให้คัดลอก','error');
-            const teamAName=elements.editCheckA.checked?elements.nameAInput.value.replace(/\//g,'\n'):elements.nameA.innerText;
-            const teamBName=elements.editCheckB.checked?elements.nameBInput.value.replace(/\//g,'\n'):elements.nameB.innerText;
-            const filled=template.replace(/<TeamA>/gi,teamAName).replace(/<TeamB>/gi,teamBName).replace(/<label1>/gi,elements.label1.textContent).replace(/<label2>/gi,elements.label2.textContent).replace(/<label3>/gi,elements.label3.textContent).replace(/<score_team_a>/gi,scoreA).replace(/<score_team_b>/gi,scoreB).replace(/<time_counter>/gi,elements.timerText.textContent).replace(/<half_text>/gi,elements.halfText.textContent);
-            navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'))
+        function applyEditedName(team) {
+            const isA = team === 'A';
+            const nameDiv = isA ? elements.nameA : elements.nameB;
+            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
+            const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
+            nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
+            setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
         }
+        function setSourceColor(team, hexColor) {
+            const isA = team === 'A';
+            const nameSource = isA ? 'name_team_a' : 'name_team_b';
+            const scoreSource = isA ? 'score_team_a' : 'score_team_b';
+            const obsColor = hexToObsColor(hexColor);
+            
+            obs.call('SetInputSettings', { inputName: nameSource, inputSettings: { color: obsColor } }).catch(err => {});
+            obs.call('SetInputSettings', { inputName: scoreSource, inputSettings: { color: obsColor } }).catch(err => {});
+        }
+
+        elements.editCheckA.addEventListener('change', () => toggleEditMode('A'));
+        elements.editCheckB.addEventListener('change', () => toggleEditMode('B'));
+        elements.lhInputA.addEventListener('input', (e) => { elements.nameA.style.lineHeight = e.target.value; });
+        elements.lhInputB.addEventListener('input', (e) => { elements.nameB.style.lineHeight = e.target.value; });
+        elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
+        elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
+
+
+        let scoreA = 0, scoreB = 0;
+        let timer = 0, interval = null, half = '1st';
+        const obs = new OBSWebSocket();
+        obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
+
+        function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
+        function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
+            imgElement.style.display = 'none';
+            initialsElement.style.display = 'block';
+            initialsElement.textContent = getTeamInitials(teamName);
+            if (!filename) return;
+            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
+            const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
+        }
+        
+        function copyDetails() { /* ... copy logic ... */ }
         
         // Minified functions for brevity
         showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
@@ -262,6 +354,7 @@
         openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
         showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
         saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
+        copyDetails=()=>{const t=localStorage.getItem('detailsText')||'';if(!t.trim())return showToast('ไม่มีข้อความให้คัดลอก','error');const e=elements.editCheckA.checked?elements.nameAInput.value.replace(/\//g,'\n'):elements.nameA.innerText,n=elements.editCheckB.checked?elements.nameBInput.value.replace(/\//g,'\n'):elements.nameB.innerText,o=t.replace(/<TeamA>/gi,e).replace(/<TeamB>/gi,n).replace(/<label1>/gi,elements.label1.textContent).replace(/<label2>/gi,elements.label2.textContent).replace(/<label3>/gi,elements.label3.textContent).replace(/<score_team_a>/gi,scoreA).replace(/<score_team_b>/gi,scoreB).replace(/<time_counter>/gi,elements.timerText.textContent).replace(/<half_text>/gi,elements.halfText.textContent);navigator.clipboard.writeText(o).then(()=>showToast('คัดลอกแล้ว','info')).catch(t=>showToast('คัดลอกล้มเหลว','error'))};
     </script>
 </body>
 </html>
