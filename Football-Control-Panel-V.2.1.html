@@ -143,7 +143,7 @@
                         <div class="name" id="nameA">Team A</div>
                         <input type="text" class="name-input" id="nameA-input">
                     </div>
-                    <button class="edit-btn" id="editBtnA" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="edit-btn" id="editBtnA" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
                     <button class="ok-btn" id="okBtnA">OK</button>
                 </div>
                 <div class="team-row">
@@ -155,7 +155,7 @@
                         <div class="name" id="nameB">Team B</div>
                         <input type="text" class="name-input" id="nameB-input">
                     </div>
-                    <button class="edit-btn" id="editBtnB" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="edit-btn" id="editBtnB" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
                     <button class="ok-btn" id="okBtnB">OK</button>
                 </div>
             </div>
@@ -318,6 +318,7 @@
         let scoreA = 0, scoreB = 0; let timer = 0, interval = null, half = '1st';
         const obs = new OBSWebSocket();
         obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
+
         function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
         function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
             imgElement.style.display = 'none';
@@ -328,29 +329,26 @@
             const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
         }
-        
         function copyDetails() {
             const template = localStorage.getItem('detailsText') || '';
             if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
-            
-            // CORRECTED: Get current text and flatten it to a single line for copying
             let teamAName = (elements.okBtnA.style.display !== 'none') ? elements.nameAInput.value : elements.nameA.innerText;
             let teamBName = (elements.okBtnB.style.display !== 'none') ? elements.nameBInput.value : elements.nameB.innerText;
             teamAName = teamAName.replace(/\/|\n/g, ' ');
             teamBName = teamBName.replace(/\/|\n/g, ' ');
-            
             const filled = template
-                .replace(/<TeamA>/gi, teamAName)
-                .replace(/<TeamB>/gi, teamBName)
-                .replace(/<label1>/gi, elements.label1.textContent)
-                .replace(/<label2>/gi, elements.label2.textContent)
-                .replace(/<label3>/gi, elements.label3.textContent)
-                .replace(/<score_team_a>/gi, scoreA)
-                .replace(/<score_team_b>/gi, scoreB)
-                .replace(/<time_counter>/gi, elements.timerText.textContent)
-                .replace(/<half_text>/gi, elements.halfText.textContent);
-            
+                .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
+                .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
+                .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
+                .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
             navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
+        }
+        function setTime() {
+            const t = prompt('Set time (MM:SS หรือ MMM:SS)', '45:00');
+            if (!t || !/^\d+:\d{2}$/.test(t)) return; // CORRECTED: Allows more than 2 digits for minutes
+            const [m, s] = t.split(':').map(Number);
+            timer = (m * 60) + s;
+            updateTimerDisplay();
         }
         
         // Minified functions for brevity
@@ -360,7 +358,6 @@
         resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
         updateTimerDisplay=()=>{const t=String(Math.floor(timer/60)).padStart(2,'0'),e=String(timer%60).padStart(2,'0'),n=`${t}:${e}`;elements.timerText.textContent=n,setText('time_counter',n)};
         startTimer=()=>{interval||(interval=setInterval(()=>{timer++,updateTimerDisplay()},1e3))};stopTimer=()=>{clearInterval(interval),interval=null};resetTimer=()=>{stopTimer(),timer=0,updateTimerDisplay()};
-        setTime=()=>{const t=prompt('Set time (MM:SS)','00:00');if(!t||!/^\d{1,2}:\d{2}$/.test(t))return;const[e,n]=t.split(':').map(Number);timer=60*e+n,updateTimerDisplay()};
         toggleHalf=()=>{half='1st'===half?'2nd':'1st',elements.halfText.textContent=half,setText('half_text',half)};
         closeAllPopups=()=>{elements.popupOverlay.style.display='none',elements.detailsPopup.style.display='none',elements.helpPopup.style.display='none'};
         openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
