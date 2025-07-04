@@ -235,11 +235,16 @@
         
         function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
 
+        // CORRECTED: Converts #RRGGBB to an OBS-compatible BGR decimal value
         function hexToObsColor(hex) {
             const cleanHex = hex.substring(1);
-            // Prepend FF for full alpha and convert to decimal integer
-            const intColor = parseInt("FF" + cleanHex, 16);
-            return intColor;
+            const r = cleanHex.substring(0, 2);
+            const g = cleanHex.substring(2, 4);
+            const b = cleanHex.substring(4, 6);
+            // Rearrange to BBGGRR and prepend FF for alpha (AABBGGRR format)
+            const obsHex = "FF" + b + g + r;
+            // Parse the rearranged hex string to a decimal integer
+            return parseInt(obsHex, 16);
         }
 
         function applyMatch() {
@@ -311,7 +316,6 @@
             const isA = team === 'A';
             const sourceName = isA ? 'Color_Team_A' : 'Color_Team_B';
             const obsColor = hexToObsColor(hexColor);
-            
             obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: obsColor } }).catch(err => {});
         }
 
@@ -344,7 +348,6 @@
             if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
             const teamAName = elements.editCheckA.checked ? elements.nameAInput.value.replace(/\//g, '\n') : elements.nameA.innerText;
             const teamBName = elements.editCheckB.checked ? elements.nameBInput.value.replace(/\//g, '\n') : elements.nameB.innerText;
-
             const filled = template
                 .replace(/<TeamA>/gi, teamAName)
                 .replace(/<TeamB>/gi, teamBName)
@@ -355,7 +358,6 @@
                 .replace(/<score_team_b>/gi, scoreB)
                 .replace(/<time_counter>/gi, elements.timerText.textContent)
                 .replace(/<half_text>/gi, elements.halfText.textContent);
-            
             navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
         }
         
