@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>วงล้อจับคู่ (Bug Fixed)</title>
+    <title>วงล้อจับคู่ V1.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --wheel-size: 380px; /* Adjust size for two wheels */
+            --wheel-size: 380px;
             --primary-color: #3498db;
             --danger-color: #e74c3c;
             --success-color: #27ae60;
@@ -26,9 +26,8 @@
             margin: 0;
             padding: 40px 20px;
             background-color: #f0f2f5;
+            transition: background-color 0.3s;
         }
-
-        /* --- Main Layout for Wheels & Controls --- */
         .app-container {
             display: flex;
             justify-content: center;
@@ -41,8 +40,9 @@
             display: flex;
             gap: 30px;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             flex-wrap: wrap;
+            width: 100%;
         }
         .controls-area {
             display: flex;
@@ -54,79 +54,67 @@
         .spin-button-container {
             width: 100%;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
         }
-
-        /* --- Wheel Styles --- */
         .wheel-container {
             position: relative;
             width: var(--wheel-size);
-            height: var(--wheel-size);
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .wheel-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--dark-color);
             margin-bottom: 10px;
+            min-height: 30px;
         }
         .wheel-canvas {
-            width: 100%;
-            height: 100%;
+            width: var(--wheel-size);
+            height: var(--wheel-size);
             transition: transform 6s cubic-bezier(0.25, 1, 0.5, 1);
             border-radius: 50%;
         }
         .pointer {
             position: absolute;
-            top: 25px; /* Adjust for wheel-title */
+            top: 40px;
             left: 50%;
             transform: translateX(-50%);
-            width: 0;
-            height: 0;
+            width: 0; height: 0;
             border-left: 18px solid transparent;
             border-right: 18px solid transparent;
             border-top: 30px solid var(--danger-color);
             z-index: 10;
             filter: drop-shadow(0 -3px 3px rgba(0,0,0,0.2));
         }
-
-        /* --- Spin Button --- */
         #spin-button {
-            font-size: 22px;
-            font-weight: 700;
-            padding: 15px 40px;
-            border-radius: 8px;
-            border: none;
-            background-color: var(--danger-color);
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
+            font-size: 22px; font-weight: 700; padding: 15px 40px;
+            border-radius: 8px; border: none; background-color: var(--danger-color);
+            color: white; cursor: pointer; transition: background-color 0.3s, transform 0.1s;
         }
         #spin-button:hover { background-color: #c0392b; }
         #spin-button:active { transform: scale(0.97); }
-        #spin-button.disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
+        #spin-button.disabled { background-color: #95a5a6; cursor: not-allowed; }
         
-        /* --- Controls & History --- */
         .card {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
+            background-color: #fff; padding: 20px; border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--light-color);
-            padding-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 2px solid var(--light-color); padding-bottom: 10px;
         }
         .card-header h2 { margin: 0; color: var(--dark-color); font-size: 22px; }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { font-weight: 700; font-size: 14px; color: #555; display: block; margin-bottom: 5px; }
+        .title-input, .palette-select {
+            width: 100%; box-sizing: border-box; padding: 8px;
+            border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
+        }
+        
         textarea {
             width: 100%; box-sizing: border-box; height: 120px;
             padding: 10px; border: 1px solid #ccc; border-radius: 4px;
@@ -137,68 +125,73 @@
             background-color: var(--primary-color); color: white; border: none;
             border-radius: 4px; font-size: 16px; cursor: pointer;
         }
-
-        /* --- History New UI --- */
         #history-list {
             list-style-type: none; padding: 0; margin: 0;
-            max-height: 250px; overflow-y: auto;
+            height: 250px;
+            resize: vertical;
+            overflow: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
         }
         .history-item {
-            display: flex;
-            align-items: stretch; /* Make items same height */
-            margin-bottom: 6px;
-            font-size: 16px;
-            overflow: hidden;
-            border-radius: 5px;
+            display: flex; align-items: stretch; margin-bottom: 6px;
+            font-size: 16px; overflow: hidden; border-radius: 5px;
         }
         .history-prefix {
-            flex-shrink: 0; /* Prevent shrinking */
-            padding: 8px 12px;
-            font-weight: 700;
-            color: white;
-            background-color: var(--dark-color);
-            min-width: 50px;
-            text-align: center;
+            flex-shrink: 0; padding: 8px 12px; font-weight: 700;
+            color: white; background-color: var(--dark-color);
+            min-width: 50px; text-align: center;
         }
         .history-name {
-            padding: 8px 12px;
-            background-color: var(--light-color);
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex-grow: 1; /* Take remaining space */
+            padding: 8px 12px; background-color: var(--light-color);
+            color: #333; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; flex-grow: 1;
         }
         .history-controls { display: flex; align-items: center; gap: 10px; }
-        .history-controls select {
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
+        .history-controls select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
         .copy-btn {
-            font-size: 12px; padding: 6px 10px;
-            background-color: var(--success-color); color: white; border: none;
-            border-radius: 4px; cursor: pointer; margin-left: auto;
+            font-size: 12px; padding: 6px 10px; background-color: var(--success-color);
+            color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: auto;
         }
-        #history-list.empty { text-align: center; color: #999; padding: 20px 0; }
+        #history-list.empty { text-align: center; color: #999; padding: 20px 0; border: none;}
         
-        /* Modal Styles */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .settings-grid .input-group { margin-bottom: 0; }
+        .bg-settings {
+            grid-column: 1 / -1; /* Span full width */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            border-top: 1px solid var(--light-color);
+            padding-top: 15px;
+        }
+        .bg-settings label { font-size: 14px; margin-bottom: 0;}
+        .greenscreen-btn { padding: 4px 8px; font-size: 12px; background-color: #00a86b; color: white; border:none; border-radius: 4px;}
+        
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); display: flex;
-            justify-content: center; align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex; justify-content: center; align-items: center;
             z-index: 100; opacity: 0; visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
         }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-content {
-            background: white; padding: 40px; border-radius: 12px; text-align: center;
-            transform: scale(0.9); transition: transform 0.3s;
+            background: white; padding: 40px; border-radius: 12px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s;
         }
         .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-content p { font-size: 20px; color: #555; margin: 0; }
         .winner-display {
-            font-size: 52px;
-            font-weight: 700;
+            font-size: 52px; font-weight: 700;
             margin: 10px 0 30px 0;
         }
         .winner-part1 { color: var(--dark-color); }
@@ -207,24 +200,25 @@
         .modal-btn { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
         .close-btn { background-color: #7f8c8d; color: white; }
         .remove-btn { background-color: var(--danger-color); color: white; }
-
+        
+        footer { margin-top: 30px; color: #777; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="wheels-area">
         <div class="wheel-container">
-            <div class="wheel-title">วงล้อ 1 (กลุ่ม)</div>
+            <div class="wheel-title" id="wheel-title-1"></div>
             <div class="pointer"></div>
             <canvas class="wheel-canvas" id="wheel-canvas-1" width="500" height="500"></canvas>
         </div>
         <div class="wheel-container">
-            <div class="wheel-title">วงล้อ 2 (ชื่อ)</div>
-             <div class="pointer"></div>
+            <div class="wheel-title" id="wheel-title-2"></div>
+            <div class="pointer"></div>
             <canvas class="wheel-canvas" id="wheel-canvas-2" width="500" height="500"></canvas>
         </div>
     </div>
-
+    
     <div class="spin-button-container">
         <button id="spin-button">สุ่มจับคู่</button>
     </div>
@@ -233,12 +227,12 @@
         <div class="controls-area">
             <div class="card">
                 <h2>รายชื่อวงล้อ 1</h2>
-                <textarea id="name-list-1" placeholder="ใส่กลุ่ม เช่น&#10;A&#10;B&#10;C"></textarea>
+                <textarea id="name-list-1"></textarea>
                 <button class="update-button" id="update-button-1">อัปเดตวงล้อ 1</button>
             </div>
-             <div class="card">
+            <div class="card">
                 <h2>รายชื่อวงล้อ 2</h2>
-                <textarea id="name-list-2" placeholder="ใส่ชื่อทีม หรือบุคคล..."></textarea>
+                <textarea id="name-list-2"></textarea>
                 <button class="update-button" id="update-button-2">อัปเดตวงล้อ 2</button>
             </div>
         </div>
@@ -246,20 +240,50 @@
         <div class="controls-area">
             <div class="card">
                 <div class="card-header">
-                    <h2>ประวัติการจับคู่</h2>
+                    <h2>ประวัติ</h2>
                     <div class="history-controls">
                         <select id="sort-history">
-                            <option value="newest">ใหม่สุด > เก่าสุด</option>
-                            <option value="oldest">เก่าสุด > ใหม่สุด</option>
-                            <option value="az">เรียงตามตัวอักษร</option>
+                            <option value="newest">ใหม่ > เก่า</option>
+                            <option value="oldest">เก่า > ใหม่</option>
+                            <option value="az">A > Z</option>
                         </select>
                         <button class="copy-btn" id="copy-history-btn">คัดลอก</button>
                     </div>
                 </div>
                 <ul id="history-list" class="empty">ประวัติจะแสดงที่นี่</ul>
             </div>
+            <div class="card">
+                 <h2>ตั้งค่า</h2>
+                 <div class="settings-grid">
+                    <div class="input-group">
+                        <label for="title-input-1">ชื่อหัวข้อวงล้อ 1</label>
+                        <input type="text" id="title-input-1" class="title-input">
+                    </div>
+                    <div class="input-group">
+                        <label for="title-input-2">ชื่อหัวข้อวงล้อ 2</label>
+                        <input type="text" id="title-input-2" class="title-input">
+                    </div>
+                    <div class="input-group">
+                        <label for="palette-select-1">สไตล์สีวงล้อ 1</label>
+                        <select id="palette-select-1" class="palette-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="palette-select-2">สไตล์สีวงล้อ 2</label>
+                        <select id="palette-select-2" class="palette-select"></select>
+                    </div>
+                 </div>
+                 <div class="bg-settings">
+                    <label for="bg-color-picker">สีพื้นหลัง:</label>
+                    <input type="color" id="bg-color-picker" value="#f0f2f5">
+                    <button class="greenscreen-btn" id="greenscreen-btn">Green Screen</button>
+                 </div>
+            </div>
         </div>
     </div>
+    
+    <footer>
+        <p id="version-info">Wheel of Pairing - เวอร์ชัน 1.0</p>
+    </footer>
 
     <div class="modal-overlay" id="modal">
         <div class="modal-content">
@@ -278,50 +302,52 @@
 
     <script>
         // --- DOM Elements ---
-        const canvas1 = document.getElementById('wheel-canvas-1');
-        const ctx1 = canvas1.getContext('2d');
-        const canvas2 = document.getElementById('wheel-canvas-2');
-        const ctx2 = canvas2.getContext('2d');
+        const canvas1 = document.getElementById('wheel-canvas-1'), ctx1 = canvas1.getContext('2d');
+        const canvas2 = document.getElementById('wheel-canvas-2'), ctx2 = canvas2.getContext('2d');
         const spinButton = document.getElementById('spin-button');
-        const nameList1 = document.getElementById('name-list-1');
-        const nameList2 = document.getElementById('name-list-2');
-        const updateBtn1 = document.getElementById('update-button-1');
-        const updateBtn2 = document.getElementById('update-button-2');
+        const nameList1 = document.getElementById('name-list-1'), nameList2 = document.getElementById('name-list-2');
+        const updateBtn1 = document.getElementById('update-button-1'), updateBtn2 = document.getElementById('update-button-2');
+        const titleInput1 = document.getElementById('title-input-1'), titleInput2 = document.getElementById('title-input-2');
+        const wheelTitle1 = document.getElementById('wheel-title-1'), wheelTitle2 = document.getElementById('wheel-title-2');
+        const paletteSelect1 = document.getElementById('palette-select-1'), paletteSelect2 = document.getElementById('palette-select-2');
         const historyList = document.getElementById('history-list');
         const sortHistorySelect = document.getElementById('sort-history');
         const copyHistoryBtn = document.getElementById('copy-history-btn');
-        // Modal elements
-        const modal = document.getElementById('modal');
-        const winnerPart1El = document.getElementById('winner-part1');
-        const winnerPart2El = document.getElementById('winner-part2');
-        const closeBtn = document.getElementById('close-btn');
-        const removeBtn = document.getElementById('remove-btn');
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        const greenscreenBtn = document.getElementById('greenscreen-btn');
+        const modal = document.getElementById('modal'), winnerPart1El = document.getElementById('winner-part1'), winnerPart2El = document.getElementById('winner-part2');
+        const closeBtn = document.getElementById('close-btn'), removeBtn = document.getElementById('remove-btn');
 
-        // --- State ---
+        // --- State & Config ---
         let names1 = [], names2 = [];
         let rotation1 = 0, rotation2 = 0;
-        let history = []; // Array of { val1, val2, timestamp }
+        let history = [];
         let spinFinishedCount = 0;
         let winners = { val1: null, val2: null };
+        const palettes = {
+            classic: ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'],
+            pastel: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff'],
+            neon: ['#f83bff', '#39ff14', '#feff00', '#ff0054', '#00e5ff', '#ff6600', '#8a2be2', '#20f1dd'],
+            corporate: ['#34495e', '#7f8c8d', '#2c3e50', '#95a5a6', '#bdc3c7', '#596275', '#303952', '#1e272e'],
+        };
+        
+        // --- Functions ---
+        const populatePalettes = () => {
+            Object.keys(palettes).forEach(name => {
+                const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+                paletteSelect1.add(new Option(displayName, name));
+                paletteSelect2.add(new Option(displayName, name));
+            });
+        };
 
-        const colors1 = ['#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7'];
-        const colors2 = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c'];
-
-        // --- Main Drawing Function (Reusable) ---
         const drawWheel = (ctx, canvas, names, colors) => {
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            const centerX = canvas.width / 2, centerY = canvas.height / 2;
             const radius = centerX - 8;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (names.length === 0) {
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                ctx.fillStyle = '#ddd';
-                ctx.fill();
-                ctx.strokeStyle = '#34495e';
-                ctx.lineWidth = 8;
-                ctx.stroke();
+                ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); ctx.fillStyle = '#ddd'; ctx.fill();
+                ctx.strokeStyle = '#34495e'; ctx.lineWidth = 8; ctx.stroke();
                 return;
             }
             const segmentAngle = (2 * Math.PI) / names.length;
@@ -329,68 +355,49 @@
                 const startAngle = i * segmentAngle - (Math.PI / 2);
                 const endAngle = (i + 1) * segmentAngle - (Math.PI / 2);
                 const color = colors[i % colors.length];
-                ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-                ctx.closePath();
-                ctx.fillStyle = color;
-                ctx.fill();
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate((startAngle + endAngle) / 2);
-                ctx.textAlign = 'right';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#fff';
-                ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                ctx.shadowBlur = 2;
-                let fontSize = 20;
-                ctx.font = `bold ${fontSize}px Sarabun`;
+                ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate((startAngle + endAngle) / 2);
+                ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 2;
+                let fontSize = 20; ctx.font = `bold ${fontSize}px Sarabun`;
                 while (ctx.measureText(name).width > radius * 0.75 && fontSize > 10) {
-                    fontSize--;
-                    ctx.font = `bold ${fontSize}px Sarabun`;
+                    fontSize--; ctx.font = `bold ${fontSize}px Sarabun`;
                 }
                 ctx.fillText(name, radius - 20, 0);
                 ctx.restore();
             });
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#34495e';
-            ctx.lineWidth = 8;
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); ctx.strokeStyle = '#34495e'; ctx.lineWidth = 8; ctx.stroke();
         };
 
-        const updateAndDrawAll = () => {
-            names1 = nameList1.value.split('\n').map(n => n.trim()).filter(Boolean);
-            names2 = nameList2.value.split('\n').map(n => n.trim()).filter(Boolean);
-            drawWheel(ctx1, canvas1, names1, colors1);
-            drawWheel(ctx2, canvas2, names2, colors2);
-        };
-        
-        // --- Spin Logic ---
-        const spinAllWheels = () => {
-            if (names1.length === 0 || names2.length === 0) {
-                alert('กรุณาใส่รายชื่อให้ครบทั้ง 2 วงล้อ'); return;
+        const updateAndDraw = (wheelNum) => {
+            if (wheelNum === 1) {
+                names1 = nameList1.value.split('\n').map(n => n.trim()).filter(Boolean);
+                wheelTitle1.textContent = titleInput1.value;
+                drawWheel(ctx1, canvas1, names1, palettes[paletteSelect1.value]);
+            } else {
+                names2 = nameList2.value.split('\n').map(n => n.trim()).filter(Boolean);
+                wheelTitle2.textContent = titleInput2.value;
+                drawWheel(ctx2, canvas2, names2, palettes[paletteSelect2.value]);
             }
+        };
+
+        const spinAllWheels = () => {
+            if (names1.length === 0 || names2.length === 0) { alert('กรุณาใส่รายชื่อให้ครบทั้ง 2 วงล้อ'); return; }
             spinButton.classList.add('disabled');
             spinFinishedCount = 0;
-            
             rotation1 += (8 * 360) + Math.floor(Math.random() * 360);
             rotation2 += (8 * 360) + Math.floor(Math.random() * 360);
-            
             canvas1.style.transform = `rotate(${rotation1}deg)`;
             canvas2.style.transform = `rotate(${rotation2}deg)`;
         };
 
         const handleSpinEnd = () => {
             spinFinishedCount++;
-            if (spinFinishedCount === 2) { // Both wheels have stopped
+            if (spinFinishedCount === 2) {
                 spinButton.classList.remove('disabled');
-                
                 const winnerIndex1 = Math.floor(((360 - (rotation1 % 360)) % 360) / (360 / names1.length));
                 const winnerIndex2 = Math.floor(((360 - (rotation2 % 360)) % 360) / (360 / names2.length));
-
                 winners = { val1: names1[winnerIndex1], val2: names2[winnerIndex2] };
-
                 if (winners.val1 && winners.val2) {
                     history.push({ ...winners, timestamp: Date.now() });
                     renderHistory();
@@ -399,81 +406,55 @@
             }
         };
 
-        // --- History & Modal Logic ---
         const renderHistory = () => {
             historyList.innerHTML = '';
             if (history.length === 0) {
-                historyList.innerHTML = 'ประวัติจะแสดงที่นี่';
-                historyList.classList.add('empty');
-                return;
+                historyList.innerHTML = 'ประวัติจะแสดงที่นี่'; historyList.classList.add('empty'); return;
             }
             historyList.classList.remove('empty');
-            
-            const sortedHistory = [...history]; // Create a copy to sort
+            const sortedHistory = [...history];
             const sortMethod = sortHistorySelect.value;
-
-            if (sortMethod === 'oldest') {
-                sortedHistory.sort((a, b) => a.timestamp - b.timestamp);
-            } else if (sortMethod === 'az') {
-                sortedHistory.sort((a, b) => a.val1.localeCompare(b.val1, 'th') || a.val2.localeCompare(b.val2, 'th'));
-            } else { // newest
-                sortedHistory.sort((a, b) => b.timestamp - a.timestamp);
-            }
-
+            if (sortMethod === 'oldest') sortedHistory.sort((a, b) => a.timestamp - b.timestamp);
+            else if (sortMethod === 'az') sortedHistory.sort((a, b) => a.val1.localeCompare(b.val1, 'th') || a.val2.localeCompare(b.val2, 'th'));
+            else sortedHistory.sort((a, b) => b.timestamp - a.timestamp);
             sortedHistory.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'history-item';
-                li.innerHTML = `
-                    <span class="history-prefix">${item.val1}</span>
-                    <span class="history-name">${item.val2}</span>
-                `;
+                const li = document.createElement('li'); li.className = 'history-item';
+                li.innerHTML = `<span class="history-prefix">${item.val1}</span><span class="history-name">${item.val2}</span>`;
                 historyList.appendChild(li);
             });
         };
 
-        const showWinnerModal = ({ val1, val2 }) => {
-            winnerPart1El.textContent = val1;
-            winnerPart2El.textContent = val2;
-            modal.classList.add('show');
-        };
-
         const removeLastResult = () => {
-            // Remove from text areas
             nameList1.value = nameList1.value.split('\n').filter(n => n.trim() !== winners.val1.trim()).join('\n');
             nameList2.value = nameList2.value.split('\n').filter(n => n.trim() !== winners.val2.trim()).join('\n');
-            
-            // !! BUG FIX: The history array is NO LONGER modified !!
-
-            updateAndDrawAll();
-            // No need to re-render history, as it hasn't changed.
+            updateAndDraw(1);
+            updateAndDraw(2);
             modal.classList.remove('show');
         };
-        
+
         const copyHistory = () => {
              const items = Array.from(historyList.querySelectorAll('.history-item'));
              if (items.length === 0) { alert("ไม่มีประวัติให้คัดลอก"); return; }
-             
              const textToCopy = items.map(item => {
-                 const prefix = item.querySelector('.history-prefix').textContent;
-                 const name = item.querySelector('.history-name').textContent;
-                 return `${prefix}\t${name}`; // Use tab for better spacing in spreadsheets
+                 return `${item.querySelector('.history-prefix').textContent}\t${item.querySelector('.history-name').textContent}`;
              }).join('\n');
-
              navigator.clipboard.writeText(textToCopy).then(() => {
                  copyHistoryBtn.textContent = 'คัดลอกแล้ว!';
                  setTimeout(() => { copyHistoryBtn.textContent = 'คัดลอก'; }, 1500);
              });
         };
+        
+        const showWinnerModal = ({ val1, val2 }) => {
+            winnerPart1El.textContent = val1; winnerPart2El.textContent = val2; modal.classList.add('show');
+        };
 
         // --- Event Listeners ---
-        updateBtn1.addEventListener('click', () => {
-            names1 = nameList1.value.split('\n').map(n => n.trim()).filter(Boolean);
-            drawWheel(ctx1, canvas1, names1, colors1);
-        });
-        updateBtn2.addEventListener('click', () => {
-             names2 = nameList2.value.split('\n').map(n => n.trim()).filter(Boolean);
-            drawWheel(ctx2, canvas2, names2, colors2);
-        });
+        updateBtn1.addEventListener('click', () => updateAndDraw(1));
+        updateBtn2.addEventListener('click', () => updateAndDraw(2));
+        titleInput1.addEventListener('input', () => wheelTitle1.textContent = titleInput1.value);
+        titleInput2.addEventListener('input', () => wheelTitle2.textContent = titleInput2.value);
+        paletteSelect1.addEventListener('change', () => updateAndDraw(1));
+        paletteSelect2.addEventListener('change', () => updateAndDraw(2));
         spinButton.addEventListener('click', spinAllWheels);
         canvas1.addEventListener('transitionend', handleSpinEnd);
         canvas2.addEventListener('transitionend', handleSpinEnd);
@@ -481,11 +462,30 @@
         copyHistoryBtn.addEventListener('click', copyHistory);
         closeBtn.addEventListener('click', () => modal.classList.remove('show'));
         removeBtn.addEventListener('click', removeLastResult);
+        bgColorPicker.addEventListener('input', (e) => document.body.style.backgroundColor = e.target.value);
+        greenscreenBtn.addEventListener('click', () => {
+            document.body.style.backgroundColor = '#00ff00';
+            bgColorPicker.value = '#00ff00';
+        });
 
         // --- Initial Load ---
-        nameList1.value = "A\nB\nC\nD";
-        nameList2.value = "ทีมแดง\nทีมน้ำเงิน\nทีมเขียว\nทีมเหลือง\nทีมส้ม\nทีมม่วง";
-        updateAndDrawAll();
+        const initialSetup = () => {
+            populatePalettes();
+            paletteSelect1.value = 'classic';
+            paletteSelect2.value = 'classic';
+            
+            titleInput1.value = 'กลุ่ม';
+            titleInput2.value = 'ทีม';
+            
+            nameList1.value = "A1\nA2\nA3\nB1\nB2\nB3\nC1\nC2\nC3";
+            nameList2.value = "สก.ทรัพย์เจริญ X ช่างโจ๋แอร์คูล B\nมาดามเก๋\nMP SOCCER\nห้างทองแม่อุรัย\nจอมยุทธ ยูไนเต็ด X บ้านแตก ยูไนเต็ด\nสุรินทร์การค้า\nสวย 24 X หน้าดำ FC\nYAI FC B\nKNP TTS.";
+            
+            updateAndDraw(1);
+            updateAndDraw(2);
+        };
+
+        initialSetup();
+
     </script>
 </body>
 </html>
