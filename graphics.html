@@ -3,172 +3,239 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>All-in-One Sticker Control</title>
+    <title>Sticker Animation to GIF Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        /* --- ส่วนแสดงผลกราฟิก --- */
         body {
-            background: transparent;
-            margin: 0;
-            overflow: hidden;
-            font-family: sans-serif;
-        }
-        .graphics-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            height: 100vh;
-            position: relative;
-            z-index: 1;
+            align-items: flex-start;
+            gap: 2rem;
+            padding: 2rem;
+            flex-wrap: wrap;
         }
-        .sticker-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            margin-top: var(--margin-top, 0px);
-            margin-bottom: var(--margin-bottom, 0px);
+        .preview-area, .controls-area {
+            background-color: #2a2a2a;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        #sticker {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 0 10px var(--glow-color, #0ff));
+        .preview-area {
+            text-align: center;
         }
-        .shine {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, var(--shine-opacity, 0.3)) 50%, transparent 60%);
-            background-size: 300% 100%;
-            background-position: 100% 50%;
-            animation: shineAnim 3s infinite linear;
-            pointer-events: none;
-            mask-image: var(--sticker-mask);
-            -webkit-mask-image: var(--sticker-mask);
-            mask-repeat: no-repeat;
-            mask-size: contain;
-            mask-position: center;
+        h1, h2 {
+            margin-top: 0;
+            color: #00aaff;
+            border-bottom: 1px solid #444;
+            padding-bottom: 0.5rem;
         }
-        @keyframes shineAnim {
-            0% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* --- ส่วนแผงควบคุม --- */
-        .controls-panel {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background: rgba(40, 40, 40, 0.9);
-            color: #eee;
-            padding: 1rem;
+        canvas {
+            background-color: #111;
             border-radius: 8px;
-            z-index: 100;
-            max-width: 500px;
-            margin: auto;
-            border: 1px solid #555;
+            border: 1px solid #444;
+        }
+        .controls-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            gap: 1.5rem;
+            width: 500px;
         }
-        .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        label { font-size: 0.9rem; }
-        input[type="range"] { width: 100%; }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        button {
+            grid-column: 1 / -1;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            background-color: #0088cc;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #00aaff;
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
-    <div class="graphics-container">
-        <div class="sticker-container">
-            <img id="sticker" src="" alt="Upload a PNG file using the controls." />
-            <div class="shine" id="shine"></div>
+
+    <div class="preview-area">
+        <h2>ตัวอย่าง Animation</h2>
+        <canvas id="canvas" width="350" height="350"></canvas>
+    </div>
+
+    <div class="controls-area">
+        <h1>Sticker to GIF Generator</h1>
+        <div class="controls-grid">
+            <div class="control-group full-width">
+                <label>1. อัปโหลดไฟล์ PNG:</label>
+                <input type="file" id="stickerImageFile" accept="image/png" />
+            </div>
+
+            <div class="control-group"><label>Scale Amount: <input type="range" min="1" max="1.3" step="0.01" value="1.1" id="scaleRange" /></label></div>
+            <div class="control-group"><label>Bounce Speed: <input type="range" min="0.1" max="3" step="0.1" value="1" id="speedRange" /></label></div>
+            <div class="control-group"><label>Rotate Degrees: <input type="range" min="-20" max="20" step="1" value="5" id="rotateRange" /></label></div>
+            <div class="control-group"><label>Rotate Speed: <input type="range" min="0.5" max="5" step="0.1" value="2" id="rotateSpeed" /></label></div>
+            <div class="control-group"><label>Glow Color: <input type="color" id="glowColor" value="#00ffff" /></label></div>
+            <div class="control-group"><label>Glow Size: <input type="range" min="0" max="30" step="1" value="15" id="glowSize" /></label></div>
+            
+            <button id="generateBtn" disabled>2. สร้างไฟล์ GIF</button>
+            <p id="status" class="full-width" style="text-align: center; min-height: 20px;"></p>
         </div>
     </div>
 
-    <div class="controls-panel">
-        <div class="control-group" style="grid-column: 1 / -1;"><label>Upload PNG: <input type="file" id="stickerImageFile" accept="image/png" /></label></div>
-        <div class="control-group"><label>Scale Amount: <input type="range" min="1" max="1.3" step="0.01" value="1.1" id="scaleRange" /></label></div>
-        <div class="control-group"><label>Bounce Speed: <input type="range" min="0.1" max="3" step="0.1" value="1" id="speedRange" /></label></div>
-        <div class="control-group"><label>Rotate Degrees: <input type="range" min="-20" max="20" step="1" value="5" id="rotateRange" /></label></div>
-        <div class="control-group"><label>Rotate Speed: <input type="range" min="0.5" max="5" step="0.1" value="2" id="rotateSpeed" /></label></div>
-        <div class="control-group"><label>Glow Color: <input type="color" id="glowColor" value="#00ffff" /></label></div>
-        <div class="control-group"><label>Top Margin: <input type="range" min="0" max="100" step="1" value="0" id="marginTop" /></label></div>
-        <div class="control-group"><label>Bottom Margin: <input type="range" min="0" max="100" step="1" value="0" id="marginBottom" /></label></div>
-        <div class="control-group"><label><input type="checkbox" id="toggleShine" checked /> Enable Shine</label></div>
-        <div class="control-group"><label>Shine Opacity: <input type="range" min="0" max="1" step="0.05" value="0.3" id="shineOpacity" /></label></div>
-    </div>
-
     <script>
-        const sticker = document.getElementById('sticker');
-        const shine = document.getElementById('shine');
-        const root = document.documentElement;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imageInput = document.getElementById('stickerImageFile');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusText = document.getElementById('status');
 
-        // ดึงค่าจากตัวควบคุมทั้งหมด
         const controls = {
             scaleRange: document.getElementById('scaleRange'),
             speedRange: document.getElementById('speedRange'),
             rotateRange: document.getElementById('rotateRange'),
             rotateSpeed: document.getElementById('rotateSpeed'),
             glowColor: document.getElementById('glowColor'),
-            marginTop: document.getElementById('marginTop'),
-            marginBottom: document.getElementById('marginBottom'),
-            toggleShine: document.getElementById('toggleShine'),
-            shineOpacity: document.getElementById('shineOpacity'),
-            stickerImageFile: document.getElementById('stickerImageFile'),
+            glowSize: document.getElementById('glowSize'),
         };
 
-        let scale = 1.1, speed = 1, rotation = 5, rotateSpeed = 2;
-        let direction = 1, angle = 0;
+        let stickerImage = null;
+        let previewAnimationId = null;
 
-        function updateAllSettings() {
-            scale = parseFloat(controls.scaleRange.value);
-            speed = parseFloat(controls.speedRange.value);
-            rotation = parseInt(controls.rotateRange.value);
-            rotateSpeed = parseFloat(controls.rotateSpeed.value);
-            
-            root.style.setProperty('--glow-color', controls.glowColor.value);
-            root.style.setProperty('--margin-top', `${controls.marginTop.value}px`);
-            root.style.setProperty('--margin-bottom', `${controls.marginBottom.value}px`);
-            
-            shine.style.display = controls.toggleShine.checked ? 'block' : 'none';
-            root.style.setProperty('--shine-opacity', controls.shineOpacity.value);
-        }
-
-        // เพิ่ม Event Listener ให้กับทุกตัวควบคุม
-        Object.values(controls).forEach(input => {
-            if (input.id !== 'stickerImageFile') {
-                input.addEventListener('input', updateAllSettings);
-            }
-        });
-
-        // จัดการการอัปโหลดไฟล์
-        controls.stickerImageFile.addEventListener('change', event => {
-            const file = event.target.files[0];
+        // --- โหลดรูปภาพ ---
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = e => {
-                const imgSrc = e.target.result;
-                sticker.src = imgSrc;
-                root.style.setProperty('--sticker-mask', `url(${imgSrc})`);
+            reader.onload = (event) => {
+                stickerImage = new Image();
+                stickerImage.onload = () => {
+                    generateBtn.disabled = false;
+                    startPreview();
+                };
+                stickerImage.src = event.target.result;
             };
             reader.readAsDataURL(file);
         });
+        
+        // --- ฟังก์ชันวาด 1 เฟรม ---
+        function drawFrame(time) {
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // อ่านค่าจาก controls
+            const scaleMax = parseFloat(controls.scaleRange.value);
+            const speed = parseFloat(controls.speedRange.value);
+            const rotationMax = parseInt(controls.rotateRange.value) * (Math.PI / 180); // แปลงเป็นเรเดียน
+            const rotateSpeed = parseFloat(controls.rotateSpeed.value);
+            const glowColor = controls.glowColor.value;
+            const glowSize = parseInt(controls.glowSize.value);
 
-        function animate() {
-            const time = Date.now();
-            const scaleAmount = 1 + (Math.sin(time / (speed * 500)) * (scale - 1));
-            angle += (rotation / (rotateSpeed * 60)) * direction;
-            if (Math.abs(angle) > Math.abs(rotation)) {
-                angle = rotation * direction;
-                direction *= -1;
-            }
-            sticker.style.transform = `scale(${scaleAmount}) rotate(${angle}deg)`;
-            requestAnimationFrame(animate);
+            // คำนวณค่าสำหรับเฟรมนี้
+            const scaleAmount = 1 + (Math.sin(time / (speed * 500)) * (scaleMax - 1));
+            const rotationAmount = Math.sin(time / (rotateSpeed * 500)) * rotationMax;
+
+            // ล้าง Canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // ตั้งค่าเงา (Glow Effect)
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = glowSize;
+            
+            // เตรียมวาด
+            ctx.save();
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(rotationAmount);
+            ctx.scale(scaleAmount, scaleAmount);
+            
+            // วาดรูปภาพ
+            ctx.drawImage(stickerImage, -stickerImage.width / 2, -stickerImage.height / 2);
+            ctx.restore();
+            
+            // รีเซ็ตเงา เพื่อไม่ให้กระทบส่วนอื่น
+            ctx.shadowBlur = 0;
         }
 
-        // เริ่มต้นทำงาน
-        updateAllSettings();
-        animate();
+        // --- แสดงตัวอย่าง Animation ---
+        function startPreview() {
+            if (previewAnimationId) {
+                cancelAnimationFrame(previewAnimationId);
+            }
+            function animateLoop() {
+                if(stickerImage) {
+                    drawFrame(Date.now());
+                }
+                previewAnimationId = requestAnimationFrame(animateLoop);
+            }
+            animateLoop();
+        }
+
+        // --- สร้างไฟล์ GIF ---
+        generateBtn.addEventListener('click', () => {
+            if (!stickerImage) return;
+
+            generateBtn.disabled = true;
+            statusText.textContent = 'กำลังประมวลผล... กรุณารอสักครู่';
+
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: canvas.width,
+                height: canvas.height,
+                workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js',
+                transparent: 0x000000 // สีที่จะทำให้โปร่งใส
+            });
+
+            const duration = 2; // ความยาว GIF (วินาที)
+            const fps = 30; // Frame per second
+            const frameCount = duration * fps;
+            const frameDelay = 1000 / fps;
+
+            for (let i = 0; i < frameCount; i++) {
+                // คำนวณเวลาจำลองสำหรับแต่ละเฟรม
+                const simulatedTime = (i / fps) * 1000 * 2; // คูณ 2 เพื่อให้ครบรอบ
+                drawFrame(simulatedTime);
+                gif.addFrame(ctx, {copy: true, delay: frameDelay});
+            }
+
+            gif.on('finished', (blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sticker.gif';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                generateBtn.disabled = false;
+                statusText.textContent = 'สร้างไฟล์ GIF สำเร็จ!';
+            });
+
+            gif.render();
+        });
+
     </script>
 </body>
 </html>
