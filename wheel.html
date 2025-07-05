@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>วงล้อจับคู่ V1.0</title>
+    <title>วงล้อจับคู่ V1.4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
@@ -28,6 +28,12 @@
             background-color: #f0f2f5;
             transition: background-color 0.3s;
         }
+        .main-display-area {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
         .app-container {
             display: flex;
             justify-content: center;
@@ -42,7 +48,6 @@
             justify-content: center;
             align-items: flex-start;
             flex-wrap: wrap;
-            width: 100%;
         }
         .controls-area {
             display: flex;
@@ -163,7 +168,7 @@
         }
         .settings-grid .input-group { margin-bottom: 0; }
         .bg-settings {
-            grid-column: 1 / -1; /* Span full width */
+            grid-column: 1 / -1;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -175,29 +180,38 @@
         .greenscreen-btn { padding: 4px 8px; font-size: 12px; background-color: #00a86b; color: white; border:none; border-radius: 4px;}
         
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: transparent; 
             display: flex; justify-content: center; align-items: center;
             z-index: 100; opacity: 0; visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
+            pointer-events: none;
         }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-content {
-            background: white; padding: 40px; border-radius: 12px;
+            background: #ffffff;
+            padding: 40px; 
+            border-radius: 12px;
             text-align: center;
             transform: scale(0.9);
             transition: transform 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            pointer-events: auto;
         }
         .modal-overlay.show .modal-content { transform: scale(1); }
-        .modal-content p { font-size: 20px; color: #555; margin: 0; }
+        .modal-content p { font-size: 20px; color: #333; margin: 0; font-weight: 500;}
         .winner-display {
             font-size: 52px; font-weight: 700;
             margin: 10px 0 30px 0;
+            max-width: 60vw;
+            word-wrap: break-word;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.1);
         }
         .winner-part1 { color: var(--dark-color); }
         .winner-part2 { color: var(--primary-color); margin-left: 15px; }
         .modal-buttons { display: flex; gap: 15px; justify-content: center; }
-        .modal-btn { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        .modal-btn { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .close-btn { background-color: #7f8c8d; color: white; }
         .remove-btn { background-color: var(--danger-color); color: white; }
         
@@ -206,16 +220,31 @@
 </head>
 <body>
 
-    <div class="wheels-area">
-        <div class="wheel-container">
-            <div class="wheel-title" id="wheel-title-1"></div>
-            <div class="pointer"></div>
-            <canvas class="wheel-canvas" id="wheel-canvas-1" width="500" height="500"></canvas>
+    <div class="main-display-area">
+        <div class="wheels-area">
+            <div class="wheel-container">
+                <div class="wheel-title" id="wheel-title-1"></div>
+                <div class="pointer"></div>
+                <canvas class="wheel-canvas" id="wheel-canvas-1" width="500" height="500"></canvas>
+            </div>
+            <div class="wheel-container">
+                <div class="wheel-title" id="wheel-title-2"></div>
+                <div class="pointer"></div>
+                <canvas class="wheel-canvas" id="wheel-canvas-2" width="500" height="500"></canvas>
+            </div>
         </div>
-        <div class="wheel-container">
-            <div class="wheel-title" id="wheel-title-2"></div>
-            <div class="pointer"></div>
-            <canvas class="wheel-canvas" id="wheel-canvas-2" width="500" height="500"></canvas>
+        <div class="modal-overlay" id="modal">
+            <div class="modal-content">
+                <p>ผลการจับคู่คือ</p>
+                <div class="winner-display">
+                    <span id="winner-part1" class="winner-part1"></span>
+                    <span id="winner-part2" class="winner-part2"></span>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn remove-btn" id="remove-btn">ลบคู่นี้ออก</button>
+                    <button class="modal-btn close-btn" id="close-btn">ปิด</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -282,26 +311,11 @@
     </div>
     
     <footer>
-        <p id="version-info">Wheel of Pairing - เวอร์ชัน 1.0</p>
+        <p id="version-info">Wheel of Pairing - เวอร์ชัน 1.4</p>
     </footer>
 
-    <div class="modal-overlay" id="modal">
-        <div class="modal-content">
-            <p>ผลการจับคู่คือ</p>
-            <div class="winner-display">
-                <span id="winner-part1" class="winner-part1"></span>
-                <span id="winner-part2" class="winner-part2"></span>
-            </div>
-            <div class="modal-buttons">
-                <button class="modal-btn remove-btn" id="remove-btn">ลบคู่นี้ออก</button>
-                <button class="modal-btn close-btn" id="close-btn">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-
     <script>
-        // --- DOM Elements ---
+        // DOM Elements
         const canvas1 = document.getElementById('wheel-canvas-1'), ctx1 = canvas1.getContext('2d');
         const canvas2 = document.getElementById('wheel-canvas-2'), ctx2 = canvas2.getContext('2d');
         const spinButton = document.getElementById('spin-button');
@@ -318,8 +332,9 @@
         const modal = document.getElementById('modal'), winnerPart1El = document.getElementById('winner-part1'), winnerPart2El = document.getElementById('winner-part2');
         const closeBtn = document.getElementById('close-btn'), removeBtn = document.getElementById('remove-btn');
 
-        // --- State & Config ---
+        // State & Config
         let names1 = [], names2 = [];
+        let nameColorMap1 = new Map(), nameColorMap2 = new Map(); // For stable colors
         let rotation1 = 0, rotation2 = 0;
         let history = [];
         let spinFinishedCount = 0;
@@ -331,7 +346,6 @@
             corporate: ['#34495e', '#7f8c8d', '#2c3e50', '#95a5a6', '#bdc3c7', '#596275', '#303952', '#1e272e'],
         };
         
-        // --- Functions ---
         const populatePalettes = () => {
             Object.keys(palettes).forEach(name => {
                 const displayName = name.charAt(0).toUpperCase() + name.slice(1);
@@ -354,7 +368,7 @@
             names.forEach((name, i) => {
                 const startAngle = i * segmentAngle - (Math.PI / 2);
                 const endAngle = (i + 1) * segmentAngle - (Math.PI / 2);
-                const color = colors[i % colors.length];
+                const color = colors[i]; // Use the pre-assigned stable color
                 ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle);
                 ctx.closePath(); ctx.fillStyle = color; ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate((startAngle + endAngle) / 2);
@@ -370,14 +384,51 @@
         };
 
         const updateAndDraw = (wheelNum) => {
-            if (wheelNum === 1) {
-                names1 = nameList1.value.split('\n').map(n => n.trim()).filter(Boolean);
+            const isWheel1 = wheelNum === 1;
+            const nameList = isWheel1 ? nameList1 : nameList2;
+            let nameColorMap = isWheel1 ? nameColorMap1 : nameColorMap2;
+            const currentNames = nameList.value.split('\n').map(n => n.trim()).filter(Boolean);
+            
+            // Logic for stable color mapping
+            const newColorMap = new Map();
+            const usedColors = new Set();
+            const colorPalette = palettes[isWheel1 ? paletteSelect1.value : paletteSelect2.value];
+
+            // Keep existing colors for names that are still in the list
+            currentNames.forEach(name => {
+                if (nameColorMap.has(name)) {
+                    const color = nameColorMap.get(name);
+                    newColorMap.set(name, color);
+                    usedColors.add(color);
+                }
+            });
+
+            // Assign new colors to new names
+            let colorIndex = 0;
+            currentNames.forEach(name => {
+                if (!newColorMap.has(name)) {
+                    let nextColor;
+                    do {
+                        nextColor = colorPalette[colorIndex % colorPalette.length];
+                        colorIndex++;
+                    } while (usedColors.has(nextColor) && usedColors.size < colorPalette.length);
+                    newColorMap.set(name, nextColor);
+                    usedColors.add(nextColor);
+                }
+            });
+            
+            if (isWheel1) {
+                nameColorMap1 = newColorMap;
+                names1 = currentNames;
                 wheelTitle1.textContent = titleInput1.value;
-                drawWheel(ctx1, canvas1, names1, palettes[paletteSelect1.value]);
+                const orderedColors = names1.map(name => nameColorMap1.get(name));
+                drawWheel(ctx1, canvas1, names1, orderedColors);
             } else {
-                names2 = nameList2.value.split('\n').map(n => n.trim()).filter(Boolean);
+                nameColorMap2 = newColorMap;
+                names2 = currentNames;
                 wheelTitle2.textContent = titleInput2.value;
-                drawWheel(ctx2, canvas2, names2, palettes[paletteSelect2.value]);
+                const orderedColors = names2.map(name => nameColorMap2.get(name));
+                drawWheel(ctx2, canvas2, names2, orderedColors);
             }
         };
 
@@ -485,7 +536,6 @@
         };
 
         initialSetup();
-
     </script>
 </body>
 </html>
