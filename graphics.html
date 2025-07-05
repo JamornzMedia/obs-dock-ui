@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>กราฟิกสติกเกอร์ (OBS Source)</title>
+    <style>
+        body { background: transparent; margin: 0; overflow: hidden; }
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .sticker-container { position: relative; width: 300px; height: 300px; margin-top: var(--margin-top, 0px); margin-bottom: var(--margin-bottom, 0px); }
+        #sticker { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px var(--glow-color, #0ff)); }
+        .shine { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, var(--shine-opacity, 0.3)) 50%, transparent 60%); background-size: 300% 100%; background-position: 0% 50%; animation: shineAnim 3s infinite linear; pointer-events: none; mask-image: var(--sticker-mask); mask-repeat: no-repeat; mask-size: contain; mask-position: center; -webkit-mask-image: var(--sticker-mask); -webkit-mask-repeat: no-repeat; -webkit-mask-size: contain; -webkit-mask-position: center; }
+        @keyframes shineAnim { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sticker-container">
+            <img id="sticker" src="" alt="" />
+            <div class="shine" id="shine"></div>
+        </div>
+    </div>
+    <script>
+        const sticker = document.getElementById('sticker'); const shine = document.getElementById('shine'); const root = document.documentElement; let scale, speed, rotation, rotateSpeed; let direction = 1, angle = 0;
+        function applySettings() {
+            scale = parseFloat(localStorage.getItem('scaleRange')) || 1.1; speed = parseFloat(localStorage.getItem('speedRange')) || 1; rotation = parseInt(localStorage.getItem('rotateRange')) || 5; rotateSpeed = parseFloat(localStorage.getItem('rotateSpeed')) || 2;
+            root.style.setProperty('--glow-color', localStorage.getItem('glowColor') || '#00ffff'); root.style.setProperty('--margin-top', `${localStorage.getItem('marginTop') || 0}px`); root.style.setProperty('--margin-bottom', `${localStorage.getItem('marginBottom') || 0}px`);
+            const isShineEnabled = localStorage.getItem('toggleShine') !== 'false'; shine.style.display = isShineEnabled ? 'block' : 'none'; root.style.setProperty('--shine-opacity', localStorage.getItem('shineOpacity') || 0.3);
+            const imgSrc = localStorage.getItem('stickerImageSrc'); if (imgSrc && sticker.src !== imgSrc) { sticker.src = imgSrc; root.style.setProperty('--sticker-mask', `url(${imgSrc})`); } else if (!imgSrc) { sticker.alt = "Waiting for image from controller..."; }
+        }
+        window.addEventListener('storage', applySettings);
+        function animate() { const time = Date.now(); const scaleAmount = 1 + (Math.sin(time / (speed * 500)) * (scale - 1)); angle += (rotation / (rotateSpeed * 60)) * direction; if (Math.abs(angle) > Math.abs(rotation)) { angle = rotation * direction; direction *= -1; } sticker.style.transform = `scale(${scaleAmount}) rotate(${angle}deg)`; requestAnimationFrame(animate); }
+        applySettings(); animate();
+    </script>
+</body>
+</html>
