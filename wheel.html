@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>วงล้อจับคู่ V1.4</title>
+    <title>วงล้อจับคู่ V1.6</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
             gap: 20px;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
+            padding: 20px;
             background-color: #f0f2f5;
             transition: background-color 0.3s;
         }
@@ -79,7 +79,6 @@
         .wheel-canvas {
             width: var(--wheel-size);
             height: var(--wheel-size);
-            transition: transform 6s cubic-bezier(0.25, 1, 0.5, 1);
             border-radius: 50%;
         }
         .pointer {
@@ -92,7 +91,7 @@
             border-right: 18px solid transparent;
             border-top: 30px solid var(--danger-color);
             z-index: 10;
-            filter: drop-shadow(0 -3px 3px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.35));
         }
         #spin-button {
             font-size: 22px; font-weight: 700; padding: 15px 40px;
@@ -113,15 +112,15 @@
         }
         .card-header h2 { margin: 0; color: var(--dark-color); font-size: 22px; }
         
-        .input-group { margin-bottom: 15px; }
+        .input-group { flex: 1; }
         .input-group label { font-weight: 700; font-size: 14px; color: #555; display: block; margin-bottom: 5px; }
-        .title-input, .palette-select {
+        .title-input, .palette-select, #separator-width {
             width: 100%; box-sizing: border-box; padding: 8px;
             border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
         }
         
         textarea {
-            width: 100%; box-sizing: border-box; height: 120px;
+            width: 100%; box-sizing: border-box; height: 160px;
             padding: 10px; border: 1px solid #ccc; border-radius: 4px;
             font-size: 16px; font-family: 'Sarabun', sans-serif; resize: vertical;
         }
@@ -130,14 +129,11 @@
             background-color: var(--primary-color); color: white; border: none;
             border-radius: 4px; font-size: 16px; cursor: pointer;
         }
+
         #history-list {
             list-style-type: none; padding: 0; margin: 0;
-            height: 250px;
-            resize: vertical;
-            overflow: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 5px;
+            height: 250px; resize: vertical; overflow: auto;
+            border: 1px solid #ddd; border-radius: 4px; padding: 5px; position: relative;
         }
         .history-item {
             display: flex; align-items: stretch; margin-bottom: 6px;
@@ -153,35 +149,43 @@
             color: #333; white-space: nowrap; overflow: hidden;
             text-overflow: ellipsis; flex-grow: 1;
         }
-        .history-controls { display: flex; align-items: center; gap: 10px; }
+        .history-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .history-controls select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        .copy-btn {
-            font-size: 12px; padding: 6px 10px; background-color: var(--success-color);
-            color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: auto;
+        .copy-btn, .fullscreen-btn {
+            font-size: 12px; padding: 6px 10px;
+            color: white; border: none; border-radius: 4px; cursor: pointer;
         }
+        .copy-btn { background-color: var(--success-color); margin-left: auto; }
+        .fullscreen-btn { background-color: #8e44ad; }
         #history-list.empty { text-align: center; color: #999; padding: 20px 0; border: none;}
+
+        #history-list.fullscreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200; background-color: white; padding: 20px;
+            box-sizing: border-box; border-radius: 0; height: 100vh;
+        }
+        .close-fullscreen-btn {
+            display: none; position: absolute; top: 15px; right: 20px;
+            font-size: 24px; font-weight: bold; color: var(--danger-color);
+            background: none; border: none; cursor: pointer;
+        }
+        #history-list.fullscreen .close-fullscreen-btn { display: block; }
         
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .settings-grid .input-group { margin-bottom: 0; }
-        .bg-settings {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
+        .setting-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;}
+        .setting-divider {
+             margin-top: 15px; margin-bottom: 15px;
             border-top: 1px solid var(--light-color);
-            padding-top: 15px;
         }
-        .bg-settings label { font-size: 14px; margin-bottom: 0;}
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 5px;}
+        .checkbox-group label { margin-bottom: 0; }
+        #spin-duration-slider { width: 100%; }
+        #separator-width { width: 70px; }
+        .bg-settings, .separator-controls, .copy-settings { display: flex; align-items: center; gap: 10px; }
+        .bg-settings label, .separator-controls label, .copy-settings label { font-size: 14px; margin-bottom: 0;}
         .greenscreen-btn { padding: 4px 8px; font-size: 12px; background-color: #00a86b; color: white; border:none; border-radius: 4px;}
         
         .modal-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-color: transparent; 
             display: flex; justify-content: center; align-items: center;
             z-index: 100; opacity: 0; visibility: hidden;
@@ -190,36 +194,37 @@
         }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-content {
-            background: #ffffff;
-            padding: 40px; 
-            border-radius: 12px;
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.3s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: #ffffff; padding: 40px; border-radius: 12px;
+            text-align: center; transform: scale(0.9);
+            transition: transform 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             pointer-events: auto;
         }
         .modal-overlay.show .modal-content { transform: scale(1); }
         .modal-content p { font-size: 20px; color: #333; margin: 0; font-weight: 500;}
         .winner-display {
-            font-size: 52px; font-weight: 700;
-            margin: 10px 0 30px 0;
-            max-width: 60vw;
-            word-wrap: break-word;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+            font-size: 52px; font-weight: 700; margin: 10px 0 30px 0;
+            max-width: 60vw; word-wrap: break-word; text-shadow: 0px 2px 4px rgba(0,0,0,0.1);
         }
         .winner-part1 { color: var(--dark-color); }
         .winner-part2 { color: var(--primary-color); margin-left: 15px; }
-        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         .modal-btn { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .close-btn { background-color: #7f8c8d; color: white; }
         .remove-btn { background-color: var(--danger-color); color: white; }
+        .copy-winner-btn { background-color: var(--success-color); color: white; }
         
-        footer { margin-top: 30px; color: #777; font-size: 14px; }
+        footer { 
+            margin-top: 30px; color: #777; font-size: 14px;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        
+        @media (max-width: 820px) {
+            .wheels-area, .app-container { flex-direction: column; align-items: center; }
+            .setting-row { flex-direction: column; align-items: stretch; gap: 15px;}
+        }
     </style>
 </head>
 <body>
-
     <div class="main-display-area">
         <div class="wheels-area">
             <div class="wheel-container">
@@ -241,6 +246,7 @@
                     <span id="winner-part2" class="winner-part2"></span>
                 </div>
                 <div class="modal-buttons">
+                    <button class="modal-btn copy-winner-btn" id="copy-winner-btn">คัดลอกชื่อ</button>
                     <button class="modal-btn remove-btn" id="remove-btn">ลบคู่นี้ออก</button>
                     <button class="modal-btn close-btn" id="close-btn">ปิด</button>
                 </div>
@@ -257,12 +263,12 @@
             <div class="card">
                 <h2>รายชื่อวงล้อ 1</h2>
                 <textarea id="name-list-1"></textarea>
-                <button class="update-button" id="update-button-1">อัปเดตวงล้อ 1</button>
+                <button class="update-button" id="update-button-1">อัปเดต</button>
             </div>
             <div class="card">
                 <h2>รายชื่อวงล้อ 2</h2>
                 <textarea id="name-list-2"></textarea>
-                <button class="update-button" id="update-button-2">อัปเดตวงล้อ 2</button>
+                <button class="update-button" id="update-button-2">อัปเดต</button>
             </div>
         </div>
 
@@ -276,31 +282,41 @@
                             <option value="oldest">เก่า > ใหม่</option>
                             <option value="az">A > Z</option>
                         </select>
+                        <button class="fullscreen-btn" id="history-fullscreen-btn">เต็มจอ</button>
                         <button class="copy-btn" id="copy-history-btn">คัดลอก</button>
                     </div>
                 </div>
-                <ul id="history-list" class="empty">ประวัติจะแสดงที่นี่</ul>
+                <ul id="history-list" class="empty">
+                    <button class="close-fullscreen-btn">&times;</button>
+                    ประวัติจะแสดงที่นี่
+                </ul>
             </div>
             <div class="card">
                  <h2>ตั้งค่า</h2>
-                 <div class="settings-grid">
-                    <div class="input-group">
-                        <label for="title-input-1">ชื่อหัวข้อวงล้อ 1</label>
-                        <input type="text" id="title-input-1" class="title-input">
-                    </div>
-                    <div class="input-group">
-                        <label for="title-input-2">ชื่อหัวข้อวงล้อ 2</label>
-                        <input type="text" id="title-input-2" class="title-input">
-                    </div>
-                    <div class="input-group">
-                        <label for="palette-select-1">สไตล์สีวงล้อ 1</label>
-                        <select id="palette-select-1" class="palette-select"></select>
-                    </div>
-                    <div class="input-group">
-                        <label for="palette-select-2">สไตล์สีวงล้อ 2</label>
-                        <select id="palette-select-2" class="palette-select"></select>
-                    </div>
+                 <div class="setting-row">
+                    <div class="input-group"><label for="title-input-1">หัวข้อ 1</label><input type="text" id="title-input-1" class="title-input"></div>
+                    <div class="input-group"><label for="title-input-2">หัวข้อ 2</label><input type="text" id="title-input-2" class="title-input"></div>
                  </div>
+                 <div class="setting-row">
+                    <div class="input-group"><label for="palette-select-1">สไตล์สี 1</label><select id="palette-select-1" class="palette-select"></select></div>
+                    <div class="input-group"><label for="palette-select-2">สไตล์สี 2</label><select id="palette-select-2" class="palette-select"></select></div>
+                 </div>
+                 <div class="setting-row">
+                    <div class="input-group" style="flex: 3;"><label for="spin-duration-slider">เวลาหมุน: <span id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1"></div>
+                 </div>
+                 <div class="setting-row separator-controls">
+                    <label>เส้นคั่น:</label>
+                    <input type="checkbox" id="separator-toggle" checked>
+                    <input type="number" id="separator-width" min="1" max="10" value="1">
+                    <span>px</span>
+                 </div>
+                 <div class="setting-divider"></div>
+                 <div class="copy-settings">
+                    <label>ตั้งค่าคัดลอก:</label>
+                    <div class="checkbox-group"><input type="checkbox" id="copy-winner-wheel1"><label for="copy-winner-wheel1">วงล้อ 1</label></div>
+                    <div class="checkbox-group"><input type="checkbox" id="copy-winner-wheel2" checked><label for="copy-winner-wheel2">วงล้อ 2</label></div>
+                 </div>
+                 <div class="setting-divider"></div>
                  <div class="bg-settings">
                     <label for="bg-color-picker">สีพื้นหลัง:</label>
                     <input type="color" id="bg-color-picker" value="#f0f2f5">
@@ -313,7 +329,7 @@
     <footer>
         <a href='http://www.freevisitorcounters.com'>at Freevisitorcounters.com</a> <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=9bd1a27b3644b0c95ac81695b840ffd25bf8449d'></script>
         <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1361137/t/5"></script>
-        <p id="version-info">Random Wheel x2 - เวอร์ชัน 1.4</p>
+        <p id="version-info">Random Wheel x2 - เวอร์ชัน 1.6</p>
     </footer>
 
     <script>
@@ -326,17 +342,25 @@
         const titleInput1 = document.getElementById('title-input-1'), titleInput2 = document.getElementById('title-input-2');
         const wheelTitle1 = document.getElementById('wheel-title-1'), wheelTitle2 = document.getElementById('wheel-title-2');
         const paletteSelect1 = document.getElementById('palette-select-1'), paletteSelect2 = document.getElementById('palette-select-2');
+        const spinDurationSlider = document.getElementById('spin-duration-slider');
+        const durationValueSpan = document.getElementById('duration-value');
+        const separatorToggle = document.getElementById('separator-toggle');
+        const separatorWidthInput = document.getElementById('separator-width');
+        const copyWinnerWheel1 = document.getElementById('copy-winner-wheel1');
+        const copyWinnerWheel2 = document.getElementById('copy-winner-wheel2');
         const historyList = document.getElementById('history-list');
+        const historyFullscreenBtn = document.getElementById('history-fullscreen-btn');
         const sortHistorySelect = document.getElementById('sort-history');
         const copyHistoryBtn = document.getElementById('copy-history-btn');
         const bgColorPicker = document.getElementById('bg-color-picker');
         const greenscreenBtn = document.getElementById('greenscreen-btn');
         const modal = document.getElementById('modal'), winnerPart1El = document.getElementById('winner-part1'), winnerPart2El = document.getElementById('winner-part2');
         const closeBtn = document.getElementById('close-btn'), removeBtn = document.getElementById('remove-btn');
+        const copyWinnerBtn = document.getElementById('copy-winner-btn');
 
         // State & Config
         let names1 = [], names2 = [];
-        let nameColorMap1 = new Map(), nameColorMap2 = new Map(); // For stable colors
+        let nameColorMap1 = new Map(), nameColorMap2 = new Map();
         let rotation1 = 0, rotation2 = 0;
         let history = [];
         let spinFinishedCount = 0;
@@ -346,8 +370,19 @@
             pastel: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff'],
             neon: ['#f83bff', '#39ff14', '#feff00', '#ff0054', '#00e5ff', '#ff6600', '#8a2be2', '#20f1dd'],
             corporate: ['#34495e', '#7f8c8d', '#2c3e50', '#95a5a6', '#bdc3c7', '#596275', '#303952', '#1e272e'],
+            forest: ['#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'],
+            ocean: ['#007ea7', '#00a8e8', '#9ceae_f', '#00171f', '#003459', '#ffffff', '#00a8e8', '#00171f'],
+            sunset: ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d', '#43aa8b', '#577590'],
+            monochrome: ['#212121', '#424242', '#616161', '#757575', '#9E9E9E', '#BDBDBD', '#E0E0E0'],
         };
         
+        // Functions
+        const applySpinDuration = (duration) => {
+            const transitionStyle = `transform ${duration}s cubic-bezier(0.25, 1, 0.5, 1)`;
+            canvas1.style.transition = transitionStyle;
+            canvas2.style.transition = transitionStyle;
+        };
+
         const populatePalettes = () => {
             Object.keys(palettes).forEach(name => {
                 const displayName = name.charAt(0).toUpperCase() + name.slice(1);
@@ -370,9 +405,18 @@
             names.forEach((name, i) => {
                 const startAngle = i * segmentAngle - (Math.PI / 2);
                 const endAngle = (i + 1) * segmentAngle - (Math.PI / 2);
-                const color = colors[i]; // Use the pre-assigned stable color
+                const color = colors[i];
                 ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-                ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+                
+                if (separatorToggle.checked) {
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = parseInt(separatorWidthInput.value, 10) || 1;
+                    ctx.stroke();
+                }
+
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate((startAngle + endAngle) / 2);
                 ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 2;
                 let fontSize = 20; ctx.font = `bold ${fontSize}px Sarabun`;
@@ -390,13 +434,10 @@
             const nameList = isWheel1 ? nameList1 : nameList2;
             let nameColorMap = isWheel1 ? nameColorMap1 : nameColorMap2;
             const currentNames = nameList.value.split('\n').map(n => n.trim()).filter(Boolean);
-            
-            // Logic for stable color mapping
             const newColorMap = new Map();
             const usedColors = new Set();
             const colorPalette = palettes[isWheel1 ? paletteSelect1.value : paletteSelect2.value];
 
-            // Keep existing colors for names that are still in the list
             currentNames.forEach(name => {
                 if (nameColorMap.has(name)) {
                     const color = nameColorMap.get(name);
@@ -405,7 +446,6 @@
                 }
             });
 
-            // Assign new colors to new names
             let colorIndex = 0;
             currentNames.forEach(name => {
                 if (!newColorMap.has(name)) {
@@ -460,21 +500,31 @@
         };
 
         const renderHistory = () => {
-            historyList.innerHTML = '';
+            const historyContent = document.createDocumentFragment();
             if (history.length === 0) {
-                historyList.innerHTML = 'ประวัติจะแสดงที่นี่'; historyList.classList.add('empty'); return;
+                historyList.innerHTML = '<button class="close-fullscreen-btn">&times;</button>ประวัติจะแสดงที่นี่';
+                historyList.classList.add('empty');
+                return;
             }
             historyList.classList.remove('empty');
+            
             const sortedHistory = [...history];
             const sortMethod = sortHistorySelect.value;
             if (sortMethod === 'oldest') sortedHistory.sort((a, b) => a.timestamp - b.timestamp);
             else if (sortMethod === 'az') sortedHistory.sort((a, b) => a.val1.localeCompare(b.val1, 'th') || a.val2.localeCompare(b.val2, 'th'));
             else sortedHistory.sort((a, b) => b.timestamp - a.timestamp);
+            
             sortedHistory.forEach(item => {
                 const li = document.createElement('li'); li.className = 'history-item';
                 li.innerHTML = `<span class="history-prefix">${item.val1}</span><span class="history-name">${item.val2}</span>`;
-                historyList.appendChild(li);
+                historyContent.appendChild(li);
             });
+            historyList.innerHTML = '';
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-fullscreen-btn';
+            closeBtn.innerHTML = '&times;';
+            historyList.appendChild(closeBtn);
+            historyList.appendChild(historyContent);
         };
 
         const removeLastResult = () => {
@@ -483,6 +533,24 @@
             updateAndDraw(1);
             updateAndDraw(2);
             modal.classList.remove('show');
+        };
+
+        const copyWinner = () => {
+            const partsToCopy = [];
+            if (copyWinnerWheel1.checked) partsToCopy.push(winners.val1);
+            if (copyWinnerWheel2.checked) partsToCopy.push(winners.val2);
+
+            if(partsToCopy.length === 0) {
+                copyWinnerBtn.textContent = 'ไม่ได้เลือกค่า';
+                setTimeout(() => { copyWinnerBtn.textContent = 'คัดลอกชื่อ'; }, 1500);
+                return;
+            }
+
+            const textToCopy = partsToCopy.join(' ');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                 copyWinnerBtn.textContent = 'คัดลอกแล้ว!';
+                 setTimeout(() => { copyWinnerBtn.textContent = 'คัดลอกชื่อ'; }, 1500);
+            });
         };
 
         const copyHistory = () => {
@@ -506,13 +574,14 @@
         updateBtn2.addEventListener('click', () => updateAndDraw(2));
         titleInput1.addEventListener('input', () => wheelTitle1.textContent = titleInput1.value);
         titleInput2.addEventListener('input', () => wheelTitle2.textContent = titleInput2.value);
-        paletteSelect1.addEventListener('change', () => updateAndDraw(1));
-        paletteSelect2.addEventListener('change', () => updateAndDraw(2));
+        paletteSelect1.addEventListener('change', () => { nameColorMap1.clear(); updateAndDraw(1); });
+        paletteSelect2.addEventListener('change', () => { nameColorMap2.clear(); updateAndDraw(2); });
         spinButton.addEventListener('click', spinAllWheels);
         canvas1.addEventListener('transitionend', handleSpinEnd);
         canvas2.addEventListener('transitionend', handleSpinEnd);
         sortHistorySelect.addEventListener('change', renderHistory);
         copyHistoryBtn.addEventListener('click', copyHistory);
+        copyWinnerBtn.addEventListener('click', copyWinner);
         closeBtn.addEventListener('click', () => modal.classList.remove('show'));
         removeBtn.addEventListener('click', removeLastResult);
         bgColorPicker.addEventListener('input', (e) => document.body.style.backgroundColor = e.target.value);
@@ -520,6 +589,20 @@
             document.body.style.backgroundColor = '#00ff00';
             bgColorPicker.value = '#00ff00';
         });
+        historyFullscreenBtn.addEventListener('click', () => historyList.classList.add('fullscreen'));
+        historyList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('close-fullscreen-btn')) {
+                historyList.classList.remove('fullscreen');
+            }
+        });
+        spinDurationSlider.addEventListener('input', (e) => {
+            const duration = e.target.value;
+            durationValueSpan.textContent = duration;
+            applySpinDuration(duration);
+        });
+        const redrawBothWheels = () => { updateAndDraw(1); updateAndDraw(2); };
+        separatorToggle.addEventListener('change', redrawBothWheels);
+        separatorWidthInput.addEventListener('input', redrawBothWheels);
 
         // --- Initial Load ---
         const initialSetup = () => {
@@ -533,6 +616,7 @@
             nameList1.value = "A1\nA2\nA3\nB1\nB2\nB3\nC1\nC2\nC3";
             nameList2.value = "สก.ทรัพย์เจริญ X ช่างโจ๋แอร์คูล B\nมาดามเก๋\nMP SOCCER\nห้างทองแม่อุรัย\nจอมยุทธ ยูไนเต็ด X บ้านแตก ยูไนเต็ด\nสุรินทร์การค้า\nสวย 24 X หน้าดำ FC\nYAI FC B\nKNP TTS.";
             
+            applySpinDuration(spinDurationSlider.value);
             updateAndDraw(1);
             updateAndDraw(2);
         };
