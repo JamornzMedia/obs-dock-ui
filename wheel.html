@@ -176,12 +176,12 @@
              margin-top: 15px; margin-bottom: 15px;
             border-top: 1px solid var(--light-color);
         }
-        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 5px;}
-        .checkbox-group label { margin-bottom: 0; }
+        .checkbox-group, .separator-controls, .copy-settings { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group label, .separator-controls label { margin-bottom: 0; }
         #spin-duration-slider { width: 100%; }
-        #separator-width { width: 70px; }
-        .bg-settings, .separator-controls, .copy-settings { display: flex; align-items: center; gap: 10px; }
-        .bg-settings label, .separator-controls label, .copy-settings label { font-size: 14px; margin-bottom: 0;}
+        #separator-width { width: 60px; }
+        .bg-settings { display: flex; align-items: center; gap: 10px; }
+        .bg-settings label { font-size: 14px; margin-bottom: 0;}
         .greenscreen-btn { padding: 4px 8px; font-size: 12px; background-color: #00a86b; color: white; border:none; border-radius: 4px;}
         
         .modal-overlay {
@@ -302,13 +302,15 @@
                     <div class="input-group"><label for="palette-select-2">สไตล์สี 2</label><select id="palette-select-2" class="palette-select"></select></div>
                  </div>
                  <div class="setting-row">
-                    <div class="input-group" style="flex: 3;"><label for="spin-duration-slider">เวลาหมุน: <span id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1"></div>
-                 </div>
-                 <div class="setting-row separator-controls">
-                    <label>เส้นคั่น:</label>
-                    <input type="checkbox" id="separator-toggle" checked>
-                    <input type="number" id="separator-width" min="1" max="10" value="1">
-                    <span>px</span>
+                     <div class="input-group" style="flex: 3;"><label for="spin-duration-slider">เวลาหมุน: <span id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1"></div>
+                     <div class="input-group" style="flex: 2;">
+                        <label>เส้นคั่น</label>
+                        <div class="separator-controls">
+                             <input type="checkbox" id="separator-toggle" checked>
+                             <input type="number" id="separator-width" min="1" max="10" value="1">
+                             <span>px</span>
+                        </div>
+                    </div>
                  </div>
                  <div class="setting-divider"></div>
                  <div class="copy-settings">
@@ -370,9 +372,6 @@
             pastel: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff'],
             neon: ['#f83bff', '#39ff14', '#feff00', '#ff0054', '#00e5ff', '#ff6600', '#8a2be2', '#20f1dd'],
             corporate: ['#34495e', '#7f8c8d', '#2c3e50', '#95a5a6', '#bdc3c7', '#596275', '#303952', '#1e272e'],
-            forest: ['#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7', '#d8f3dc'],
-            ocean: ['#007ea7', '#00a8e8', '#9ceae_f', '#00171f', '#003459', '#ffffff', '#00a8e8', '#00171f'],
-            sunset: ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d', '#43aa8b', '#577590'],
             monochrome: ['#212121', '#424242', '#616161', '#757575', '#9E9E9E', '#BDBDBD', '#E0E0E0'],
         };
         
@@ -429,33 +428,24 @@
             ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); ctx.strokeStyle = '#34495e'; ctx.lineWidth = 8; ctx.stroke();
         };
 
-        const updateAndDraw = (wheelNum) => {
+        const updateAndDraw = (wheelNum, forceResetColors = false) => {
             const isWheel1 = wheelNum === 1;
             const nameList = isWheel1 ? nameList1 : nameList2;
             let nameColorMap = isWheel1 ? nameColorMap1 : nameColorMap2;
             const currentNames = nameList.value.split('\n').map(n => n.trim()).filter(Boolean);
+            
+            if(forceResetColors) nameColorMap.clear();
+
             const newColorMap = new Map();
-            const usedColors = new Set();
             const colorPalette = palettes[isWheel1 ? paletteSelect1.value : paletteSelect2.value];
-
-            currentNames.forEach(name => {
-                if (nameColorMap.has(name)) {
-                    const color = nameColorMap.get(name);
-                    newColorMap.set(name, color);
-                    usedColors.add(color);
-                }
-            });
-
             let colorIndex = 0;
+
             currentNames.forEach(name => {
-                if (!newColorMap.has(name)) {
-                    let nextColor;
-                    do {
-                        nextColor = colorPalette[colorIndex % colorPalette.length];
-                        colorIndex++;
-                    } while (usedColors.has(nextColor) && usedColors.size < colorPalette.length);
-                    newColorMap.set(name, nextColor);
-                    usedColors.add(nextColor);
+                if (nameColorMap.has(name) && !forceResetColors) {
+                    newColorMap.set(name, nameColorMap.get(name));
+                } else {
+                    newColorMap.set(name, colorPalette[colorIndex % colorPalette.length]);
+                    colorIndex++;
                 }
             });
             
@@ -574,8 +564,8 @@
         updateBtn2.addEventListener('click', () => updateAndDraw(2));
         titleInput1.addEventListener('input', () => wheelTitle1.textContent = titleInput1.value);
         titleInput2.addEventListener('input', () => wheelTitle2.textContent = titleInput2.value);
-        paletteSelect1.addEventListener('change', () => { nameColorMap1.clear(); updateAndDraw(1); });
-        paletteSelect2.addEventListener('change', () => { nameColorMap2.clear(); updateAndDraw(2); });
+        paletteSelect1.addEventListener('change', () => updateAndDraw(1, true));
+        paletteSelect2.addEventListener('change', () => updateAndDraw(2, true));
         spinButton.addEventListener('click', spinAllWheels);
         canvas1.addEventListener('transitionend', handleSpinEnd);
         canvas2.addEventListener('transitionend', handleSpinEnd);
