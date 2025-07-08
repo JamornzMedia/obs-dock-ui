@@ -1,0 +1,104 @@
+:root {
+    --wheel-size: 450px;
+    --primary-color: #3498db;
+    --danger-color: #e74c3c;
+    --dark-color: #34495e;
+    --wheel-spacing: 30px;
+
+    /* --- CSS Variables for Winner Display --- */
+    --winner-l1-color: #f1c40f;
+    --winner-l2-color: #e9ecef;
+    --winner-bg: rgba(23, 32, 42, 0.9);
+
+    /* --- CSS Variables for Grouping Display --- */
+    --num-columns: 3;
+    --group-card-bg: rgba(255, 255, 255, 0.1);
+    --group-header-bg: #34495e;
+    --group-header-color: #ffffff;
+    --group-header-align: center;
+    --group-prefix-bg: #ecf0f1;
+    --group-prefix-color: #333333;
+    --group-name-bg: #ffffff;
+    --group-name-color: #333333;
+}
+body {
+    font-family: 'Sarabun', sans-serif;
+    background-color: transparent;
+    margin: 0;
+    padding: 20px;
+    overflow: hidden;
+    height: 100vh;
+    box-sizing: border-box;
+}
+.main-display-area { position: relative; width: 100%; display: flex; justify-content: center; }
+.wheels-area { display: flex; gap: var(--wheel-spacing); justify-content: center; align-items: flex-start; }
+.wheel-container { position: relative; width: var(--wheel-size); display: flex; flex-direction: column; align-items: center; }
+.wheel-title { font-size: 28px; font-weight: 700; color: white; margin-bottom: 10px; min-height: 35px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.pointer { position: absolute; top: 45px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 22px solid transparent; border-right: 22px solid transparent; border-top: 40px solid var(--danger-color); z-index: 10; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.35)); }
+
+/* Winner Display (Reverted to Box Style) */
+.winner-overlay {
+    position: fixed; top: 0; left: 0;
+    display: flex; justify-content: center; align-items: center;
+    width: 100vw; height: 100vh;
+    visibility: hidden; opacity: 0;
+    transition: opacity 0.4s, visibility 0s 0.4s;
+    z-index: 100;
+}
+.winner-overlay.show { visibility: visible; opacity: 1; transition: opacity 0.4s; }
+
+.winner-box {
+    background-color: var(--winner-bg); /* Use variable for BG color + opacity */
+    backdrop-filter: blur(8px);
+    padding: 50px 70px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    transform: scale(0.8);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.winner-overlay.show .winner-box { transform: scale(1); }
+.winner-box p { font-size: 28px; color: #bdc3c7; margin: 0 0 20px 0; font-weight: 500; }
+.winner-display { text-shadow: 0px 3px 5px rgba(0,0,0,0.25); max-width: 80vw; word-wrap: break-word; }
+.winner-line1 { font-size: 72px; font-weight: 700; line-height: 1.1; color: var(--winner-l1-color); }
+.winner-line2 { font-size: 58px; font-weight: 500; margin-top: 10px; color: var(--winner-l2-color);}
+
+
+/* Grouping Display */
+#groups-container { display: grid; gap: 20px; grid-template-columns: repeat(var(--num-columns, 3), 1fr); padding: 10px;}
+.group-card {
+    background-color: var(--group-card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.group-card h2 {
+    background-color: var(--group-header-bg);
+    color: var(--group-header-color);
+    text-align: var(--group-header-align);
+    margin: 0;
+    padding: 12px 15px;
+    font-size: 20px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+.group-item { display: flex; align-items: stretch; margin: 5px 8px; font-size: 18px; overflow: hidden; border-radius: 5px; }
+.group-card h2 + .group-item { margin-top: 8px; }
+.group-card .group-item:last-child { margin-bottom: 8px; }
+
+.group-prefix {
+    background-color: var(--group-prefix-bg);
+    color: var(--group-prefix-color);
+    flex-shrink: 0; padding: 10px 15px; font-weight: 700;
+}
+.group-name {
+    background-color: var(--group-name-bg);
+    color: var(--group-name-color);
+    padding: 10px 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;
+}
+.group-name.placeholder { color: #aaa; font-style: italic; }
+.no-data { text-align: center; font-size: 24px; color: #eee; text-shadow: 1px 1px 2px #222; padding-top: 50px; grid-column: 1 / -1;}
