@@ -2,23 +2,15 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Football Scoreboard Controller</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+    <title data-lang="appTitle">Football Scoreboard Controller</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <script type="text/javascript">
-      var sc_project=13147874; var sc_invisible=0; var sc_security="550e33c0"; var scJsHost = "https://";
-      document.write("<sc"+"ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></"+"script>");
-    </script>
-
     <style>
         :root {
             --bg-color: #1a1a1a; --card-bg-color: #242424; --text-color: #e0e0e0;
             --text-muted-color: #a0a0a0; --accent-color: #3b82f6; --accent-hover-color: #2563eb;
             --danger-color: #ef4444; --danger-hover-color: #dc2626; --success-color: #22c55e;
-            --success-hover-color: #16a34a; --border-color: #3a3a3a; --border-radius: 6px;
+            --success-hover-color: #16a34a; --warning-color: #f97316; --warning-hover-color: #ea580c;
+            --border-color: #3a3a3a; --border-radius: 6px;
         }
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color);
@@ -35,11 +27,11 @@
         .row:last-child { margin-bottom: 0; }
         .center { justify-content: center; }
         .space-between { justify-content: space-between; }
-        input[type="number"] {
+        input[type="number"], select {
             padding: 6px 8px; border-radius: var(--border-radius); border: 1px solid var(--border-color);
             background: var(--bg-color); color: var(--text-color); font-size: 0.9rem;
-            width: 60px; text-align: center;
         }
+        input[type="number"] { width: 60px; text-align: center; }
         button {
             padding: 6px 12px; border-radius: var(--border-radius); font-size: 0.9rem; border: none;
             cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -51,62 +43,78 @@
         .btn-secondary:hover { background: #5a5a5a; }
         .btn-danger { background: var(--danger-color); color: #fff; }
         .btn-danger:hover { background: var(--danger-hover-color); }
-        
-        /* --- Team Editor Layout --- */
-        .team-editor { display: flex; flex-direction: column; gap: 10px; }
+        .btn-warning { background: var(--warning-color); color: #fff; }
+        .btn-warning:hover { background: var(--warning-hover-color); }
         .team-row { display: flex; align-items: center; gap: 10px; }
         .team-row .color-picker {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            width: 28px; height: 28px; background-color: transparent;
-            border: none; cursor: pointer; padding: 0;
+            width: 28px; height: 28px; background-color: transparent; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
         }
         .team-row .color-picker::-webkit-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
-        .team-row .color-picker::-moz-color-swatch { border-radius: 4px; border: 2px solid var(--border-color); }
-
         .team-row .logo-container {
             width: 48px; height: 48px; border-radius: 50%; background: #333;
             border: 2px solid var(--border-color); display: flex; align-items: center;
             justify-content: center; position: relative; flex-shrink: 0;
         }
         .team-row .logo-container img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
-        .team-row .logo-initials { font-size: 1.5rem; font-weight: bold; color: var(--text-muted-color); display: none; }
-        .team-row .name-control-area { flex-grow: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .team-row .logo-initials { font-size: 1.5rem; font-weight: bold; color: var(--text-muted-color); }
+        .team-row .name-control-area {
+            flex-grow: 1; display: flex; align-items: center; gap: 8px; min-width: 0;
+        }
         .team-row .name {
-            font-size: 1rem; font-weight: 600; flex-grow: 1; line-height: 1.2;
+            flex-grow: 1; font-size: 1rem; font-weight: 600; line-height: 1.2;
             white-space: normal; word-break: break-word;
         }
         .team-row .name-input {
             display: none; width: 100%; padding: 6px 8px; background: var(--bg-color);
-            border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; font-size: 0.95rem;
+            border: 1px solid var(--accent-color); color: var(--text-color);
+            border-radius: 4px; font-size: 0.95rem;
         }
+        .edit-btn, .ok-btn { flex-shrink: 0; }
         .edit-btn { background: transparent; padding: 4px 8px; }
         .edit-btn:hover { background: #5a5a5a; }
         .ok-btn { display: none; padding: 4px 12px; font-weight: bold; background: var(--success-color); color: #fff; }
-        .ok-btn:hover { background: var(--success-hover-color); }
 
+        /* --- Styles for Scrolling Announcement --- */
+        .announcement-container {
+            overflow: hidden; /* ซ่อนข้อความส่วนที่เกินจากกรอบ */
+            padding: 4px 0;
+            white-space: nowrap; /* บังคับให้ข้อความเป็นบรรทัดเดียว */
+        }
+        
+        #announcement-text {
+            color: var(--danger-color);
+            font-size: 1em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            min-height: auto;
+            /* ทำให้ข้อความเป็นบล็อกเดียวและเพิ่ม animation */
+            display: inline-block;
+            animation: scroll-left 30s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(100vw); /* เริ่มจากนอกจอทางขวา */
+            }
+            100% {
+                transform: translateX(-100%); /* จบที่นอกจอทางซ้าย */
+            }
+        }
+        /* --- End Scrolling Styles --- */
 
         .labels-row { display: flex; gap: 8px; margin-top: 10px; }
         .labels-row div { flex: 1; background: var(--bg-color); text-align: center; font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color); }
-
         .score-control { display: flex; align-items: center; justify-content: space-between; }
         .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
         .score-buttons { display: flex; flex-direction: column; gap: 6px; }
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
-        .score-buttons .plus:hover { background: var(--success-hover-color); }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
-        .score-buttons .minus:hover { background: var(--danger-hover-color); }
         .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
-
         .timer-controls { display: flex; justify-content: center; align-items: center; gap: 8px; }
         .countdown-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-muted-color); cursor: pointer; }
-
-
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
-        .popup-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius);
-            width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100;
-        }
+        .popup-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius); width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100; max-height: 90vh; overflow-y: auto; }
         .popup-modal h3 { margin-top: 0; font-size: 1.1rem; }
         .popup-modal p { font-size: 0.9rem; color: var(--text-muted-color); margin-bottom:12px; }
         .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
@@ -114,7 +122,14 @@
         .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-color); font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .item-list-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-muted-color); }
         .item-list-item code { background-color: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
-        
+        .donate-section { text-align: center; }
+        .donate-section img { max-width: 150px; height: auto; border: 4px solid var(--border-color); border-radius: var(--border-radius); }
+        .donate-section a { color: var(--accent-color); font-size: 0.8rem; text-decoration: none; display: block; margin-top: 5px; }
+        .popup-divider { border-top: 1px solid var(--border-color); margin: 20px 0; }
+        .all-docks-section { text-align: center; }
+        .all-docks-section a { color: var(--accent-color); font-size: 0.85rem; text-decoration: none; }
+        .footer { text-align: center; color: var(--text-muted-color); font-size: 0.75rem; padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .footer a { color: var(--text-muted-color); text-decoration: none; }
         #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
         .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
         .toast.success { background-color: var(--success-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--accent-color); }
@@ -125,288 +140,150 @@
 <body>
     <div id="toast-container"></div>
     <div class="container">
+        <div class="announcement-container">
+            <div id="announcement-text"></div>
+        </div>
         <div class="card">
             <div class="row space-between">
-                <button class="btn-secondary" onclick="handleExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span data-lang="excel"></span></button>
                 <div class="row" style="margin-bottom:0;">
-                    <label for="matchID" style="font-size:0.85rem;">ID:</label>
+                    <label for="matchID" data-lang="matchId"></label>
                     <input type="number" id="matchID" min="1" value="1">
-                    <button class="btn-primary" onclick="applyMatch()"><i class="fas fa-check"></i> Load</button>
+                    <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span data-lang="load"></span></button>
                 </div>
             </div>
         </div>
-        
         <div class="card">
             <div class="team-editor">
                 <div class="team-row">
-                    <input type="color" class="color-picker" id="colorA" value="#ffffff" title="เลือกสีทีม A">
-                    <div class="logo-container">
-                        <img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div>
-                    </div>
+                    <input type="color" class="color-picker" id="colorA" value="#ffffff">
+                    <div class="logo-container"><img id="logoA" src="" alt=""><div class="logo-initials" id="initialsA">A</div></div>
                     <div class="name-control-area">
-                        <div class="name" id="nameA">Team A</div>
+                        <div class="name" id="nameA" data-lang="teamA"></div>
                         <input type="text" class="name-input" id="nameA-input">
+                        <button class="edit-btn" id="editBtnA" data-lang-title="editHint"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="ok-btn" id="okBtnA" data-lang="ok"></button>
                     </div>
-                    <button class="edit-btn" id="editBtnA" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="ok-btn" id="okBtnA">OK</button>
                 </div>
                 <div class="team-row">
-                    <input type="color" class="color-picker" id="colorB" value="#ffffff" title="เลือกสีทีม B">
-                    <div class="logo-container">
-                        <img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div>
-                    </div>
+                    <input type="color" class="color-picker" id="colorB" value="#ffffff">
+                    <div class="logo-container"><img id="logoB" src="" alt=""><div class="logo-initials" id="initialsB">B</div></div>
                     <div class="name-control-area">
-                        <div class="name" id="nameB">Team B</div>
+                        <div class="name" id="nameB" data-lang="teamB"></div>
                         <input type="text" class="name-input" id="nameB-input">
+                        <button class="edit-btn" id="editBtnB" data-lang-title="editHint"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="ok-btn" id="okBtnB" data-lang="ok"></button>
                     </div>
-                    <button class="edit-btn" id="editBtnB" title="แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="ok-btn" id="okBtnB">OK</button>
                 </div>
             </div>
             <div class="labels-row">
-                <div id="label1">Label 1</div> <div id="label2">Label 2</div> <div id="label3">Label 3</div>
+                <div id="label1" data-lang="label1"></div> <div id="label2" data-lang="label2"></div> <div id="label3" data-lang="label3"></div>
             </div>
         </div>
-
+        <div class="card" style="padding: 8px;">
+            <div class="row center">
+                <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span data-lang="swap"></span></button>
+            </div>
+        </div>
         <div class="card">
             <div class="score-control">
-                <div class="score-buttons"><button class="plus" onclick="changeScore('A', 1)">+</button><button class="minus" onclick="changeScore('A', -1)">-</button></div>
+                <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn" class="minus">-</button></div>
                 <div class="score-display" id="scoreA">0</div><div class="score-display" id="scoreB">0</div>
-                <div class="score-buttons"><button class="plus" onclick="changeScore('B', 1)">+</button><button class="minus" onclick="changeScore('B', -1)">-</button></div>
+                <div class="score-buttons"><button id="scoreBPlusBtn" class="plus">+</button><button id="scoreBMinusBtn" class="minus">-</button></div>
             </div>
-            <div class="row center" style="margin-top: 12px;"><button class="btn-secondary" onclick="resetScore()"><i class="fas fa-sync-alt"></i> Reset</button></div>
+            <div class="row center" style="margin-top: 12px;"><button id="resetScoreBtn" class="btn-secondary"><i class="fas fa-sync-alt"></i> <span data-lang="reset"></span></button></div>
         </div>
-
         <div class="card">
             <div class="row">
-                <div style="flex: 1;"><button class="btn-secondary" onclick="toggleHalf()" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem">ครึ่ง</span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
+                <div style="flex: 1;"><button id="halfBtn" class="btn-secondary" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem" data-lang="half"></span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
                 <div style="flex: 2; text-align:center;">
                     <div id="timerText" class="timer-display">00:00</div>
                     <div class="timer-controls">
-                        <button class="btn-primary" onclick="startTimer()"><i class="fas fa-play"></i></button>
-                        <button class="btn-secondary" onclick="stopTimer()"><i class="fas fa-pause"></i></button>
-                        <button class="btn-danger" onclick="resetTimer()"><i class="fas fa-undo"></i></button>
-                        <button class="btn-secondary" onclick="setTime()"><i class="fas fa-edit"></i></button>
-                        <label class="countdown-toggle">
-                            <input type="checkbox" id="countdownCheck" title="นับถอยหลัง">
-                            <span>Down</span>
+                        <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
+                        <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
+                        <button id="resetTimerBtn" class="btn-danger"><i class="fas fa-undo"></i></button>
+                        <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
+                        <label class="countdown-toggle" data-lang-title="countdownHint">
+                            <input type="checkbox" id="countdownCheck">
+                            <span data-lang="countdown"></span>
                         </label>
                     </div>
                 </div>
             </div>
         </div>
-
         <div class="card">
-            <div class="row center" style="gap: 10px;"><button class="btn-secondary" onclick="openDetails()"><i class="fas fa-cog"></i></button><button class="btn-secondary" onclick="copyDetails()"><i class="fas fa-copy"></i></button><button class="btn-secondary" onclick="showHelp()"><i class="fas fa-question-circle"></i></button></div>
+            <div class="row center" style="gap: 10px;">
+                <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i class="fas fa-cog"></i></button>
+                <button id="copyBtn" class="btn-secondary" data-lang-title="copy"><i class="fas fa-copy"></i></button>
+                <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i class="fas fa-question-circle"></i></button>
+                <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i class="fas fa-hand-holding-usd"></i></button>
+                <select id="languageSelector" title="Select Language">
+                    <option value="th">ภาษาไทย</option>
+                    <option value="en">English</option>
+                    <option value="ko">한국어</option>
+                    <option value="lo">ພາສາລາວ</option>
+                    <option value="km">ភាសាខ្មែរ</option>
+                    <option value="pt-br">Português (BR)</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+        </div>
+        <div class="footer">
+            <div style="font-size: 10px;">
+                <a href='https://www.free-counters.org/'>powered by Free-Counters.org</a> 
+                <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=40d718814ed43f91ca1ed2c87ad6ecdc4a8248ec'></script>
+                <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1361951/t/24"></script>
+            </div>
+            <span data-lang="version"></span>
         </div>
     </div>
-
-    <div id="popupOverlay" class="popup-overlay" onclick="closeAllPopups()"></div>
+    <div id="popupOverlay" class="popup-overlay"></div>
     <div id="detailsPopup" class="popup-modal">
-        <h3><i class="fas fa-pencil-alt"></i> ตั้งค่าข้อความประกาศ</h3>
-        <p>สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ</p>
-        <textarea id="detailsText" placeholder="เช่น: เริ่มการแข่งขันครึ่งหลัง <TeamA> vs <TeamB>"></textarea>
+        <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
+        <p data-lang="detailsDesc"></p>
+        <textarea id="detailsText"></textarea>
         <div class="item-list">
-            <h4><i class="fas fa-tags"></i> Tags ที่ใช้งานได้</h4>
-            <div class="item-list-item"><code>&lt;TeamA&gt;</code> <span>- ชื่อทีม A</span></div><div class="item-list-item"><code>&lt;TeamB&gt;</code> <span>- ชื่อทีม B</span></div>
-            <div class="item-list-item"><code>&lt;score_team_a&gt;</code> <span>- คะแนนทีม A</span></div><div class="item-list-item"><code>&lt;score_team_b&gt;</code> <span>- คะแนนทีม B</span></div>
-            <div class="item-list-item"><code>&lt;time_counter&gt;</code> <span>- เวลาปัจจุบัน (MM:SS)</span></div><div class="item-list-item"><code>&lt;half_text&gt;</code> <span>- ครึ่งเวลา (1st/2nd)</span></div>
-            <div class="item-list-item"><code>&lt;label1&gt;</code> <span>- ข้อความ Label 1</span></div><div class="item-list-item"><code>&lt;label2&gt;</code> <span>- ข้อความ Label 2</span></div><div class="item-list-item"><code>&lt;label3&gt;</code> <span>- ข้อความ Label 3</span></div>
+            <h4 data-lang="tagsTitle"></h4>
         </div>
-        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="saveDetails()"><i class="fas fa-save"></i> บันทึก</button><button class="btn-secondary" onclick="closeAllPopups()"><i class="fas fa-times"></i> ปิด</button></div>
+        <div class="row center" style="margin-top: 15px;">
+            <button id="saveDetailsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
+            <button id="closeDetailsBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
+        </div>
     </div>
     <div id="helpPopup" class="popup-modal">
-        <h3><i class="fas fa-question-circle"></i> วิธีการใช้งาน</h3>
-        <p>1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code></p><p>2. กดปุ่ม <i class="fas fa-file-excel"></i> Excel เพื่อเลือกไฟล์ข้อมูล</p><p>3. เลือก Match ID ที่ต้องการ แล้วกด <i class="fas fa-check"></i> Load</p>
+        <h3 data-lang="helpTitle"></h3>
+        <p data-lang-html="helpStep1"></p>
+        <p data-lang-html="helpStep2"></p>
+        <p data-lang-html="helpStep3"></p>
         <div class="item-list">
-            <h4><i class="fas fa-layer-group"></i> OBS Sources ที่ต้องมี</h4>
-            <div class="item-list-item"><code>Color_Team_A</code> <span>- **Color Source** สำหรับสีทีม A</span></div>
-            <div class="item-list-item"><code>Color_Team_B</code> <span>- **Color Source** สำหรับสีทีม B</span></div>
-            <div class="item-list-item"><code>logo_team_a</code> <span>- **Image Source** สำหรับโลโก้ทีม A</span></div>
-            <div class="item-list-item"><code>logo_team_b</code> <span>- **Image Source** สำหรับโลโก้ทีม B</span></div>
-            <div class="item-list-item"><code>name_team_a</code> <span>- **Text (GDI+)** สำหรับชื่อทีม A</span></div>
-            <div class="item-list-item"><code>name_team_b</code> <span>- **Text (GDI+)** สำหรับชื่อทีม B</span></div>
-            <div class="item-list-item"><code>score_team_a</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม A</span></div>
-            <div class="item-list-item"><code>score_team_b</code> <span>- **Text (GDI+)** สำหรับคะแนนทีม B</span></div>
-            <div class="item-list-item"><code>label_1/2/3</code> <span>- Text (GDI+) ป้ายกำกับต่างๆ</span></div>
-            <div class="item-list-item"><code>half_text</code> <span>- Text (GDI+) ครึ่งเวลา</span></div>
-            <div class="item-list-item"><code>time_counter</code> <span>- Text (GDI+) ตัวนับเวลา</span></div>
+            <h4 data-lang="sourcesTitle"></h4>
         </div>
-        <div class="row center" style="margin-top: 15px;"><button class="btn-primary" onclick="closeAllPopups()">เข้าใจแล้ว</button></div>
+        <div class="row center" style="margin-top: 15px;"><button id="closeHelpBtn" class="btn-primary" data-lang="understand"></button></div>
+    </div>
+    <div id="donatePopup" class="popup-modal">
+        <h3 data-lang="donateTitle"></h3>
+        <div class="donate-section">
+            <h4 data-lang="donateThai"></h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz" alt="QR Code for EasyDonate">
+            <a href="https://easydonate.app/Jamornz" target="_blank">https://easydonate.app/Jamornz</a>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="donate-section">
+            <h4 data-lang="donateForeign"></h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz" alt="QR Code for Ko-fi">
+            <a href="https://ko-fi.com/jamornz" target="_blank">https://ko-fi.com/jamornz</a>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="all-docks-section">
+            <a href="https://sites.google.com/view/jamornzmedia" target="_blank">https://sites.google.com/view/jamornzmedia</a>
+        </div>
+        <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary" data-lang="close"></button></div>
     </div>
 
-    <script>
-        const $ = id => document.getElementById(id);
-        const elements = [
-            "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
-            "scoreA", "scoreB", "timerText", "halfText", "detailsPopup", "helpPopup", "popupOverlay",
-            "detailsText", "matchID", "toast-container", "colorA", "colorB",
-            "editBtnA", "okBtnA", "nameA-input",
-            "editBtnB", "okBtnB", "nameB-input",
-            "countdownCheck"
-        ].reduce((acc, id) => ({ ...acc, [id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())]: $(id) }), {});
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+    
+    <script type="module" src="fcp_v2_assets/main.js"></script>
 
-        let sheetData = [];
-        
-        function getTeamInitials(name) { return name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : ''; }
-
-        function hexToObsColor(hex) {
-            const cleanHex = hex.substring(1); const r = cleanHex.substring(0, 2); const g = cleanHex.substring(2, 4); const b = cleanHex.substring(4, 6);
-            return parseInt("FF" + b + g + r, 16);
-        }
-
-        function applyMatch() {
-            if (!sheetData.length) return showToast('โปรด Upload ไฟล์ก่อน', 'error');
-            const id = parseInt(elements.matchID.value);
-            const header = sheetData[0];
-            const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
-            if (!match) return showToast(`ไม่พบ Match ID: ${id}`, 'error');
-
-            if (elements.okBtnA.style.display !== 'none') { exitEditMode('A', false); }
-            if (elements.okBtnB.style.display !== 'none') { exitEditMode('B', false); }
-            
-            const get = key => match[header.indexOf(key)] || '';
-            const teamAName = get('TeamA') || 'Team A'; const teamBName = get('TeamB') || 'Team B';
-            const logoAFile = get('LogoA'); const logoBFile = get('LogoB');
-            const colorA = get('ColorA') || '#ffffff'; const colorB = get('ColorB') || '#ffffff';
-
-            elements.nameA.innerHTML = teamAName.replace(/\//g, '<br>');
-            elements.nameB.innerHTML = teamBName.replace(/\//g, '<br>');
-            elements.label1.textContent = get('label1'); elements.label2.textContent = get('label2'); elements.label3.textContent = get('label3');
-            elements.colorA.value = colorA; elements.colorB.value = colorB;
-            
-            setImage('logo_team_a', logoAFile, elements.logoA, elements.initialsA, teamAName);
-            setImage('logo_team_b', logoBFile, elements.logoB, elements.initialsB, teamBName);
-            setText('name_team_a', teamAName.replace(/\//g, '\n'));
-            setText('name_team_b', teamBName.replace(/\//g, '\n'));
-            setSourceColor('A', colorA); setSourceColor('B', colorB);
-            setText('label_1', get('label1')); setText('label_2', get('label2')); setText('label_3', get('label3'));
-            showToast(`โหลด ID: ${id} สำเร็จ`, 'success');
-        }
-
-        function enterEditMode(team) {
-            const isA = team === 'A';
-            const nameDiv = isA ? elements.nameA : elements.nameB;
-            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
-            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
-            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
-
-            nameDiv.style.display = 'none'; editBtn.style.display = 'none';
-            nameInput.value = nameDiv.innerHTML.replace(/<br\s*\/?>/gi, '/');
-            nameInput.style.display = 'block'; okBtn.style.display = 'inline-flex';
-            nameInput.focus();
-        }
-
-        function exitEditMode(team, applyChanges = true) {
-            const isA = team === 'A';
-            const nameDiv = isA ? elements.nameA : elements.nameB;
-            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
-            const editBtn = isA ? elements.editBtnA : elements.editBtnB;
-            const okBtn = isA ? elements.okBtnA : elements.okBtnB;
-            if(applyChanges) { applyEditedName(team); }
-            nameDiv.style.display = 'block'; editBtn.style.display = 'inline-flex';
-            nameInput.style.display = 'none'; okBtn.style.display = 'none';
-        }
-
-        function applyEditedName(team) {
-            const isA = team === 'A';
-            const nameDiv = isA ? elements.nameA : elements.nameB;
-            const nameInput = isA ? elements.nameAInput : elements.nameBInput;
-            const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
-            nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
-            setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
-        }
-        function setSourceColor(team, hexColor) {
-            const isA = team === 'A';
-            const sourceName = isA ? 'Color_Team_A' : 'Color_Team_B';
-            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => {});
-        }
-
-        elements.editBtnA.addEventListener('click', () => enterEditMode('A'));
-        elements.okBtnA.addEventListener('click', () => exitEditMode('A'));
-        elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
-        elements.okBtnB.addEventListener('click', () => exitEditMode('B'));
-        elements.colorA.addEventListener('input', (e) => setSourceColor('A', e.target.value));
-        elements.colorB.addEventListener('input', (e) => setSourceColor('B', e.target.value));
-
-        let scoreA = 0, scoreB = 0;
-        let timer = 0, interval = null, half = '1st';
-        let isCountdown = false, countdownStartTime = 0;
-        
-        const obs = new OBSWebSocket();
-        obs.connect('ws://localhost:4455').catch(err => showToast('เชื่อมต่อ OBS ไม่สำเร็จ', 'error'));
-
-        function setText(source, text) { obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => {}); }
-        function setImage(sourceName, filename, imgElement, initialsElement, teamName) {
-            imgElement.style.display = 'none';
-            initialsElement.style.display = 'block';
-            initialsElement.textContent = getTeamInitials(teamName);
-            if (!filename) return;
-            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
-            const filePath = `C:/OBSAssets/logos/${filename}${hasExt ? '' : '.png'}`;
-            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => {});
-        }
-        function copyDetails() {
-            const template = localStorage.getItem('detailsText') || '';
-            if (!template.trim()) return showToast('ไม่มีข้อความให้คัดลอก', 'error');
-            let teamAName = (elements.okBtnA.style.display !== 'none') ? elements.nameAInput.value : elements.nameA.innerText;
-            let teamBName = (elements.okBtnB.style.display !== 'none') ? elements.nameBInput.value : elements.nameB.innerText;
-            teamAName = teamAName.replace(/\/|\n/g, ' ');
-            teamBName = teamBName.replace(/\/|\n/g, ' ');
-            const filled = template
-                .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
-                .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
-                .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
-                .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
-            navigator.clipboard.writeText(filled).then(()=>showToast('คัดลอกแล้ว','info')).catch(err=>showToast('คัดลอกล้มเหลว','error'));
-        }
-
-        // --- Timer Logic ---
-        function updateTimerDisplay() {
-            const m = String(Math.floor(timer / 60)).padStart(2, '0');
-            const s = String(timer % 60).padStart(2, '0');
-            elements.timerText.textContent = `${m}:${s}`;
-            setText('time_counter', `${m}:${s}`);
-        }
-        function startTimer() {
-            if (interval) return;
-            interval = setInterval(() => {
-                if (isCountdown) {
-                    if (timer > 0) { timer--; } else { stopTimer(); }
-                } else { timer++; }
-                updateTimerDisplay();
-            }, 1000);
-        }
-        function stopTimer() { clearInterval(interval); interval = null; }
-        function resetTimer() {
-            stopTimer();
-            timer = isCountdown ? countdownStartTime : 0;
-            updateTimerDisplay();
-        }
-        function setTime() {
-            const t = prompt('Set time (MM:SS หรือ MMM:SS)', '45:00');
-            if (!t || !/^\d+:\d{2}$/.test(t)) return;
-            const [m, s] = t.split(':').map(Number);
-            const newTime = (m * 60) + s;
-            timer = newTime;
-            countdownStartTime = newTime;
-            updateTimerDisplay();
-        }
-        elements.countdownCheck.addEventListener('change', (e) => {
-            isCountdown = e.target.checked;
-            resetTimer(); // Reset to the correct start value when mode is toggled
-        });
-
-        // Minified functions for brevity
-        showToast=(m,t='info')=>{const e=document.createElement('div');e.className=`toast ${t}`,e.textContent=m,elements.toastContainer.appendChild(e),setTimeout(()=>e.remove(),5e3)};
-        handleExcel=()=>{const e=document.createElement('input');e.type='file',e.accept='.xlsx, .xls',e.onchange=t=>{const n=new FileReader;n.onload=o=>{try{const a=XLSX.read(new Uint8Array(o.target.result),{type:'array'});sheetData=XLSX.utils.sheet_to_json(a.Sheets[a.SheetNames[0]],{header:1}),showToast('โหลดไฟล์สำเร็จ','success')}catch(a){showToast('อ่านไฟล์ Excel ผิดพลาด','error')}},n.readAsArrayBuffer(t.target.files[0])},e.click()};
-        changeScore=(t,e)=>{'A'===t?(scoreA=Math.max(0,scoreA+e),elements.scoreA.textContent=scoreA,setText('score_team_a',scoreA)):(scoreB=Math.max(0,scoreB+e),elements.scoreB.textContent=scoreB,setText('score_team_b',scoreB))};
-        resetScore=()=>{scoreA=scoreB=0,elements.scoreA.textContent='0',elements.scoreB.textContent='0',setText('score_team_a','0'),setText('score_team_b','0'),showToast('รีเซ็ตคะแนนแล้ว','info')};
-        toggleHalf=()=>{half='1st'===half?'2nd':'1st',elements.halfText.textContent=half,setText('half_text',half)};
-        closeAllPopups=()=>{elements.popupOverlay.style.display='none',elements.detailsPopup.style.display='none',elements.helpPopup.style.display='none'};
-        openDetails=()=>{elements.detailsText.value=localStorage.getItem('detailsText')||'',elements.popupOverlay.style.display='block',elements.detailsPopup.style.display='block'};
-        showHelp=()=>{elements.popupOverlay.style.display='block',elements.helpPopup.style.display='block'};
-        saveDetails=()=>{localStorage.setItem('detailsText',elements.detailsText.value),closeAllPopups(),showToast('บันทึกแล้ว','success')};
-    </script>
 </body>
 </html>
