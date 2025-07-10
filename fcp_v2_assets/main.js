@@ -366,5 +366,5 @@ document.addEventListener('DOMContentLoaded', () => {
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
     
     fetchAnnouncement();
-    setInterval(fetchAnnouncement, 60000); 
+    setInterval(fetchAnnouncement, 3600000); 
 });
