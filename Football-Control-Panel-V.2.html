@@ -110,7 +110,7 @@
         .score-buttons { display: flex; flex-direction: column; gap: 6px; }
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
-        .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; margin: 5px 0 10px 0; letter-spacing: 1px; }
+        .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; letter-spacing: 1px; }
         .timer-controls { display: flex; justify-content: center; align-items: center; gap: 8px; }
         .countdown-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-muted-color); cursor: pointer; }
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
@@ -194,16 +194,34 @@
             <div class="row center" style="margin-top: 12px;"><button id="resetScoreBtn" class="btn-secondary"><i class="fas fa-sync-alt"></i> <span data-lang="reset"></span></button></div>
         </div>
         <div class="card">
-            <div class="row">
-                <div style="flex: 1;"><button id="halfBtn" class="btn-secondary" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;"><span style="font-size:0.8rem" data-lang="half"></span><span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span></button></div>
-                <div style="flex: 2; text-align:center;">
-                    <div id="timerText" class="timer-display">00:00</div>
-                    <div class="timer-controls">
-                        <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
-                        <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
-                        <button id="resetTimerBtn" class="btn-danger"><i class="fas fa-undo"></i></button>
-                        <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
-                        <label class="countdown-toggle" data-lang-title="countdownHint">
+            <div class="row" style="align-items: stretch; justify-content: space-between; flex-wrap: nowrap;">
+                <div style="flex: 0 0 70px; display: flex;">
+                     <button id="halfBtn" class="btn-secondary" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
+                        <span style="font-size:0.8rem" data-lang="half"></span>
+                        <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
+                    </button>
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 180px;">
+                    <div id="timerText" class="timer-display" style="margin:0; line-height: 1.1;">00:00</div>
+                    
+                    <div id="injuryTimeContainer" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; background-color: var(--bg-color); border-radius: 4px; padding: 2px 8px;">
+                        <span data-lang="injuryTime" style="font-size: 0.9rem; color: var(--text-muted-color);"></span>
+                        <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
+                        <div class="injury-time-buttons" style="display:flex; gap: 4px;">
+                             <button id="injuryTimeMinusBtn" class="btn-secondary" style="padding: 0; width: 24px; height: 22px; font-size: 1rem; line-height: 1;">◄</button>
+                             <button id="injuryTimePlusBtn" class="btn-secondary" style="padding: 0; width: 24px; height: 22px; font-size: 1rem; line-height: 1;">►</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 5px; width: 100px;">
+                    <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
+                    <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
+                    <button id="resetTimerBtn" class="btn-danger"><i class="fas fa-undo"></i></button>
+                    <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
+                    <div style="grid-column: 1 / 3; margin-top: 5px;">
+                        <label class="countdown-toggle" data-lang-title="countdownHint" style="display: flex; justify-content: center; width: 100%;">
                             <input type="checkbox" id="countdownCheck">
                             <span data-lang="countdown"></span>
                         </label>

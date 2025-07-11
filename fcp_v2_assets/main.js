@@ -13,7 +13,8 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "halfBtn", "playBtn", "pauseBtn", 
     "resetTimerBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn", 
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText", 
-    "saveDetailsBtn", "closeDetailsBtn", "closeHelpBtn", "closeDonateBtn"
+    "saveDetailsBtn", "closeDetailsBtn", "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
+    "injuryTimePlusBtn", "injuryTimeMinusBtn"
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -24,6 +25,7 @@ let sheetData = [];
 let currentLogoA = '', currentLogoB = '';
 let scoreA = 0, scoreB = 0;
 let timer = 0, interval = null, half = '1st';
+let injuryTime = 0;
 let isCountdown = false, countdownStartTime = 0;
 let currentLang = 'th';
 
@@ -148,14 +150,10 @@ const updateTeamUI = (team, name, logoFile, color) => {
     colorEl.value = color;
     initialsEl.textContent = getTeamInitials(name);
 
-    // --- START: ส่วนที่แก้ไข ---
-    // บังคับซ่อนรูปภาพและแสดงตัวย่อแทน เพื่อแก้ปัญหาเฉพาะหน้ารูปไม่ขึ้น
     logoEl.style.display = 'none';
     initialsEl.style.display = 'block';
-    // --- END: ส่วนที่แก้ไข ---
 
     if (logoFile) {
-        // บรรทัดนี้จะทำงานในเบื้องหลังเหมือนเดิม แต่ไม่แสดงผลใน UI แล้ว
         const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(logoFile);
         logoEl.src = `file:///C:/OBSAssets/logos/${logoFile}${hasExt ? '' : '.png'}`;
     }
@@ -246,7 +244,13 @@ const startTimer = () => {
     }, 1000);
 };
 const stopTimer = () => { clearInterval(interval); interval = null; };
-const resetTimer = () => { stopTimer(); timer = isCountdown ? countdownStartTime : 0; updateTimerDisplay(); };
+const resetTimer = () => {
+    stopTimer();
+    timer = isCountdown ? countdownStartTime : 0;
+    injuryTime = 0;
+    updateTimerDisplay();
+    updateInjuryTimeDisplay();
+};
 const setTime = () => {
     const t = prompt('Set time (MM:SS or MMM:SS)', '45:00');
     if (!t || !/^\d+:\d{2}$/.test(t)) return;
@@ -260,6 +264,16 @@ const toggleHalf = () => {
     half = half === '1st' ? '2nd' : '1st';
     elements.halfText.textContent = half;
     setText('half_text', half);
+};
+const updateInjuryTimeDisplay = () => {
+    const displayString = injuryTime > 0 ? `+${injuryTime}` : '+0';
+    elements.injuryTimeDisplay.textContent = displayString;
+    // The OBS source for injury time is named 'injury_time_text'
+    setText('injury_time_text', displayString);
+};
+const changeInjuryTime = (delta) => {
+    injuryTime = Math.max(0, injuryTime + delta);
+    updateInjuryTimeDisplay();
 };
 const handleExcel = () => {
     const input = document.createElement('input');
@@ -283,18 +297,32 @@ const handleExcel = () => {
     };
     input.click();
 };
+
+// === MODIFIED COPY FUNCTION START ===
 const copyDetails = () => {
     const template = localStorage.getItem('detailsText') || '';
     if (!template.trim()) return showToast(translations[currentLang].toastNoTextToCopy, 'error');
-    let teamAName = elements.nameA.innerText.replace(/\n/g, ' ');
-    let teamBName = elements.nameB.innerText.replace(/\n/g, ' ');
+
+    // Get team names directly from innerHTML and replace <br> tags with a space.
+    // This is more reliable for capturing the current, possibly edited, multi-line names.
+    let teamAName = elements.nameA.innerHTML.replace(/<br\s*\/?>/gi, ' ');
+    let teamBName = elements.nameB.innerHTML.replace(/<br\s*\/?>/gi, ' ');
+
     const filled = template
-        .replace(/<TeamA>/gi, teamAName).replace(/<TeamB>/gi, teamBName)
-        .replace(/<label1>/gi, elements.label1.textContent).replace(/<label2>/gi, elements.label2.textContent).replace(/<label3>/gi, elements.label3.textContent)
-        .replace(/<score_team_a>/gi, scoreA).replace(/<score_team_b>/gi, scoreB)
-        .replace(/<time_counter>/gi, elements.timerText.textContent).replace(/<half_text>/gi, elements.halfText.textContent);
+        .replace(/<TeamA>/gi, teamAName)
+        .replace(/<TeamB>/gi, teamBName)
+        .replace(/<label1>/gi, elements.label1.textContent)
+        .replace(/<label2>/gi, elements.label2.textContent)
+        .replace(/<label3>/gi, elements.label3.textContent)
+        .replace(/<score_team_a>/gi, scoreA)
+        .replace(/<score_team_b>/gi, scoreB)
+        .replace(/<time_counter>/gi, elements.timerText.textContent)
+        .replace(/<half_text>/gi, elements.halfText.textContent);
+        
     navigator.clipboard.writeText(filled).then(()=>showToast(translations[currentLang].toastCopied,'info')).catch(err=>showToast(translations[currentLang].toastCopyFailed,'error'));
 };
+// === MODIFIED COPY FUNCTION END ===
+
 const enterEditMode = (team) => {
     const isA = team === 'A';
     const nameDiv = isA ? elements.nameA : elements.nameB;
@@ -358,11 +386,14 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.okBtnB.addEventListener('click', () => exitEditMode('B', true));
     elements.colorA.addEventListener('input', (e) => setSourceColor('Color_Team_A', e.target.value));
     elements.colorB.addEventListener('input', (e) => setSourceColor('Color_Team_B', e.target.value));
+    elements.injuryTimePlusBtn.addEventListener('click', () => changeInjuryTime(1));
+    elements.injuryTimeMinusBtn.addEventListener('click', () => changeInjuryTime(-1));
 
     // Initial Load
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
     setLanguage(savedLang);
     updateTimerDisplay();
+    updateInjuryTimeDisplay();
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
     
     fetchAnnouncement();
