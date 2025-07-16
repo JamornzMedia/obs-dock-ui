@@ -7,18 +7,21 @@ import { translations } from './languages.js';
 const $ = id => document.getElementById(id);
 const elements = [
     "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
-    "scoreA", "scoreB", "timerText", "halfText", "announcement-text", "matchID", "colorA", "colorB", 
-    "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn", 
-    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn", 
-    "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "halfBtn", "playBtn", "pauseBtn", 
-    "resetTimerBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn", 
-    "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText", 
+    "scoreA", "scoreB", "timerText", "halfText", "announcement-text", "matchID", "colorA", "colorB",
+    "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
+    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn",
+    "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "halfBtn", "playBtn", "pauseBtn",
+    "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
+    "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
     "saveDetailsBtn", "closeDetailsBtn", "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
-    "injuryTimePlusBtn", "injuryTimeMinusBtn"
+    "injuryTimePlusBtn", "injuryTimeMinusBtn", "resetToZeroBtn", "timeSettingsPopup",
+    "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
+    "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn"
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
 }, {});
+
 
 // --- STATE VARIABLES ---
 let sheetData = [];
@@ -26,7 +29,8 @@ let currentLogoA = '', currentLogoB = '';
 let scoreA = 0, scoreB = 0;
 let timer = 0, interval = null, half = '1st';
 let injuryTime = 0;
-let isCountdown = false, countdownStartTime = 0;
+let isCountdown = false;
+let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 
 // --- OBS ---
@@ -60,19 +64,27 @@ const showToast = (message, type = 'info') => {
     elements.toastContainer.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
 };
-const openPopup = (popup) => { elements.popupOverlay.style.display = 'block'; popup.style.display = 'block'; };
+
+const openPopup = (popup) => {
+    elements.popupOverlay.style.display = 'block';
+    popup.style.display = 'block';
+};
+
 const closeAllPopups = () => {
     elements.popupOverlay.style.display = 'none';
     elements.detailsPopup.style.display = 'none';
     elements.helpPopup.style.display = 'none';
     elements.donatePopup.style.display = 'none';
+    elements.timeSettingsPopup.style.display = 'none';
+    elements.changelogPopup.style.display = 'none';
+    elements.timeSettingsError.style.display = 'none';
 };
+
 const populateDynamicLists = (lang) => {
     const trans = translations[lang] || translations.en;
+    // Details Popup
     const detailsListContainer = elements.detailsPopup.querySelector('.item-list');
-    const helpListContainer = elements.helpPopup.querySelector('.item-list');
     detailsListContainer.querySelectorAll('.item-list-item').forEach(item => item.remove());
-    helpListContainer.querySelectorAll('.item-list-item').forEach(item => item.remove());
     if (trans.tagsList) {
         trans.tagsList.forEach(item => {
             const listItem = document.createElement('div');
@@ -81,6 +93,9 @@ const populateDynamicLists = (lang) => {
             detailsListContainer.appendChild(listItem);
         });
     }
+    // Help Popup
+    const helpListContainer = elements.helpPopup.querySelector('.item-list');
+    helpListContainer.querySelectorAll('.item-list-item').forEach(item => item.remove());
     if (trans.sourcesList) {
         trans.sourcesList.forEach(item => {
             const listItem = document.createElement('div');
@@ -90,6 +105,7 @@ const populateDynamicLists = (lang) => {
         });
     }
 };
+
 const setLanguage = (lang) => {
     currentLang = lang;
     localStorage.setItem('scoreboardLang', lang);
@@ -124,11 +140,7 @@ const fetchAnnouncement = async () => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlText, 'text/html');
         const firstCell = doc.querySelector('tbody td');
-        if (firstCell) {
-            elements.announcementText.textContent = firstCell.textContent.trim();
-        } else {
-            elements.announcementText.textContent = ""; 
-        }
+        elements.announcementText.textContent = firstCell ? firstCell.textContent.trim() : "";
     } catch (error) {
         console.error("Announcement fetch failed:", error);
         elements.announcementText.textContent = "Load Failed";
@@ -137,6 +149,7 @@ const fetchAnnouncement = async () => {
 
 // --- Scoreboard Logic ---
 const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : '';
+
 const updateTeamUI = (team, name, logoFile, color) => {
     const isA = team === 'A';
     const nameEl = isA ? elements.nameA : elements.nameB;
@@ -149,7 +162,6 @@ const updateTeamUI = (team, name, logoFile, color) => {
     nameEl.innerHTML = name.replace(/\//g, '<br>');
     colorEl.value = color;
     initialsEl.textContent = getTeamInitials(name);
-
     logoEl.style.display = 'none';
     initialsEl.style.display = 'block';
 
@@ -161,6 +173,7 @@ const updateTeamUI = (team, name, logoFile, color) => {
     setImage(obsLogoSource, logoFile);
     setSourceColor(obsColorSource, color);
 };
+
 const applyMatch = () => {
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
@@ -184,27 +197,22 @@ const applyMatch = () => {
     setText('label_3', get('label3'));
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
+
 const swapTeams = () => {
-    const tempNameA = elements.nameA.innerHTML.replace(/<br\s*\/?>/gi, '/');
-    const tempNameB = elements.nameB.innerHTML.replace(/<br\s*\/?>/gi, '/');
-    const tempColorA = elements.colorA.value;
-    const tempColorB = elements.colorB.value;
-    const tempScoreA = scoreA;
-    const tempScoreB = scoreB;
-    const tempLogoA = currentLogoA;
-    const tempLogoB = currentLogoB;
-    scoreA = tempScoreB;
-    scoreB = tempScoreA;
-    currentLogoA = tempLogoB;
-    currentLogoB = tempLogoA;
-    updateTeamUI('A', tempNameB, currentLogoA, tempColorB);
-    updateTeamUI('B', tempNameA, currentLogoB, tempColorA);
+    const [nameA, nameB] = [elements.nameA.innerHTML.replace(/<br\s*\/?>/gi, '/'), elements.nameB.innerHTML.replace(/<br\s*\/?>/gi, '/')];
+    const [colorA, colorB] = [elements.colorA.value, elements.colorB.value];
+    [scoreA, scoreB] = [scoreB, scoreA];
+    [currentLogoA, currentLogoB] = [currentLogoB, currentLogoA];
+
+    updateTeamUI('A', nameB, currentLogoA, colorB);
+    updateTeamUI('B', nameA, currentLogoB, colorA);
     elements.scoreA.textContent = scoreA;
     setText('score_team_a', scoreA);
     elements.scoreB.textContent = scoreB;
     setText('score_team_b', scoreB);
     showToast(translations[currentLang].toastSwapped, 'info');
 };
+
 const changeScore = (team, delta) => {
     if (team === 'A') {
         scoreA = Math.max(0, scoreA + delta);
@@ -216,6 +224,7 @@ const changeScore = (team, delta) => {
         setText('score_team_b', scoreB);
     }
 };
+
 const resetScore = () => {
     scoreA = scoreB = 0;
     elements.scoreA.textContent = '0';
@@ -224,6 +233,7 @@ const resetScore = () => {
     setText('score_team_b', '0');
     showToast(translations[currentLang].toastScoreReset, 'info');
 };
+
 const updateTimerDisplay = () => {
     const m = String(Math.floor(timer / 60)).padStart(2, '0');
     const s = String(timer % 60).padStart(2, '0');
@@ -231,6 +241,7 @@ const updateTimerDisplay = () => {
     elements.timerText.textContent = timeString;
     setText('time_counter', timeString);
 };
+
 const startTimer = () => {
     if (interval) return;
     interval = setInterval(() => {
@@ -243,44 +254,102 @@ const startTimer = () => {
         updateTimerDisplay();
     }, 1000);
 };
+
 const stopTimer = () => { clearInterval(interval); interval = null; };
-const resetTimer = () => {
+
+// Function for the grey history button: resets timer to the configured start time
+const resetToStartTime = () => {
     stopTimer();
-    timer = isCountdown ? countdownStartTime : 0;
+    // Always reset to the configured start time, regardless of countdown checkbox
+    timer = countdownStartTime; 
     injuryTime = 0;
     updateTimerDisplay();
     updateInjuryTimeDisplay();
 };
-const setTime = () => {
-    const t = prompt('Set time (MM:SS or MMM:SS)', '45:00');
-    if (!t || !/^\d+:\d{2}$/.test(t)) return;
-    const [m, s] = t.split(':').map(Number);
-    const newTime = (m * 60) + s;
-    timer = newTime;
-    countdownStartTime = newTime;
+
+// Function for the red undo button: resets timer to 00:00
+const resetToZero = () => {
+    stopTimer();
+    timer = 0;
+    injuryTime = 0;
     updateTimerDisplay();
+    updateInjuryTimeDisplay();
+}
+
+const openTimeSettings = () => {
+    const minutes = Math.floor(countdownStartTime / 60);
+    const seconds = countdownStartTime % 60;
+    elements.startTimeMinutes.value = minutes;
+    elements.startTimeSeconds.value = seconds;
+    openPopup(elements.timeSettingsPopup);
 };
+
+// Validates and returns time in seconds, or null if invalid
+const validateAndGetTime = () => {
+    const trans = translations[currentLang] || translations.en;
+    const minutes = parseInt(elements.startTimeMinutes.value, 10);
+    const seconds = parseInt(elements.startTimeSeconds.value, 10);
+
+    if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+        elements.timeSettingsError.textContent = trans.toastInvalidTime;
+        elements.timeSettingsError.style.display = 'block';
+        return null;
+    }
+    return (minutes * 60) + seconds;
+}
+
+// Function for the "Save" button
+const saveTimeSettings = () => {
+    const newTime = validateAndGetTime();
+    if (newTime === null) return;
+    
+    countdownStartTime = newTime;
+    localStorage.setItem('countdownStartTime', countdownStartTime);
+    closeAllPopups();
+    showToast(translations[currentLang].toastSaved, 'success');
+};
+
+// Function for the "Save and Update" button
+const saveAndUpdateTime = () => {
+    const newTime = validateAndGetTime();
+    if (newTime === null) return;
+
+    countdownStartTime = newTime;
+    localStorage.setItem('countdownStartTime', countdownStartTime);
+    
+    // Also update the live timer
+    timer = newTime;
+    updateTimerDisplay();
+
+    closeAllPopups();
+    showToast(translations[currentLang].toastTimeSet, 'success');
+}
+
+
 const toggleHalf = () => {
     half = half === '1st' ? '2nd' : '1st';
     elements.halfText.textContent = half;
     setText('half_text', half);
 };
+
 const updateInjuryTimeDisplay = () => {
     const displayString = injuryTime > 0 ? `+${injuryTime}` : '+0';
     elements.injuryTimeDisplay.textContent = displayString;
-    // The OBS source for injury time is named 'injury_time_text'
     setText('injury_time_text', displayString);
 };
+
 const changeInjuryTime = (delta) => {
     injuryTime = Math.max(0, injuryTime + delta);
     updateInjuryTimeDisplay();
 };
+
 const handleExcel = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.xlsx, .xls';
     input.onchange = e => {
         const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = event => {
             try {
@@ -298,13 +367,10 @@ const handleExcel = () => {
     input.click();
 };
 
-// === MODIFIED COPY FUNCTION START ===
 const copyDetails = () => {
     const template = localStorage.getItem('detailsText') || '';
     if (!template.trim()) return showToast(translations[currentLang].toastNoTextToCopy, 'error');
 
-    // Get team names directly from innerHTML and replace <br> tags with a space.
-    // This is more reliable for capturing the current, possibly edited, multi-line names.
     let teamAName = elements.nameA.innerHTML.replace(/<br\s*\/?>/gi, ' ');
     let teamBName = elements.nameB.innerHTML.replace(/<br\s*\/?>/gi, ' ');
 
@@ -321,7 +387,6 @@ const copyDetails = () => {
         
     navigator.clipboard.writeText(filled).then(()=>showToast(translations[currentLang].toastCopied,'info')).catch(err=>showToast(translations[currentLang].toastCopyFailed,'error'));
 };
-// === MODIFIED COPY FUNCTION END ===
 
 const enterEditMode = (team) => {
     const isA = team === 'A';
@@ -336,6 +401,7 @@ const enterEditMode = (team) => {
     okBtn.style.display = 'inline-flex';
     nameInput.focus();
 };
+
 const exitEditMode = (team, applyChanges) => {
     const isA = team === 'A';
     const nameDiv = isA ? elements.nameA : elements.nameB;
@@ -343,9 +409,13 @@ const exitEditMode = (team, applyChanges) => {
     const editBtn = isA ? elements.editBtnA : elements.editBtnB;
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
     if (applyChanges) {
+        const newName = nameInput.value;
         const obsSourceName = isA ? 'name_team_a' : 'name_team_b';
-        nameDiv.innerHTML = nameInput.value.replace(/\//g, '<br>');
-        setText(obsSourceName, nameInput.value.replace(/\//g, '\n'));
+        nameDiv.innerHTML = newName.replace(/\//g, '<br>');
+        setText(obsSourceName, newName.replace(/\//g, '\n'));
+        // Update initials after name change
+        const initialsEl = isA ? elements.initialsA : elements.initialsB;
+        initialsEl.textContent = getTeamInitials(newName.replace(/\//g, ' '));
     }
     nameDiv.style.display = 'block';
     editBtn.style.display = 'inline-flex';
@@ -368,18 +438,28 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
     elements.pauseBtn.addEventListener('click', stopTimer);
-    elements.resetTimerBtn.addEventListener('click', resetTimer);
-    elements.editTimeBtn.addEventListener('click', setTime);
-    elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; resetTimer(); });
+    
+    elements.resetToStartBtn.addEventListener('click', resetToStartTime); 
+    elements.resetToZeroBtn.addEventListener('click', resetToZero);     
+    
+    elements.editTimeBtn.addEventListener('click', openTimeSettings);
+    elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     elements.settingsBtn.addEventListener('click', () => { elements.detailsText.value = localStorage.getItem('detailsText') || ''; openPopup(elements.detailsPopup); });
     elements.copyBtn.addEventListener('click', copyDetails);
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
+    elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
     elements.popupOverlay.addEventListener('click', closeAllPopups);
     elements.saveDetailsBtn.addEventListener('click', () => { localStorage.setItem('detailsText', elements.detailsText.value); closeAllPopups(); showToast(translations[currentLang].toastSaved, 'success'); });
     elements.closeDetailsBtn.addEventListener('click', closeAllPopups);
     elements.closeHelpBtn.addEventListener('click', closeAllPopups);
     elements.closeDonateBtn.addEventListener('click', closeAllPopups);
+    elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
+    
+    elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
+    elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
+    elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
+
     elements.editBtnA.addEventListener('click', () => enterEditMode('A'));
     elements.okBtnA.addEventListener('click', () => exitEditMode('A', true));
     elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
@@ -391,11 +471,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Load
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
+    const savedTime = localStorage.getItem('countdownStartTime');
+    if (savedTime) {
+        countdownStartTime = parseInt(savedTime, 10);
+    }
     setLanguage(savedLang);
-    updateTimerDisplay();
+    resetToZero(); 
     updateInjuryTimeDisplay();
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
     
     fetchAnnouncement();
-    setInterval(fetchAnnouncement, 3600000); 
+    setInterval(fetchAnnouncement, 3600000);
 });

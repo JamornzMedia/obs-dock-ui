@@ -1,20 +1,14 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-     <!-- Default Statcounter code for jamornzmedia
-    https://jamornzmedia.github.io/obs-dock-ui/Football-Control-Panel.html -->
     <script type="text/javascript">
-        var sc_project=13147874; 
-        var sc_invisible=0; 
-        var sc_security="550e33c0"; 
+        var sc_project=13147874;
+        var sc_invisible=0;
+        var sc_security="550e33c0";
         var scJsHost = "https://";
             document.write("<sc"+"ript type='text/javascript' src='" + scJsHost+"statcounter.com/counter/counter.js'></"+"script>");
     </script>
-    <noscript><div class="statcounter"><a title="web statistics"
-        href="https://statcounter.com/" target="_blank"><img class="statcounter"
-        src="https://c.statcounter.com/13147874/0/550e33c0/0/" alt="web statistics"
-        referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
-    <!-- End of Statcounter Code -->
+
     <meta charset="UTF-8">
     <title data-lang="appTitle">Football Scoreboard Controller</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -59,6 +53,8 @@
         .btn-danger:hover { background: var(--danger-hover-color); }
         .btn-warning { background: var(--warning-color); color: #fff; }
         .btn-warning:hover { background: var(--warning-hover-color); }
+        .btn-success { background: var(--success-color); color: #fff; }
+        .btn-success:hover { background: var(--success-hover-color); }
         .team-row { display: flex; align-items: center; gap: 10px; }
         .team-row .color-picker {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -89,43 +85,33 @@
         .edit-btn:hover { background: #5a5a5a; }
         .ok-btn { display: none; padding: 4px 12px; font-weight: bold; background: var(--success-color); color: #fff; }
 
-        /* --- Styles for Scrolling Announcement --- */
         .announcement-container {
-            overflow: hidden; /* ซ่อนข้อความส่วนที่เกินจากกรอบ */
-            padding: 4px 0;
-            white-space: nowrap; /* บังคับให้ข้อความเป็นบรรทัดเดียว */
+            overflow: hidden; padding: 4px 0; white-space: nowrap;
         }
-        
         #announcement-text {
-            color: var(--danger-color);
-            font-size: 1em;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            min-height: auto;
-            /* ทำให้ข้อความเป็นบล็อกเดียวและเพิ่ม animation */
-            display: inline-block;
-            animation: scroll-left 30s linear infinite;
+            color: var(--danger-color); font-size: 1em; font-weight: 600;
+            letter-spacing: 0.5px; min-height: auto;
+            display: inline-block; animation: scroll-left 30s linear infinite;
         }
-
         @keyframes scroll-left {
-            0% {
-                transform: translateX(100vw); /* เริ่มจากนอกจอทางขวา */
-            }
-            100% {
-                transform: translateX(-100%); /* จบที่นอกจอทางซ้าย */
-            }
+            0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); }
         }
-        /* --- End Scrolling Styles --- */
-
         .labels-row { display: flex; gap: 8px; margin-top: 10px; }
         .labels-row div { flex: 1; background: var(--bg-color); text-align: center; font-size: .75rem; border-radius: 4px; padding: 5px; color: var(--text-muted-color); }
         .score-control { display: flex; align-items: center; justify-content: space-between; }
-        .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 100px; text-align: center; }
+        .score-display { font-size: 2.8em; font-weight: 700; flex-basis: 60px; text-align: center; }
         .score-buttons { display: flex; flex-direction: column; gap: 6px; }
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
-        .timer-display { font-size: 2.2em; font-weight: 600; text-align: center; letter-spacing: 1px; }
-        .timer-controls { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        
+        .timer-area-container { align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
+        .timer-display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 100px; }
+        .timer-display { font-size: 2.5em; font-weight: 600; text-align: center; letter-spacing: 1px; margin:0; line-height: 1.1; }
+        
+        .timer-right-controls { display: flex; flex-direction: column; gap: 5px; }
+        .timer-right-controls .row { gap: 5px; margin-bottom: 0;}
+        .timer-right-controls .row button { flex: 1; }
+
         .countdown-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-muted-color); cursor: pointer; }
         .popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99; }
         .popup-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg-color); padding: 20px; border-radius: var(--border-radius); width: 90%; max-width: 400px; border: 1px solid var(--border-color); z-index: 100; max-height: 90vh; overflow-y: auto; }
@@ -136,19 +122,28 @@
         .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-color); font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .item-list-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-muted-color); }
         .item-list-item code { background-color: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
+        .changelog-list { list-style: none; padding-left: 0; }
+        .changelog-list li { margin-bottom: 15px; }
+        .changelog-list h5 { margin: 0 0 5px 0; font-size: 1rem; color: var(--accent-color); }
+        .changelog-list ul { list-style-type: disc; padding-left: 20px; margin: 0; }
+        .changelog-list ul li { margin-bottom: 3px; font-size: 0.9rem; color: var(--text-muted-color); }
         .donate-section { text-align: center; }
         .donate-section img { max-width: 150px; height: auto; border: 4px solid var(--border-color); border-radius: var(--border-radius); }
-        .donate-section a { color: var(--accent-color); font-size: 0.8rem; text-decoration: none; display: block; margin-top: 5px; }
+        .donate-section a { color: var(--accent-color); font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px; }
         .popup-divider { border-top: 1px solid var(--border-color); margin: 20px 0; }
         .all-docks-section { text-align: center; }
         .all-docks-section a { color: var(--accent-color); font-size: 0.85rem; text-decoration: none; }
         .footer { text-align: center; color: var(--text-muted-color); font-size: 0.75rem; padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .footer a { color: var(--text-muted-color); text-decoration: none; }
+        .footer a { color: var(--text-muted-color); text-decoration: none; cursor: pointer; }
+        .footer a:hover { color: var(--accent-color); }
+        .footer-changelog-link { font-size: 0.8rem; }
+        .footer-changelog-link a { color: var(--accent-color); text-decoration: underline; }
         #toast-container { position: fixed; bottom: 10px; right: 10px; z-index: 101; }
         .toast { padding: 12px 18px; border-radius: var(--border-radius); color: #fff; font-weight: 500; margin-top: 8px; opacity: 0; animation: fadeIn 0.5s forwards, fadeOut 0.5s 4.5s forwards; }
         .toast.success { background-color: var(--success-color); } .toast.error { background-color: var(--danger-color); } .toast.info { background-color: var(--accent-color); }
         @keyframes fadeIn { to { opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .footer div[style*="font-size: 10px"] a[href*="correct-code"] { display: none !important; }
     </style>
 </head>
 <body>
@@ -202,13 +197,14 @@
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn" class="minus">-</button></div>
-                <div class="score-display" id="scoreA">0</div><div class="score-display" id="scoreB">0</div>
+                <div class="score-display" id="scoreA">0</div>
+                <button id="resetScoreBtn" class="btn-secondary" style="flex-shrink: 0;"><i class="fas fa-sync-alt"></i> <span data-lang="reset"></span></button>
+                <div class="score-display" id="scoreB">0</div>
                 <div class="score-buttons"><button id="scoreBPlusBtn" class="plus">+</button><button id="scoreBMinusBtn" class="minus">-</button></div>
             </div>
-            <div class="row center" style="margin-top: 12px;"><button id="resetScoreBtn" class="btn-secondary"><i class="fas fa-sync-alt"></i> <span data-lang="reset"></span></button></div>
         </div>
         <div class="card">
-            <div class="row" style="align-items: stretch; justify-content: space-between; flex-wrap: nowrap;">
+            <div class="row timer-area-container">
                 <div style="flex: 0 0 70px; display: flex;">
                      <button id="halfBtn" class="btn-secondary" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
                         <span style="font-size:0.8rem" data-lang="half"></span>
@@ -216,26 +212,27 @@
                     </button>
                 </div>
 
-                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 180px;">
-                    <div id="timerText" class="timer-display" style="margin:0; line-height: 1.1;">00:00</div>
-                    
-                    <div id="injuryTimeContainer" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; background-color: var(--bg-color); border-radius: 4px; padding: 2px 8px;">
-                        <span data-lang="injuryTime" style="font-size: 0.9rem; color: var(--text-muted-color);"></span>
-                        <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
-                        <div class="injury-time-buttons" style="display:flex; gap: 4px;">
-                             <button id="injuryTimeMinusBtn" class="btn-secondary" style="padding: 0; width: 24px; height: 22px; font-size: 1rem; line-height: 1;">◄</button>
-                             <button id="injuryTimePlusBtn" class="btn-secondary" style="padding: 0; width: 24px; height: 22px; font-size: 1rem; line-height: 1;">►</button>
-                        </div>
+                <div class="timer-display-area">
+                    <div id="timerText" class="timer-display">00:00</div>
+                    <div class="row center" style="margin-bottom:0; margin-top: 5px;">
+                        <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
+                        <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
+                        <button id="resetToZeroBtn" class="btn-danger" data-lang-title="resetToZeroHint"><i class="fas fa-undo"></i></button>
                     </div>
                 </div>
 
-                <div style="flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 5px; width: 100px;">
-                    <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
-                    <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
-                    <button id="resetTimerBtn" class="btn-danger"><i class="fas fa-undo"></i></button>
-                    <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
-                    <div style="grid-column: 1 / 3; margin-top: 5px;">
-                        <label class="countdown-toggle" data-lang-title="countdownHint" style="display: flex; justify-content: center; width: 100%;">
+                <div class="timer-right-controls">
+                    <div class="row" id="injuryTimeContainer">
+                        <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
+                        <button id="injuryTimeMinusBtn" class="btn-secondary" style="padding: 2px 8px; font-size: 1rem; line-height: 1;">◄</button>
+                        <button id="injuryTimePlusBtn" class="btn-secondary" style="padding: 2px 8px; font-size: 1rem; line-height: 1;">►</button>
+                    </div>
+                     <div class="row">
+                        <button id="resetToStartBtn" class="btn-secondary" data-lang-title="resetToStartHint"><i class="fas fa-history"></i></button>
+                        <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
+                    </div>
+                    <div class="row">
+                         <label class="countdown-toggle" data-lang-title="countdownHint" style="display: flex; justify-content: center; width: 100%;">
                             <input type="checkbox" id="countdownCheck">
                             <span data-lang="countdown"></span>
                         </label>
@@ -266,10 +263,13 @@
                 <script type='text/javascript' src='https://www.freevisitorcounters.com/auth.php?id=40d718814ed43f91ca1ed2c87ad6ecdc4a8248ec'></script>
                 <script type="text/javascript" src="https://www.freevisitorcounters.com/en/home/counter/1361951/t/24"></script>
             </div>
-            <span data-lang="version"></span>
+            <div class="footer-changelog-link">
+                <span data-lang="footerAppName"></span> - <a id="changelogBtn" data-lang="changelog"></a>
+            </div>
         </div>
     </div>
     <div id="popupOverlay" class="popup-overlay"></div>
+
     <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
         <p data-lang="detailsDesc"></p>
@@ -282,6 +282,7 @@
             <button id="closeDetailsBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
         </div>
     </div>
+
     <div id="helpPopup" class="popup-modal">
         <h3 data-lang="helpTitle"></h3>
         <p data-lang-html="helpStep1"></p>
@@ -292,6 +293,7 @@
         </div>
         <div class="row center" style="margin-top: 15px;"><button id="closeHelpBtn" class="btn-primary" data-lang="understand"></button></div>
     </div>
+
     <div id="donatePopup" class="popup-modal">
         <h3 data-lang="donateTitle"></h3>
         <div class="donate-section">
@@ -307,9 +309,36 @@
         </div>
         <div class="popup-divider"></div>
         <div class="all-docks-section">
-            <a href="https://sites.google.com/view/jamornzmedia" target="_blank">https://sites.google.com/view/jamornzmedia</a>
+            <a href="https://sites.google.com/view/jamornzmedia" target="_blank"><i class="fas fa-home"></i> Jamornz Media</a>
         </div>
         <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary" data-lang="close"></button></div>
+    </div>
+    
+    <div id="timeSettingsPopup" class="popup-modal">
+        <h3 data-lang="timeSettingsTitle"></h3>
+        <p id="timeSettingsError" style="color: var(--danger-color); font-weight: bold; display: none;"></p>
+        <div class="row center" style="gap: 15px;">
+            <div style="text-align: center;">
+                <label for="startTimeMinutes" data-lang="timeSettingsMinutes"></label>
+                <input type="number" id="startTimeMinutes" min="0" max="999" style="width: 80px; font-size: 1.5rem; padding: 5px;">
+            </div>
+            <div style="font-size: 1.5rem; font-weight: bold;">:</div>
+            <div style="text-align: center;">
+                <label for="startTimeSeconds" data-lang="timeSettingsSeconds"></label>
+                <input type="number" id="startTimeSeconds" min="0" max="59" style="width: 80px; font-size: 1.5rem; padding: 5px;">
+            </div>
+        </div>
+        <div class="row center" style="margin-top: 20px; gap: 15px;">
+            <button id="saveTimeSettingsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
+            <button id="saveAndUpdateTimeBtn" class="btn-success"><i class="fas fa-sync-alt"></i> <span data-lang="saveAndUpdate"></span></button>
+            <button id="closeTimeSettingsBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
+        </div>
+    </div>
+
+    <div id="changelogPopup" class="popup-modal">
+        <h3 data-lang="changelogTitle"></h3>
+        <div id="changelog-content" data-lang-html="changelogContent"></div>
+        <div class="row center" style="margin-top: 20px;"><button id="closeChangelogBtn" class="btn-primary" data-lang="close"></button></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
