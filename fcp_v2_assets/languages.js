@@ -4,12 +4,13 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.4",
+        appTitle: "Football Scoreboard Controller - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
         teamA: "Team A",
         teamB: "Team B",
+        edit: "Edit",
         editHint: "Edit name or add new line with /",
         ok: "OK",
         label1: "Label 1",
@@ -28,7 +29,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.4",
+        changelog: "Update Version 2.5",
         detailsTitle: "Announcement Text Settings",
         detailsDesc: "Create message using the tags below to pull data automatically.",
         tagsTitle: "Available Tags",
@@ -47,13 +48,15 @@ export const translations = {
         close: "Close",
         saveAndUpdate: "Save & Update",
         helpTitle: "How to Use",
-        helpStep1: "1. Place all logo files in <code>C:/OBSAssets/logos</code>",
-        helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select data file.",
+        helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. By default it is <code>C:/OBSAssets/logos</code>.",
+        helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
         helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
         sourcesTitle: "Required OBS Sources",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Color Source** for Team A' },
-            { code: 'Color_Team_B', desc: '- **Color Source** for Team B' },
+            { code: 'Color_Team_A', desc: '- **Color Source** for Team A (Primary)' },
+            { code: 'Color_Team_B', desc: '- **Color Source** for Team B (Primary)' },
+            { code: 'Color_Team_A_2', desc: '- **Color Source** for Team A (Secondary)' },
+            { code: 'Color_Team_B_2', desc: '- **Color Source** for Team B (Secondary)' },
             { code: 'logo_team_a', desc: '- **Image Source** for Team A Logo' },
             { code: 'logo_team_b', desc: '- **Image Source** for Team B Logo' },
             { code: 'name_team_a', desc: '- **Text (GDI+)** for Team A Name' },
@@ -74,9 +77,19 @@ export const translations = {
         timeSettingsTitle: "Set Start Time",
         timeSettingsMinutes: "Minutes",
         timeSettingsSeconds: "Seconds",
+        logoPathTitle: "Logo Folder Path",
+        logoPathDesc: "The current logo folder path is:",
+        logoPathHint: "Set logo folder path",
         changelogTitle: "Update History",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>Version 2.5</h5>
+                    <ul>
+                        <li>Moved the logo folder path setting into a dedicated popup.</li>
+                        <li>Added a secondary color option for each team.</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>Version 2.4</h5>
                     <ul>
@@ -85,8 +98,6 @@ export const translations = {
                         <li>Improved the "Reset to Start Time" button's reliability.</li>
                     </ul>
                 </li>
-                <li><h5>Version 2.3</h5><ul><li>Added Injury Time / Added Time functionality.</li></ul></li>
-                <li><h5>Version 2.2</h5><ul><li>Added "Swap Teams" button and multi-language support.</li></ul></li>
             </ul>`,
         toastLoadFileFirst: "Please upload a file first",
         toastMatchNotFound: "Match ID not found:",
@@ -104,12 +115,13 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.4",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
         teamA: "ทีม A",
         teamB: "ทีม B",
+        edit: "แก้ไข",
         editHint: "แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /",
         ok: "ตกลง",
         label1: "ป้าย 1",
@@ -128,7 +140,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.4",
+        changelog: "อัปเดตเวอร์ชัน 2.5",
         detailsTitle: "ตั้งค่าข้อความประกาศ",
         detailsDesc: "สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ",
         tagsTitle: "Tags ที่ใช้งานได้",
@@ -147,13 +159,15 @@ export const translations = {
         close: "ปิด",
         saveAndUpdate: "บันทึกและอัปเดต",
         helpTitle: "วิธีการใช้งาน",
-        helpStep1: "1. นำไฟล์โลโก้ทั้งหมดไปไว้ที่ <code>C:/OBSAssets/logos</code>",
+        helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>)",
         helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
         helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
         sourcesTitle: "OBS Sources ที่ต้องมี",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Color Source** สำหรับสีทีม A' },
-            { code: 'Color_Team_B', desc: '- **Color Source** สำหรับสีทีม B' },
+            { code: 'Color_Team_A', desc: '- **Color Source** สำหรับสีทีม A (สีหลัก)' },
+            { code: 'Color_Team_B', desc: '- **Color Source** สำหรับสีทีม B (สีหลัก)' },
+            { code: 'Color_Team_A_2', desc: '- **Color Source** สำหรับสีทีม A (สีรอง)' },
+            { code: 'Color_Team_B_2', desc: '- **Color Source** สำหรับสีทีม B (สีรอง)' },
             { code: 'logo_team_a', desc: '- **Image Source** สำหรับโลโก้ทีม A' },
             { code: 'logo_team_b', desc: '- **Image Source** สำหรับโลโก้ทีม B' },
             { code: 'name_team_a', desc: '- **Text (GDI+)** สำหรับชื่อทีม A' },
@@ -174,9 +188,19 @@ export const translations = {
         timeSettingsTitle: "ตั้งเวลาเริ่มต้น",
         timeSettingsMinutes: "นาที",
         timeSettingsSeconds: "วินาที",
+        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้",
+        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ปัจจุบันคือ:",
+        logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
+                 <li>
+                    <h5>เวอร์ชัน 2.5</h5>
+                    <ul>
+                        <li>ย้ายการตั้งค่าที่อยู่โฟลเดอร์โลโก้ไปไว้ใน Popup</li>
+                        <li>เพิ่มความสามารถในการกำหนดสีที่สองสำหรับแต่ละทีม</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>เวอร์ชัน 2.4</h5>
                     <ul>
@@ -185,8 +209,6 @@ export const translations = {
                         <li>ปรับปรุงการทำงานของปุ่ม "คืนค่าเวลา" ให้เสถียรขึ้น</li>
                     </ul>
                 </li>
-                <li><h5>เวอร์ชัน 2.3</h5><ul><li>เพิ่มฟังก์ชันทดเวลาบาดเจ็บ</li></ul></li>
-                <li><h5>เวอร์ชัน 2.2</h5><ul><li>เพิ่มปุ่มสลับฝั่งและรองรับหลายภาษา</li></ul></li>
             </ul>`,
         toastLoadFileFirst: "โปรด Upload ไฟล์ก่อน",
         toastMatchNotFound: "ไม่พบ Match ID:",
@@ -204,12 +226,13 @@ export const translations = {
     },
     // Korean
     ko: {
-        appTitle: "축구 스코어보드 컨트롤러 - V2.4",
+        appTitle: "축구 스코어보드 컨트롤러 - V2.5",
         excel: "엑셀",
         matchId: "ID:",
         load: "로드",
         teamA: "팀 A",
         teamB: "팀 B",
+        edit: "수정",
         editHint: "이름을 수정하거나 /로 새 줄을 추가하세요",
         ok: "확인",
         label1: "레이블 1",
@@ -228,7 +251,7 @@ export const translations = {
         help: "도움말",
         donate: "후원",
         footerAppName: "OBS Dock UI 스코어보드",
-        changelog: "업데이트 버전 2.4",
+        changelog: "업데이트 버전 2.5",
         detailsTitle: "공지 텍스트 설정",
         detailsDesc: "아래 태그를 사용하여 데이터를 자동으로 가져오는 메시지를 만드세요.",
         tagsTitle: "사용 가능한 태그",
@@ -247,13 +270,15 @@ export const translations = {
         close: "닫기",
         saveAndUpdate: "저장 및 업데이트",
         helpTitle: "사용 방법",
-        helpStep1: "1. 모든 로고 파일을 <code>C:/OBSAssets/logos</code>에 넣으세요.",
+        helpStep1: "1. <i class='fas fa-folder-open'></i> 아이콘을 클릭하여 로고 폴더 경로를 설정하세요. 기본값은 <code>C:/OBSAssets/logos</code>입니다.",
         helpStep2: "2. <i class='fas fa-file-excel'></i> 엑셀 버튼을 클릭하여 데이터 파일을 선택하세요.",
         helpStep3: "3. 원하는 경기 ID를 선택하고 <i class='fas fa-check'></i> 로드를 클릭하세요.",
         sourcesTitle: "필요한 OBS 소스",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- 팀 A를 위한 **색상 소스**' },
-            { code: 'Color_Team_B', desc: '- 팀 B를 위한 **색상 소스**' },
+            { code: 'Color_Team_A', desc: '- 팀 A를 위한 **색상 소스** (기본)' },
+            { code: 'Color_Team_B', desc: '- 팀 B를 위한 **색상 소스** (기본)' },
+            { code: 'Color_Team_A_2', desc: '- 팀 A를 위한 **색상 소스** (보조)' },
+            { code: 'Color_Team_B_2', desc: '- 팀 B를 위한 **색상 소스** (보조)' },
             { code: 'logo_team_a', desc: '- 팀 A 로고를 위한 **이미지 소스**' },
             { code: 'logo_team_b', desc: '- 팀 B 로고를 위한 **이미지 소스**' },
             { code: 'name_team_a', desc: '- 팀 A 이름을 위한 **텍스트 (GDI+)**' },
@@ -274,10 +299,19 @@ export const translations = {
         timeSettingsTitle: "시작 시간 설정",
         timeSettingsMinutes: "분",
         timeSettingsSeconds: "초",
+        logoPathTitle: "로고 폴더 경로",
+        logoPathDesc: "현재 로고 폴더 경로는 다음과 같습니다:",
+        logoPathHint: "로고 폴더 경로 설정",
         changelogTitle: "업데이트 내역",
         changelogContent: `
             <ul class="changelog-list">
-                <li><h5>버전 2.4</h5>
+                <li><h5>버전 2.5</h5>
+                    <ul>
+                        <li>로고 폴더 경로 설정을 전용 팝업으로 이동했습니다.</li>
+                        <li>각 팀에 대한 보조 색상 옵션을 추가했습니다.</li>
+                    </ul>
+                </li>
+                 <li><h5>버전 2.4</h5>
                     <ul>
                         <li>피드백에 따라 타이머 제어 UI가 크게 개편되었습니다.</li>
                         <li>시간 변경 사항을 즉시 적용하기 위해 "저장 및 업데이트" 버튼이 추가되었습니다.</li>
@@ -301,12 +335,13 @@ export const translations = {
     },
     // Lao
     lo: {
-        appTitle: "ໂຕຄວບຄຸມກະດານຄະແນນບານເຕະ - V2.4",
+        appTitle: "ໂຕຄວບຄຸມກະດານຄະແນນບານເຕະ - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "ໂຫຼດ",
         teamA: "ທີມ A",
         teamB: "ທີມ B",
+        edit: "ແກ້ໄຂ",
         editHint: "ແກ້ໄຂຊື່ ຫຼື ເພີ່ມແຖວໃໝ່ດ້ວຍ /",
         ok: "ຕົກລົງ",
         label1: "ປ້າຍ 1",
@@ -325,7 +360,7 @@ export const translations = {
         help: "ວິທີໃຊ້",
         donate: "ສະໜັບສະໜູນ",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "ອັບເດດເວີຊັ່ນ 2.4",
+        changelog: "ອັບເດດເວີຊັ່ນ 2.5",
         detailsTitle: "ຕັ້ງຄ່າຂໍ້ຄວາມປະກາດ",
         detailsDesc: "ສ້າງຂໍ້ຄວາມໂດຍໃຊ້ແທັກຂ້າງລຸ່ມເພື່ອດຶງຂໍ້ມູນອັດຕະໂນມັດ.",
         tagsTitle: "ແທັກທີ່ໃຊ້ໄດ້",
@@ -344,13 +379,15 @@ export const translations = {
         close: "ປິດ",
         saveAndUpdate: "ບັນທຶກ ແລະ ອັບເດດ",
         helpTitle: "ວິທີການໃຊ້ງານ",
-        helpStep1: "1. ເອົາໄຟລ໌ໂລໂກ້ທັງໝົດໄປໄວ້ທີ່ <code>C:/OBSAssets/logos</code>",
+        helpStep1: "1. ກົດໄອຄອນ <i class='fas fa-folder-open'></i> ເພື່ອຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້ (ຄ່າເລີ່ມຕົ້ນແມ່ນ <code>C:/OBSAssets/logos</code>).",
         helpStep2: "2. ກົດປຸ່ມ <i class='fas fa-file-excel'></i> Excel ເພື່ອເລືອກໄຟລ໌ຂໍ້ມູນ.",
         helpStep3: "3. ເລືອກ Match ID ທີ່ຕ້ອງການ ແລ້ວກົດ <i class='fas fa-check'></i> ໂຫຼດ.",
         sourcesTitle: "OBS Sources ທີ່ຕ້ອງມີ",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Color Source** ສຳລັບສີທີມ A' },
-            { code: 'Color_Team_B', desc: '- **Color Source** ສຳລັບສີທີມ B' },
+            { code: 'Color_Team_A', desc: '- **Color Source** ສຳລັບສີທີມ A (ສີຫຼັກ)' },
+            { code: 'Color_Team_B', desc: '- **Color Source** ສຳລັບສີທີມ B (ສີຫຼັກ)' },
+            { code: 'Color_Team_A_2', desc: '- **Color Source** ສຳລັບສີທີມ A (ສີຮອງ)' },
+            { code: 'Color_Team_B_2', desc: '- **Color Source** ສຳລັບສີທີມ B (ສີຮອງ)' },
             { code: 'logo_team_a', desc: '- **Image Source** ສຳລັບໂລໂກ້ທີມ A' },
             { code: 'logo_team_b', desc: '- **Image Source** ສຳລັບໂລໂກ້ທີມ B' },
             { code: 'name_team_a', desc: '- **Text (GDI+)** ສຳລັບຊື່ທີມ A' },
@@ -371,9 +408,18 @@ export const translations = {
         timeSettingsTitle: "ຕັ້ງເວລາເລີ່ມຕົ້ນ",
         timeSettingsMinutes: "ນາທີ",
         timeSettingsSeconds: "ວິນາທີ",
+        logoPathTitle: "ທີ່ຢູ່ໂຟນເດີໂລໂກ້",
+        logoPathDesc: "ທີ່ຢູ່ໂຟນເດີໂລໂກ້ປັດຈຸບັນແມ່ນ:",
+        logoPathHint: "ຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້",
         changelogTitle: "ປະຫວັດການອັບເດດ",
         changelogContent: `
             <ul class="changelog-list">
+                <li><h5>ເວີຊັ່ນ 2.5</h5>
+                    <ul>
+                        <li>ຍ້າຍການຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້ໄປໄວ້ໃນ Popup.</li>
+                        <li>ເພີ່ມຕົວເລືອກສີທີສອງສຳລັບແຕ່ລະທີມ.</li>
+                    </ul>
+                </li>
                 <li><h5>ເວີຊັ່ນ 2.4</h5>
                     <ul>
                         <li>ປັບປຸງ UI ຄວບຄຸມເວລາຕາມຄຳແນະນຳ.</li>
@@ -398,12 +444,13 @@ export const translations = {
     },
     // Khmer (Cambodian)
     km: {
-        appTitle: "កម្មវិធីបញ្ជាតារាងពិន្ទុបាល់ទាត់ - V2.4",
+        appTitle: "កម្មវិធីបញ្ជាតារាងពិន្ទុបាល់ទាត់ - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "ផ្ទុក",
         teamA: "ក្រុម A",
         teamB: "ក្រុម B",
+        edit: "កែសម្រួល",
         editHint: "កែឈ្មោះ ឬបន្ថែមបន្ទាត់ថ្មីជាមួយ /",
         ok: "យល់ព្រម",
         label1: "ស្លាក ១",
@@ -422,7 +469,7 @@ export const translations = {
         help: "ជំនួយ",
         donate: "គាំទ្រ",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "អัปដេតកំណែ 2.4",
+        changelog: "អัปដេតកំណែ 2.5",
         detailsTitle: "ការកំណត់អត្ថបទប្រកាស",
         detailsDesc: "បង្កើតសារដោយប្រើស្លាកខាងក្រោមដើម្បីទាញទិន្នន័យដោយស្វ័យប្រវត្តិ។",
         tagsTitle: "ស្លាកដែលមាន",
@@ -441,13 +488,15 @@ export const translations = {
         close: "បិទ",
         saveAndUpdate: "រក្សាទុក & ធ្វើបច្ចុប្បន្នភាព",
         helpTitle: "របៀបប្រើ",
-        helpStep1: "1. ដាក់ឯកសារនិមិត្តសញ្ញាទាំងអស់ក្នុង <code>C:/OBSAssets/logos</code>",
+        helpStep1: "1. ចុចរូបតំណាង <i class='fas fa-folder-open'></i> ដើម្បីកំណត់ផ្លូវថតនិមិត្តសញ្ញារបស់អ្នក។ តាមលំនាំដើមវាគឺ <code>C:/OBSAssets/logos</code>។",
         helpStep2: "2. ចុចប៊ូតុង <i class='fas fa-file-excel'></i> Excel ដើម្បីជ្រើសរើសឯកសារទិន្នន័យ។",
         helpStep3: "3. ជ្រើសរើស Match ID ដែលចង់បាន ហើយចុច <i class='fas fa-check'></i> ផ្ទុក។",
         sourcesTitle: "OBS Sources ដែលត្រូវការ",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Color Source** សម្រាប់ក្រុម A' },
-            { code: 'Color_Team_B', desc: '- **Color Source** សម្រាប់ក្រុម B' },
+            { code: 'Color_Team_A', desc: '- **Color Source** សម្រាប់ក្រុម A (ចម្បង)' },
+            { code: 'Color_Team_B', desc: '- **Color Source** សម្រាប់ក្រុម B (ចម្បង)' },
+            { code: 'Color_Team_A_2', desc: '- **Color Source** សម្រាប់ក្រុម A (បន្ទាប់បន្សំ)' },
+            { code: 'Color_Team_B_2', desc: '- **Color Source** សម្រាប់ក្រុម B (បន្ទាប់បន្សំ)' },
             { code: 'logo_team_a', desc: '- **Image Source** សម្រាប់និមិត្តសញ្ញាក្រុម A' },
             { code: 'logo_team_b', desc: '- **Image Source** សម្រាប់និមិត្តសញ្ញាក្រុម B' },
             { code: 'name_team_a', desc: '- **Text (GDI+)** សម្រាប់ឈ្មោះក្រុម A' },
@@ -468,9 +517,18 @@ export const translations = {
         timeSettingsTitle: "កំណត់ម៉ោងចាប់ផ្តើម",
         timeSettingsMinutes: "នាទី",
         timeSettingsSeconds: "វិនាទី",
+        logoPathTitle: "ផ្លូវថតនិមិត្តសញ្ញា",
+        logoPathDesc: "ផ្លូវថតនិមិត្តសញ្ញាបច្ចុប្បន្នគឺ៖",
+        logoPathHint: "កំណត់ផ្លូវថតនិមិត្តសញ្ញា",
         changelogTitle: "ប្រវត្តិធ្វើបច្ចុប្បន្នភាព",
         changelogContent: `
             <ul class="changelog-list">
+                <li><h5>ជំនាន់ 2.5</h5>
+                    <ul>
+                        <li>បានផ្លាស់ទីការកំណត់ផ្លូវថតនិមិត្តសញ្ញាទៅក្នុង Popup មួយ។</li>
+                        <li>បានបន្ថែមជម្រើសពណ៌ទីពីរសម្រាប់ក្រុមនីមួយៗ។</li>
+                    </ul>
+                </li>
                 <li><h5>ជំនាន់ 2.4</h5>
                     <ul>
                         <li>ការកែប្រែ UI ដ៏ធំសម្រាប់ការควบคุมកម្មវិធីកំណត់ម៉ោងដោយផ្អែកលើមតិកែលម្អ។</li>
@@ -495,12 +553,13 @@ export const translations = {
     },
     // Brazilian Portuguese
     'pt-br': {
-        appTitle: "Controlador de Placar de Futebol - V2.4",
+        appTitle: "Controlador de Placar de Futebol - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "Carregar",
         teamA: "Equipe A",
         teamB: "Equipe B",
+        edit: "Editar",
         editHint: "Edite o nome ou adicione uma nova linha com /",
         ok: "OK",
         label1: "Rótulo 1",
@@ -519,7 +578,7 @@ export const translations = {
         help: "Ajuda",
         donate: "Apoiar",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Atualização da Versão 2.4",
+        changelog: "Atualização da Versão 2.5",
         detailsTitle: "Configurações de Texto de Anúncio",
         detailsDesc: "Crie mensagens usando as tags abaixo para puxar dados automaticamente.",
         tagsTitle: "Tags Disponíveis",
@@ -538,13 +597,15 @@ export const translations = {
         close: "Fechar",
         saveAndUpdate: "Salvar e Atualizar",
         helpTitle: "Como Usar",
-        helpStep1: "1. Coloque todos os arquivos de logo em <code>C:/OBSAssets/logos</code>",
+        helpStep1: "1. Clique no ícone <i class='fas fa-folder-open'></i> para definir o caminho da pasta de logos. O padrão é <code>C:/OBSAssets/logos</code>.",
         helpStep2: "2. Clique no botão <i class='fas fa-file-excel'></i> Excel para selecionar o arquivo de dados.",
         helpStep3: "3. Selecione o ID da Partida desejado e clique em <i class='fas fa-check'></i> Carregar.",
         sourcesTitle: "Fontes OBS Necessárias",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Fonte de Cor** para Equipe A' },
-            { code: 'Color_Team_B', desc: '- **Fonte de Cor** para Equipe B' },
+            { code: 'Color_Team_A', desc: '- **Fonte de Cor** para Equipe A (Primária)' },
+            { code: 'Color_Team_B', desc: '- **Fonte de Cor** para Equipe B (Primária)' },
+            { code: 'Color_Team_A_2', desc: '- **Fonte de Cor** para Equipe A (Secundária)' },
+            { code: 'Color_Team_B_2', desc: '- **Fonte de Cor** para Equipe B (Secundária)' },
             { code: 'logo_team_a', desc: '- **Fonte de Imagem** para Logo da Equipe A' },
             { code: 'logo_team_b', desc: '- **Fonte de Imagem** para Logo da Equipe B' },
             { code: 'name_team_a', desc: '- **Texto (GDI+)** para Nome da Equipe A' },
@@ -565,10 +626,19 @@ export const translations = {
         timeSettingsTitle: "Definir Hora de Início",
         timeSettingsMinutes: "Minutos",
         timeSettingsSeconds: "Segundos",
+        logoPathTitle: "Caminho da Pasta de Logos",
+        logoPathDesc: "O caminho atual da pasta de logos é:",
+        logoPathHint: "Definir caminho da pasta de logos",
         changelogTitle: "Histórico de Atualizações",
         changelogContent: `
             <ul class="changelog-list">
-                <li><h5>Versão 2.4</h5>
+                <li><h5>Versão 2.5</h5>
+                    <ul>
+                        <li>Movida a configuração do caminho da pasta de logos para um pop-up dedicado.</li>
+                        <li>Adicionada uma opção de cor secundária para cada equipe.</li>
+                    </ul>
+                </li>
+                 <li><h5>Versão 2.4</h5>
                     <ul>
                         <li>Grande reformulação da interface do usuário para controles de timer com base no feedback.</li>
                         <li>Adicionado um botão "Salvar e Atualizar" para aplicar as alterações de tempo ao timer ao vivo imediatamente.</li>
@@ -592,12 +662,13 @@ export const translations = {
     },
     // Spanish
     es: {
-        appTitle: "Controlador de Marcador de Fútbol - V2.4",
+        appTitle: "Controlador de Marcador de Fútbol - V2.5",
         excel: "Excel",
         matchId: "ID:",
         load: "Cargar",
         teamA: "Equipo A",
         teamB: "Equipo B",
+        edit: "Editar",
         editHint: "Editar nombre o añadir línea con /",
         ok: "OK",
         label1: "Etiqueta 1",
@@ -616,7 +687,7 @@ export const translations = {
         help: "Ayuda",
         donate: "Donar",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Actualización Versión 2.4",
+        changelog: "Actualización Versión 2.5",
         detailsTitle: "Configuración de Texto de Anuncio",
         detailsDesc: "Crea un mensaje usando las etiquetas de abajo para obtener datos automáticamente.",
         tagsTitle: "Etiquetas Disponibles",
@@ -635,13 +706,15 @@ export const translations = {
         close: "Cerrar",
         saveAndUpdate: "Guardar y Actualizar",
         helpTitle: "Cómo Usar",
-        helpStep1: "1. Coloca todos los logos en <code>C:/OBSAssets/logos</code>",
+        helpStep1: "1. Haz clic en el ícono <i class='fas fa-folder-open'></i> para establecer la ruta de la carpeta de logos. Por defecto es <code>C:/OBSAssets/logos</code>.",
         helpStep2: "2. Haz clic en el botón <i class='fas fa-file-excel'></i> Excel para seleccionar el archivo de datos.",
         helpStep3: "3. Selecciona el ID del partido y haz clic en <i class='fas fa-check'></i> Cargar.",
         sourcesTitle: "Fuentes de OBS Requeridas",
         sourcesList: [
-            { code: 'Color_Team_A', desc: '- **Fuente de Color** para Equipo A' },
-            { code: 'Color_Team_B', desc: '- **Fuente de Color** para Equipo B' },
+            { code: 'Color_Team_A', desc: '- **Fuente de Color** para Equipo A (Primario)' },
+            { code: 'Color_Team_B', desc: '- **Fuente de Color** para Equipo B (Primario)' },
+            { code: 'Color_Team_A_2', desc: '- **Fuente de Color** para Equipo A (Secundario)' },
+            { code: 'Color_Team_B_2', desc: '- **Fuente de Color** para Equipo B (Secundario)' },
             { code: 'logo_team_a', desc: '- **Fuente de Imagen** para Logo Equipo A' },
             { code: 'logo_team_b', desc: '- **Fuente de Imagen** para Logo Equipo B' },
             { code: 'name_team_a', desc: '- **Texto (GDI+)** para Nombre Equipo A' },
@@ -662,9 +735,18 @@ export const translations = {
         timeSettingsTitle: "Establecer Hora de Inicio",
         timeSettingsMinutes: "Minutos",
         timeSettingsSeconds: "Segundos",
+        logoPathTitle: "Ruta de la Carpeta de Logos",
+        logoPathDesc: "La ruta actual de la carpeta de logos es:",
+        logoPathHint: "Establecer la ruta de la carpeta de logos",
         changelogTitle: "Historial de Actualizaciones",
         changelogContent: `
             <ul class="changelog-list">
+                <li><h5>Versión 2.5</h5>
+                    <ul>
+                        <li>Se movió el ajuste de la ruta de la carpeta de logos a una ventana emergente dedicada.</li>
+                        <li>Se agregó una opción de color secundario para cada equipo.</li>
+                    </ul>
+                </li>
                 <li><h5>Versión 2.4</h5>
                     <ul>
                         <li>Revisión importante de la interfaz de usuario para los controles del temporizador basada en comentarios.</li>
