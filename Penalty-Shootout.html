@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Penalty Shootout UI</title>
+  <title data-lang="appTitle">Penalty Shootout UI</title>
   <style>
     body {
       background-color: #1e1e1e;
@@ -25,62 +25,372 @@
     .miss-btn { background-color: #F44336; color: white; }
     .undo-btn { background-color: #888; color: white; }
     .reset { margin-top: 1rem; background-color: darkred; color: white; }
-    dialog { background: #2c2c2c; color: white; border: none; border-radius: 8px; padding: 1rem; }
-    .setting-panel input { width: 60px; padding: 0.2rem; text-align: center; }
+
+    /* Styles for Popup Modals */
+    dialog {
+        background: #2c2c2c;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        max-width: 400px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    dialog::backdrop {
+        background: rgba(0, 0, 0, 0.7);
+    }
+    dialog h2, dialog h3 {
+        color: #e0e0e0;
+        margin-top: 0;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    dialog p {
+        font-size: 0.9rem;
+        color: #a0a0a0;
+        margin-bottom: 12px;
+    }
+    dialog code {
+        background-color: #1a1a1a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #3b82f6;
+        font-weight: bold;
+        display: inline-block;
+        word-break: break-all;
+    }
+    .setting-panel input[type="number"],
+    .setting-panel select {
+      width: 60px; padding: 0.2rem; text-align: center;
+      background: #1a1a1a; color: white; border: 1px solid #3a3a3a; border-radius: 6px;
+    }
+    .setting-panel label { display: block; margin-bottom: 8px; }
+    .setting-panel fieldset { border: 1px solid #3a3a3a; border-radius: 4px; padding: 10px; margin-top: 15px; }
+    .setting-panel legend { color: #a0a0a0; font-size: 0.9rem; padding: 0 5px; }
+    .setting-panel input[type="radio"] { margin-right: 5px; }
+    .dialog-buttons { margin-top: 1rem; text-align: right; }
+    .dialog-buttons button { margin-left: 10px; }
+
+    /* Specific styles for lists in popups */
+    .item-list { margin-top: 15px; padding-top: 10px; border-top: 1px solid #3a3a3a; }
+    .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: #e0e0e0; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .item-list ul { list-style: none; padding-left: 0; margin-top: 0; }
+    .item-list li { margin-bottom: 8px; font-size: 0.9rem; color: #a0a0a0; }
+    .item-list li strong { color: #3b82f6; }
+    .item-list li ul { list-style: disc; padding-left: 20px; margin-top: 5px; }
+    .changelog-list { list-style: none; padding-left: 0; }
+    .changelog-list li { margin-bottom: 15px; }
+    .changelog-list h5 { margin: 0 0 5px 0; font-size: 1rem; color: #3b82f6; }
+    .changelog-list ul { list-style-type: disc; padding-left: 20px; margin: 0; }
+    .changelog-list ul li { margin-bottom: 3px; font-size: 0.9rem; color: #a0a0a0; }
+
+    /* Footer for OBS Dock UI - Penalty by JAMORNzMedia */
+    .app-footer {
+      text-align: center;
+      color: #a0a0a0;
+      font-size: 0.75rem;
+      padding: 10px;
+      margin-top: 20px;
+    }
+    .app-footer a {
+      color: #7ab8f3;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .app-footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="row">
     <div class="team">
-      <h3>Team A</h3>
+      <h3><span data-lang="teamA">Team A</span></h3>
       <div class="dots" id="dotsA"></div>
-      <div class="score">Score: <span id="scoreA">0</span></div>
+      <div class="score"><span data-lang="scoreLabel">Score</span>: <span id="scoreA">0</span></div>
     </div>
     <div class="team">
-      <h3>Team B</h3>
+      <h3><span data-lang="teamB">Team B</span></h3>
       <div class="dots" id="dotsB"></div>
-      <div class="score">Score: <span id="scoreB">0</span></div>
+      <div class="score"><span data-lang="scoreLabel">Score</span>: <span id="scoreB">0</span></div>
     </div>
   </div>
 
   <div id="controlPanel" class="controls vertical">
     <div class="side">
-      <button class="goal-btn" onclick="shoot('A', true)">Goal A</button>
-      <button class="miss-btn" onclick="shoot('A', false)">Miss A</button>
-      <button class="undo-btn" onclick="undo('A')">Undo A</button>
+      <button class="goal-btn" onclick="shoot('A', true)"><span data-lang="goalBtn">Goal A</span></button>
+      <button class="miss-btn" onclick="shoot('A', false)"><span data-lang="missBtn">Miss A</span></button>
+      <button class="undo-btn" onclick="undo('A')"><span data-lang="undoBtn">Undo A</span></button>
     </div>
     <div class="side">
-      <button class="goal-btn" onclick="shoot('B', true)">Goal B</button>
-      <button class="miss-btn" onclick="shoot('B', false)">Miss B</button>
-      <button class="undo-btn" onclick="undo('B')">Undo B</button>
+      <button class="goal-btn" onclick="shoot('B', true)"><span data-lang="goalBtn">Goal B</span></button>
+      <button class="miss-btn" onclick="shoot('B', false)"><span data-lang="missBtn">Miss B</span></button>
+      <button class="undo-btn" onclick="undo('B')"><span data-lang="undoBtn">Undo B</span></button>
     </div>
   </div>
 
-  <button class="reset" onclick="reset()">Reset All</button>
-  <button onclick="document.getElementById('settingDialog').showModal()">⚙️ Settings</button>
+  <button class="reset" onclick="reset()"><span data-lang="resetAllBtn">Reset All</span></button>
+  <button onclick="document.getElementById('settingDialog').showModal()">⚙️ <span data-lang="settingsBtn">Settings</span></button>
+  <button onclick="document.getElementById('helpDialog').showModal()">❓ <span data-lang="helpBtn">Help</span></button>
+
+  <select id="languageSelector" style="margin-top: 1rem; padding: 0.4rem 0.8rem; border-radius: 6px; background-color: #4a4a4a; color: white; border: none;">
+    <option value="th">ภาษาไทย</option>
+    <option value="en">English</option>
+  </select>
 
   <dialog id="settingDialog">
     <form method="dialog">
+      <h2><span data-lang="settingsTitle">Settings</span></h2>
       <div class="setting-panel">
-        <label>Dot Size: <input type="number" id="dotSize" min="10" max="100"> px</label><br>
-        <label>Dot Gap: <input type="number" id="dotGap" min="0" max="100"> px</label><br>
-        <label>Team Gap: <input type="number" id="teamGap" min="0" max="200"> px</label><br><br>
-        <button type="button" onclick="updateSettings()">Apply</button>
-        <button type="submit">Close</button>
+        <label><span data-lang="dotSizeLabel">Dot Size</span>: <input type="number" id="dotSize" min="10" max="100"> px</label>
+        <label><span data-lang="dotGapLabel">Dot Gap</span>: <input type="number" id="dotGap" min="0" max="100"> px</label>
+        <label><span data-lang="teamGapLabel">Team Gap</span>: <input type="number" id="teamGap" min="0" max="200"> px</label>
+
+        <fieldset>
+          <legend><span data-lang="graphicLayoutLabel">Graphic Layout</span></legend>
+          <label><input type="radio" name="layout" value="side-by-side" id="layoutSideBySide"> <span data-lang="layoutSideBySide">Side-by-Side (ซ้าย-ขวา)</span></label><br>
+          <label><input type="radio" name="layout" value="top-bottom" id="layoutTopBottom"> <span data-lang="layoutTopBottom">Top-Bottom (บน-ล่าง)</span></label>
+        </fieldset>
+
+        <div class="dialog-buttons">
+          <button type="button" onclick="updateSettings()"><span data-lang="applyBtn">Apply</span></button>
+          <button type="submit"><span data-lang="closeBtn">Close</span></button>
+        </div>
       </div>
     </form>
   </dialog>
 
+  <dialog id="helpDialog">
+    <form method="dialog">
+      <h2><span data-lang="helpTitle">Help / How to Use with OBS</span></h2>
+      <p><span data-lang="helpIntro">This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.</span></p>
+
+      <div class="item-list">
+        <h4><span data-lang="obsSourcesTitle">OBS Sources Needed</span></h4>
+        <ul>
+          <li><strong><span data-lang="scoreASource">Score_A</span></strong><br><span data-lang="scoreATextSourceDesc"> (Text (GDI+) สำหรับคะแนนทีม A)</span></li>
+          <li><strong><span data-lang="scoreBSource">Score_B</span></strong><br><span data-lang="scoreBTextSourceDesc"> (Text (GDI+) สำหรับคะแนนทีม B)</span></li>
+          <li><strong><span data-lang="penaltyDotsSource">Penalty_Dots_AB</span></strong><br><span data-lang="browserSourceDesc"> (Browser source สำหรับกราฟิกจุดยิงจุดโทษ)</span><br>
+            <span data-lang="browserSourceUrlLabel">URL:</span> <code>https://jamornzmedia.github.io/obs-dock-ui/dots_AB.html</code><br>
+            <span data-lang="browserSourceNote"><em>(In OBS, you can move it to any desired position or Crop เพียงกด Alt + ลากขอบกรอบ Source เข้ามาให้ชิดกราฟิกที่แสดง)</em></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="item-list" style="margin-top: 25px;">
+        <h4><span data-lang="settingsExplanationTitle">Settings Explained</span></h4>
+        <ul>
+          <li><strong><span data-lang="dotSizeLabel">Dot Size (px)</span>:</strong> <span data-lang="dotSizeDesc">ขนาดเส้นผ่านศูนย์กลางของจุดแสดงผล (พิกเซล).</span></li>
+          <li><strong><span data-lang="dotGapLabel">Dot Gap (px)</span>:</strong> <span data-lang="dotGapDesc">ระยะห่างระหว่างจุดแต่ละจุดในทีม (พิกเซล).</span></li>
+          <li><strong><span data-lang="teamGapLabel">Team Gap (px)</span>:</strong> <span data-lang="teamGapDesc">ระยะห่างระหว่างกลุ่มจุดของทีม A และ B (พิกเซล). ค่านี้ใช้ได้ทั้งแนวตั้งและแนวนอน.</span></li>
+          <li><strong><span data-lang="graphicLayoutLabel">Graphic Layout</span>:</strong> <span data-lang="layoutDesc">เลือกรูปแบบการจัดเรียงกราฟิกจุด.</span>
+            <ul>
+              <li><strong><span data-lang="layoutSideBySide">Side-by-Side (ซ้าย-ขวา)</span>:</strong> <span data-lang="layoutSideBySideDesc">จุดทีม A และ B แสดงเคียงข้างกัน.</span></li>
+              <li><strong><span data-lang="layoutTopBottom">Top-Bottom (บน-ล่าง)</span>:</strong> <span data-lang="layoutTopBottomDesc">จุดทีม A แสดงด้านบน จุดทีม B แสดงด้านล่าง.</span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="dialog-buttons">
+        <button type="submit"><span data-lang="closeBtn">Close</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="versionHistoryDialog">
+    <form method="dialog">
+      <h2><span data-lang="versionHistoryTitle">Version History</span></h2>
+      <div class="changelog-list">
+        <ul>
+          <li>
+            <h5><span data-lang="version1_1">Version 1.1</span></h5>
+            <ul>
+              <li><span data-lang="v1_1_feature1">Enhanced shot history: now remembers all shots.</span></li>
+              <li><span data-lang="v1_1_feature2">Added "Help" button with OBS source setup guide and detailed settings explanations.</span></li>
+              <li><span data-lang="v1_1_feature3">Introduced graphic layout options (Side-by-Side / Top-Bottom) in Settings.</span></li>
+              <li><span data-lang="v1_1_feature4">Team Gap now correctly applies to both horizontal and vertical layouts.</span></li>
+              <li><span data-lang="v1_1_feature5">Graphics will visually reset to empty dots when a team starts a new set of 5 shots (e.g., 6th shot).</span></li>
+            </ul>
+          </li>
+          <li>
+            <h5><span data-lang="version1_0">Version 1.0</span></h5>
+            <ul>
+              <li><span data-lang="v1_0_feature1">Basic score counting and penalty dot display (up to 5 shots per set).</span></li>
+              <li><span data-lang="v1_0_feature2">Control buttons: Goal, Miss, Undo for each team.</span></li>
+              <li><span data-lang="v1_0_feature3">"Reset All" button to clear scores and dots.</span></li>
+              <li><span data-lang="v1_0_feature4">OBS WebSocket integration for updating Text Sources (Score_A, Score_B).</span></li>
+              <li><span data-lang="v1_0_feature5">Customizable dot size, dot gap, and team gap via Settings.</span></li>
+              <li><span data-lang="v1_0_feature6">Broadcast of display data and settings to OBS Browser Source using BroadcastChannel.</span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="dialog-buttons">
+        <button type="submit"><span data-lang="closeBtn">Close</span></button>
+      </div>
+    </form>
+  </dialog>
+  
+  <div class="app-footer">
+    OBS Dock UI - Penalty by JAMORNzMedia <br>
+    <a href="#" onclick="document.getElementById('versionHistoryDialog').showModal()"><span data-lang="versionText">Version 1.1</span></a>
+  </div>
+
   <script>
-    const MAX_SHOTS = 5;
-    let shots = { A: [], B: [] };
+    const MAX_SHOTS_DISPLAY = 5; // จำนวนจุดยิงล่าสุดที่จะแสดงผลในแต่ละรอบ (5 ลูกต่อ Page)
+    let shots = { A: [[]], B: [[]] }; // เก็บประวัติการยิงทั้งหมดเป็น Page: shots.A[page_index][shot_index]
     let scores = { A: 0, B: 0 };
+    let currentPage = 0; // Index ของ Page ปัจจุบัน (เริ่มที่ 0)
+
     const channel = new BroadcastChannel("penalty_channel");
     let obs;
 
     const OBS_URL = "ws://localhost:4455";
     const OBS_PASSWORD = "supersecret"; // 🔒 ตั้งตามที่ตั้งไว้ใน OBS WebSocket
 
+    // --- Localization Data ---
+    const translations = {
+      th: {
+        appTitle: "Penalty Shootout UI", 
+        versionText: "เวอร์ชั่น 1.1",
+        teamA: "ทีม A",
+        teamB: "ทีม B",
+        scoreLabel: "คะแนน",
+        goalBtn: "เข้า A",
+        missBtn: "ไม่เข้า A",
+        undoBtn: "ย้อนกลับ A",
+        resetAllBtn: "รีเซ็ตทั้งหมด",
+        settingsBtn: "ตั้งค่า",
+        helpBtn: "ช่วยเหลือ",
+        closeBtn: "ปิด",
+        applyBtn: "ปรับใช้",
+        settingsTitle: "ตั้งค่า",
+        dotSizeLabel: "ขนาดจุด",
+        dotGapLabel: "ช่องว่างจุด",
+        teamGapLabel: "ช่องว่างทีม",
+        graphicLayoutLabel: "รูปแบบกราฟิก",
+        layoutSideBySide: "ซ้าย-ขวา",
+        layoutTopBottom: "บน-ล่าง",
+        helpTitle: "ช่วยเหลือ / วิธีใช้งานกับ OBS",
+        helpIntro: "แผงควบคุมนี้จะส่งข้อมูลคะแนนและจุดยิงจุดโทษไปยัง OBS หากต้องการแสดงผล โปรดตั้งค่า Source ดังต่อไปนี้ใน OBS.",
+        obsSourcesTitle: "OBS Sources ที่จำเป็น",
+        scoreASource: "Score_A",
+        scoreBSource: "Score_B",
+        scoreATextSourceDesc: "(Text (GDI+) สำหรับคะแนนทีม A)",
+        scoreBTextSourceDesc: "(Text (GDI+) สำหรับคะแนนทีม B)",
+        penaltyDotsSource: "Penalty_Dots_AB",
+        browserSourceDesc: "(Browser source สำหรับกราฟิกจุดยิงจุดโทษ)",
+        browserSourceUrlLabel: "URL:",
+        browserSourceNote: "<em>(ใน OBS สามารถ ขยับไปตามตำแหน่งที่ต้องการ หรือ Crop เพียงกด Alt + ลากขอบกรอบ Source เข้ามาให้ชิดกราฟิกที่แสดง)</em>",
+        settingsExplanationTitle: "คำอธิบายการตั้งค่า",
+        dotSizeDesc: "ขนาดเส้นผ่านศูนย์กลางของจุดแสดงผล (พิกเซล).",
+        dotGapDesc: "ระยะห่างระหว่างจุดแต่ละจุดในทีม (พิกเซล).",
+        teamGapDesc: "ระยะห่างระหว่างกลุ่มจุดของทีม A และ B (พิกเซล). ค่านี้ใช้ได้ทั้งแนวตั้งและแนวนอน.",
+        layoutDesc: "เลือกรูปแบบการจัดเรียงกราฟิกจุด.",
+        layoutSideBySideDesc: "จุดทีม A และ B แสดงเคียงข้างกัน.",
+        layoutTopBottomDesc: "จุดทีม A แสดงด้านบน จุดทีม B แสดงด้านล่าง.",
+        versionHistoryTitle: "ประวัติเวอร์ชั่น",
+        version1_1: "เวอร์ชั่น 1.1",
+        v1_1_feature1: "เพิ่มระบบจดจำประวัติการยิงทุกลูก.",
+        v1_1_feature2: "เพิ่มปุ่ม \"Help\" พร้อมคำอธิบายการตั้งค่า OBS Source (Text, Browser) และ URL ที่กระชับขึ้น.",
+        v1_1_feature3: "เพิ่มตัวเลือกการจัดเรียงกราฟิกจุด (ซ้าย-ขวา / บน-ล่าง) ใน Settings.",
+        v1_1_feature4: "ช่องว่างทีม (Team Gap) สามารถใช้งานได้ทั้งแนวตั้งและแนวนอนตามรูปแบบที่เลือก.",
+        v1_1_feature5: "กราฟิกจะถูกรีเซ็ตเป็นช่องว่างเมื่อทีมใดทีมหนึ่งเริ่มชุดการแสดงผล 5 ลูกชุดใหม่ (เช่น ลูกที่ 6).",
+        version1_0: "เวอร์ชั่น 1.0",
+        v1_0_feature1: "ระบบการนับคะแนนและแสดงผลจุดยิงจุดโทษ (สูงสุด 5 ลูกต่อชุด).",
+        v1_0_feature2: "ปุ่มควบคุม: เข้า, ไม่เข้า, ย้อนกลับ สำหรับแต่ละทีม.",
+        v1_0_feature3: "ปุ่ม \"รีเซ็ตทั้งหมด\" เพื่อรีเซ็ตคะแนนและจุดยิง.",
+        v1_0_feature4: "การเชื่อมต่อกับ OBS WebSocket เพื่ออัปเดตคะแนนใน Text Source.",
+        v1_0_feature5: "สามารถปรับแต่งขนาดจุด, ช่องว่างจุด, ช่องว่างทีม ผ่าน Settings.",
+        v1_0_feature6: "ส่งข้อมูลการแสดงผลจุดและการตั้งค่าไปยัง Browser Source สำหรับ OBS โดยใช้ BroadcastChannel.",
+      },
+      en: {
+        appTitle: "Penalty Shootout UI",
+        versionText: "Version 1.1",
+        teamA: "Team A",
+        teamB: "Team B",
+        scoreLabel: "Score",
+        goalBtn: "Goal A",
+        missBtn: "Miss A",
+        undoBtn: "Undo A",
+        resetAllBtn: "Reset All",
+        settingsBtn: "Settings",
+        helpBtn: "Help",
+        closeBtn: "Close",
+        applyBtn: "Apply",
+        settingsTitle: "Settings",
+        dotSizeLabel: "Dot Size",
+        dotGapLabel: "Dot Gap",
+        teamGapLabel: "Team Gap",
+        graphicLayoutLabel: "Graphic Layout",
+        layoutSideBySide: "Side-by-Side (Left-Right)",
+        layoutTopBottom: "Top-Bottom (Up-Down)",
+        helpTitle: "Help / How to Use with OBS",
+        helpIntro: "This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.",
+        obsSourcesTitle: "OBS Sources Needed",
+        scoreASource: "Score_A",
+        scoreBSource: "Score_B",
+        scoreATextSourceDesc: "(Text (GDI+) for Team A's score)",
+        scoreBTextSourceDesc: "(Text (GDI+) for Team B's score)",
+        penaltyDotsSource: "Penalty_Dots_AB",
+        browserSourceDesc: "(Browser source for penalty dots graphic)",
+        browserSourceUrlLabel: "URL:",
+        browserSourceNote: "<em>(In OBS, you can move it to any desired position or Crop it by holding Alt + dragging the source's border.)</em>",
+        settingsExplanationTitle: "Settings Explained",
+        dotSizeDesc: "Diameter of the penalty dot display (pixels).",
+        dotGapDesc: "Spacing between each penalty dot within a team (pixels).",
+        teamGapDesc: "Spacing between Team A's and Team B's dot groups (pixels). This applies to both vertical and horizontal layouts.",
+        layoutDesc: "Choose the arrangement of the penalty dot graphic.",
+        layoutSideBySideDesc: "Team A and B dots are displayed next to each other.",
+        layoutTopBottomDesc: "Team A dots are displayed above Team B dots.",
+        versionHistoryTitle: "Version History",
+        version1_1: "Version 1.1",
+        v1_1_feature1: "Enhanced shot history: now remembers all shots.",
+        v1_1_feature2: "Added \"Help\" button with concise OBS source setup guide and detailed settings explanations.",
+        v1_1_feature3: "Introduced graphic layout options (Side-by-Side / Top-Bottom) in Settings.",
+        v1_1_feature4: "Team Gap now correctly applies to both horizontal and vertical layouts.",
+        v1_1_feature5: "Graphics will visually reset to empty dots when a team starts a new set of 5 shots (e.g., 6th shot).",
+        version1_0: "Version 1.0",
+        v1_0_feature1: "Basic score counting and penalty dot display (up to 5 shots per set).",
+        v1_0_feature2: "Control buttons: Goal, Miss, Undo for each team.",
+        v1_0_feature3: " \"Reset All\" button to clear scores and dots.",
+        v1_0_feature4: "OBS WebSocket integration for updating Text Sources (Score_A, Score_B).",
+        v1_0_feature5: "Customizable dot size, dot gap, and team gap via Settings.",
+        v1_0_feature6: "Broadcast of display data and settings to OBS Browser Source using BroadcastChannel.",
+      }
+    };
+
+    function applyTranslations(lang) {
+      document.title = translations[lang].appTitle;
+      const elements = document.querySelectorAll('[data-lang]');
+      elements.forEach(el => {
+        const key = el.getAttribute('data-lang');
+        if (translations[lang] && translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+
+      const htmlElements = document.querySelectorAll('[data-lang-html]');
+      htmlElements.forEach(el => {
+          const key = el.getAttribute('data-lang-html');
+          if (translations[lang] && translations[lang][key]) {
+              el.innerHTML = translations[lang][key];
+          }
+      });
+    }
+
+    const languageSelector = document.getElementById('languageSelector');
+    languageSelector.addEventListener('change', (event) => {
+      const selectedLang = event.target.value;
+      localStorage.setItem('penalty_language', selectedLang);
+      applyTranslations(selectedLang);
+    });
+
+    // --- OBS WebSocket Connection ---
     function connectOBS() {
       obs = new WebSocket(OBS_URL);
 
@@ -91,26 +401,28 @@
       obs.onmessage = async (event) => {
         const message = JSON.parse(event.data);
         if (message.op === 0) {
-          // Hello from OBS
           const authRequest = {
             op: 1,
             d: {
               rpcVersion: 1,
               authentication: OBS_PASSWORD ? {
-                password: OBS_PASSWORD
+                secret: OBS_PASSWORD
               } : undefined
             }
           };
           obs.send(JSON.stringify(authRequest));
         } else if (message.op === 2) {
           console.log("✅ Connected to OBS WebSocket!");
-        } else if (message.op === 5) {
-          console.log("OBS Event:", message.d.eventType);
         }
       };
 
       obs.onerror = (err) => {
         console.error("❌ OBS WebSocket error:", err);
+      };
+
+      obs.onclose = () => {
+        console.log("❌ OBS WebSocket disconnected. Attempting to reconnect in 5 seconds...");
+        setTimeout(connectOBS, 5000);
       };
     }
 
@@ -131,77 +443,127 @@
       }));
     }
 
-    function render(team) {
-      const container = document.getElementById("dots" + team);
-      const scoreDisplay = document.getElementById("score" + team);
+    // --- UI Rendering (ใช้สำหรับการ Render จุดบน UI Control Panel เท่านั้น) ---
+    function renderDotsUI(container, shotsToRender) {
       container.innerHTML = "";
-
-      const latest = shots[team].slice(-MAX_SHOTS);
-      for (let i = 0; i < MAX_SHOTS; i++) {
+      
+      for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
         const dot = document.createElement("div");
         dot.className = "dot";
-        const shot = latest[i];
+        const shot = shotsToRender[i];
         if (shot === true) dot.classList.add("goal");
         else if (shot === false) dot.classList.add("miss");
         container.appendChild(dot);
       }
-
-      scoreDisplay.textContent = scores[team];
-      updateOBSScore(team, scores[team]);
     }
 
-    function update(team) {
+    // ฟังก์ชันสำหรับดึง 5 ลูกล่าสุดของ Page ปัจจุบัน
+    function getShotsForCurrentPage(team) {
+        // ตรวจสอบว่า Page ปัจจุบันมีอยู่จริงหรือไม่ ถ้าไม่ ก็คืนค่าอาร์เรย์ว่างเปล่า 5 ช่อง
+        if (!shots[team][currentPage]) {
+            return Array(MAX_SHOTS_DISPLAY).fill(null);
+        }
+        const pageShots = shots[team][currentPage];
+        const displayArray = Array(MAX_SHOTS_DISPLAY).fill(null);
+        // คัดลอกลูกยิงจาก Page ปัจจุบันมาใส่ในอาร์เรย์แสดงผล
+        for (let i = 0; i < pageShots.length; i++) {
+            displayArray[i] = pageShots[i];
+        }
+        return displayArray;
+    }
+
+    // ฟังก์ชันสำหรับอัปเดต UI ของแผงควบคุมและ OBS Overlay จากสถานะ Page ปัจจุบัน
+    function renderAll() {
+      // อัปเดตทีม A
+      const containerA = document.getElementById("dotsA");
+      const scoreDisplayA = document.getElementById("scoreA");
+      const currentShotsA = getShotsForCurrentPage('A');
+      renderDotsUI(containerA, currentShotsA);
+      scoreDisplayA.textContent = scores.A;
+      updateOBSScore('A', scores.A);
+
+      // อัปเดตทีม B
+      const containerB = document.getElementById("dotsB");
+      const scoreDisplayB = document.getElementById("scoreB");
+      const currentShotsB = getShotsForCurrentPage('B');
+      renderDotsUI(containerB, currentShotsB);
+      scoreDisplayB.textContent = scores.B;
+      updateOBSScore('B', scores.B);
+      
+      // ส่งสถานะปัจจุบันของ Page ไปยัง OBS Overlay
       channel.postMessage({
         type: "update",
-        team,
-        shots: shots[team],
-        settings: getSettings()
+        data: {
+          shotsA: currentShotsA,
+          shotsB: currentShotsB,
+          settings: getSettings()
+        }
       });
     }
 
+    // --- Game Logic ---
     function shoot(team, isGoal) {
-      if (shots[team].length >= MAX_SHOTS) {
-        shots.A = [];
-        shots.B = [];
+      // ตรวจสอบว่ากำลังจะยิงลูกที่ 6 ของ Page ปัจจุบันหรือไม่ (หรือลูกแรกของ Page ใหม่)
+      const isStartingNewPage = (shots[team][currentPage].length === MAX_SHOTS_DISPLAY);
+
+      if (isStartingNewPage) {
+        // เพิ่ม Page ใหม่สำหรับทั้งสองทีม ถ้ายังไม่มี
+        currentPage++;
+        if (!shots['A'][currentPage]) shots['A'].push([]);
+        if (!shots['B'][currentPage]) shots['B'].push([]);
+
+        // ตอนนี้เราอยู่ใน Page ใหม่แล้ว จุดจะถูกเคลียร์เป็นค่าเริ่มต้นของ Page ใหม่โดยอัตโนมัติ
+        // และจะแสดงผลลูกแรกของ Page นี้
       }
 
-      shots[team].push(isGoal);
+      // เพิ่มลูกยิงเข้าไปใน Page ปัจจุบัน
+      shots[team][currentPage].push(isGoal);
       if (isGoal) scores[team]++;
-      render('A');
-      render('B');
-      update('A');
-      update('B');
+      
+      // เรียก renderAll เพื่ออัปเดต UI และ OBS
+      renderAll();
     }
 
     function undo(team) {
-      const last = shots[team].pop();
+      // ตรวจสอบว่ามีลูกยิงให้ undo หรือไม่
+      if (shots[team][currentPage].length === 0) {
+        // ถ้า Page ปัจจุบันว่างเปล่า และไม่ใช่ Page แรก ให้ถอยกลับไป Page ก่อนหน้า
+        if (currentPage > 0) {
+          currentPage--;
+          // อาจจะต้องลบ Page ที่ว่างเปล่าออก ถ้ามันเพิ่งถูกสร้างจากการ shoot ที่ undo ไป
+          // แต่เพื่อให้ง่าย เราจะให้มันจำค่า 5 ลูกก่อนหน้าได้ถูกต้องด้วย renderAll
+        } else {
+            return; // ไม่มีลูกให้ undo แล้ว
+        }
+      }
+
+      const last = shots[team][currentPage].pop();
       if (last === true) scores[team]--;
-      render(team);
-      update(team);
+      
+      renderAll(); // <--- เรียก renderAll เพื่อซิงค์ทั้งหมดหลังจาก undo
     }
 
     function reset() {
-      shots = { A: [], B: [] };
+      shots = { A: [[]], B: [[]] }; // รีเซ็ตให้มีแค่ Page 0 ที่ว่างเปล่า
       scores = { A: 0, B: 0 };
-      render('A');
-      render('B');
-      update('A');
-      update('B');
+      currentPage = 0; // กลับไป Page แรก
+      renderAll(); // <--- เรียก renderAll เพื่อซิงค์ทั้งหมดหลังจาก reset
     }
 
+    // --- Settings Management ---
     function getSettings() {
       return {
         dotSize: document.getElementById('dotSize').value,
         dotGap: document.getElementById('dotGap').value,
-        teamGap: document.getElementById('teamGap').value
+        teamGap: document.getElementById('teamGap').value,
+        layout: document.querySelector('input[name="layout"]:checked').value
       };
     }
 
     function updateSettings() {
       const settings = getSettings();
       localStorage.setItem("penalty_settings", JSON.stringify(settings));
-      update('A');
-      update('B');
+      renderAll(); // อัปเดตการตั้งค่าและแสดงผลปัจจุบันไปยัง Overlay
     }
 
     function loadSettings() {
@@ -210,17 +572,27 @@
         document.getElementById('dotSize').value = saved.dotSize;
         document.getElementById('dotGap').value = saved.dotGap;
         document.getElementById('teamGap').value = saved.teamGap;
-        updateSettings();
+        document.getElementById('layoutSideBySide').checked = (saved.layout === 'side-by-side');
+        document.getElementById('layoutTopBottom').checked = (saved.layout === 'top-bottom');
       } else {
         document.getElementById('dotSize').value = 20;
         document.getElementById('dotGap').value = 8;
         document.getElementById('teamGap').value = 80;
+        document.getElementById('layoutSideBySide').checked = true;
       }
+      renderAll(); // อัปเดตการตั้งค่าและแสดงผลปัจจุบันไปยัง Overlay
     }
 
-    connectOBS();
-    loadSettings();
-    reset();
+    // --- Initial Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('penalty_language') || 'th';
+      languageSelector.value = savedLang;
+      applyTranslations(savedLang);
+
+      connectOBS();
+      loadSettings();
+      reset(); // การแสดงผลและอัปเดตเริ่มต้นเพื่อให้ OBS display ซิงค์กัน
+    });
   </script>
 </body>
 </html>

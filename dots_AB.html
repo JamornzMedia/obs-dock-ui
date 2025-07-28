@@ -7,14 +7,21 @@
     html, body {
       margin: 0;
       background-color: transparent;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
     }
 
     .overlay-container {
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: var(--layout-direction, row);
       gap: var(--team-gap, 80px);
       padding: 12px;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
     }
 
     .team-dots {
@@ -29,6 +36,7 @@
       background-color: transparent;
       border: 2px solid #666;
       opacity: 0.4;
+      transition: background-color 0.1s ease, opacity 0.1s ease;
     }
 
     .dot.goal {
@@ -49,18 +57,18 @@
   </div>
 
   <script>
-    const MAX_SHOTS = 5;
+    const MAX_SHOTS_DISPLAY = 5;
     const dotsA = document.getElementById('dotsA');
     const dotsB = document.getElementById('dotsB');
     const channel = new BroadcastChannel("penalty_channel");
 
-    function renderDots(container, shots) {
+    function renderDots(container, shotsToRender) {
       container.innerHTML = '';
-      const latest = shots.slice(-MAX_SHOTS);
-      for (let i = 0; i < MAX_SHOTS; i++) {
+      
+      for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
         const dot = document.createElement('div');
         dot.className = 'dot';
-        const shot = latest[i];
+        const shot = shotsToRender[i];
         if (shot === true) dot.classList.add('goal');
         else if (shot === false) dot.classList.add('miss');
         container.appendChild(dot);
@@ -71,16 +79,25 @@
       document.documentElement.style.setProperty('--dot-size', settings.dotSize + 'px');
       document.documentElement.style.setProperty('--dot-gap', settings.dotGap + 'px');
       document.documentElement.style.setProperty('--team-gap', settings.teamGap + 'px');
+      
+      const layoutDirection = settings.layout === 'top-bottom' ? 'column' : 'row';
+      document.documentElement.style.setProperty('--layout-direction', layoutDirection);
     }
 
     channel.onmessage = (e) => {
-      const { type, team, shots, settings } = e.data;
+      const { type, data } = e.data;
       if (type !== 'update') return;
 
+      const { shotsA, shotsB, settings } = data;
+
       if (settings) applySettings(settings);
-      if (team === 'A') renderDots(dotsA, shots);
-      if (team === 'B') renderDots(dotsB, shots);
+      
+      renderDots(dotsA, shotsA);
+      renderDots(dotsB, shotsB);
     };
+
+    renderDots(dotsA, Array(MAX_SHOTS_DISPLAY).fill(null));
+    renderDots(dotsB, Array(MAX_SHOTS_DISPLAY).fill(null));
   </script>
 </body>
 </html>
