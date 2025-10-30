@@ -23,6 +23,8 @@ export const translations = {
         hide: "Hide",
         show: "Show",
         score2VisibilityGroup: "Score 2 Visibility Control",
+        resetKeybinds: "Reset Keybinds", // NEW
+        resetColors: "Clear Team Color Memory", // NEW
         half: "Half",
         injuryTime: "Added Time",
         countdown: "Down",
@@ -35,9 +37,24 @@ export const translations = {
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
         changelog: "Update Version 2.6",
-        detailsTitle: "Announcement Text Settings",
-        detailsDesc: "Create message using the tags below to pull data automatically.",
-        tagsTitle: "Available Tags",
+        detailsTitle: "Settings & Announcement", // Changed title
+        detailsDesc: "Customize global settings below.", // Changed description
+        tagsTitle: "Available Tags for Announcement", // Changed title
+        keybindsTitle: "Custom Keyboard Shortcuts", // NEW
+        keybindsList: [ // NEW
+            { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
+            { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
+            { id: "scoreB_plus", label: "+ Score B (Main)", default: "4" },
+            { id: "scoreB_minus", label: "- Score B (Main)", default: "5" },
+            { id: "score2A_plus", label: "+ Score A (Sub)", default: "7" },
+            { id: "score2A_minus", label: "- Score A (Sub)", default: "8" },
+            { id: "score2B_plus", label: "+ Score B (Sub)", default: "9" },
+            { id: "score2B_minus", label: "- Score B (Sub)", default: "0" },
+            { id: "timer_playpause", label: "Play/Pause Timer", default: " " },
+            { id: "timer_resetstart", label: "Reset to Start Time", default: "F10" },
+            { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
+            { id: "full_reset", label: "Full Reset (All)", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- Team A Name' },
             { code: '&lt;TeamB&gt;', desc: '- Team B Name' },
@@ -96,29 +113,12 @@ export const translations = {
                 <li>
                     <h5>Version 2.6 (Latest)</h5>
                     <ul>
-                        <li>**Moved Score 2 Visibility Control** to the Announcement Text Settings popup to prevent unexpected hiding/showing bugs.</li>
-                        <li>**Announcement Text** now loads from a local file at <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>Added **Score 2** control section (e.g., for Fouls/Counts in Futsal).</li>
-                        <li>Implemented **Team Color Memory**: The system now remembers the last set colors for a team name.</li>
-                        <li>Added a **Global Keyboard Listener** to allow control shortcuts via the Dock UI, even when the UI is focused.</li>
-                        <li>Added a **Full Reset** button to reset both scores, timer (to 00:00), and half (to 1st) in one click.</li>
-                        <li>Improved the **Help/Sources** section into an easy-to-read table.</li>
-                        <li>Clicking a Source Name in the Help table now **copies the name** to the clipboard.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>Version 2.5</h5>
-                    <ul>
-                        <li>Moved the logo folder path setting into a dedicated popup.</li>
-                        <li>Added a secondary color option for each team.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>Version 2.4</h5>
-                    <ul>
-                        <li>Major UI overhaul for timer controls based on feedback.</li>
-                        <li>Added a "Save & Update" button to apply time changes to the live timer immediately.</li>
-                        <li>Improved the "Reset to Start Time" button's reliability.</li>
+                        <li>**Custom Key Bindings:** Added a settings panel to customize keyboard shortcuts.</li>
+                        <li>**Team Color Management:** Added an option to clear saved team colors.</li>
+                        <li>**Score 2 Visibility:** Control moved to the main settings for stable hiding/showing.</li>
+                        <li>**Announcement:** Loads from <code>fcp_v2_assets/announcement.txt</code>.</li>
+                        <li>**Features:** Full Reset, Global Key Listener, Score 2 controls added.</li>
+                        <li>**UI:** Improved Help Sources to an easy-to-copy table format.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -135,6 +135,8 @@ export const translations = {
         toastFullReset: "Scoreboard fully reset",
         toastCopiedSourceName: "Copied source name:",
         toastSaved: "Saved",
+        toastKeybindsSaved: "Keybinds saved!", // NEW
+        toastColorsCleared: "Team color memory cleared!", // NEW
         toastObsError: "Failed to connect to OBS",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
         toastTimeSet: "Start time has been set and updated.",
@@ -160,6 +162,8 @@ export const translations = {
         hide: "ซ่อน",
         show: "แสดง",
         score2VisibilityGroup: "ควบคุมการแสดงผลคะแนน 2",
+        resetKeybinds: "รีเซ็ตคีย์ลัด", // NEW
+        resetColors: "ล้างหน่วยความจำสีทีม", // NEW
         half: "ครึ่ง",
         injuryTime: "ทดเวลา",
         countdown: "นับถอยหลัง",
@@ -172,9 +176,24 @@ export const translations = {
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
         changelog: "อัปเดตเวอร์ชัน 2.6",
-        detailsTitle: "ตั้งค่าข้อความประกาศ",
-        detailsDesc: "สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ",
-        tagsTitle: "Tags ที่ใช้งานได้",
+        detailsTitle: "ตั้งค่า & ข้อความประกาศ", // Changed title
+        detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง", // Changed description
+        tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ", // Changed title
+        keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)", // NEW
+        keybindsList: [ // NEW
+            { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
+            { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
+            { id: "scoreB_plus", label: "+ คะแนน B (หลัก)", default: "4" },
+            { id: "scoreB_minus", label: "- คะแนน B (หลัก)", default: "5" },
+            { id: "score2A_plus", label: "+ คะแนน A (รอง)", default: "7" },
+            { id: "score2A_minus", label: "- คะแนน A (รอง)", default: "8" },
+            { id: "score2B_plus", label: "+ คะแนน B (รอง)", default: "9" },
+            { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "0" },
+            { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: " " },
+            { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "F10" },
+            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
+            { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- ชื่อทีม A' },
             { code: '&lt;TeamB&gt;', desc: '- ชื่อทีม B' },
@@ -233,29 +252,12 @@ export const translations = {
                  <li>
                     <h5>เวอร์ชัน 2.6 (ล่าสุด)</h5>
                     <ul>
-                        <li>**ย้ายการควบคุมการแสดงผลคะแนน 2** ไปที่ Popup ตั้งค่าข้อความประกาศ เพื่อป้องกันปัญหาการซ่อน/แสดงที่ไม่ได้ตั้งใจ.</li>
-                        <li>**ข้อความประกาศ** ถูกเปลี่ยนให้โหลดจากไฟล์ภายใน <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>เพิ่มส่วนควบคุม **คะแนน 2** (เช่น สำหรับฟาวล์/แต้มในฟุตซอล).</li>
-                        <li>เพิ่มระบบ **จดจำสีทีม**: ระบบจะจำค่าสีล่าสุดของชื่อทีมที่ใช้.</li>
-                        <li>เพิ่ม **Global Keyboard Listener** เพื่อให้สามารถควบคุมปุ่มลัดผ่าน Dock UI ได้ แม้จะกด Dock UI ค้างไว้.</li>
-                        <li>เพิ่มปุ่ม **รีเซ็ตทั้งหมด** เพื่อรีเซ็ตคะแนน, เวลา (เป็น 00:00), และครึ่งเวลา (เป็น 1st) ในคลิกเดียว.</li>
-                        <li>ปรับปรุงส่วน **วิธีใช้/Sources** ให้เป็นรูปแบบตารางที่อ่านง่าย.</li>
-                        <li>เมื่อคลิกที่ชื่อ Source ในตารางวิธีใช้ จะทำการ **คัดลอกชื่อ** ไปยังคลิปบอร์ด.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.5</h5>
-                    <ul>
-                        <li>ย้ายการตั้งค่าที่อยู่โฟลเดอร์โลโก้ไปไว้ใน Popup.</li>
-                        <li>เพิ่มความสามารถในการกำหนดสีที่สองสำหรับแต่ละทีม.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.4</h5>
-                    <ul>
-                        <li>ปรับปรุง UI ส่วนควบคุมเวลาครั้งใหญ่ตามที่ผู้ใช้แนะนำ.</li>
-                        <li>เพิ่มปุ่ม "บันทึกและอัปเดต" เพื่อให้แก้ไขและแสดงผลเวลาใหม่ทันที.</li>
-                        <li>ปรับปรุงการทำงานของปุ่ม "คืนค่าเวลา" ให้เสถียรขึ้น.</li>
+                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดเพื่อปรับเปลี่ยนปุ่มควบคุมได้ตามต้องการ</li>
+                        <li>**จัดการสีทีม:** เพิ่มปุ่มล้างหน่วยความจำสีทีมที่บันทึกไว้</li>
+                        <li>**การแสดงผลคะแนน 2:** ย้ายการควบคุมไปที่หน้าต่างตั้งค่าหลักเพื่อความเสถียร</li>
+                        <li>**ข้อความประกาศ:** โหลดจากไฟล์ <code>fcp_v2_assets/announcement.txt</code></li>
+                        <li>**ฟีเจอร์:** เพิ่มปุ่มรีเซ็ตทั้งหมด (Full Reset) และ Global Key Listener</li>
+                        <li>**UI:** ปรับปรุงตาราง Source ในหน้าช่วยเหลือให้สามารถคัดลอกชื่อได้ง่าย</li>
                     </ul>
                 </li>
             </ul>`,
@@ -272,6 +274,8 @@ export const translations = {
         toastFullReset: "รีเซ็ตสกอร์บอร์ดทั้งหมดแล้ว",
         toastCopiedSourceName: "คัดลอกชื่อ Source แล้ว:",
         toastSaved: "บันทึกแล้ว",
+        toastKeybindsSaved: "บันทึกคีย์ลัดแล้ว!", // NEW
+        toastColorsCleared: "ล้างหน่วยความจำสีทีมแล้ว!", // NEW
         toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
@@ -297,6 +301,8 @@ export const translations = {
         hide: "ເຊື່ອງ",
         show: "ສະແດງ",
         score2VisibilityGroup: "ຄວບຄຸມການສະແດງຄະແນນ 2",
+        resetKeybinds: "ຣີເຊັດຄีย์ລັດ",
+        resetColors: "ລ້າງໜ່ວຍຄວາມຈຳສີທີມ",
         half: "ເຄິ່ງ",
         injuryTime: "ທົດເວລາ",
         countdown: "ນັບຖອຍຫຼັງ",
@@ -309,9 +315,24 @@ export const translations = {
         donate: "ສະໜັບສະໜູນ",
         footerAppName: "OBS Dock UI Scoreboard",
         changelog: "ອັບເດດເວີຊັ່ນ 2.6",
-        detailsTitle: "ຕັ້ງຄ່າຂໍ້ຄວາມປະກາດ",
-        detailsDesc: "ສ້າງຂໍ້ຄວາມໂດຍໃຊ້ແທັກຂ້າງລຸ່ມເພື່ອດຶງຂໍ້ມູນອັດຕະໂນມັດ.",
-        tagsTitle: "ແທັກທີ່ໃຊ້ໄດ້",
+        detailsTitle: "ຕັ້ງຄ່າ & ຂໍ້ຄວາມປະກາດ",
+        detailsDesc: "ປັບແຕ່ງການຕັ້ງຄ່າທົ່ວໄປດ້ານລຸ່ມ.",
+        tagsTitle: "ແທັກທີ່ໃຊ້ໄດ້ສຳລັບຂໍ້ຄວາມປະກາດ",
+        keybindsTitle: "ຕັ້ງຄ່າຄีย์ລັດ (Keyboard Shortcuts)",
+        keybindsList: [
+            { id: "scoreA_plus", label: "+ ຄະແນນ A (ຫຼັກ)", default: "1" },
+            { id: "scoreA_minus", label: "- ຄະແນນ A (ຫຼັກ)", default: "2" },
+            { id: "scoreB_plus", label: "+ ຄະແນນ B (ຫຼັກ)", default: "4" },
+            { id: "scoreB_minus", label: "- ຄະແນນ B (ຫຼັກ)", default: "5" },
+            { id: "score2A_plus", label: "+ ຄະແນນ A (ຮອງ)", default: "7" },
+            { id: "score2A_minus", label: "- ຄະແນນ A (ຮອງ)", default: "8" },
+            { id: "score2B_plus", label: "+ ຄະແນນ B (ຮອງ)", default: "9" },
+            { id: "score2B_minus", label: "- ຄະແນນ B (ຮອງ)", default: "0" },
+            { id: "timer_playpause", label: "ເລີ່ມ/ຢຸດ ເວລາ", default: " " },
+            { id: "timer_resetstart", label: "ຣີເຊັດໄປເວລາເລີ່ມຕົ້ນ", default: "F10" },
+            { id: "timer_togglehalf", label: "ສลับເຄິ່ງເວລາ", default: "F11" },
+            { id: "full_reset", label: "ຣີເຊັດທັງໝົດ", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- ຊື່ທີມ A' },
             { code: '&lt;TeamB&gt;', desc: '- ຊື່ທີມ B' },
@@ -369,27 +390,12 @@ export const translations = {
             <ul class="changelog-list">
                 <li><h5>ເວີຊັ່ນ 2.6 (ລ່າສຸດ)</h5>
                     <ul>
-                        <li>**ຍ້າຍການຄວບຄຸມການສະແດງຜົນຄະແນນ 2** ໄປທີ່ Popup ຕັ້ງຄ່າຂໍ້ຄວາມປະກາດ ເພື່ອປ້ອງກັນບັນຫາການເຊື່ອງ/ສະແດງທີ່ບໍ່ໄດ້ຕັ້ງໃຈ.</li>
-                        <li>**ຂໍ້ຄວາມປະກາດ** ຖືກປ່ຽນໃຫ້ໂຫຼດຈາກໄຟລ໌ພາຍໃນ <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>ເພີ່ມສ່ວນຄວບຄຸມ **ຄະແນນ 2** (ຕົວຢ່າງ: ສຳລັບຟາວ/ນັບໃນຟຸດຊໍ).</li>
-                        <li>ເພີ່ມລະບົບ **ຈື່ຈຳສີທີມ**: ລະບົບຈະຈື່ຄ່າສີຫຼ້າສຸດທີ່ຕັ້ງໄວ້ສຳລັບຊື່ທີມ.</li>
-                        <li>ເພີ່ມ **Global Keyboard Listener** ເພື່ອໃຫ້ສາມາດຄວບຄຸມປຸ່ມລັດຜ່ານ Dock UI ໄດ້ ເຖິງແມ່ນວ່າ Dock UI ຈະມີ Focus.</li>
-                        <li>ເພີ່ມປຸ່ມ **ຣີເຊັດທັງໝົດ** ເພື່ອຣີເຊັດຄະແນນ, ເວລາ (ເປັນ 00:00), ແລະ ເຄິ່ງເວລາ (ເປັນ 1st) ໃນຄລິກດຽວ.</li>
-                        <li>ປັບປຸງສ່ວນ **ວິທີໃຊ້/Sources** ໃຫ້ເປັນຮູບແບບຕາຕະລາງທີ່ອ່ານງ່າຍ.</li>
-                        <li>ເມື່ອກົດທີ່ຊື່ Source ໃນຕາຕະລາງວິທີໃຊ້ ຈະເຮັດການ **ສຳເນົາຊື່** ໄປຍັງ Clipboard.</li>
-                    </ul>
-                </li>
-                <li><h5>ເວີຊັ່ນ 2.5</h5>
-                    <ul>
-                        <li>ຍ້າຍການຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້ໄປໄວ້ໃນ Popup.</li>
-                        <li>ເພີ່ມຕົວເລືອກສີທີສອງສຳລັບແຕ່ລະທີມ.</li>
-                    </ul>
-                </li>
-                <li><h5>ເວີຊັ່ນ 2.4</h5>
-                    <ul>
-                        <li>ປັບປຸງ UI ຄວບຄຸມເວລາຕາມຄຳແນະນຳ.</li>
-                        <li>ເພີ່ມປຸ່ມ "ບັນທຶກ ແລະ ອັບເດດ" ເພື່ອໃຊ້ການປ່ຽນແປງເວລາທັນທີ.</li>
-                        <li>ປັບປຸງຄວາມໜ້າເຊື່ອຖືຂອງປຸ່ມ 'ຣີເຊັດເປັນເວລາເລີ່ມຕົ້ນ'.</li>
+                        <li>**ຄีย์ລັດກຳນົດເອງ:** ເພີ່ມແຜງຕັ້ງຄ່າຄีย์ລັດເພື່ອປັບປ່ຽນປຸ່ມຄວບຄຸມໄດ້ຕາມຕ້ອງການ.</li>
+                        <li>**ຈັດການສີທີມ:** ເພີ່ມປຸ່ມລ້າງໜ່ວຍຄວາມຈຳສີທີມທີ່ບັນທຶກໄວ້.</li>
+                        <li>**ການສະແດງຜົນຄະແນນ 2:** ຍ້າຍການຄວບຄຸມໄປທີ່ໜ້າຕ່າງຕັ້ງຄ່າຫຼັກເພື່ອຄວາມສະຖຽນ.</li>
+                        <li>**ຂໍ້ຄວາມປະກາດ:** ໂຫຼດຈາກໄຟລ໌ <code>fcp_v2_assets/announcement.txt</code>.</li>
+                        <li>**ຄຸນສົມບັດ:** ເພີ່ມປຸ່ມຣີເຊັດທັງໝົດ (Full Reset) ແລະ Global Key Listener.</li>
+                        <li>**UI:** ປັບປຸງຕາຕະລາງ Source ໃນໜ້າຊ່ວຍເຫຼືອໃຫ້ສາມາດສຳເນົາຊື່ໄດ້ງ່າຍ.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -406,6 +412,8 @@ export const translations = {
         toastFullReset: "ຣີເຊັດກະດານຄະແນນທັງໝົດແລ້ວ",
         toastCopiedSourceName: "ສຳເນົາຊື່ Source ແລ້ວ:",
         toastSaved: "ບັນທຶກແລ້ວ",
+        toastKeybindsSaved: "ບັນທຶກຄีย์ລັດແລ້ວ!",
+        toastColorsCleared: "ລ້າງໜ່ວຍຄວາມຈຳສີທີມແລ້ວ!",
         toastObsError: "ເຊື່ອມຕໍ່ OBS ບໍ່ສຳເລັດ",
         toastInvalidTime: "ຮູບແບບເວລາບໍ່ຖືກຕ້ອງ. ກະລຸນາກວດສອບນາທີ ແລະ ວິນາທີ (0-59).",
         toastTimeSet: "ໄດ້ຕັ້ງ ແລະ ອັບເດດເວລາເລີ່ມຕົ້ນແລ້ວ.",
@@ -431,6 +439,8 @@ export const translations = {
         hide: "숨기기",
         show: "표시",
         score2VisibilityGroup: "점수 2 표시 제어",
+        resetKeybinds: "키보드 단축키 재설정",
+        resetColors: "팀 색상 메모리 지우기",
         half: "전/후반",
         injuryTime: "추가 시간",
         countdown: "카운트다운",
@@ -443,9 +453,24 @@ export const translations = {
         donate: "후원",
         footerAppName: "OBS Dock UI 스코어보드",
         changelog: "업데이트 버전 2.6",
-        detailsTitle: "공지 텍스트 설정",
-        detailsDesc: "아래 태그를 사용하여 데이터를 자동으로 가져오는 메시지를 만드세요.",
-        tagsTitle: "사용 가능한 태그",
+        detailsTitle: "설정 및 공지",
+        detailsDesc: "아래에서 일반 설정을 사용자 지정합니다.",
+        tagsTitle: "공지사항에 사용 가능한 태그",
+        keybindsTitle: "사용자 지정 키보드 단축키",
+        keybindsList: [
+            { id: "scoreA_plus", label: "+ 점수 A (메인)", default: "1" },
+            { id: "scoreA_minus", label: "- 점수 A (메인)", default: "2" },
+            { id: "scoreB_plus", label: "+ 점수 B (메인)", default: "4" },
+            { id: "scoreB_minus", label: "- 점수 B (메인)", default: "5" },
+            { id: "score2A_plus", label: "+ 점수 A (보조)", default: "7" },
+            { id: "score2A_minus", label: "- 점수 A (보조)", default: "8" },
+            { id: "score2B_plus", label: "+ 점수 B (보조)", default: "9" },
+            { id: "score2B_minus", label: "- 점수 B (보조)", default: "0" },
+            { id: "timer_playpause", label: "타이머 시작/정지", default: " " },
+            { id: "timer_resetstart", label: "시작 시간으로 재설정", default: "F10" },
+            { id: "timer_togglehalf", label: "전/후반 전환", default: "F11" },
+            { id: "full_reset", label: "전체 재설정", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- 팀 A 이름' },
             { code: '&lt;TeamB&gt;', desc: '- 팀 B 이름' },
@@ -503,27 +528,12 @@ export const translations = {
             <ul class="changelog-list">
                 <li><h5>버전 2.6 (최신)</h5>
                     <ul>
-                        <li>점수 2 제어 섹션의 **표시 제어**를 아나운스 텍스트 설정 팝업으로 이동하여 의도하지 않은 숨김/표시 버그를 방지했습니다.</li>
-                        <li>**공지 텍스트**가 이제 로컬 파일 <code>fcp_v2_assets/announcement.txt</code> 에서 로드됩니다.</li>
-                        <li>**점수 2** 제어 섹션(예: 풋살의 파울/횟수)을 추가했습니다.</li>
-                        <li>**팀 색상 메모리** 구현: 시스템이 팀 이름에 대해 마지막으로 설정된 색상을 기억합니다.</li>
-                        <li>Dock UI에 초점이 맞춰져 있을 때 Dock UI를 통해 단축키 제어를 허용하는 **전역 키보드 리스너**를 추가했습니다.</li>
-                        <li>두 점수, 타이머(00:00으로), 전/후반(1st로)을 한 번의 클릭으로 재설정하는 **전체 재설정** 버튼을 추가했습니다.</li>
-                        <li>**도움말/소스** 섹션을 읽기 쉬운 표로 개선했습니다.</li>
-                        <li>도움말 표에서 소스 이름을 클릭하면 클립보드에 **이름이 복사**됩니다.</li>
-                    </ul>
-                </li>
-                <li><h5>버전 2.5</h5>
-                    <ul>
-                        <li>로고 폴더 경로 설정을 전용 팝업으로 이동했습니다.</li>
-                        <li>각 팀에 대한 보조 색상 옵션을 추가했습니다。</li>
-                    </ul>
-                </li>
-                 <li><h5>버전 2.4</h5>
-                    <ul>
-                        <li>피드백에 따라 타이머 제어 UI가 크게 개편되었습니다.</li>
-                        <li>시간 변경 사항을 즉시 적용하기 위해 "저장 및 업데이트" 버튼이 추가되었습니다.</li>
-                        <li>"시작 시간으로 재설정" 버튼의 안정성이 향상되었습니다.</li>
+                        <li>**사용자 지정 키보드 단축키:** 키보드 단축키를 사용자 지정할 수 있는 설정 패널을 추가했습니다.</li>
+                        <li>**팀 색상 관리:** 저장된 팀 색상 메모리를 지우는 옵션을 추가했습니다.</li>
+                        <li>**점수 2 표시:** 안정적인 숨기기/표시를 위해 제어 기능을 주 설정 창으로 옮겼습니다.</li>
+                        <li>**공지 사항:** <code>fcp_v2_assets/announcement.txt</code> 파일에서 로드됩니다.</li>
+                        <li>**기능:** 전체 재설정 및 글로벌 키 리스너 제어 기능 추가.</li>
+                        <li>**UI:** 도움말 소스 목록을 복사하기 쉬운 테이블 형식으로 개선했습니다.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -540,6 +550,8 @@ export const translations = {
         toastFullReset: "스코어보드 전체 재설정됨",
         toastCopiedSourceName: "소스 이름 복사됨:",
         toastSaved: "저장됨",
+        toastKeybindsSaved: "키보드 단축키가 저장되었습니다!",
+        toastColorsCleared: "팀 색상 메모리가 지워졌습니다!",
         toastObsError: "OBS 연결 실패",
         toastInvalidTime: "잘못된 시간 형식입니다. 분과 초(0-59)를 확인하세요。",
         toastTimeSet: "시작 시간이 설정 및 업데이트되었습니다。",
@@ -565,6 +577,8 @@ export const translations = {
         hide: "លាក់",
         show: "បង្ហាញ",
         score2VisibilityGroup: "គ្រប់គ្រងការបង្ហាញពិន្ទុ 2",
+        resetKeybinds: "កំណត់ផ្លូវកាត់ឡើងវិញ",
+        resetColors: "លុបសតិពណ៌ក្រុម",
         half: "តង់",
         injuryTime: "ម៉ោងបន្ថែម",
         countdown: "រាប់ថយក្រោយ",
@@ -577,9 +591,24 @@ export const translations = {
         donate: "គាំទ្រ",
         footerAppName: "OBS Dock UI Scoreboard",
         changelog: "អัปដេតកំណែ 2.6",
-        detailsTitle: "ការកំណត់អត្ថបទប្រកាស",
-        detailsDesc: "បង្កើតសារដោយប្រើស្លាកខាងក្រោមដើម្បីទាញទិន្នន័យដោយស្វ័យប្រវត្តិ។",
-        tagsTitle: "ស្លាកដែលមាន",
+        detailsTitle: "ការកំណត់ និងការប្រកាស",
+        detailsDesc: "ប្ដូរការកំណត់ទូទៅខាងក្រោមតាមតម្រូវការ។",
+        tagsTitle: "ស្លាកដែលមានសម្រាប់ការប្រកាស",
+        keybindsTitle: "ផ្លូវកាត់ក្តារចុចផ្ទាល់ខ្លួន (Keyboard Shortcuts)",
+        keybindsList: [
+            { id: "scoreA_plus", label: "+ ពិន្ទុ A (ចម្បង)", default: "1" },
+            { id: "scoreA_minus", label: "- ពិន្ទុ A (ចម្បង)", default: "2" },
+            { id: "scoreB_plus", label: "+ ពិន្ទុ B (ចម្បង)", default: "4" },
+            { id: "scoreB_minus", label: "- ពិន្ទុ B (ចម្បង)", default: "5" },
+            { id: "score2A_plus", label: "+ ពិន្ទុ A (បន្ទាប់បន្សំ)", default: "7" },
+            { id: "score2A_minus", label: "- ពិន្ទុ A (បន្ទាប់បន្សំ)", default: "8" },
+            { id: "score2B_plus", label: "+ ពិន្ទុ B (បន្ទាប់បន្សំ)", default: "9" },
+            { id: "score2B_minus", label: "- ពិន្ទុ B (បន្ទាប់បន្សំ)", default: "0" },
+            { id: "timer_playpause", label: "ចាប់ផ្ដើម/ផ្អាក ម៉ោង", default: " " },
+            { id: "timer_resetstart", label: "កំណត់ម៉ោងចាប់ផ្ដើមឡើងវិញ", default: "F10" },
+            { id: "timer_togglehalf", label: "ប្ដូរតង់", default: "F11" },
+            { id: "full_reset", label: "កំណត់ឡើងវិញទាំងអស់", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- ឈ្មោះក្រុម A' },
             { code: '&lt;TeamB&gt;', desc: '- ឈ្មោះក្រុម B' },
@@ -637,27 +666,12 @@ export const translations = {
             <ul class="changelog-list">
                 <li><h5>ជំនាន់ 2.6 (ថ្មីបំផុត)</h5>
                     <ul>
-                        <li>បាន**ផ្លាស់ទីការគ្រប់គ្រងការបង្ហាញពិន្ទុ 2** ទៅកាន់ Popup ការកំណត់អត្ថបទប្រកាស ដើម្បីទប់ស្កាត់ Bug ការលាក់/បង្ហាញដែលមិនបានរំពឹងទុក.</li>
-                        <li>**អត្ថបទប្រកាស** ត្រូវបានផ្លាស់ប្តូរទៅជាការផ្ទុកពីឯកសារក្នុងស្រុកនៅ <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>បានបន្ថែមផ្នែកគ្រប់គ្រង **ពិន្ទុ 2** (ឧទាហរណ៍ សម្រាប់ហ្វូល/រាប់នៅក្នុងហ្វូតសាល)។</li>
-                        <li>បានអនុវត្ត **Team Color Memory**: ប្រព័ន្ធឥឡូវនេះចងចាំពណ៌ចុងក្រោយដែលបានកំណត់សម្រាប់ឈ្មោះក្រុម។</li>
-                        <li>បានបន្ថែម **Global Keyboard Listener** ដើម្បីអនុញ្ញាតឱ្យមានការควบคุมផ្លូវកាត់តាមរយៈ Dock UI បាន ទោះបីជា Dock UI មាន Focus ក៏ដោយ។</li>
-                        <li>បានបន្ថែមប៊ូតុង **កំណត់ឡើងវិញទាំងអស់** ដើម្បីកំណត់ពិន្ទុទាំងពីរ, កម្មវិធីកំណត់ពេល (ទៅ 00:00), និងតង់ (ទៅ 1st) ក្នុងការចុចតែម្តង។</li>
-                        <li>បានកែលម្អផ្នែក **ជំនួយ/Sources** ទៅជាតារាងដែលងាយស្រួលអាន.</li>
-                        <li>ការចុចឈ្មោះ Source នៅក្នុងតារាងជំនួយឥឡូវនេះ **ចម្លងឈ្មោះ** ទៅកាន់ក្តារតម្បៀតខ្ទាស់.</li>
-                    </ul>
-                </li>
-                <li><h5>ជំនាន់ 2.5</h5>
-                    <ul>
-                        <li>បានផ្លាស់ទីការកំណត់ផ្លូវថតនិមិត្តសញ្ញាទៅក្នុង Popup មួយ។</li>
-                        <li>បានបន្ថែមជម្រើសពណ៌ទីពីរសម្រាប់ក្រុមនីមួយៗ។</li>
-                    </ul>
-                </li>
-                <li><h5>ជំនាន់ 2.4</h5>
-                    <ul>
-                        <li>ការកែប្រែ UI ដ៏ធំសម្រាប់ការควบคุมកម្មវិធីកំណត់ម៉ោងដោយផ្អែកលើមតិកែលម្អ។</li>
-                        <li>បានបន្ថែមប៊ូតុង "រក្សាទុក & ធ្វើបច្ចុប្បន្នភាព" ដើម្បីអនុវត្តការផ្លាស់ប្តូរពេលវេលាភ្លាមៗ។</li>
-                        <li>បានធ្វើឱ្យប្រសើរឡើងនូវភាពជឿជាក់នៃប៊ូតុង 'កំណត់ឡើងវិញទៅម៉ោងចាប់ផ្តើម' ។</li>
+                        <li>**ផ្លូវកាត់ផ្ទាល់ខ្លួន:** បានបន្ថែមផ្ទាំងកំណត់ផ្លូវកាត់ក្តារចុចដើម្បីប្ដូរការគ្រប់គ្រងតាមតម្រូវការ។</li>
+                        <li>**ការគ្រប់គ្រងពណ៌ក្រុម:** បានបន្ថែមជម្រើសលុបសតិពណ៌ក្រុមដែលបានរក្សាទុក។</li>
+                        <li>**ការបង្ហាញពិន្ទុ 2:** ការគ្រប់គ្រងត្រូវបានផ្លាស់ទៅបង្អួចកំណត់សំខាន់សម្រាប់ការលាក់/បង្ហាញដែលមានស្ថេរភាព។</li>
+                        <li>**ការប្រកាស:** ផ្ទុកពីឯកសារ <code>fcp_v2_assets/announcement.txt</code>។</li>
+                        <li>**លក្ខណៈពិសេស:** បានបន្ថែមការកំណត់ឡើងវិញទាំងស្រុង និងការគ្រប់គ្រង Global Key Listener។</li>
+                        <li>**UI:** បានកែលម្អ Sources ជំនួយទៅជាទម្រង់តារាងដែលងាយស្រួលចម្លង។</li>
                     </ul>
                 </li>
             </ul>`,
@@ -674,6 +688,8 @@ export const translations = {
         toastFullReset: "បានកំណត់តារាងពិន្ទុឡើងវិញទាំងអស់",
         toastCopiedSourceName: "បានចម្លងឈ្មោះ Source:",
         toastSaved: "បានរក្សាទុក",
+        toastKeybindsSaved: "បានរក្សាទុកផ្លូវកាត់ក្តារចុចហើយ!",
+        toastColorsCleared: "បានលុបសតិពណ៌ក្រុមហើយ!",
         toastObsError: "ការភ្ជាប់ទៅ OBS បានបរាជ័យ",
         toastInvalidTime: "ទម្រង់ម៉ោងមិនត្រឹមត្រូវ។ សូមពិនិត្យមើលនាទី និងវិនាទី (0-59)។",
         toastTimeSet: "បានកំណត់ម៉ោងចាប់ផ្តើម និងធ្វើបច្ចុប្បន្នភាពហើយ។",
@@ -699,6 +715,8 @@ export const translations = {
         hide: "非表示",
         show: "表示",
         score2VisibilityGroup: "スコア 2 表示制御",
+        resetKeybinds: "キーバインドをリセット",
+        resetColors: "チームカラーメモリをクリア",
         half: "ハーフ",
         injuryTime: "追加時間",
         countdown: "カウントダウン",
@@ -711,9 +729,24 @@ export const translations = {
         donate: "寄付",
         footerAppName: "OBS Dock UI スコアボード",
         changelog: "更新バージョン 2.6",
-        detailsTitle: "アナウンス テキスト設定",
-        detailsDesc: "以下のタグを使用して、データを自動的に取得するメッセージを作成します。",
-        tagsTitle: "利用可能なタグ",
+        detailsTitle: "設定とアナウンス",
+        detailsDesc: "以下の一般設定をカスタマイズします。",
+        tagsTitle: "アナウンスに利用可能なタグ",
+        keybindsTitle: "カスタムキーボードショートカット",
+        keybindsList: [
+            { id: "scoreA_plus", label: "+ スコア A (メイン)", default: "1" },
+            { id: "scoreA_minus", label: "- スコア A (メイン)", default: "2" },
+            { id: "scoreB_plus", label: "+ スコア B (メイン)", default: "4" },
+            { id: "scoreB_minus", label: "- スコア B (メイン)", default: "5" },
+            { id: "score2A_plus", label: "+ スコア A (サブ)", default: "7" },
+            { id: "score2A_minus", label: "- スコア A (サブ)", default: "8" },
+            { id: "score2B_plus", label: "+ スコア B (サブ)", default: "9" },
+            { id: "score2B_minus", label: "- スコア B (サブ)", default: "0" },
+            { id: "timer_playpause", label: "タイマー再生/一時停止", default: " " },
+            { id: "timer_resetstart", label: "開始時間にリセット", default: "F10" },
+            { id: "timer_togglehalf", label: "ハーフ切り替え", default: "F11" },
+            { id: "full_reset", label: "全リセット", default: "F12" },
+        ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: '- チーム A 名' },
             { code: '&lt;TeamB&gt;', desc: '- チーム B 名' },
@@ -771,27 +804,12 @@ export const translations = {
             <ul class="changelog-list">
                 <li><h5>バージョン 2.6 (最新)</h5>
                     <ul>
-                        <li>スコア 2 制御セクションの**表示制御**をアナウンス テキスト設定ポップアップに移動し、意図しない非表示/表示バグを防ぎました。</li>
-                        <li>**アナウンス テキスト**がローカルファイル <code>fcp_v2_assets/announcement.txt</code> からロードされるようになりました。</li>
-                        <li>**スコア 2** 制御セクション (例: フットサルのファウル/カウント) を追加しました。</li>
-                        <li>**チームカラー記憶**を実装: 最後に設定された色をチーム名ごとに記憶します。</li>
-                        <li>Dock UI にフォーカスがある状態でも、Dock UI 経由でショートカット制御を許可する **グローバル キーボード リスナー** を追加しました。</li>
-                        <li>両スコア、タイマー (00:00 に)、ハーフ (1st に) をワンクリックでリセットする **全リセット** ボタンを追加しました。</li>
-                        <li>**ヘルプ/ソース** セクションを読みやすいテーブル形式に改善しました。</li>
-                        <li>ヘルプテーブルのソース名をクリックすると、クリップボードに**名前がコピー**されます。</li>
-                    </ul>
-                </li>
-                <li><h5>バージョン 2.5</h5>
-                    <ul>
-                        <li>ロゴフォルダのパス設定を専用のポップアップに移動しました。</li>
-                        <li>各チームにサブカラーオプションを追加しました。</li>
-                    </ul>
-                </li>
-                <li><h5>バージョン 2.4</h5>
-                    <ul>
-                        <li>フィードバックに基づいてタイマー制御の UI を大幅に刷新しました。</li>
-                        <li>ライブタイマーにすぐに時間の変更を適用するための「保存して更新」ボタンを追加しました。</li>
-                        <li>「開始時間に戻す」ボタンの信頼性を向上させました。</li>
+                        <li>**カスタムキーボードショートカット:** キーボードショートカットをカスタマイズできる設定パネルを追加しました。</li>
+                        <li>**チームカラー管理:** 保存されたチームカラーメモリをクリアするオプションを追加しました。</li>
+                        <li>**スコア 2 表示:** 安定した非表示/表示のために、制御機能をメイン設定ウィンドウに移動しました。</li>
+                        <li>**アナウンス:** <code>fcp_v2_assets/announcement.txt</code> ファイルからロードされます。</li>
+                        <li>**機能:** 全リセットとグローバルキーリスナー制御機能を追加しました。</li>
+                        <li>**UI:** ヘルプソースリストをコピーしやすいテーブル形式に改善しました。</li>
                     </ul>
                 </li>
             </ul>`,
@@ -808,6 +826,8 @@ export const translations = {
         toastFullReset: "スコアボードが完全にリセットされました",
         toastCopiedSourceName: "ソース名をコピーしました:",
         toastSaved: "保存されました",
+        toastKeybindsSaved: "キーボードショートカットが保存されました!",
+        toastColorsCleared: "チームカラーメモリがクリアされました!",
         toastObsError: "OBS への接続に失敗しました",
         toastInvalidTime: "無効な時刻形式です。分と秒 (0-59) を確認してください。",
         toastTimeSet: "開始時間が設定され、更新されました。",

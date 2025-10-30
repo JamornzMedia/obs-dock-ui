@@ -8,8 +8,8 @@ const $ = id => document.getElementById(id);
 const elements = [
     "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
     "scoreA", "scoreB", 
-    "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn", // Score 2 control elements
-    "showScore2Btn", "hideScore2Btn", // NEW Visibility buttons in detailsPopup
+    "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
+    "showScore2Btn", "hideScore2Btn", // Visibility buttons
     "timerText", "halfText", "announcement-text", "matchID", 
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
@@ -22,7 +22,8 @@ const elements = [
     "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
     "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn",
     "logoPathBtn", "logoPathPopup", "currentLogoPath", "logoPathInput", "editLogoPathBtn", "closeLogoPathBtn",
-    "sourcesTableHeaders", "sourcesTableBody"
+    "sourcesTableHeaders", "sourcesTableBody",
+    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn" // NEW Keybind and Color Reset Elements
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -41,7 +42,8 @@ let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 const TEAM_COLORS_KEY = 'teamColorMemory';
-const SCORE2_VISIBILITY_KEY = 'score2Visible'; // State key for Score 2 visibility
+const SCORE2_VISIBILITY_KEY = 'score2Visible';
+const KEYBINDS_KEY = 'customKeybinds'; // NEW: Key for saving custom keybinds
 
 // --- OBS ---
 const obs = new OBSWebSocket();
@@ -123,6 +125,26 @@ const populateHelpTable = (lang) => {
     });
 };
 
+const populateKeybindsTable = (lang) => { // NEW: Populate Keybinds Table
+    const trans = translations[lang] || translations.en;
+    const keybindsList = trans.keybindsList || [];
+    const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
+
+    elements.keybindsTable.innerHTML = `<thead>
+        <tr><th>${trans.keybindsTitle.split('(')[0].trim()}</th><th>${trans.keybindsTitle.split('(')[1].replace(')', '').trim()}</th></tr>
+    </thead><tbody></tbody>`;
+    const tbody = elements.keybindsTable.querySelector('tbody');
+
+    keybindsList.forEach(item => {
+        const currentKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${item.label}</td>
+            <td><input type="text" id="keybind-${item.id}" value="${currentKey}" maxlength="10" placeholder="${item.default}"></td>
+        `;
+    });
+}
+
 const populateDynamicLists = (lang) => {
     const trans = translations[lang] || translations.en;
     // Details Popup
@@ -136,6 +158,8 @@ const populateDynamicLists = (lang) => {
             detailsListContainer.appendChild(listItem);
         });
     }
+    // Keybinds Table
+    populateKeybindsTable(lang);
     // Help Popup - Use new table function
     populateHelpTable(lang);
 };
@@ -182,6 +206,46 @@ const toggleScore2Visibility = (show) => {
     const isVisible = show;
     updateScore2ToggleUI(isVisible);
     localStorage.setItem(SCORE2_VISIBILITY_KEY, isVisible); // Save new state
+    showToast(isVisible ? translations[currentLang].show : translations[currentLang].hide, 'info');
+}
+
+const getStoredKeybinds = () => { // NEW: Load custom keybinds
+    const keybindsList = translations[currentLang].keybindsList || [];
+    const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
+    const activeKeybinds = {};
+    
+    keybindsList.forEach(item => {
+        const key = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
+        activeKeybinds[item.id] = key.trim().toUpperCase(); // Normalize key
+    });
+    
+    return activeKeybinds;
+}
+
+const saveKeybinds = () => { // NEW: Save custom keybinds
+    const keybindsList = translations[currentLang].keybindsList || [];
+    const newKeybinds = {};
+    
+    keybindsList.forEach(item => {
+        const inputElement = $(`keybind-${item.id}`);
+        if (inputElement) {
+            newKeybinds[item.id] = inputElement.value.trim().toUpperCase();
+        }
+    });
+    
+    localStorage.setItem(KEYBINDS_KEY, JSON.stringify(newKeybinds));
+    showToast(translations[currentLang].toastKeybindsSaved, 'success');
+}
+
+const resetKeybinds = () => { // NEW: Reset to default keybinds
+    localStorage.removeItem(KEYBINDS_KEY);
+    populateKeybindsTable(currentLang);
+    showToast(translations[currentLang].resetKeybinds, 'info');
+}
+
+const resetTeamColors = () => { // NEW: Clear saved team colors
+    localStorage.removeItem(TEAM_COLORS_KEY);
+    showToast(translations[currentLang].toastColorsCleared, 'info');
 }
 
 // --- Announcement (Updated to read local TXT file) ---
@@ -616,9 +680,15 @@ const setupEventListeners = () => {
     elements.score2BMinusBtn.addEventListener('click', () => changeScore2('B', -1));
     elements.resetScore2Btn.addEventListener('click', resetScore2);
     
-    // NEW: Visibility buttons in Details Popup
+    // Visibility buttons in Details Popup
     elements.showScore2Btn.addEventListener('click', () => toggleScore2Visibility(true));
     elements.hideScore2Btn.addEventListener('click', () => toggleScore2Visibility(false));
+
+    // Keybinds Control
+    elements.resetKeybindsBtn.addEventListener('click', resetKeybinds); // NEW
+    
+    // Team Color Reset
+    elements.resetColorsBtn.addEventListener('click', resetTeamColors); // NEW
 
     elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
@@ -627,7 +697,12 @@ const setupEventListeners = () => {
     elements.resetToZeroBtn.addEventListener('click', resetToZero);     
     elements.editTimeBtn.addEventListener('click', openTimeSettings);
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
-    elements.settingsBtn.addEventListener('click', () => { elements.detailsText.value = localStorage.getItem('detailsText') || ''; openPopup(elements.detailsPopup); });
+    elements.settingsBtn.addEventListener('click', () => { 
+        elements.detailsText.value = localStorage.getItem('detailsText') || ''; 
+        // Re-populate keybinds table on open to load latest saved/default values
+        populateKeybindsTable(currentLang); 
+        openPopup(elements.detailsPopup); 
+    });
     elements.copyBtn.addEventListener('click', copyDetails);
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
@@ -635,7 +710,12 @@ const setupEventListeners = () => {
     elements.popupOverlay.addEventListener('click', closeAllPopups);
     
     // Details Popup
-    elements.saveDetailsBtn.addEventListener('click', () => { localStorage.setItem('detailsText', elements.detailsText.value); closeAllPopups(); showToast(translations[currentLang].toastSaved, 'success'); });
+    elements.saveDetailsBtn.addEventListener('click', () => { 
+        localStorage.setItem('detailsText', elements.detailsText.value); 
+        saveKeybinds(); // Save keybinds when saving details
+        closeAllPopups(); 
+        showToast(translations[currentLang].toastSaved, 'success'); 
+    });
     elements.closeDetailsBtn.addEventListener('click', closeAllPopups);
     
     // Other Popups Close Buttons
@@ -703,44 +783,35 @@ const setupEventListeners = () => {
         // ตรวจสอบว่าไม่ได้อยู่ในช่อง input/textarea
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        // Key Bindings (ตัวอย่าง)
-        // Score 1: 1 = +A, 2 = -A, 9 = +B, 0 = -B
-        // Score 2: 3 = +A2, 4 = -A2, 7 = +B2, 8 = -B2
-        // Timer: Space/F9 = Play/Pause, F10 = Reset to Start Time, F11 = Half, F12 = Full Reset
-        
-        switch (e.key) {
-            // Score 1
-            case '1': changeScore('A', 1); break;
-            case '2': changeScore('A', -1); break;
-            case '9': changeScore('B', 1); break;
-            case '0': changeScore('B', -1); break;
-            // Score 2 (Fouls/Counts)
-            case '3': changeScore2('A', 1); break;
-            case '4': changeScore2('A', -1); break;
-            case '7': changeScore2('B', 1); break;
-            case '8': changeScore2('B', -1); break;
-            // Timer Control
-            case ' ': // Spacebar for Play/Pause
-            case 'F9':
-                e.preventDefault();
-                if (interval) { stopTimer(); } else { startTimer(); }
+        const keybinds = getStoredKeybinds();
+        const pressedKey = (e.key === ' ' ? 'SPACE' : e.key).toUpperCase();
+
+        let action = null;
+        for (const [id, key] of Object.entries(keybinds)) {
+            if (key === pressedKey) {
+                action = id;
                 break;
-            case 'F10':
-                e.preventDefault();
-                resetToStartTime();
-                break;
-            case 'F11':
-                e.preventDefault();
-                toggleHalf();
-                break;
-            case 'F12':
-                e.preventDefault();
-                fullReset();
-                break;
-            default:
-                return;
+            }
         }
-        e.preventDefault(); // ป้องกันการทำงานเริ่มต้นของเบราว์เซอร์
+        
+        if (action) {
+            e.preventDefault(); 
+            switch (action) {
+                case 'scoreA_plus': changeScore('A', 1); break;
+                case 'scoreA_minus': changeScore('A', -1); break;
+                case 'scoreB_plus': changeScore('B', 1); break;
+                case 'scoreB_minus': changeScore('B', -1); break;
+                case 'score2A_plus': changeScore2('A', 1); break;
+                case 'score2A_minus': changeScore2('A', -1); break;
+                case 'score2B_plus': changeScore2('B', 1); break;
+                case 'score2B_minus': changeScore2('B', -1); break;
+                case 'timer_playpause': if (interval) { stopTimer(); } else { startTimer(); }; break;
+                case 'timer_resetstart': resetToStartTime(); break;
+                case 'timer_togglehalf': toggleHalf(); break;
+                case 'full_reset': fullReset(); break;
+                default: return;
+            }
+        }
     });
 };
 

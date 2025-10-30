@@ -30,7 +30,7 @@
         .card {
             background-color: var(--card-bg-color); border-radius: var(--border-radius);
             padding: 12px; border: 1px solid var(--border-color);
-            transition: max-height 0.3s ease-out, padding 0.3s ease-out; /* Added for collapse effect */
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
         }
         .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
         .row:last-child { margin-bottom: 0; }
@@ -141,7 +141,7 @@
         }
         .score2-card .score-display-group #score2Label { display: none; }
         
-        .timer-area-container { align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
+        .timer-area-container { display: flex; align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
         .timer-display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 100px; }
         .timer-display { font-size: 2.5em; font-weight: 600; text-align: center; letter-spacing: 1px; margin:0; line-height: 1.1; }
         
@@ -164,6 +164,12 @@
         .item-list td { color: var(--text-muted-color); }
         .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
         .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
+        /* NEW: Keybind Table Styles */
+        .keybind-table input[type="text"] { width: 60px; padding: 4px; text-align: center; font-size: 0.9rem;}
+        .keybind-table td { white-space: nowrap; }
+        .keybind-table td:nth-child(2) { width: 100px; }
+        .keybind-table button { padding: 4px 8px; font-size: 0.8rem; }
+
 
         .changelog-list { list-style: none; padding-left: 0; }
         .changelog-list li { margin-bottom: 15px; }
@@ -351,11 +357,18 @@
     <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
         <p data-lang="detailsDesc"></p>
+
         <textarea id="detailsText"></textarea>
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
         </div>
-
+        
+        <div class="popup-divider"></div>
+        <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
+        <table class="keybind-table" id="keybindsTable"></table>
+        <div class="row center" style="margin-top: 10px;">
+            <button id="resetKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetKeybinds"></span></button>
+        </div>
         <div class="popup-divider"></div>
         <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0;">
             <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="score2VisibilityGroup"></span></h4>
@@ -363,6 +376,10 @@
                 <button id="showScore2Btn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
                 <button id="hideScore2Btn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
             </div>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="row center" style="margin-bottom: 0;">
+            <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="saveDetailsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
