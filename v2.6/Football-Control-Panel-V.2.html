@@ -107,22 +107,22 @@
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
         
-        /* NEW: Styles for Score 2 */
+        /* Styles for Score 2 */
         #score2Card { 
-            max-height: 200px; /* Max height when visible */
+            max-height: 200px;
             opacity: 1;
             padding: 12px;
             margin-top: -5px; 
             background-color: #333333; 
             overflow: hidden;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out, margin-top 0.3s ease-out;
         }
         #score2Card.hidden {
             max-height: 0;
             opacity: 0;
             padding-top: 0;
             padding-bottom: 0;
-            margin-top: 0; /* Remove top margin when hidden */
+            margin-top: 0; 
         }
         .score2-control-container {
             display: flex;
@@ -139,7 +139,7 @@
             flex-direction: column;
             align-items: center;
         }
-        .score2-card .score-display-group #score2Label { display: none; } /* Hide the label */
+        .score2-card .score-display-group #score2Label { display: none; }
         
         .timer-area-container { align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
         .timer-display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 100px; }
@@ -264,13 +264,12 @@
                         <button id="score2AMinusBtn" class="minus">-</button>
                     </div>
                     <div class="score-display-group">
-                        <span id="score2Label" data-lang="score2Label"></span>
+                        <span id="score2Label" data-lang="score2Label" style="display: none;"></span>
                         <div class="score-display" id="score2A">0</div>
                     </div>
                     
                     <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; align-items: center;">
                         <button id="resetScore2Btn" class="btn-warning" style="padding: 4px 8px; flex-grow: 1;"><i class="fas fa-redo"></i> <span data-lang="reset"></span></button>
-                        <button id="toggleScore2Btn" class="btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;"><span data-lang="hide"></span></button>
                     </div>
                     
                     <div class="score-display-group">
@@ -355,6 +354,15 @@
         <textarea id="detailsText"></textarea>
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
+        </div>
+
+        <div class="popup-divider"></div>
+        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0;">
+            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="score2VisibilityGroup"></span></h4>
+            <div class="row center" style="margin-bottom: 0;">
+                <button id="showScore2Btn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
+                <button id="hideScore2Btn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
+            </div>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="saveDetailsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>

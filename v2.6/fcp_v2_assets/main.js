@@ -8,7 +8,8 @@ const $ = id => document.getElementById(id);
 const elements = [
     "nameA", "nameB", "label1", "label2", "label3", "logoA", "logoB", "initialsA", "initialsB",
     "scoreA", "scoreB", 
-    "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn", "toggleScore2Btn", // NEW Score 2 Elements
+    "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn", // Score 2 control elements
+    "showScore2Btn", "hideScore2Btn", // NEW Visibility buttons in detailsPopup
     "timerText", "halfText", "announcement-text", "matchID", 
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
@@ -40,7 +41,7 @@ let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 const TEAM_COLORS_KEY = 'teamColorMemory';
-const SCORE2_VISIBILITY_KEY = 'score2Visible'; // NEW: State key for Score 2 visibility
+const SCORE2_VISIBILITY_KEY = 'score2Visible'; // State key for Score 2 visibility
 
 // --- OBS ---
 const obs = new OBSWebSocket();
@@ -139,15 +140,11 @@ const populateDynamicLists = (lang) => {
     populateHelpTable(lang);
 };
 
-const updateScore2ToggleUI = (isVisible) => { // NEW
-    const trans = translations[currentLang] || translations.en;
-    const btnSpan = elements.toggleScore2Btn.querySelector('span');
+const updateScore2ToggleUI = (isVisible) => {
     if (isVisible) {
         elements.score2Card.classList.remove('hidden');
-        btnSpan.textContent = trans.hide;
     } else {
         elements.score2Card.classList.add('hidden');
-        btnSpan.textContent = trans.show;
     }
 }
 
@@ -177,36 +174,30 @@ const setLanguage = (lang) => {
     } else {
         editLogoPathBtnSpan.textContent = trans.save;
     }
-
-    // Update Score 2 Toggle Button
-    updateScore2ToggleUI(!elements.score2Card.classList.contains('hidden'));
     
     populateDynamicLists(lang);
 };
 
-const toggleScore2Visibility = () => { // NEW
-    const isVisible = elements.score2Card.classList.contains('hidden');
+const toggleScore2Visibility = (show) => {
+    const isVisible = show;
     updateScore2ToggleUI(isVisible);
     localStorage.setItem(SCORE2_VISIBILITY_KEY, isVisible); // Save new state
 }
 
-// --- Announcement ---
+// --- Announcement (Updated to read local TXT file) ---
 const fetchAnnouncement = async () => {
-    const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJSdeDl1kOIOD8OWpKQV2G-N01esBbbUcJjTle5Dxlyv0wrZiLezHuCyuvuDTw3iK78IGCyZTPrs0Y/pubhtml?gid=0&single=true';
+    const filePath = 'fcp_v2_assets/announcement.txt';
     try {
-        const response = await fetch(`${googleSheetUrl}&t=${new Date().getTime()}`);
+        const response = await fetch(filePath);
         if (!response.ok) {
-            elements.announcementText.textContent = `Error: ${response.status}`;
+            elements.announcementText.textContent = `Error loading announcement file: ${response.status}`;
             return;
         }
-        const htmlText = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
-        const firstCell = doc.querySelector('tbody td');
-        elements.announcementText.textContent = firstCell ? firstCell.textContent.trim() : "";
+        const text = await response.text();
+        elements.announcementText.textContent = text.trim();
     } catch (error) {
         console.error("Announcement fetch failed:", error);
-        elements.announcementText.textContent = "Load Failed";
+        elements.announcementText.textContent = "Load Failed (Check fcp_v2_assets/announcement.txt)";
     }
 };
 
@@ -333,7 +324,6 @@ const swapTeams = () => {
     [score2A, score2B] = [score2B, score2A];
     [currentLogoA, currentLogoB] = [currentLogoB, currentLogoA];
 
-    // Swap team data and apply UI/OBS updates. Note: names are swapped, but the colors assigned to OBS are correct.
     updateTeamUI('A', nameB, currentLogoB, colorB1, colorB2); 
     updateTeamUI('B', nameA, currentLogoA, colorA1, colorA2);
     
@@ -625,7 +615,10 @@ const setupEventListeners = () => {
     elements.score2BPlusBtn.addEventListener('click', () => changeScore2('B', 1));
     elements.score2BMinusBtn.addEventListener('click', () => changeScore2('B', -1));
     elements.resetScore2Btn.addEventListener('click', resetScore2);
-    elements.toggleScore2Btn.addEventListener('click', toggleScore2Visibility); // NEW Toggle button
+    
+    // NEW: Visibility buttons in Details Popup
+    elements.showScore2Btn.addEventListener('click', () => toggleScore2Visibility(true));
+    elements.hideScore2Btn.addEventListener('click', () => toggleScore2Visibility(false));
 
     elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
@@ -764,6 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedPath) {
         logoFolderPath = savedPath;
     }
+    // Load initial visibility state for Score 2
     const isScore2Visible = localStorage.getItem(SCORE2_VISIBILITY_KEY);
     // If null (first time), default to visible (true). Otherwise, use saved boolean value.
     const initialVisibility = isScore2Visible === null ? true : JSON.parse(isScore2Visible); 
@@ -774,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setLanguage(savedLang);
 
-    // Apply initial visibility state
+    // Apply initial visibility state for Score 2
     updateScore2ToggleUI(initialVisibility);
 
     resetToZero(); 
@@ -786,5 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
     
     fetchAnnouncement();
-    setInterval(fetchAnnouncement, 3600000);
+    // Re-fetch announcement every hour
+    setInterval(fetchAnnouncement, 3600000); 
 });
