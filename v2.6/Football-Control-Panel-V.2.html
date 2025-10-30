@@ -164,12 +164,12 @@
         .item-list td { color: var(--text-muted-color); }
         .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
         .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
-        /* NEW: Keybind Table Styles */
-        .keybind-table input[type="text"] { width: 60px; padding: 4px; text-align: center; font-size: 0.9rem;}
+        /* Keybind Table Styles */
+        .keybind-table input[type="text"] { width: 80px; padding: 4px; text-align: center; font-size: 0.9rem; margin-right: 5px; border: 1px solid var(--border-color); }
         .keybind-table td { white-space: nowrap; }
         .keybind-table td:nth-child(2) { width: 100px; }
-        .keybind-table button { padding: 4px 8px; font-size: 0.8rem; }
-
+        .keybind-table button { padding: 4px 8px; font-size: 0.8rem; height: 30px; width: 30px;}
+        .keybind-table .action-buttons { display: flex; gap: 5px; }
 
         .changelog-list { list-style: none; padding-left: 0; }
         .changelog-list li { margin-bottom: 15px; }
@@ -334,10 +334,6 @@
                 <select id="languageSelector" title="Select Language">
                     <option value="th">ภาษาไทย</option>
                     <option value="en">English</option>
-                    <option value="ko">한국어</option>
-                    <option value="lo">ພາສາລາວ</option>
-                    <option value="km">ភាសាខ្មែរ</option>
-                    <option value="jp">日本語</option>
                 </select>
             </div>
         </div>
@@ -362,6 +358,10 @@
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
         </div>
+        <div class="row center" style="margin-top: 15px;">
+            <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
+            <button id="closeDetailsBtnTop" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
+        </div>
         
         <div class="popup-divider"></div>
         <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
@@ -370,7 +370,7 @@
             <button id="resetKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetKeybinds"></span></button>
         </div>
         <div class="popup-divider"></div>
-        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0;">
+        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
             <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="score2VisibilityGroup"></span></h4>
             <div class="row center" style="margin-bottom: 0;">
                 <button id="showScore2Btn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
@@ -381,9 +381,9 @@
         <div class="row center" style="margin-bottom: 0;">
             <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>
         </div>
-        <div class="row center" style="margin-top: 15px;">
-            <button id="saveDetailsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
-            <button id="closeDetailsBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
+        <div class="row center" style="margin-top: 20px;">
+            <button id="saveDetailsBtnBottom" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
+            <button id="closeDetailsBtnBottom" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
         </div>
     </div>
 

@@ -17,13 +17,15 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
-    "saveDetailsBtn", "closeDetailsBtn", "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
+    "saveDetailsBtn", "closeDetailsBtn", 
+    "saveDetailsBtnTop", "closeDetailsBtnTop", "saveDetailsBtnBottom", "closeDetailsBtnBottom", // NEW multiple buttons
+    "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
     "injuryTimePlusBtn", "injuryTimeMinusBtn", "resetToZeroBtn", "timeSettingsPopup",
     "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
     "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn",
     "logoPathBtn", "logoPathPopup", "currentLogoPath", "logoPathInput", "editLogoPathBtn", "closeLogoPathBtn",
     "sourcesTableHeaders", "sourcesTableBody",
-    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn" // NEW Keybind and Color Reset Elements
+    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn"
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -43,7 +45,7 @@ let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 const TEAM_COLORS_KEY = 'teamColorMemory';
 const SCORE2_VISIBILITY_KEY = 'score2Visible';
-const KEYBINDS_KEY = 'customKeybinds'; // NEW: Key for saving custom keybinds
+const KEYBINDS_KEY = 'customKeybinds';
 
 // --- OBS ---
 const obs = new OBSWebSocket();
@@ -125,24 +127,103 @@ const populateHelpTable = (lang) => {
     });
 };
 
-const populateKeybindsTable = (lang) => { // NEW: Populate Keybinds Table
+// Keybind Helper Functions
+const formatKey = (keyString) => {
+    if (!keyString) return '';
+    return keyString.replace(/CONTROL/g, 'Ctrl').replace(/ALT/g, 'Alt').replace(/SHIFT/g, 'Shift').replace(/ /g, 'SPACE');
+};
+
+const captureKeyInput = (e, inputElement, saveButton) => {
+    e.preventDefault();
+    if (e.repeat) return; 
+
+    const modifiers = [];
+    if (e.ctrlKey) modifiers.push('Ctrl');
+    if (e.altKey) modifiers.push('Alt');
+    if (e.shiftKey) modifiers.push('Shift');
+
+    let key = e.key.toUpperCase();
+    if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
+        key = ''; // Don't include modifier key name if it's the last one pressed
+    } else if (key.length > 1 && !key.startsWith('F')) {
+        // Handle common keys like Enter, Tab, Backspace, Space
+        key = key.toUpperCase(); 
+    }
+
+    const finalKey = [...modifiers, key].filter(k => k).join('+');
+    inputElement.value = finalKey;
+    saveButton.style.display = 'inline-flex';
+}
+
+const toggleKeybindEditMode = (id, enable) => {
+    const inputElement = $(`keybind-input-${id}`);
+    const editButton = $(`keybind-edit-${id}`);
+    const saveButton = $(`keybind-save-${id}`);
+    
+    if (enable) {
+        inputElement.disabled = false;
+        editButton.style.display = 'none';
+        saveButton.style.display = 'inline-flex';
+        inputElement.focus();
+        // Add event listener to capture keyboard input
+        inputElement.onkeydown = (e) => captureKeyInput(e, inputElement, saveButton);
+        inputElement.onblur = () => { // Exit edit mode if user clicks away without saving
+            if (inputElement.disabled === false) {
+                 toggleKeybindEditMode(id, false);
+            }
+        };
+    } else {
+        inputElement.disabled = true;
+        editButton.style.display = 'inline-flex';
+        saveButton.style.display = 'none';
+        inputElement.onkeydown = null; // Remove listener
+    }
+}
+
+const populateKeybindsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const keybindsList = trans.keybindsList || [];
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
 
     elements.keybindsTable.innerHTML = `<thead>
-        <tr><th>${trans.keybindsTitle.split('(')[0].trim()}</th><th>${trans.keybindsTitle.split('(')[1].replace(')', '').trim()}</th></tr>
+        <tr><th>${trans.keybindsTitle.split('(')[0].trim()}</th><th style="width: 110px;">${trans.keybindsTitle.split('(')[1].replace(')', '').trim()}</th></tr>
     </thead><tbody></tbody>`;
     const tbody = elements.keybindsTable.querySelector('tbody');
 
     keybindsList.forEach(item => {
-        const currentKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
+        const rawKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
+        const formattedKey = formatKey(rawKey);
+
         const row = tbody.insertRow();
         row.innerHTML = `
             <td>${item.label}</td>
-            <td><input type="text" id="keybind-${item.id}" value="${currentKey}" maxlength="10" placeholder="${item.default}"></td>
+            <td>
+                <input type="text" id="keybind-input-${item.id}" value="${formattedKey}" disabled>
+                <div class="action-buttons">
+                    <button id="keybind-edit-${item.id}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="keybind-save-${item.id}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                </div>
+            </td>
         `;
+        // Attach event listeners
+        $(`keybind-edit-${item.id}`).onclick = () => toggleKeybindEditMode(item.id, true);
+        $(`keybind-save-${item.id}`).onclick = () => {
+            saveKeybind(item.id);
+            toggleKeybindEditMode(item.id, false);
+        };
     });
+}
+
+const saveKeybind = (id) => {
+    const inputElement = $(`keybind-input-${id}`);
+    const keyString = inputElement.value.trim().toUpperCase();
+
+    // Revert formatting for saving (Ctrl+Alt+S -> CONTROL+ALT+S)
+    const rawKeyString = keyString.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT').replace(/SPACE/g, ' ');
+
+    const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
+    savedKeybinds[id] = rawKeyString;
+    localStorage.setItem(KEYBINDS_KEY, JSON.stringify(savedKeybinds));
 }
 
 const populateDynamicLists = (lang) => {
@@ -209,7 +290,7 @@ const toggleScore2Visibility = (show) => {
     showToast(isVisible ? translations[currentLang].show : translations[currentLang].hide, 'info');
 }
 
-const getStoredKeybinds = () => { // NEW: Load custom keybinds
+const getStoredKeybinds = () => {
     const keybindsList = translations[currentLang].keybindsList || [];
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
     const activeKeybinds = {};
@@ -222,28 +303,13 @@ const getStoredKeybinds = () => { // NEW: Load custom keybinds
     return activeKeybinds;
 }
 
-const saveKeybinds = () => { // NEW: Save custom keybinds
-    const keybindsList = translations[currentLang].keybindsList || [];
-    const newKeybinds = {};
-    
-    keybindsList.forEach(item => {
-        const inputElement = $(`keybind-${item.id}`);
-        if (inputElement) {
-            newKeybinds[item.id] = inputElement.value.trim().toUpperCase();
-        }
-    });
-    
-    localStorage.setItem(KEYBINDS_KEY, JSON.stringify(newKeybinds));
-    showToast(translations[currentLang].toastKeybindsSaved, 'success');
-}
-
-const resetKeybinds = () => { // NEW: Reset to default keybinds
+const resetKeybinds = () => {
     localStorage.removeItem(KEYBINDS_KEY);
     populateKeybindsTable(currentLang);
     showToast(translations[currentLang].resetKeybinds, 'info');
 }
 
-const resetTeamColors = () => { // NEW: Clear saved team colors
+const resetTeamColors = () => {
     localStorage.removeItem(TEAM_COLORS_KEY);
     showToast(translations[currentLang].toastColorsCleared, 'info');
 }
@@ -663,6 +729,25 @@ const exitEditMode = (team, applyChanges) => {
 };
 
 const setupEventListeners = () => {
+    // Bind Keybind Save buttons (Top button is the main save)
+    elements.saveDetailsBtnTop.addEventListener('click', () => { 
+        localStorage.setItem('detailsText', elements.detailsText.value); 
+        saveKeybinds();
+        closeAllPopups(); 
+        showToast(translations[currentLang].toastSaved, 'success'); 
+    });
+    // Bind Bottom Save button to the same logic
+    elements.saveDetailsBtnBottom.addEventListener('click', () => { 
+        localStorage.setItem('detailsText', elements.detailsText.value); 
+        saveKeybinds();
+        closeAllPopups(); 
+        showToast(translations[currentLang].toastSaved, 'success'); 
+    });
+
+    // Bind Close buttons
+    elements.closeDetailsBtnTop.addEventListener('click', closeAllPopups);
+    elements.closeDetailsBtnBottom.addEventListener('click', closeAllPopups);
+
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
     elements.excelBtn.addEventListener('click', handleExcel);
     elements.loadBtn.addEventListener('click', applyMatch);
@@ -685,10 +770,10 @@ const setupEventListeners = () => {
     elements.hideScore2Btn.addEventListener('click', () => toggleScore2Visibility(false));
 
     // Keybinds Control
-    elements.resetKeybindsBtn.addEventListener('click', resetKeybinds); // NEW
+    elements.resetKeybindsBtn.addEventListener('click', resetKeybinds); 
     
     // Team Color Reset
-    elements.resetColorsBtn.addEventListener('click', resetTeamColors); // NEW
+    elements.resetColorsBtn.addEventListener('click', resetTeamColors); 
 
     elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
@@ -708,15 +793,6 @@ const setupEventListeners = () => {
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
     elements.popupOverlay.addEventListener('click', closeAllPopups);
-    
-    // Details Popup
-    elements.saveDetailsBtn.addEventListener('click', () => { 
-        localStorage.setItem('detailsText', elements.detailsText.value); 
-        saveKeybinds(); // Save keybinds when saving details
-        closeAllPopups(); 
-        showToast(translations[currentLang].toastSaved, 'success'); 
-    });
-    elements.closeDetailsBtn.addEventListener('click', closeAllPopups);
     
     // Other Popups Close Buttons
     elements.closeHelpBtn.addEventListener('click', closeAllPopups);
@@ -781,14 +857,32 @@ const setupEventListeners = () => {
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
         // ตรวจสอบว่าไม่ได้อยู่ในช่อง input/textarea
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input')) return;
 
         const keybinds = getStoredKeybinds();
         const pressedKey = (e.key === ' ' ? 'SPACE' : e.key).toUpperCase();
+        
+        // Build combination string (e.g., CONTROL+ALT+F1)
+        const modifiers = [];
+        if (e.ctrlKey) modifiers.push('CONTROL');
+        if (e.altKey) modifiers.push('ALT');
+        if (e.shiftKey) modifiers.push('SHIFT');
 
+        let key = e.key.toUpperCase();
+        if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
+            key = '';
+        } else if (key.length > 1 && !key.startsWith('F')) {
+            // Handle common keys like ENTER, TAB, BACKSPACE, SPACE
+            // Need to convert Space to "SPACE" if not already done by pressedKey
+            if (key === ' ') key = 'SPACE';
+        }
+        
+        const keyCombination = [...modifiers, key].filter(k => k).join('+');
+        
         let action = null;
-        for (const [id, key] of Object.entries(keybinds)) {
-            if (key === pressedKey) {
+        for (const [id, storedCombination] of Object.entries(keybinds)) {
+             // Compare pressed combination with stored combination
+            if (storedCombination === keyCombination) {
                 action = id;
                 break;
             }
