@@ -17,8 +17,8 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
-    "saveDetailsBtn", "closeDetailsBtn", 
-    "saveDetailsBtnTop", "closeDetailsBtnTop", "saveDetailsBtnBottom", "closeDetailsBtnBottom", // NEW multiple buttons
+    "saveDetailsBtn", "closeDetailsBtn", // kept for compatibility in some browsers
+    "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom", // Updated buttons
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
     "injuryTimePlusBtn", "injuryTimeMinusBtn", "resetToZeroBtn", "timeSettingsPopup",
     "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
@@ -127,7 +127,7 @@ const populateHelpTable = (lang) => {
     });
 };
 
-// Keybind Helper Functions
+// Keybind Helper Functions (Modified to support modifier keys and separate buttons)
 const formatKey = (keyString) => {
     if (!keyString) return '';
     return keyString.replace(/CONTROL/g, 'Ctrl').replace(/ALT/g, 'Alt').replace(/SHIFT/g, 'Shift').replace(/ /g, 'SPACE');
@@ -143,11 +143,10 @@ const captureKeyInput = (e, inputElement, saveButton) => {
     if (e.shiftKey) modifiers.push('Shift');
 
     let key = e.key.toUpperCase();
-    if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
-        key = ''; // Don't include modifier key name if it's the last one pressed
-    } else if (key.length > 1 && !key.startsWith('F')) {
-        // Handle common keys like Enter, Tab, Backspace, Space
-        key = key.toUpperCase(); 
+    if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT' || key === 'META') {
+        key = ''; 
+    } else if (key.length > 1 && !key.startsWith('F') && key !== 'SPACE') {
+        key = key; 
     }
 
     const finalKey = [...modifiers, key].filter(k => k).join('+');
@@ -165,53 +164,35 @@ const toggleKeybindEditMode = (id, enable) => {
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
         inputElement.focus();
+        
+        // Remove previous listeners just in case
+        inputElement.onkeydown = null;
+        inputElement.onblur = null;
+        
         // Add event listener to capture keyboard input
         inputElement.onkeydown = (e) => captureKeyInput(e, inputElement, saveButton);
-        inputElement.onblur = () => { // Exit edit mode if user clicks away without saving
-            if (inputElement.disabled === false) {
-                 toggleKeybindEditMode(id, false);
-            }
+        
+        // Use a slight delay for blur check to ensure keydown fires
+        inputElement.onblur = () => { 
+            setTimeout(() => {
+                // Only exit if the save button is not the next element focused (or if focused element is outside)
+                if (document.activeElement !== saveButton) {
+                    if (inputElement.disabled === false) {
+                        // Re-disable input to exit edit mode visual state if user clicks outside
+                        inputElement.disabled = true;
+                        editButton.style.display = 'inline-flex';
+                        saveButton.style.display = 'none';
+                        inputElement.onkeydown = null; 
+                    }
+                }
+            }, 50);
         };
     } else {
         inputElement.disabled = true;
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
-        inputElement.onkeydown = null; // Remove listener
+        inputElement.onkeydown = null; 
     }
-}
-
-const populateKeybindsTable = (lang) => {
-    const trans = translations[lang] || translations.en;
-    const keybindsList = trans.keybindsList || [];
-    const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
-
-    elements.keybindsTable.innerHTML = `<thead>
-        <tr><th>${trans.keybindsTitle.split('(')[0].trim()}</th><th style="width: 110px;">${trans.keybindsTitle.split('(')[1].replace(')', '').trim()}</th></tr>
-    </thead><tbody></tbody>`;
-    const tbody = elements.keybindsTable.querySelector('tbody');
-
-    keybindsList.forEach(item => {
-        const rawKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
-        const formattedKey = formatKey(rawKey);
-
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${item.label}</td>
-            <td>
-                <input type="text" id="keybind-input-${item.id}" value="${formattedKey}" disabled>
-                <div class="action-buttons">
-                    <button id="keybind-edit-${item.id}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="keybind-save-${item.id}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
-                </div>
-            </td>
-        `;
-        // Attach event listeners
-        $(`keybind-edit-${item.id}`).onclick = () => toggleKeybindEditMode(item.id, true);
-        $(`keybind-save-${item.id}`).onclick = () => {
-            saveKeybind(item.id);
-            toggleKeybindEditMode(item.id, false);
-        };
-    });
 }
 
 const saveKeybind = (id) => {
@@ -224,6 +205,43 @@ const saveKeybind = (id) => {
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
     savedKeybinds[id] = rawKeyString;
     localStorage.setItem(KEYBINDS_KEY, JSON.stringify(savedKeybinds));
+    showToast(translations[currentLang].toastKeybindsSaved, 'success');
+}
+
+const populateKeybindsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const keybindsList = trans.keybindsList || [];
+    const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
+
+    elements.keybindsTable.innerHTML = `<thead>
+        <tr><th>${trans.keybindsTitle}</th><th style="width: 110px;">${trans.edit}</th><th>${trans.save}</th></tr>
+    </thead><tbody></tbody>`;
+    const tbody = elements.keybindsTable.querySelector('tbody');
+
+    keybindsList.forEach(item => {
+        const rawKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
+        const formattedKey = formatKey(rawKey);
+
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${item.label}</td>
+            <td>
+                <input type="text" id="keybind-input-${item.id}" value="${formattedKey}" disabled>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button id="keybind-edit-${item.id}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="keybind-save-${item.id}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                </div>
+            </td>
+        `;
+        // Attach event listeners for each button
+        $(`keybind-edit-${item.id}`).onclick = () => toggleKeybindEditMode(item.id, true);
+        $(`keybind-save-${item.id}`).onclick = () => {
+            saveKeybind(item.id);
+            toggleKeybindEditMode(item.id, false);
+        };
+    });
 }
 
 const populateDynamicLists = (lang) => {
@@ -729,24 +747,27 @@ const exitEditMode = (team, applyChanges) => {
 };
 
 const setupEventListeners = () => {
-    // Bind Keybind Save buttons (Top button is the main save)
-    elements.saveDetailsBtnTop.addEventListener('click', () => { 
+    // Bind Save buttons to the same logic
+    const saveHandler = () => { 
         localStorage.setItem('detailsText', elements.detailsText.value); 
-        saveKeybinds();
+        // Save only the currently edited/confirmed keybinds. This saves ALL keybinds states (disabled/enabled)
+        // Note: The actual keybind value is saved when the individual save button is pressed.
+        // We only save the TEXTAREA here.
         closeAllPopups(); 
         showToast(translations[currentLang].toastSaved, 'success'); 
-    });
-    // Bind Bottom Save button to the same logic
-    elements.saveDetailsBtnBottom.addEventListener('click', () => { 
-        localStorage.setItem('detailsText', elements.detailsText.value); 
-        saveKeybinds();
-        closeAllPopups(); 
-        showToast(translations[currentLang].toastSaved, 'success'); 
-    });
-
+    };
+    elements.saveDetailsBtnTop.addEventListener('click', saveHandler);
+    
     // Bind Close buttons
-    elements.closeDetailsBtnTop.addEventListener('click', closeAllPopups);
-    elements.closeDetailsBtnBottom.addEventListener('click', closeAllPopups);
+    const closeHandler = () => {
+        // Ensure all inputs are disabled before closing
+        const keybindsList = translations[currentLang].keybindsList || [];
+        keybindsList.forEach(item => toggleKeybindEditMode(item.id, false));
+        closeAllPopups();
+    };
+
+    elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
+    elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
 
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
     elements.excelBtn.addEventListener('click', handleExcel);
@@ -856,11 +877,10 @@ const setupEventListeners = () => {
 
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
-        // ตรวจสอบว่าไม่ได้อยู่ในช่อง input/textarea
+        // Only trigger keybinds if user is not typing in a general input field
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input')) return;
 
         const keybinds = getStoredKeybinds();
-        const pressedKey = (e.key === ' ' ? 'SPACE' : e.key).toUpperCase();
         
         // Build combination string (e.g., CONTROL+ALT+F1)
         const modifiers = [];
@@ -869,11 +889,10 @@ const setupEventListeners = () => {
         if (e.shiftKey) modifiers.push('SHIFT');
 
         let key = e.key.toUpperCase();
+        // Exclude modifier key itself from the key part if it was the only one pressed
         if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
             key = '';
-        } else if (key.length > 1 && !key.startsWith('F')) {
-            // Handle common keys like ENTER, TAB, BACKSPACE, SPACE
-            // Need to convert Space to "SPACE" if not already done by pressedKey
+        } else if (key.length > 1 && !key.startsWith('F') && key !== 'SPACE') {
             if (key === ' ') key = 'SPACE';
         }
         
@@ -881,7 +900,6 @@ const setupEventListeners = () => {
         
         let action = null;
         for (const [id, storedCombination] of Object.entries(keybinds)) {
-             // Compare pressed combination with stored combination
             if (storedCombination === keyCombination) {
                 action = id;
                 break;

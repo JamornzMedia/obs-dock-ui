@@ -107,7 +107,7 @@
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
         
-        /* Styles for Score 2 */
+        /* Styles for Score 2 (Adjusted size to match main score) */
         #score2Card { 
             max-height: 200px;
             opacity: 1;
@@ -129,12 +129,30 @@
             flex-direction: column;
             gap: 10px;
         }
-        .score2-card .score-display { font-size: 2em; color: var(--warning-color); font-weight: 600; }
-        .score2-card .score-buttons .plus { background: var(--warning-color); width: 32px; height: 32px; font-size: 1.2rem; }
-        .score2-card .score-buttons .minus { background: var(--accent-color); width: 32px; height: 24px; font-size: 0.9rem; }
+        .score2-card .score-display { 
+            font-size: 2.8em; /* Equal to main score display */
+            font-weight: 700;
+            flex-basis: 60px;
+            text-align: center;
+            color: var(--warning-color); 
+        }
+        .score2-card .score-buttons .plus { 
+            width: 48px; 
+            height: 48px; 
+            font-size: 1.8rem; 
+            background: var(--warning-color); /* Primary color */
+            color: #fff; 
+        }
+        .score2-card .score-buttons .minus { 
+            width: 48px; 
+            height: 32px; 
+            font-size: 1.2rem; 
+            background: var(--accent-color); /* Secondary color for differentiation */
+            color: #fff; 
+        }
         .score2-card .score-display-group {
             text-align: center; 
-            flex-basis: 70px; 
+            flex-basis: 60px; /* Equal to main score display */
             display: flex; 
             flex-direction: column;
             align-items: center;
@@ -164,12 +182,30 @@
         .item-list td { color: var(--text-muted-color); }
         .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
         .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
-        /* Keybind Table Styles */
-        .keybind-table input[type="text"] { width: 80px; padding: 4px; text-align: center; font-size: 0.9rem; margin-right: 5px; border: 1px solid var(--border-color); }
-        .keybind-table td { white-space: nowrap; }
-        .keybind-table td:nth-child(2) { width: 100px; }
-        .keybind-table button { padding: 4px 8px; font-size: 0.8rem; height: 30px; width: 30px;}
-        .keybind-table .action-buttons { display: flex; gap: 5px; }
+        /* NEW: Keybind Table Styles */
+        .keybind-table { width: 100%; }
+        .keybind-table td { padding: 8px 4px; vertical-align: middle; }
+        .keybind-table td:nth-child(1) { width: 50%; }
+        .keybind-table td:nth-child(2) { width: 120px; }
+        .keybind-table td:nth-child(3) { width: 70px; text-align: right; }
+        .keybind-table input[type="text"] { 
+            width: 100%; 
+            padding: 4px; 
+            text-align: center; 
+            font-size: 0.85rem; 
+            height: 30px;
+            box-sizing: border-box;
+            background: var(--bg-color);
+        }
+        .keybind-table input[type="text"]:disabled { background: #333; }
+        .keybind-table .action-buttons { 
+            display: flex; 
+            gap: 5px; 
+            justify-content: flex-end; 
+            align-items: center; 
+        }
+        .keybind-table button { width: 30px; height: 30px; padding: 0; }
+        /* End Keybind Table Styles */
 
         .changelog-list { list-style: none; padding-left: 0; }
         .changelog-list li { margin-bottom: 15px; }
@@ -382,7 +418,6 @@
             <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>
         </div>
         <div class="row center" style="margin-top: 20px;">
-            <button id="saveDetailsBtnBottom" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
             <button id="closeDetailsBtnBottom" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
         </div>
     </div>

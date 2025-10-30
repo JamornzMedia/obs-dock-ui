@@ -38,7 +38,7 @@ export const translations = {
         footerAppName: "OBS Dock UI Scoreboard",
         changelog: "Update Version 2.6",
         detailsTitle: "Settings & Announcement",
-        detailsDesc: "Customize global settings below.",
+        detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Custom Keyboard Shortcuts",
         keybindsList: [
@@ -113,12 +113,12 @@ export const translations = {
                 <li>
                     <h5>Version 2.6 (Latest)</h5>
                     <ul>
-                        <li>**Custom Key Bindings:** Added a panel to customize keyboard shortcuts, supporting modifier keys (Ctrl/Alt/Shift).</li>
-                        <li>**Team Color Management:** Added an option to clear saved team colors.</li>
-                        <li>**Score 2 Visibility:** Control moved to the main settings for stable hiding/showing.</li>
-                        <li>**Announcement:** Loads from <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>**Features:** Full Reset, Global Key Listener, Score 2 controls added.</li>
-                        <li>**UI:** Improved Help Sources to an easy-to-copy table format.</li>
+                        <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
+                        <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
+                        <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
+                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel supporting modifier keys (Ctrl/Alt/Shift).</li>
+                        <li>**OBS Integration:** Improved key binding to pass through the Dock UI to OBS for instant control.</li>
+                        <li>**Setup:** Updated OBS Source list and streamlined announcement loading from local TXT file.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -135,7 +135,7 @@ export const translations = {
         toastFullReset: "Scoreboard fully reset",
         toastCopiedSourceName: "Copied source name:",
         toastSaved: "Saved",
-        toastKeybindsSaved: "Keybinds saved!",
+        toastKeybindsSaved: "Keybind saved!",
         toastColorsCleared: "Team color memory cleared!",
         toastObsError: "Failed to connect to OBS",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
@@ -252,12 +252,12 @@ export const translations = {
                  <li>
                     <h5>เวอร์ชัน 2.6 (ล่าสุด)</h5>
                     <ul>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดเพื่อปรับเปลี่ยนปุ่มควบคุมได้ตามต้องการ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
-                        <li>**จัดการสีทีม:** เพิ่มปุ่มล้างหน่วยความจำสีทีมที่บันทึกไว้.</li>
-                        <li>**การแสดงผลคะแนน 2:** ย้ายการควบคุมไปที่หน้าต่างตั้งค่าหลักเพื่อความเสถียร.</li>
-                        <li>**ข้อความประกาศ:** โหลดจากไฟล์ <code>fcp_v2_assets/announcement.txt</code>.</li>
-                        <li>**ฟีเจอร์:** เพิ่มปุ่มรีเซ็ตทั้งหมด (Full Reset) และ Global Key Listener.</li>
-                        <li>**UI:** ปรับปรุงตาราง Source ในหน้าช่วยเหลือให้สามารถคัดลอกชื่อได้ง่าย.</li>
+                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง).</li>
+                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้.</li>
+                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้.</li>
+                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
+                        <li>**การเชื่อมต่อ OBS:** ปรับปรุงการทำงานของคีย์ลัดเพื่อให้ส่งคำสั่งผ่าน Dock UI ไปยัง OBS ได้โดยตรง.</li>
+                        <li>**การตั้งค่า:** ปรับปรุงรายการ OBS Source ที่ต้องมีและย้ายการโหลดข้อความประกาศไปใช้ไฟล์ TXT ภายใน.</li>
                     </ul>
                 </li>
             </ul>`,
