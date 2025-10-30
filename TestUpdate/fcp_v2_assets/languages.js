@@ -1,0 +1,914 @@
+// fcp_v2_assets/languages.js
+// ไฟล์สำหรับเก็บคำแปลทั้งหมด
+
+export const translations = {
+    // English
+    en: {
+        appTitle: "Football Scoreboard Controller - V2.6", // UPDATED VERSION
+        excel: "Excel",
+        matchId: "ID:",
+        load: "Load",
+        teamA: "Team A",
+        teamB: "Team B",
+        edit: "Edit",
+        editHint: "Edit name or add new line with /",
+        ok: "OK",
+        label1: "Label 1",
+        label2: "Label 2",
+        label3: "Label 3",
+        swap: "Swap Teams",
+        reset: "Reset",
+        fullReset: "Full Reset", // NEW
+        score2Label: "Fouls", // NEW
+        half: "Half",
+        injuryTime: "Added Time",
+        countdown: "Down",
+        countdownHint: "Countdown Timer",
+        resetToZeroHint: "Reset timer to 00:00",
+        resetToStartHint: "Reset timer to configured start time",
+        settings: "Settings",
+        copy: "Copy",
+        help: "Help",
+        donate: "Donate",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "Update Version 2.6", // UPDATED VERSION
+        detailsTitle: "Announcement Text Settings",
+        detailsDesc: "Create message using the tags below to pull data automatically.",
+        tagsTitle: "Available Tags",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- Team A Name' },
+            { code: '&lt;TeamB&gt;', desc: '- Team B Name' },
+            { code: '&lt;score_team_a&gt;', desc: '- Team A Score' },
+            { code: '&lt;score_team_b&gt;', desc: '- Team B Score' },
+            { code: '&lt;score2_team_a&gt;', desc: '- Team A Score 2 (Fouls/Counts)' }, // NEW TAG
+            { code: '&lt;score2_team_b&gt;', desc: '- Team B Score 2 (Fouls/Counts)' }, // NEW TAG
+            { code: '&lt;time_counter&gt;', desc: '- Current Time (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- Half (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- Label 1 Text' },
+            { code: '&lt;label2&gt;', desc: '- Label 2 Text' },
+            { code: '&lt;label3&gt;', desc: '- Label 3 Text' },
+        ],
+        save: "Save",
+        close: "Close",
+        saveAndUpdate: "Save & Update",
+        helpTitle: "How to Use",
+        helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. The default is <code>C:/OBSAssets/logos</code>. **You need to click the Edit button inside the popup to change and save the path.**", // MODIFIED
+        helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
+        helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
+        sourcesTitle: "Required OBS Sources",
+        sourcesTableHeaders: ["Source Name", "Source Type", "Details"], // NEW
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Color Source', desc: 'Team A (Primary Color)' },
+            { code: 'Color_Team_B', type: 'Color Source', desc: 'Team B (Primary Color)' },
+            { code: 'Color_Team_A_2', type: 'Color Source', desc: 'Team A (Secondary Color)' },
+            { code: 'Color_Team_B_2', type: 'Color Source', desc: 'Team B (Secondary Color)' },
+            { code: 'logo_team_a', type: 'Image Source', desc: 'Team A Logo' },
+            { code: 'logo_team_b', type: 'Image Source', desc: 'Team B Logo' },
+            { code: 'name_team_a', type: 'Text (GDI+)', desc: 'Team A Name' },
+            { code: 'name_team_b', type: 'Text (GDI+)', desc: 'Team B Name' },
+            { code: 'score_team_a', type: 'Text (GDI+)', desc: 'Team A Score (Main)' },
+            { code: 'score_team_b', type: 'Text (GDI+)', desc: 'Team B Score (Main)' },
+            { code: 'score2_team_a', type: 'Text (GDI+)', desc: 'Team A Score 2 (Fouls/Counts)' }, // NEW SOURCE
+            { code: 'score2_team_b', type: 'Text (GDI+)', desc: 'Team B Score 2 (Fouls/Counts)' }, // NEW SOURCE
+            { code: 'label_1', type: 'Text (GDI+)', desc: 'Label 1 Text' },
+            { code: 'label_2', type: 'Text (GDI+)', desc: 'Label 2 Text' },
+            { code: 'label_3', type: 'Text (GDI+)', desc: 'Label 3 Text' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
+            { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
+            { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
+        ],
+        understand: "Got it",
+        donateTitle: "Support Us",
+        donateThai: "For Thais (for Scoreboard)",
+        donateForeign: "For Foreigners (Outside Thailand)",
+        timeSettingsTitle: "Set Start Time",
+        timeSettingsMinutes: "Minutes",
+        timeSettingsSeconds: "Seconds",
+        logoPathTitle: "Logo Folder Path",
+        logoPathDesc: "The current logo folder path is:",
+        logoPathHint: "Set logo folder path",
+        changelogTitle: "Update History",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li>
+                    <h5>Version 2.6 (Latest)</h5>
+                    <ul>
+                        <li>Added **Score 2** control section (e.g., for Fouls/Counts in Futsal).</li>
+                        <li>Implemented **Team Color Memory**: The system now remembers the last set colors for a team name.</li>
+                        <li>Added a **Global Keyboard Listener** to allow basic score/timer control via keyboard shortcuts when the Dock UI is focused.</li>
+                        <li>Added a **Full Reset** button to reset both scores, timer (to 00:00), and half (to 1st) in one click.</li>
+                        <li>Improved the **Help/Sources** section into an easy-to-read table.</li>
+                        <li>Clicking a Source Name in the Help table now **copies the name** to the clipboard (fixes user error with spaces).</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>Version 2.5</h5>
+                    <ul>
+                        <li>Moved the logo folder path setting into a dedicated popup.</li>
+                        <li>Added a secondary color option for each team.</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>Version 2.4</h5>
+                    <ul>
+                        <li>Major UI overhaul for timer controls based on feedback.</li>
+                        <li>Added a "Save & Update" button to apply time changes to the live timer immediately.</li>
+                        <li>Improved the "Reset to Start Time" button's reliability.</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "Please upload a file first",
+        toastMatchNotFound: "Match ID not found:",
+        toastLoaded: "Loaded ID:",
+        toastSuccess: "Success",
+        toastSwapped: "Teams swapped",
+        toastNoTextToCopy: "No text to copy",
+        toastCopied: "Copied to clipboard",
+        toastCopyFailed: "Copy failed",
+        toastScoreReset: "Score reset",
+        toastScore2Reset: "Score 2 reset", // NEW
+        toastFullReset: "Scoreboard fully reset", // NEW
+        toastCopiedSourceName: "Copied source name:", // NEW
+        toastSaved: "Saved",
+        toastObsError: "Failed to connect to OBS",
+        toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
+        toastTimeSet: "Start time has been set and updated.",
+    },
+    // ภาษาไทย
+    th: {
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.6", // UPDATED VERSION
+        excel: "Excel",
+        matchId: "ID:",
+        load: "โหลด",
+        teamA: "ทีม A",
+        teamB: "ทีม B",
+        edit: "แก้ไข",
+        editHint: "แก้ไขชื่อ หรือขึ้นบรรทัดใหม่ด้วยการใส่ /",
+        ok: "ตกลง",
+        label1: "ป้าย 1",
+        label2: "ป้าย 2",
+        label3: "ป้าย 3",
+        swap: "สลับฝั่ง",
+        reset: "รีเซ็ต",
+        fullReset: "รีเซ็ตทั้งหมด", // NEW
+        score2Label: "ฟาวล์/แต้ม 2", // NEW
+        half: "ครึ่ง",
+        injuryTime: "ทดเวลา",
+        countdown: "นับถอยหลัง",
+        countdownHint: "ตัวนับเวลาถอยหลัง",
+        resetToZeroHint: "รีเซ็ตเวลาเป็น 00:00",
+        resetToStartHint: "รีเซ็ตตามเวลาที่ตั้งค่า",
+        settings: "ตั้งค่า",
+        copy: "คัดลอก",
+        help: "วิธีใช้",
+        donate: "สนับสนุน",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "อัปเดตเวอร์ชัน 2.6", // UPDATED VERSION
+        detailsTitle: "ตั้งค่าข้อความประกาศ",
+        detailsDesc: "สร้างข้อความโดยใช้ Tags ด้านล่างเพื่อดึงข้อมูลอัตโนมัติ",
+        tagsTitle: "Tags ที่ใช้งานได้",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- ชื่อทีม A' },
+            { code: '&lt;TeamB&gt;', desc: '- ชื่อทีม B' },
+            { code: '&lt;score_team_a&gt;', desc: '- คะแนนทีม A' },
+            { code: '&lt;score_team_b&gt;', desc: '- คะแนนทีม B' },
+            { code: '&lt;score2_team_a&gt;', desc: '- คะแนน 2 ทีม A (ฟาวล์/แต้ม)' }, // NEW TAG
+            { code: '&lt;score2_team_b&gt;', desc: '- คะแนน 2 ทีม B (ฟาวล์/แต้ม)' }, // NEW TAG
+            { code: '&lt;time_counter&gt;', desc: '- เวลาปัจจุบัน (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- ครึ่งเวลา (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- ข้อความ Label 1' },
+            { code: '&lt;label2&gt;', desc: '- ข้อความ Label 2' },
+            { code: '&lt;label3&gt;', desc: '- ข้อความ Label 3' },
+        ],
+        save: "บันทึก",
+        close: "ปิด",
+        saveAndUpdate: "บันทึกและอัปเดต",
+        helpTitle: "วิธีการใช้งาน",
+        helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>) **คุณต้องกดปุ่ม แก้ไข ใน Popup เพื่อเปลี่ยนและบันทึกที่อยู่**", // MODIFIED
+        helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
+        helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
+        sourcesTitle: "OBS Sources ที่ต้องมี",
+        sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"], // NEW
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Color Source', desc: 'สีทีม A (สีหลัก)' },
+            { code: 'Color_Team_B', type: 'Color Source', desc: 'สีทีม B (สีหลัก)' },
+            { code: 'Color_Team_A_2', type: 'Color Source', desc: 'สีทีม A (สีรอง)' },
+            { code: 'Color_Team_B_2', type: 'Color Source', desc: 'สีทีม B (สีรอง)' },
+            { code: 'logo_team_a', type: 'Image Source', desc: 'โลโก้ทีม A' },
+            { code: 'logo_team_b', type: 'Image Source', desc: 'โลโก้ทีม B' },
+            { code: 'name_team_a', type: 'Text (GDI+)', desc: 'ชื่อทีม A' },
+            { code: 'name_team_b', type: 'Text (GDI+)', desc: 'ชื่อทีม B' },
+            { code: 'score_team_a', type: 'Text (GDI+)', desc: 'คะแนนทีม A (หลัก)' },
+            { code: 'score_team_b', type: 'Text (GDI+)', desc: 'คะแนนทีม B (หลัก)' },
+            { code: 'score2_team_a', type: 'Text (GDI+)', desc: 'คะแนน 2 ทีม A (ฟาวล์/แต้ม)' }, // NEW SOURCE
+            { code: 'score2_team_b', type: 'Text (GDI+)', desc: 'คะแนน 2 ทีม B (ฟาวล์/แต้ม)' }, // NEW SOURCE
+            { code: 'label_1', type: 'Text (GDI+)', desc: 'ข้อความ Label 1' },
+            { code: 'label_2', type: 'Text (GDI+)', desc: 'ข้อความ Label 2' },
+            { code: 'label_3', type: 'Text (GDI+)', desc: 'ข้อความ Label 3' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา' },
+            { code: 'time_counter', type: 'Text (GDI+)', desc: 'ตัวนับเวลา' },
+            { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ทดเวลาบาดเจ็บ (+1)' },
+        ],
+        understand: "เข้าใจแล้ว",
+        donateTitle: "ร่วมสนับสนุน",
+        donateThai: "สำหรับคนไทย (ขึ้น Scoreboard)",
+        donateForeign: "สำหรับนอกประเทศไทย",
+        timeSettingsTitle: "ตั้งเวลาเริ่มต้น",
+        timeSettingsMinutes: "นาที",
+        timeSettingsSeconds: "วินาที",
+        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้",
+        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ปัจจุบันคือ:",
+        logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
+        changelogTitle: "ประวัติการอัปเดต",
+        changelogContent: `
+            <ul class="changelog-list">
+                 <li>
+                    <h5>เวอร์ชัน 2.6 (ล่าสุด)</h5>
+                    <ul>
+                        <li>เพิ่มส่วนควบคุม **คะแนน 2** (เช่น สำหรับฟาวล์/แต้มในฟุตซอล).</li>
+                        <li>เพิ่มระบบ **จดจำสีทีม**: ระบบจะจำค่าสีล่าสุดของชื่อทีมที่ใช้.</li>
+                        <li>เพิ่ม **Global Keyboard Listener** เพื่อให้สามารถควบคุมคะแนน/เวลาด้วยปุ่มลัดได้ แม้จะกด Dock UI ค้างไว้.</li>
+                        <li>เพิ่มปุ่ม **รีเซ็ตทั้งหมด** เพื่อรีเซ็ตคะแนน, เวลา (เป็น 00:00), และครึ่งเวลา (เป็น 1st) ในคลิกเดียว.</li>
+                        <li>ปรับปรุงส่วน **วิธีใช้/Sources** ให้เป็นรูปแบบตารางที่อ่านง่าย.</li>
+                        <li>เมื่อคลิกที่ชื่อ Source ในตารางวิธีใช้ จะทำการ **คัดลอกชื่อ** ไปยังคลิปบอร์ด (แก้ปัญหาผู้ใช้คัดลอกติดเว้นวรรค).</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>เวอร์ชัน 2.5</h5>
+                    <ul>
+                        <li>ย้ายการตั้งค่าที่อยู่โฟลเดอร์โลโก้ไปไว้ใน Popup.</li>
+                        <li>เพิ่มความสามารถในการกำหนดสีที่สองสำหรับแต่ละทีม.</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>เวอร์ชัน 2.4</h5>
+                    <ul>
+                        <li>ปรับปรุง UI ส่วนควบคุมเวลาครั้งใหญ่ตามที่ผู้ใช้แนะนำ.</li>
+                        <li>เพิ่มปุ่ม "บันทึกและอัปเดต" เพื่อให้แก้ไขและแสดงผลเวลาใหม่ทันที.</li>
+                        <li>ปรับปรุงการทำงานของปุ่ม "คืนค่าเวลา" ให้เสถียรขึ้น.</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "โปรด Upload ไฟล์ก่อน",
+        toastMatchNotFound: "ไม่พบ Match ID:",
+        toastLoaded: "โหลด ID สำเร็จ:",
+        toastSuccess: "สำเร็จ",
+        toastSwapped: "สลับฝั่งทีมแล้ว",
+        toastNoTextToCopy: "ไม่มีข้อความให้คัดลอก",
+        toastCopied: "คัดลอกแล้ว",
+        toastCopyFailed: "คัดลอกล้มเหลว",
+        toastScoreReset: "รีเซ็ตคะแนนแล้ว",
+        toastScore2Reset: "รีเซ็ตคะแนน 2 แล้ว", // NEW
+        toastFullReset: "รีเซ็ตสกอร์บอร์ดทั้งหมดแล้ว", // NEW
+        toastCopiedSourceName: "คัดลอกชื่อ Source แล้ว:", // NEW
+        toastSaved: "บันทึกแล้ว",
+        toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
+        toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
+        toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
+    },
+    // Korean (Adding new keys for completeness)
+    ko: {
+        appTitle: "축구 스코어보드 컨트롤러 - V2.6",
+        excel: "엑셀",
+        matchId: "ID:",
+        load: "로드",
+        teamA: "팀 A",
+        teamB: "팀 B",
+        edit: "수정",
+        editHint: "이름을 수정하거나 /로 새 줄을 추가하세요",
+        ok: "확인",
+        label1: "레이블 1",
+        label2: "레이블 2",
+        label3: "레이블 3",
+        swap: "팀 교체",
+        reset: "재설정",
+        fullReset: "전체 재설정",
+        score2Label: "파울/점수 2",
+        half: "전/후반",
+        injuryTime: "추가 시간",
+        countdown: "카운트다운",
+        countdownHint: "카운트다운 타이머",
+        resetToZeroHint: "타이머를 00:00으로 재설정",
+        resetToStartHint: "구성된 시작 시간으로 타이머 재설정",
+        settings: "설정",
+        copy: "복사",
+        help: "도움말",
+        donate: "후원",
+        footerAppName: "OBS Dock UI 스코어보드",
+        changelog: "업데이트 버전 2.6",
+        detailsTitle: "공지 텍스트 설정",
+        detailsDesc: "아래 태그를 사용하여 데이터를 자동으로 가져오는 메시지를 만드세요.",
+        tagsTitle: "사용 가능한 태그",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- 팀 A 이름' },
+            { code: '&lt;TeamB&gt;', desc: '- 팀 B 이름' },
+            { code: '&lt;score_team_a&gt;', desc: '- 팀 A 점수' },
+            { code: '&lt;score_team_b&gt;', desc: '- 팀 B 점수' },
+            { code: '&lt;score2_team_a&gt;', desc: '- 팀 A 점수 2 (파울/횟수)' },
+            { code: '&lt;score2_team_b&gt;', desc: '- 팀 B 점수 2 (파울/횟수)' },
+            { code: '&lt;time_counter&gt;', desc: '- 현재 시간 (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- 전/후반 (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- 레이블 1 텍스트' },
+            { code: '&lt;label2&gt;', desc: '- 레이블 2 텍스트' },
+            { code: '&lt;label3&gt;', desc: '- 레이블 3 텍스트' },
+        ],
+        save: "저장",
+        close: "닫기",
+        saveAndUpdate: "저장 및 업데이트",
+        helpTitle: "사용 방법",
+        helpStep1: "1. <i class='fas fa-folder-open'></i> 아이콘을 클릭하여 로고 폴더 경로를 설정하세요. 기본값은 <code>C:/OBSAssets/logos</code>입니다. **경로를 변경하고 저장하려면 팝업 내에서 수정 버튼을 클릭해야 합니다.**",
+        helpStep2: "2. <i class='fas fa-file-excel'></i> 엑셀 버튼을 클릭하여 데이터 파일을 선택하세요.",
+        helpStep3: "3. 원하는 경기 ID를 선택하고 <i class='fas fa-check'></i> 로드를 클릭하세요.",
+        sourcesTitle: "필요한 OBS 소스",
+        sourcesTableHeaders: ["소스 이름", "소스 유형", "세부 정보"],
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Color Source', desc: '팀 A (기본 색상)' },
+            { code: 'Color_Team_B', type: 'Color Source', desc: '팀 B (기본 색상)' },
+            { code: 'Color_Team_A_2', type: 'Color Source', desc: '팀 A (보조 색상)' },
+            { code: 'Color_Team_B_2', type: 'Color Source', desc: '팀 B (보조 색상)' },
+            { code: 'logo_team_a', type: 'Image Source', desc: '팀 A 로고' },
+            { code: 'logo_team_b', type: 'Image Source', desc: '팀 B 로고' },
+            { code: 'name_team_a', type: 'Text (GDI+)', desc: '팀 A 이름' },
+            { code: 'name_team_b', type: 'Text (GDI+)', desc: '팀 B 이름' },
+            { code: 'score_team_a', type: 'Text (GDI+)', desc: '팀 A 점수 (메인)' },
+            { code: 'score_team_b', type: 'Text (GDI+)', desc: '팀 B 점수 (메인)' },
+            { code: 'score2_team_a', type: 'Text (GDI+)', desc: '팀 A 점수 2 (파울/횟수)' },
+            { code: 'score2_team_b', type: 'Text (GDI+)', desc: '팀 B 점수 2 (파울/횟수)' },
+            { code: 'label_1', type: 'Text (GDI+)', desc: '레이블 1 텍스트' },
+            { code: 'label_2', type: 'Text (GDI+)', desc: '레이블 2 텍스트' },
+            { code: 'label_3', type: 'Text (GDI+)', desc: '레이블 3 텍스트' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: '전/후반' },
+            { code: 'time_counter', type: 'Text (GDI+)', desc: '타이머' },
+            { code: 'injury_time_text', type: 'Text (GDI+)', desc: '추가 시간 (+1)' },
+        ],
+        understand: "이해했습니다",
+        donateTitle: "후원하기",
+        donateThai: "태국인을 위해 (스코어보드용)",
+        donateForeign: "외국인용 (태국 외)",
+        timeSettingsTitle: "시작 시간 설정",
+        timeSettingsMinutes: "분",
+        timeSettingsSeconds: "초",
+        logoPathTitle: "로고 폴더 경로",
+        logoPathDesc: "현재 로고 폴더 경로는 다음과 같습니다:",
+        logoPathHint: "로고 폴더 경로 설정",
+        changelogTitle: "업데이트 내역",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li><h5>버전 2.6 (최신)</h5>
+                    <ul>
+                        <li>**점수 2** 제어 섹션(예: 풋살의 파울/횟수)을 추가했습니다.</li>
+                        <li>**팀 색상 메모리** 구현: 시스템이 팀 이름에 대해 마지막으로 설정된 색상을 기억합니다.</li>
+                        <li>Dock UI에 초점이 맞춰져 있을 때 키보드 단축키를 통해 기본 점수/타이머 제어를 허용하는 **전역 키보드 리스너**를 추가했습니다.</li>
+                        <li>두 점수, 타이머(00:00으로), 전/후반(1st로)을 한 번의 클릭으로 재설정하는 **전체 재설정** 버튼을 추가했습니다.</li>
+                        <li>**도움말/소스** 섹션을 읽기 쉬운 표로 개선했습니다.</li>
+                        <li>도움말 표에서 소스 이름을 클릭하면 클립보드에 **이름이 복사**됩니다(공백 관련 사용자 오류 수정).</li>
+                    </ul>
+                </li>
+                <li><h5>버전 2.5</h5>
+                    <ul>
+                        <li>로고 폴더 경로 설정을 전용 팝업으로 이동했습니다.</li>
+                        <li>각 팀에 대한 보조 색상 옵션을 추가했습니다.</li>
+                    </ul>
+                </li>
+                 <li><h5>버전 2.4</h5>
+                    <ul>
+                        <li>피드백에 따라 타이머 제어 UI가 크게 개편되었습니다.</li>
+                        <li>시간 변경 사항을 즉시 적용하기 위해 "저장 및 업데이트" 버튼이 추가되었습니다.</li>
+                        <li>"시작 시간으로 재설정" 버튼의 안정성이 향상되었습니다.</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "먼저 파일을 업로드하세요",
+        toastMatchNotFound: "경기 ID를 찾을 수 없습니다:",
+        toastLoaded: "ID 로드 성공:",
+        toastSuccess: "성공",
+        toastSwapped: "팀이 교체되었습니다",
+        toastNoTextToCopy: "복사할 텍스트가 없습니다",
+        toastCopied: "클립보드에 복사됨",
+        toastCopyFailed: "복사 실패",
+        toastScoreReset: "점수 재설정됨",
+        toastScore2Reset: "점수 2 재설정됨",
+        toastFullReset: "스코어보드 전체 재설정됨",
+        toastCopiedSourceName: "소스 이름 복사됨:",
+        toastSaved: "저장됨",
+        toastObsError: "OBS 연결 실패",
+        toastInvalidTime: "잘못된 시간 형식입니다. 분과 초(0-59)를 확인하세요.",
+        toastTimeSet: "시작 시간이 설정 및 업데이트되었습니다.",
+    },
+    // Lao (Adding new keys for completeness)
+    lo: {
+        appTitle: "ໂຕຄວບຄຸມກະດານຄະແນນບານເຕະ - V2.6",
+        excel: "Excel",
+        matchId: "ID:",
+        load: "ໂຫຼດ",
+        teamA: "ທີມ A",
+        teamB: "ທີມ B",
+        edit: "ແກ້ໄຂ",
+        editHint: "ແກ້ໄຂຊື່ ຫຼື ເພີ່ມແຖວໃໝ່ດ້ວຍ /",
+        ok: "ຕົກລົງ",
+        label1: "ປ້າຍ 1",
+        label2: "ປ້າຍ 2",
+        label3: "ປ້າຍ 3",
+        swap: "ສลับຝັ່ງ",
+        reset: "ຣີເຊັດ",
+        fullReset: "ຣີເຊັດທັງໝົດ",
+        score2Label: "ຟາວ/ຄະແນນ 2",
+        half: "ເຄິ່ງ",
+        injuryTime: "ທົດເວລາ",
+        countdown: "ນັບຖອຍຫຼັງ",
+        countdownHint: "ໂຕນັບເວລາຖອຍຫຼັງ",
+        resetToZeroHint: "ຣີເຊັດເວລາເປັນ 00:00",
+        resetToStartHint: "ຣີເຊັດເປັນເວລາເລີ່ມຕົ້ນທີ່ຕັ້ງໄວ້",
+        settings: "ຕັ້ງຄ່າ",
+        copy: "ສຳເນົາ",
+        help: "ວິທີໃຊ້",
+        donate: "ສະໜັບສະໜູນ",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "ອັບເດດເວີຊັ່ນ 2.6",
+        detailsTitle: "ຕັ້ງຄ່າຂໍ້ຄວາມປະກາດ",
+        detailsDesc: "ສ້າງຂໍ້ຄວາມໂດຍໃຊ້ແທັກຂ້າງລຸ່ມເພື່ອດຶງຂໍ້ມູນອັດຕະໂນມັດ.",
+        tagsTitle: "ແທັກທີ່ໃຊ້ໄດ້",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- ຊື່ທີມ A' },
+            { code: '&lt;TeamB&gt;', desc: '- ຊື່ທີມ B' },
+            { code: '&lt;score_team_a&gt;', desc: '- ຄະແນນທີມ A' },
+            { code: '&lt;score_team_b&gt;', desc: '- ຄະແນນທີມ B' },
+            { code: '&lt;score2_team_a&gt;', desc: '- ຄະແນນ 2 ທີມ A (ຟາວ/ແຕ້ມ)' },
+            { code: '&lt;score2_team_b&gt;', desc: '- ຄະແນນ 2 ທີມ B (ຟາວ/ແຕ້ມ)' },
+            { code: '&lt;time_counter&gt;', desc: '- ເວລາປັດຈຸບັນ (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- ເຄິ່ງເວລາ (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- ຂໍ້ຄວາມປ້າຍ 1' },
+            { code: '&lt;label2&gt;', desc: '- ຂໍ້ຄວາມປ້າຍ 2' },
+            { code: '&lt;label3&gt;', desc: '- ຂໍ້ຄວາມປ້າຍ 3' },
+        ],
+        save: "ບັນທຶກ",
+        close: "ປິດ",
+        saveAndUpdate: "ບັນທຶກ ແລະ ອັບເດດ",
+        helpTitle: "ວິທີການໃຊ້ງານ",
+        helpStep1: "1. ກົດໄອຄອນ <i class='fas fa-folder-open'></i> ເພື່ອຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້ (ຄ່າເລີ່ມຕົ້ນແມ່ນ <code>C:/OBSAssets/logos</code>). **ທ່ານຕ້ອງກົດປຸ່ມ ແກ້ໄຂ ພາຍໃນ Popup ເພື່ອປ່ຽນ ແລະ ບັນທຶກທີ່ຢູ່.**",
+        helpStep2: "2. ກົດປຸ່ມ <i class='fas fa-file-excel'></i> Excel ເພື່ອເລືອກໄຟລ໌ຂໍ້ມູນ.",
+        helpStep3: "3. ເລືອກ Match ID ທີ່ຕ້ອງການ ແລ້ວກົດ <i class='fas fa-check'></i> ໂຫຼດ.",
+        sourcesTitle: "OBS Sources ທີ່ຕ້ອງມີ",
+        sourcesTableHeaders: ["ຊື່ Source", "ປະເພດ Source", "ລາຍລະອຽດ"],
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Color Source', desc: 'ສີທີມ A (ສີຫຼັກ)' },
+            { code: 'Color_Team_B', type: 'Color Source', desc: 'ສີທີມ B (ສີຫຼັກ)' },
+            { code: 'Color_Team_A_2', type: 'Color Source', desc: 'ສີທີມ A (ສີຮອງ)' },
+            { code: 'Color_Team_B_2', type: 'Color Source', desc: 'ສີທີມ B (ສີຮອງ)' },
+            { code: 'logo_team_a', type: 'Image Source', desc: 'ໂລໂກ້ທີມ A' },
+            { code: 'logo_team_b', type: 'Image Source', desc: 'ໂລໂກ້ທີມ B' },
+            { code: 'name_team_a', type: 'Text (GDI+)', desc: 'ຊື່ທີມ A' },
+            { code: 'name_team_b', type: 'Text (GDI+)', desc: 'ຊື່ທີມ B' },
+            { code: 'score_team_a', type: 'Text (GDI+)', desc: 'ຄະແນນທີມ A (ຫຼັກ)' },
+            { code: 'score_team_b', type: 'Text (GDI+)', desc: 'ຄະແນນທີມ B (ຫຼັກ)' },
+            { code: 'score2_team_a', type: 'Text (GDI+)', desc: 'ຄະແນນ 2 ທີມ A (ຟາວ/ແຕ້ມ)' },
+            { code: 'score2_team_b', type: 'Text (GDI+)', desc: 'ຄະແນນ 2 ທີມ B (ຟາວ/ແຕ້ມ)' },
+            { code: 'label_1', type: 'Text (GDI+)', desc: 'ຂໍ້ຄວາມປ້າຍ 1' },
+            { code: 'label_2', type: 'Text (GDI+)', desc: 'ຂໍ້ຄວາມປ້າຍ 2' },
+            { code: 'label_3', type: 'Text (GDI+)', desc: 'ຂໍ້ຄວາມປ້າຍ 3' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'ເຄິ່ງເວລາ' },
+            { code: 'time_counter', type: 'Text (GDI+)', desc: 'ໂຕນັບເວລາ' },
+            { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ທົດເວລາບາດເຈັບ (+1)' },
+        ],
+        understand: "ເຂົ້າໃຈແລ້ວ",
+        donateTitle: "ຮ່ວມສະໜັບສະໜູນ",
+        donateThai: "ສຳລັບຄົນໄທ (ຂຶ້ນ Scoreboard)",
+        donateForeign: "ສຳລັບຕ່າງປະເທດ",
+        timeSettingsTitle: "ຕັ້ງເວລາເລີ່ມຕົ້ນ",
+        timeSettingsMinutes: "ນາທີ",
+        timeSettingsSeconds: "ວິນາທີ",
+        logoPathTitle: "ທີ່ຢູ່ໂຟນເດີໂລໂກ້",
+        logoPathDesc: "ທີ່ຢູ່ໂຟນເດີໂລໂກ້ປັດຈຸບັນແມ່ນ:",
+        logoPathHint: "ຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້",
+        changelogTitle: "ປະຫວັດການອັບເດດ",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li><h5>ເວີຊັ່ນ 2.6 (ລ່າສຸດ)</h5>
+                    <ul>
+                        <li>ເພີ່ມສ່ວນຄວບຄຸມ **ຄະແນນ 2** (ຕົວຢ່າງ: ສຳລັບຟາວ/ນັບໃນຟຸດຊໍ).</li>
+                        <li>ເພີ່ມລະບົບ **ຈື່ຈຳສີທີມ**: ລະບົບຈະຈື່ຄ່າສີຫຼ້າສຸດທີ່ຕັ້ງໄວ້ສຳລັບຊື່ທີມ.</li>
+                        <li>ເພີ່ມ **Global Keyboard Listener** ເພື່ອໃຫ້ສາມາດຄວບຄຸມຄະແນນ/ເວລາດ້ວຍປຸ່ມລັດໄດ້ ເຖິງແມ່ນວ່າ Dock UI ຈະມີ Focus.</li>
+                        <li>ເພີ່ມປຸ່ມ **ຣີເຊັດທັງໝົດ** ເພື່ອຣີເຊັດຄະແນນ, ເວລາ (ເປັນ 00:00), ແລະ ເຄິ່ງເວລາ (ເປັນ 1st) ໃນຄລິກດຽວ.</li>
+                        <li>ປັບປຸງສ່ວນ **ວິທີໃຊ້/Sources** ໃຫ້ເປັນຮູບແບບຕາຕະລາງທີ່ອ່ານງ່າຍ.</li>
+                        <li>ເມື່ອກົດທີ່ຊື່ Source ໃນຕາຕະລາງວິທີໃຊ້ ຈະເຮັດການ **ສຳເນົາຊື່** ໄປຍັງ Clipboard (ແກ້ໄຂຂໍ້ຜິດພາດຂອງຜູ້ໃຊ້ໃນການສຳເນົາຕິດຊ່ອງຫວ່າງ).</li>
+                    </ul>
+                </li>
+                <li><h5>ເວີຊັ່ນ 2.5</h5>
+                    <ul>
+                        <li>ຍ້າຍການຕັ້ງຄ່າທີ່ຢູ່ໂຟນເດີໂລໂກ້ໄປໄວ້ໃນ Popup.</li>
+                        <li>ເພີ່ມຕົວເລືອກສີທີສອງສຳລັບແຕ່ລະທີມ.</li>
+                    </ul>
+                </li>
+                <li><h5>ເວີຊັ່ນ 2.4</h5>
+                    <ul>
+                        <li>ປັບປຸງ UI ຄວບຄຸມເວລາຕາມຄຳແນະນຳ.</li>
+                        <li>ເພີ່ມປຸ່ມ "ບັນທຶກ ແລະ ອັບເດດ" ເພື່ອໃຊ້ການປ່ຽນແປງເວລາທັນທີ.</li>
+                        <li>ປັບປຸງຄວາມໜ້າເຊື່ອຖືຂອງປຸ່ມ 'ຣີເຊັດເປັນເວລາເລີ່ມຕົ້ນ'.</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "ກະລຸນາອັບໂຫຼດໄຟລ໌ກ່ອນ",
+        toastMatchNotFound: "ບໍ່ພົບ Match ID:",
+        toastLoaded: "ໂຫຼດ ID ສຳເລັດ:",
+        toastSuccess: "ສຳເລັດ",
+        toastSwapped: "ສลับຝັ່ງທີມແລ້ວ",
+        toastNoTextToCopy: "ບໍ່ມີຂໍ້ຄວາມໃຫ້ສຳເນົາ",
+        toastCopied: "ສຳເນົາແລ້ວ",
+        toastCopyFailed: "ສຳເນົາລົ້ມເຫຼວ",
+        toastScoreReset: "ຣີເຊັດຄະແນນແລ້ວ",
+        toastScore2Reset: "ຣີເຊັດຄະແນນ 2 ແລ້ວ",
+        toastFullReset: "ຣີເຊັດກະດານຄະແນນທັງໝົດແລ້ວ",
+        toastCopiedSourceName: "ສຳເນົາຊື່ Source ແລ້ວ:",
+        toastSaved: "ບັນທຶກແລ້ວ",
+        toastObsError: "ເຊື່ອມຕໍ່ OBS ບໍ່ສຳເລັດ",
+        toastInvalidTime: "ຮູບແບບເວລາບໍ່ຖືກຕ້ອງ. ກະລຸນາກວດສອບນາທີ ແລະ ວິນາທີ (0-59).",
+        toastTimeSet: "ໄດ້ຕັ້ງ ແລະ ອັບເດດເວລາເລີ່ມຕົ້ນແລ້ວ.",
+    },
+    // Khmer (Adding new keys for completeness)
+    km: {
+        appTitle: "កម្មវិធីបញ្ជាតារាងពិន្ទុបាល់ទាត់ - V2.6",
+        excel: "Excel",
+        matchId: "ID:",
+        load: "ផ្ទុក",
+        teamA: "ក្រុម A",
+        teamB: "ក្រុម B",
+        edit: "កែសម្រួល",
+        editHint: "កែឈ្មោះ ឬបន្ថែមបន្ទាត់ថ្មីជាមួយ /",
+        ok: "យល់ព្រម",
+        label1: "ស្លាក ១",
+        label2: "ស្លាក ២",
+        label3: "ស្លាក ៣",
+        swap: "ប្តូរក្រុម",
+        reset: "កំណត់ឡើងវិញ",
+        fullReset: "កំណត់ឡើងវិញទាំងអស់",
+        score2Label: "ហ្វូល/ពិន្ទុ ២",
+        half: "តង់",
+        injuryTime: "ម៉ោងបន្ថែម",
+        countdown: "រាប់ថយក្រោយ",
+        countdownHint: "កម្មវិធីកំណត់เวลារាប់ថយក្រោយ",
+        resetToZeroHint: "កំណត់ពេលវេលាឡើងវិញទៅ 00:00",
+        resetToStartHint: "កំណត់ពេលវេលាឡើងវិញទៅពេលចាប់ផ្តើមដែលបានកំណត់",
+        settings: "ការកំណត់",
+        copy: "ចម្លង",
+        help: "ជំនួយ",
+        donate: "គាំទ្រ",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "អัปដេតកំណែ 2.6",
+        detailsTitle: "ការកំណត់អត្ថបទប្រកាស",
+        detailsDesc: "បង្កើតសារដោយប្រើស្លាកខាងក្រោមដើម្បីទាញទិន្នន័យដោយស្វ័យប្រវត្តិ។",
+        tagsTitle: "ស្លាកដែលមាន",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- ឈ្មោះក្រុម A' },
+            { code: '&lt;TeamB&gt;', desc: '- ឈ្មោះក្រុម B' },
+            { code: '&lt;score_team_a&gt;', desc: '- ពិន្ទុក្រុម A' },
+            { code: '&lt;score_team_b&gt;', desc: '- ពិន្ទុក្រុម B' },
+            { code: '&lt;score2_team_a&gt;', desc: '- ពិន្ទុ 2 ក្រុម A (ហ្វូល/រាប់)' },
+            { code: '&lt;score2_team_b&gt;', desc: '- ពិន្ទុ 2 ក្រុម B (ហ្វូល/រាប់)' },
+            { code: '&lt;time_counter&gt;', desc: '- ពេលវេលាបច្ចុប្បន្ន (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- តង់ (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- អត្ថបទស្លាក ១' },
+            { code: '&lt;label2&gt;', desc: '- អត្ថបទស្លាក ២' },
+            { code: '&lt;label3&gt;', desc: '- អត្ថបទស្លាក ៣' },
+        ],
+        save: "រក្សាទុក",
+        close: "បិទ",
+        saveAndUpdate: "រក្សាទុក & ធ្វើបច្ចុប្បន្នភាព",
+        helpTitle: "របៀបប្រើ",
+        helpStep1: "1. ចុចរូបតំណាង <i class='fas fa-folder-open'></i> ដើម្បីកំណត់ផ្លូវថតនិមិត្តសញ្ញារបស់អ្នក។ តាមលំនាំដើមវាគឺ <code>C:/OBSAssets/logos</code>។ **អ្នកត្រូវចុចប៊ូតុង កែសម្រួល ក្នុង Popup ដើម្បីផ្លាស់ប្តូរ និងរក្សាទុកផ្លូវ។**",
+        helpStep2: "2. ចុចប៊ូតុង <i class='fas fa-file-excel'></i> Excel ដើម្បីជ្រើសរើសឯកសារទិន្នន័យ។",
+        helpStep3: "3. ជ្រើសរើស Match ID ដែលចង់បាន ហើយចុច <i class='fas fa-check'></i> ផ្ទុក។",
+        sourcesTitle: "OBS Sources ដែលត្រូវការ",
+        sourcesTableHeaders: ["ឈ្មោះ Source", "ប្រភេទ Source", "លម្អិត"],
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Color Source', desc: 'ក្រុម A (ពណ៌ចម្បង)' },
+            { code: 'Color_Team_B', type: 'Color Source', desc: 'ក្រុម B (ពណ៌ចម្បង)' },
+            { code: 'Color_Team_A_2', type: 'Color Source', desc: 'ក្រុម A (ពណ៌បន្ទាប់បន្សំ)' },
+            { code: 'Color_Team_B_2', type: 'Color Source', desc: 'ក្រុម B (ពណ៌បន្ទាប់បន្សំ)' },
+            { code: 'logo_team_a', type: 'Image Source', desc: 'និមិត្តសញ្ញាក្រុម A' },
+            { code: 'logo_team_b', type: 'Image Source', desc: 'និមិត្តសញ្ញាក្រុម B' },
+            { code: 'name_team_a', type: 'Text (GDI+)', desc: 'ឈ្មោះក្រុម A' },
+            { code: 'name_team_b', type: 'Text (GDI+)', desc: 'ឈ្មោះក្រុម B' },
+            { code: 'score_team_a', type: 'Text (GDI+)', desc: 'ពិន្ទុក្រុម A (ចម្បង)' },
+            { code: 'score_team_b', type: 'Text (GDI+)', desc: 'ពិន្ទុក្រុម B (ចម្បង)' },
+            { code: 'score2_team_a', type: 'Text (GDI+)', desc: 'ពិន្ទុ 2 ក្រុម A (ហ្វូល/រាប់)' },
+            { code: 'score2_team_b', type: 'Text (GDI+)', desc: 'ពិន្ទុ 2 ក្រុម B (ហ្វូល/រាប់)' },
+            { code: 'label_1', type: 'Text (GDI+)', desc: 'ស្លាក ១' },
+            { code: 'label_2', type: 'Text (GDI+)', desc: 'ស្លាក ២' },
+            { code: 'label_3', type: 'Text (GDI+)', desc: 'ស្លាក ៣' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'តង់' },
+            { code: 'time_counter', type: 'Text (GDI+)', desc: 'កម្មវិធីកំណត់ពេល' },
+            { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ម៉ោងបន្ថែម (+1)' },
+        ],
+        understand: "យល់ហើយ",
+        donateTitle: "គាំទ្រពួកយើង",
+        donateThai: "សម្រាប់ជនជាតិថៃ (សម្រាប់តារាងពិន្ទុ)",
+        donateForeign: "សម្រាប់ជនបរទេស (ក្រៅប្រទេសថៃ)",
+        timeSettingsTitle: "កំណត់ម៉ោងចាប់ផ្តើម",
+        timeSettingsMinutes: "នាទី",
+        timeSettingsSeconds: "វិនាទី",
+        logoPathTitle: "ផ្លូវថតនិមិត្តសញ្ញា",
+        logoPathDesc: "ផ្លូវថតនិមិត្តសញ្ញាបច្ចុប្បន្នគឺ៖",
+        logoPathHint: "កំណត់ផ្លូវថតនិមិត្តសញ្ញា",
+        changelogTitle: "ប្រវត្តិធ្វើបច្ចុប្បន្នភាព",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li><h5>ជំនាន់ 2.6 (ថ្មីបំផុត)</h5>
+                    <ul>
+                        <li>បានបន្ថែមផ្នែកគ្រប់គ្រង **ពិន្ទុ 2** (ឧទាហរណ៍ សម្រាប់ហ្វូល/រាប់នៅក្នុងហ្វូតសាល)។</li>
+                        <li>បានអនុវត្ត **Team Color Memory**: ប្រព័ន្ធឥឡូវនេះចងចាំពណ៌ចុងក្រោយដែលបានកំណត់សម្រាប់ឈ្មោះក្រុម។</li>
+                        <li>បានបន្ថែម **Global Keyboard Listener** ដើម្បីអនុញ្ញាតឱ្យមានការควบคุมពិន្ទុ/កម្មវិធីកំណត់ពេលវេលាមូលដ្ឋានតាមរយៈគ្រាប់ចុចកាត់នៅពេលដែល Dock UI មាន Focus។</li>
+                        <li>បានបន្ថែមប៊ូតុង **កំណត់ឡើងវិញទាំងអស់** ដើម្បីកំណត់ពិន្ទុទាំងពីរ, កម្មវិធីកំណត់ពេល (ទៅ 00:00), និងតង់ (ទៅ 1st) ក្នុងការចុចតែម្តង។</li>
+                        <li>បានកែលម្អផ្នែក **ជំនួយ/Sources** ទៅជាតារាងដែលងាយស្រួលអាន.</li>
+                        <li>ការចុចឈ្មោះ Source នៅក្នុងតារាងជំនួយឥឡូវនេះ **ចម្លងឈ្មោះ** ទៅកាន់ក្តារតម្បៀតខ្ទាស់ (ដោះស្រាយកំហុសអ្នកប្រើប្រាស់ជាមួយចន្លោះ).</li>
+                    </ul>
+                </li>
+                <li><h5>ជំនាន់ 2.5</h5>
+                    <ul>
+                        <li>បានផ្លាស់ទីការកំណត់ផ្លូវថតនិមិត្តសញ្ញាទៅក្នុង Popup មួយ។</li>
+                        <li>បានបន្ថែមជម្រើសពណ៌ទីពីរសម្រាប់ក្រុមនីមួយៗ។</li>
+                    </ul>
+                </li>
+                <li><h5>ជំនាន់ 2.4</h5>
+                    <ul>
+                        <li>ការកែប្រែ UI ដ៏ធំសម្រាប់ការควบคุมកម្មវិធីកំណត់ម៉ោងដោយផ្អែកលើមតិកែលម្អ។</li>
+                        <li>បានបន្ថែមប៊ូតុង "រក្សាទុក & ធ្វើបច្ចុប្បន្នភាព" ដើម្បីអនុវត្តការផ្លាស់ប្តូរពេលវេលាភ្លាមៗ។</li>
+                        <li>បានធ្វើឱ្យប្រសើរឡើងនូវភាពជឿជាក់នៃប៊ូតុង 'កំណត់ឡើងវិញទៅម៉ោងចាប់ផ្តើម' ។</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "សូមអាប់ឡូតឯកសារជាមុនសិន",
+        toastMatchNotFound: "រកមិនឃើញ Match ID:",
+        toastLoaded: "បានផ្ទុក ID:",
+        toastSuccess: "ជោគជ័យ",
+        toastSwapped: "បានប្តូរក្រុម",
+        toastNoTextToCopy: "គ្មានអត្ថបទសម្រាប់ចម្លង",
+        toastCopied: "បានចម្លងទៅក្ដារតម្បៀតខ្ទាស់",
+        toastCopyFailed: "ការចម្លងបានបរាជ័យ",
+        toastScoreReset: "បានកំណត់ពិន្ទុឡើងវិញ",
+        toastScore2Reset: "បានកំណត់ពិន្ទុ 2 ឡើងវិញ",
+        toastFullReset: "បានកំណត់តារាងពិន្ទុឡើងវិញទាំងអស់",
+        toastCopiedSourceName: "បានចម្លងឈ្មោះ Source:",
+        toastSaved: "បានរក្សាទុក",
+        toastObsError: "ការភ្ជាប់ទៅ OBS បានបរាជ័យ",
+        toastInvalidTime: "ទម្រង់ម៉ោងមិនត្រឹមត្រូវ។ សូមពិនិត្យមើលនាទី និងវិនាទី (0-59)។",
+        toastTimeSet: "បានកំណត់ម៉ោងចាប់ផ្តើម និងធ្វើបច្ចុប្បន្នភាពហើយ។",
+    },
+    // Brazilian Portuguese (Adding new keys for completeness)
+    'pt-br': {
+        appTitle: "Controlador de Placar de Futebol - V2.6",
+        excel: "Excel",
+        matchId: "ID:",
+        load: "Carregar",
+        teamA: "Equipe A",
+        teamB: "Equipe B",
+        edit: "Editar",
+        editHint: "Edite o nome ou adicione uma nova linha com /",
+        ok: "OK",
+        label1: "Rótulo 1",
+        label2: "Rótulo 2",
+        label3: "Rótulo 3",
+        swap: "Trocar Lados",
+        reset: "Resetar",
+        fullReset: "Resetar Tudo",
+        score2Label: "Faltas/Contagem 2",
+        half: "Tempo",
+        injuryTime: "Acréscimos",
+        countdown: "Contagem",
+        countdownHint: "Temporizador de contagem regressiva",
+        resetToZeroHint: "Resetar cronômetro para 00:00",
+        resetToStartHint: "Resetar cronômetro para o tempo inicial configurado",
+        settings: "Config.",
+        copy: "Copiar",
+        help: "Ajuda",
+        donate: "Apoiar",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "Atualização da Versão 2.6",
+        detailsTitle: "Configurações de Texto de Anúncio",
+        detailsDesc: "Crie mensagens usando as tags abaixo para puxar dados automaticamente.",
+        tagsTitle: "Tags Disponíveis",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- Nome da Equipe A' },
+            { code: '&lt;TeamB&gt;', desc: '- Nome da Equipe B' },
+            { code: '&lt;score_team_a&gt;', desc: '- Placar da Equipe A' },
+            { code: '&lt;score_team_b&gt;', desc: '- Placar da Equipe B' },
+            { code: '&lt;score2_team_a&gt;', desc: '- Placar 2 da Equipe A (Faltas/Contagem)' },
+            { code: '&lt;score2_team_b&gt;', desc: '- Placar 2 da Equipe B (Faltas/Contagem)' },
+            { code: '&lt;time_counter&gt;', desc: '- Tempo Atual (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- Tempo (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- Texto do Rótulo 1' },
+            { code: '&lt;label2&gt;', desc: '- Texto do Rótulo 2' },
+            { code: '&lt;label3&gt;', desc: '- Texto do Rótulo 3' },
+        ],
+        save: "Salvar",
+        close: "Fechar",
+        saveAndUpdate: "Salvar e Atualizar",
+        helpTitle: "Como Usar",
+        helpStep1: "1. Clique no ícone <i class='fas fa-folder-open'></i> para definir o caminho da pasta de logos. O padrão é <code>C:/OBSAssets/logos</code>. **Você precisa clicar no botão Editar dentro do pop-up para alterar e salvar o caminho.**",
+        helpStep2: "2. Clique no botão <i class='fas fa-file-excel'></i> Excel para selecionar o arquivo de dados.",
+        helpStep3: "3. Selecione o ID da Partida desejado e clique em <i class='fas fa-check'></i> Carregar.",
+        sourcesTitle: "Fontes OBS Necessárias",
+        sourcesTableHeaders: ["Nome da Fonte", "Tipo de Fonte", "Detalhes"],
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Fonte de Cor', desc: 'Equipe A (Cor Primária)' },
+            { code: 'Color_Team_B', type: 'Fonte de Cor', desc: 'Equipe B (Cor Primária)' },
+            { code: 'Color_Team_A_2', type: 'Fonte de Cor', desc: 'Equipe A (Cor Secundária)' },
+            { code: 'Color_Team_B_2', type: 'Fonte de Cor', desc: 'Equipe B (Cor Secundária)' },
+            { code: 'logo_team_a', type: 'Fonte de Imagem', desc: 'Logo da Equipe A' },
+            { code: 'logo_team_b', type: 'Fonte de Imagem', desc: 'Logo da Equipe B' },
+            { code: 'name_team_a', type: 'Texto (GDI+)', desc: 'Nome da Equipe A' },
+            { code: 'name_team_b', type: 'Texto (GDI+)', desc: 'Nome da Equipe B' },
+            { code: 'score_team_a', type: 'Texto (GDI+)', desc: 'Placar da Equipe A (Principal)' },
+            { code: 'score_team_b', type: 'Texto (GDI+)', desc: 'Placar da Equipe B (Principal)' },
+            { code: 'score2_team_a', type: 'Texto (GDI+)', desc: 'Placar 2 da Equipe A (Faltas/Contagem)' },
+            { code: 'score2_team_b', type: 'Texto (GDI+)', desc: 'Placar 2 da Equipe B (Faltas/Contagem)' },
+            { code: 'label_1', type: 'Texto (GDI+)', desc: 'Rótulo 1' },
+            { code: 'label_2', type: 'Texto (GDI+)', desc: 'Rótulo 2' },
+            { code: 'label_3', type: 'Texto (GDI+)', desc: 'Rótulo 3' },
+            { code: 'half_text', type: 'Texto (GDI+)', desc: 'Tempo' },
+            { code: 'time_counter', type: 'Texto (GDI+)', desc: 'Temporizador' },
+            { code: 'injury_time_text', type: 'Texto (GDI+)', desc: 'Acréscimos (+1)' },
+        ],
+        understand: "Entendi",
+        donateTitle: "Apoie-nos",
+        donateThai: "Para Tailandeses (para o Placar)",
+        donateForeign: "Para Estrangeiros (Fora da Tailândia)",
+        timeSettingsTitle: "Definir Hora de Início",
+        timeSettingsMinutes: "Minutos",
+        timeSettingsSeconds: "Segundos",
+        logoPathTitle: "Caminho da Pasta de Logos",
+        logoPathDesc: "O caminho atual da pasta de logos é:",
+        logoPathHint: "Definir caminho da pasta de logos",
+        changelogTitle: "Histórico de Atualizações",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li><h5>Versão 2.6 (Mais Recente)</h5>
+                    <ul>
+                        <li>Adicionada seção de controle de **Placar 2** (ex: para Faltas/Contagens no Futsal).</li>
+                        <li>Implementada **Memória de Cores da Equipe**: O sistema agora lembra as últimas cores definidas para um nome de equipe.</li>
+                        <li>Adicionado um **Global Keyboard Listener** para permitir o controle básico de placar/temporizador via atalhos de teclado quando a Dock UI está focada.</li>
+                        <li>Adicionado um botão **Resetar Tudo** para resetar ambos os placares, o temporizador (para 00:00) e o tempo (para 1st) em um clique.</li>
+                        <li>Melhorada a seção **Ajuda/Fontes** em uma tabela de fácil leitura.</li>
+                        <li>Clicar em um Nome de Fonte na tabela de Ajuda agora **copia o nome** para a área de transferência (corrige erro de usuário com espaços).</li>
+                    </ul>
+                </li>
+                <li><h5>Versão 2.5</h5>
+                    <ul>
+                        <li>Movida a configuração do caminho da pasta de logos para um pop-up dedicado.</li>
+                        <li>Adicionada uma opção de cor secundária para cada equipe.</li>
+                    </ul>
+                </li>
+                 <li><h5>Versão 2.4</h5>
+                    <ul>
+                        <li>Grande reformulação da interface do usuário para controles de timer com base no feedback.</li>
+                        <li>Adicionado um botão "Salvar e Atualizar" para aplicar as alterações de tempo ao timer ao vivo imediatamente.</li>
+                        <li>Melhorada a confiabilidade do botão "Resetar para o Início".</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "Por favor, carregue um arquivo primeiro",
+        toastMatchNotFound: "ID da Partida não encontrado:",
+        toastLoaded: "ID carregado:",
+        toastSuccess: "Sucesso",
+        toastSwapped: "Equipes trocadas",
+        toastNoTextToCopy: "Nenhum texto para copiar",
+        toastCopied: "Copiado para a área de transferência",
+        toastCopyFailed: "Falha ao copiar",
+        toastScoreReset: "Placar resetado",
+        toastScore2Reset: "Placar 2 resetado",
+        toastFullReset: "Placar totalmente resetado",
+        toastCopiedSourceName: "Nome da fonte copiado:",
+        toastSaved: "Salvo",
+        toastObsError: "Falha ao conectar ao OBS",
+        toastInvalidTime: "Formato de hora inválido. Verifique minutos e segundos (0-59).",
+        toastTimeSet: "A hora de início foi definida e atualizada.",
+    },
+    // Spanish (Adding new keys for completeness)
+    es: {
+        appTitle: "Controlador de Marcador de Fútbol - V2.6",
+        excel: "Excel",
+        matchId: "ID:",
+        load: "Cargar",
+        teamA: "Equipo A",
+        teamB: "Equipo B",
+        edit: "Editar",
+        editHint: "Editar nombre o añadir línea con /",
+        ok: "OK",
+        label1: "Etiqueta 1",
+        label2: "Etiqueta 2",
+        label3: "Etiqueta 3",
+        swap: "Cambiar Equipos",
+        reset: "Reiniciar",
+        fullReset: "Reiniciar Todo",
+        score2Label: "Faltas/Puntos 2",
+        half: "Periodo",
+        injuryTime: "Tiempo añadido",
+        countdown: "Regresiva",
+        countdownHint: "Temporizador de cuenta regresiva",
+        resetToZeroHint: "Reiniciar temporizador a 00:00",
+        resetToStartHint: "Reiniciar temporizador al tiempo de inicio configurado",
+        settings: "Ajustes",
+        copy: "Copiar",
+        help: "Ayuda",
+        donate: "Donar",
+        footerAppName: "OBS Dock UI Scoreboard",
+        changelog: "Actualización Versión 2.6",
+        detailsTitle: "Configuración de Texto de Anuncio",
+        detailsDesc: "Crea un mensaje usando las etiquetas de abajo para obtener datos automáticamente.",
+        tagsTitle: "Etiquetas Disponibles",
+        tagsList: [
+            { code: '&lt;TeamA&gt;', desc: '- Nombre Equipo A' },
+            { code: '&lt;TeamB&gt;', desc: '- Nombre Equipo B' },
+            { code: '&lt;score_team_a&gt;', desc: '- Marcador Equipo A' },
+            { code: '&lt;score_team_b&gt;', desc: '- Marcador Equipo B' },
+            { code: '&lt;score2_team_a&gt;', desc: '- Marcador 2 Equipo A (Faltas/Puntos)' },
+            { code: '&lt;score2_team_b&gt;', desc: '- Marcador 2 Equipo B (Faltas/Puntos)' },
+            { code: '&lt;time_counter&gt;', desc: '- Tiempo Actual (MM:SS)' },
+            { code: '&lt;half_text&gt;', desc: '- Periodo (1st/2nd)' },
+            { code: '&lt;label1&gt;', desc: '- Texto Etiqueta 1' },
+            { code: '&lt;label2&gt;', desc: '- Texto Etiqueta 2' },
+            { code: '&lt;label3&gt;', desc: '- Texto Etiqueta 3' },
+        ],
+        save: "Guardar",
+        close: "Cerrar",
+        saveAndUpdate: "Guardar y Actualizar",
+        helpTitle: "Cómo Usar",
+        helpStep1: "1. Haz clic en el ícono <i class='fas fa-folder-open'></i> para establecer la ruta de la carpeta de logos. Por defecto es <code>C:/OBSAssets/logos</code>. **Debes hacer clic en el botón Editar dentro de la ventana emergente para cambiar y guardar la ruta.**",
+        helpStep2: "2. Haz clic en el botón <i class='fas fa-file-excel'></i> Excel para seleccionar el archivo de datos.",
+        helpStep3: "3. Selecciona el ID del partido y haz clic en <i class='fas fa-check'></i> Cargar.",
+        sourcesTitle: "Fuentes de OBS Requeridas",
+        sourcesTableHeaders: ["Nombre de la Fuente", "Tipo de Fuente", "Detalles"],
+        sourcesList: [
+            { code: 'Color_Team_A', type: 'Fuente de Color', desc: 'Equipo A (Color Primario)' },
+            { code: 'Color_Team_B', type: 'Fuente de Color', desc: 'Equipo B (Color Primario)' },
+            { code: 'Color_Team_A_2', type: 'Fuente de Color', desc: 'Equipo A (Color Secundario)' },
+            { code: 'Color_Team_B_2', type: 'Fuente de Color', desc: 'Equipo B (Color Secundario)' },
+            { code: 'logo_team_a', type: 'Fuente de Imagen', desc: 'Logo Equipo A' },
+            { code: 'logo_team_b', type: 'Fuente de Imagen', desc: 'Logo Equipo B' },
+            { code: 'name_team_a', type: 'Texto (GDI+)', desc: 'Nombre Equipo A' },
+            { code: 'name_team_b', type: 'Texto (GDI+)', desc: 'Nombre Equipo B' },
+            { code: 'score_team_a', type: 'Texto (GDI+)', desc: 'Marcador Equipo A (Principal)' },
+            { code: 'score_team_b', type: 'Texto (GDI+)', desc: 'Marcador Equipo B (Principal)' },
+            { code: 'score2_team_a', type: 'Texto (GDI+)', desc: 'Marcador 2 Equipo A (Faltas/Puntos)' },
+            { code: 'score2_team_b', type: 'Texto (GDI+)', desc: 'Marcador 2 Equipo B (Faltas/Puntos)' },
+            { code: 'label_1', type: 'Texto (GDI+)', desc: 'Etiqueta 1' },
+            { code: 'label_2', type: 'Texto (GDI+)', desc: 'Etiqueta 2' },
+            { code: 'label_3', type: 'Texto (GDI+)', desc: 'Etiqueta 3' },
+            { code: 'half_text', type: 'Texto (GDI+)', desc: 'Periodo' },
+            { code: 'time_counter', type: 'Texto (GDI+)', desc: 'Temporizador' },
+            { code: 'injury_time_text', type: 'Texto (GDI+)', desc: 'Tiempo añadido (+1)' },
+        ],
+        understand: "Entendido",
+        donateTitle: "Apóyanos",
+        donateThai: "Para usuarios de Tailandia",
+        donateForeign: "Para usuarios internacionales",
+        timeSettingsTitle: "Establecer Hora de Inicio",
+        timeSettingsMinutes: "Minutos",
+        timeSettingsSeconds: "Segundos",
+        logoPathTitle: "Ruta de la Carpeta de Logos",
+        logoPathDesc: "La ruta actual de la carpeta de logos es:",
+        logoPathHint: "Establecer la ruta de la carpeta de logos",
+        changelogTitle: "Historial de Actualizaciones",
+        changelogContent: `
+            <ul class="changelog-list">
+                <li><h5>Versión 2.6 (Más Reciente)</h5>
+                    <ul>
+                        <li>Se agregó la sección de control de **Marcador 2** (ej: para Faltas/Puntos en Fútbol Sala).</li>
+                        <li>Se implementó la **Memoria de Color del Equipo**: El sistema ahora recuerda los últimos colores establecidos para un nombre de equipo.</li>
+                        <li>Se agregó un **Global Keyboard Listener** para permitir el control básico de marcador/temporizador a través de atajos de teclado cuando el Dock UI está enfocado.</li>
+                        <li>Se agregó un botón **Reiniciar Todo** para reiniciar ambos marcadores, el temporizador (a 00:00) y el periodo (a 1st) en un solo clic.</li>
+                        <li>Se mejoró la sección **Ayuda/Fuentes** en una tabla de fácil lectura.</li>
+                        <li>Al hacer clic en un Nombre de Fuente en la tabla de Ayuda, ahora **copia el nombre** al portapapeles (corrige el error del usuario con espacios).</li>
+                    </ul>
+                </li>
+                <li><h5>Versión 2.5</h5>
+                    <ul>
+                        <li>Se movió el ajuste de la ruta de la carpeta de logos a una ventana emergente dedicada.</li>
+                        <li>Se agregó una opción de color secundario para cada equipo.</li>
+                    </ul>
+                </li>
+                <li><h5>Versión 2.4</h5>
+                    <ul>
+                        <li>Revisión importante de la interfaz de usuario para los controles del temporizador basada en comentarios.</li>
+                        <li>Se agregó un botón "Guardar y Actualizar" para aplicar los cambios de tiempo al temporizador en vivo de inmediato.</li>
+                        <li>Mejora de la fiabilidad del botón "Reiniciar al Inicio".</li>
+                    </ul>
+                </li>
+            </ul>`,
+        toastLoadFileFirst: "Por favor, carga un archivo primero",
+        toastMatchNotFound: "ID de partido no encontrado:",
+        toastLoaded: "ID cargado:",
+        toastSuccess: "Éxito",
+        toastSwapped: "Equipos cambiados",
+        toastNoTextToCopy: "No hay texto para copiar",
+        toastCopied: "Copiado al portapapeles",
+        toastCopyFailed: "Error al copiar",
+        toastScoreReset: "Marcador reiniciado",
+        toastScore2Reset: "Marcador 2 reiniciado",
+        toastFullReset: "Marcador completamente reiniciado",
+        toastCopiedSourceName: "Nombre de fuente copiado:",
+        toastSaved: "Guardado",
+        toastObsError: "Fallo al conectar con OBS",
+        toastInvalidTime: "Formato de hora no válido. Verifique los minutos y segundos (0-59).",
+        toastTimeSet: "La hora de inicio ha sido establecida y actualizada.",
+    }
+};
