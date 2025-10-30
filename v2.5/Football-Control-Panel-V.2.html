@@ -30,7 +30,6 @@
         .card {
             background-color: var(--card-bg-color); border-radius: var(--border-radius);
             padding: 12px; border: 1px solid var(--border-color);
-            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
         }
         .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
         .row:last-child { margin-bottom: 0; }
@@ -107,59 +106,7 @@
         .score-buttons .plus { width: 48px; height: 48px; font-size: 1.8rem; background: var(--success-color); color: #fff; }
         .score-buttons .minus { width: 48px; height: 32px; font-size: 1.2rem; background: var(--danger-color); color: #fff; }
         
-        /* Styles for Score 2 (Adjusted size to match main score) */
-        #score2Card { 
-            max-height: 200px;
-            opacity: 1;
-            padding: 12px;
-            margin-top: -5px; 
-            background-color: #333333; 
-            overflow: hidden;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out, margin-top 0.3s ease-out;
-        }
-        #score2Card.hidden {
-            max-height: 0;
-            opacity: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            margin-top: 0; 
-        }
-        .score2-control-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .score2-card .score-display { 
-            font-size: 2.8em; /* Equal to main score display */
-            font-weight: 700;
-            flex-basis: 60px;
-            text-align: center;
-            color: var(--warning-color); 
-        }
-        .score2-card .score-buttons .plus { 
-            width: 48px; 
-            height: 48px; 
-            font-size: 1.8rem; 
-            background: var(--warning-color); /* Primary color */
-            color: #fff; 
-        }
-        .score2-card .score-buttons .minus { 
-            width: 48px; 
-            height: 32px; 
-            font-size: 1.2rem; 
-            background: var(--accent-color); /* Secondary color for differentiation */
-            color: #fff; 
-        }
-        .score2-card .score-display-group {
-            text-align: center; 
-            flex-basis: 60px; /* Equal to main score display */
-            display: flex; 
-            flex-direction: column;
-            align-items: center;
-        }
-        .score2-card .score-display-group #score2Label { display: none; }
-        
-        .timer-area-container { display: flex; align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
+        .timer-area-container { align-items: stretch; justify-content: space-between; flex-wrap: nowrap; gap: 8px;}
         .timer-display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 5px 10px; min-width: 100px; }
         .timer-display { font-size: 2.5em; font-weight: 600; text-align: center; letter-spacing: 1px; margin:0; line-height: 1.1; }
         
@@ -176,37 +123,8 @@
         .popup-modal textarea { width: 100%; height: 80px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; padding: 8px; font-size: 0.9rem; margin-bottom: 12px; }
         .item-list { margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border-color); }
         .item-list h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-color); font-weight: 500; display: flex; align-items: center; gap: 6px; }
-        .item-list table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .item-list th, .item-list td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        .item-list th { color: var(--accent-color); font-weight: 600; background: #333; }
-        .item-list td { color: var(--text-muted-color); }
-        .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
-        .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
-        /* NEW: Keybind Table Styles */
-        .keybind-table { width: 100%; }
-        .keybind-table td { padding: 8px 4px; vertical-align: middle; }
-        .keybind-table td:nth-child(1) { width: 50%; }
-        .keybind-table td:nth-child(2) { width: 120px; }
-        .keybind-table td:nth-child(3) { width: 70px; text-align: right; }
-        .keybind-table input[type="text"] { 
-            width: 100%; 
-            padding: 4px; 
-            text-align: center; 
-            font-size: 0.85rem; 
-            height: 30px;
-            box-sizing: border-box;
-            background: var(--bg-color);
-        }
-        .keybind-table input[type="text"]:disabled { background: #333; }
-        .keybind-table .action-buttons { 
-            display: flex; 
-            gap: 5px; 
-            justify-content: flex-end; 
-            align-items: center; 
-        }
-        .keybind-table button { width: 30px; height: 30px; padding: 0; }
-        /* End Keybind Table Styles */
-
+        .item-list-item { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-muted-color); }
+        .item-list-item code { background-color: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: var(--accent-color); font-weight: bold; flex-shrink: 0; }
         .changelog-list { list-style: none; padding-left: 0; }
         .changelog-list li { margin-bottom: 15px; }
         .changelog-list h5 { margin: 0 0 5px 0; font-size: 1rem; color: var(--accent-color); }
@@ -242,8 +160,7 @@
                 <div class="row" style="margin-bottom:0;">
                     <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span data-lang="excel"></span></button>
                     <button id="logoPathBtn" class="btn-secondary" data-lang-title="logoPathHint"><i class="fas fa-folder-open"></i></button>
-                    <button id="fullResetBtn" class="btn-danger"><i class="fas fa-power-off"></i> <span data-lang="fullReset"></span></button>
-                    </div>
+                </div>
                 <div class="row" style="margin-bottom:0;">
                     <label for="matchID" data-lang="matchId"></label>
                     <input type="number" id="matchID" min="1" value="1">
@@ -298,32 +215,6 @@
                 <div class="score-buttons"><button id="scoreBPlusBtn" class="plus">+</button><button id="scoreBMinusBtn" class="minus">-</button></div>
             </div>
         </div>
-        <div class="card score2-card" id="score2Card"> 
-            <div class="score2-control-container">
-                <div class="score-control">
-                    <div class="score-buttons">
-                        <button id="score2APlusBtn" class="plus">+</button>
-                        <button id="score2AMinusBtn" class="minus">-</button>
-                    </div>
-                    <div class="score-display-group">
-                        <span id="score2Label" data-lang="score2Label" style="display: none;"></span>
-                        <div class="score-display" id="score2A">0</div>
-                    </div>
-                    
-                    <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; align-items: center;">
-                        <button id="resetScore2Btn" class="btn-warning" style="padding: 4px 8px; flex-grow: 1;"><i class="fas fa-redo"></i> <span data-lang="reset"></span></button>
-                    </div>
-                    
-                    <div class="score-display-group">
-                        <div class="score-display" id="score2B">0</div>
-                    </div>
-                    <div class="score-buttons">
-                        <button id="score2BPlusBtn" class="plus">+</button>
-                        <button id="score2BMinusBtn" class="minus">-</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="card">
             <div class="row timer-area-container">
                 <div style="flex: 0 0 70px; display: flex;">
@@ -370,6 +261,11 @@
                 <select id="languageSelector" title="Select Language">
                     <option value="th">ภาษาไทย</option>
                     <option value="en">English</option>
+                    <option value="ko">한국어</option>
+                    <option value="lo">ພາສາລາວ</option>
+                    <option value="km">ភាសាខ្មែរ</option>
+                    <option value="pt-br">Português (BR)</option>
+                    <option value="es">Español</option>
                 </select>
             </div>
         </div>
@@ -389,36 +285,13 @@
     <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
         <p data-lang="detailsDesc"></p>
-
         <textarea id="detailsText"></textarea>
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
         </div>
         <div class="row center" style="margin-top: 15px;">
-            <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
-            <button id="closeDetailsBtnTop" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
-        </div>
-        
-        <div class="popup-divider"></div>
-        <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
-        <table class="keybind-table" id="keybindsTable"></table>
-        <div class="row center" style="margin-top: 10px;">
-            <button id="resetKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetKeybinds"></span></button>
-        </div>
-        <div class="popup-divider"></div>
-        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
-            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="score2VisibilityGroup"></span></h4>
-            <div class="row center" style="margin-bottom: 0;">
-                <button id="showScore2Btn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
-                <button id="hideScore2Btn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
-            </div>
-        </div>
-        <div class="popup-divider"></div>
-        <div class="row center" style="margin-bottom: 0;">
-            <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>
-        </div>
-        <div class="row center" style="margin-top: 20px;">
-            <button id="closeDetailsBtnBottom" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
+            <button id="saveDetailsBtn" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
+            <button id="closeDetailsBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
         </div>
     </div>
 
@@ -429,13 +302,7 @@
         <p data-lang-html="helpStep3"></p>
         <div class="item-list">
             <h4 data-lang="sourcesTitle"></h4>
-            <table id="sourcesTable">
-                <thead>
-                    <tr id="sourcesTableHeaders"></tr>
-                </thead>
-                <tbody id="sourcesTableBody"></tbody>
-            </table>
-            </div>
+        </div>
         <div class="row center" style="margin-top: 15px;"><button id="closeHelpBtn" class="btn-primary" data-lang="understand"></button></div>
     </div>
 
