@@ -231,7 +231,7 @@
         .footer div[style*="font-size: 10px"] a[href*="correct-code"] { display: none !important; }
     </style>
 </head>
-<body onload="showWelcomePopup()">
+<body>
     <div id="toast-container"></div>
     <div class="container">
         <div class="announcement-container">
@@ -468,7 +468,7 @@
             <p style="font-size: 0.9rem; color: var(--text-color); margin-top: 10px;">สแกนเพื่อเข้าชมร้านค้า Shopee</p>
         </div>
         <div class="row center" style="margin-top: 20px;">
-            <button id="closeWelcomeBtn" class="btn-primary" onclick="closeWelcomePopup()"><i class="fas fa-times"></i> ปิด</button>
+            <button id="closeWelcomeBtn" class="btn-primary"><i class="fas fa-times"></i> ปิด</button>
         </div>
     </div>
     <div id="timeSettingsPopup" class="popup-modal">
@@ -514,25 +514,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
     
-    <script>
-        function showWelcomePopup() {
-            var popup = document.getElementById('welcomeSponsorPopup');
-            var overlay = document.getElementById('popupOverlay');
-            if (popup && overlay) {
-                popup.style.display = 'block';
-                overlay.style.display = 'block';
-            }
-        }
-
-        function closeWelcomePopup() {
-            var popup = document.getElementById('welcomeSponsorPopup');
-            var overlay = document.getElementById('popupOverlay');
-            if (popup && overlay) {
-                popup.style.display = 'none';
-                overlay.style.display = 'none';
-            }
-        }
-    </script>
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
 </body>
