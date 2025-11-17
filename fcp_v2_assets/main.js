@@ -17,6 +17,8 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
+    "welcomeSponsorPopup", "closeWelcomeBtn", // Pop-up Welcome Elements
+    "copyShopeeLinkBtn", "copyEasyDonateLinkBtn", // Copy Link Buttons
     "saveDetailsBtn", "closeDetailsBtn", // kept for compatibility in some browsers
     "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom", // Updated buttons
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
@@ -25,7 +27,8 @@ const elements = [
     "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn",
     "logoPathBtn", "logoPathPopup", "currentLogoPath", "logoPathInput", "editLogoPathBtn", "closeLogoPathBtn",
     "sourcesTableHeaders", "sourcesTableBody",
-    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn"
+    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn",
+    "tagsTable", // NEW: Tags table element
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -93,7 +96,46 @@ const closeAllPopups = () => {
     elements.changelogPopup.style.display = 'none';
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
+    elements.welcomeSponsorPopup.style.display = 'none'; 
 };
+
+// --- Pop-up Welcome Functions ---
+const showWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.popupOverlay.style.display = 'block';
+        elements.welcomeSponsorPopup.style.display = 'block';
+        
+        // เปิด Tab Shopee เป็นค่าเริ่มต้น (ใช้ ID ของ Tab ที่ต้องการเปิด)
+        const defaultButton = document.getElementById('defaultOpen');
+        if (defaultButton) {
+            // เรียกฟังก์ชัน openWelcomeTab ที่อยู่ใน HTML
+            if (typeof openWelcomeTab === 'function') {
+                 openWelcomeTab({ currentTarget: defaultButton }, 'ShopeeTab');
+            } else {
+                // Fallback (ถ้าฟังก์ชันยังไม่ได้ถูกโหลด) - คลิกเองโดยตรง
+                defaultButton.click();
+                document.getElementById('ShopeeTab').style.display = 'block';
+            }
+        }
+    }
+};
+
+const closeWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.welcomeSponsorPopup.style.display = 'none';
+        elements.popupOverlay.style.display = 'none';
+    }
+};
+
+// NEW: Function to handle copying link
+const copyLink = (link) => {
+    navigator.clipboard.writeText(link).then(() => {
+        showToast(translations[currentLang].toastCopied, 'success');
+    }).catch(err => {
+        showToast(translations[currentLang].toastCopyFailed, 'error');
+    });
+}
+
 
 const copySourceName = (sourceName) => {
     navigator.clipboard.writeText(sourceName.trim()).then(() => {
@@ -102,6 +144,18 @@ const copySourceName = (sourceName) => {
         showToast(translations[currentLang].toastCopyFailed, 'error');
     });
 }
+
+// NEW: Function to handle copying Tags
+const copyTag = (tagCode) => {
+     // Remove HTML code entities like &lt; and &gt;
+    const cleanTag = tagCode.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    navigator.clipboard.writeText(cleanTag).then(() => {
+        showToast(`${translations[currentLang].toastCopied} Tag: ${tagCode}`, 'info');
+    }).catch(err => {
+        showToast(translations[currentLang].toastCopyFailed, 'error');
+    });
+}
+
 
 const populateHelpTable = (lang) => {
     const trans = translations[lang] || translations.en;
@@ -126,6 +180,28 @@ const populateHelpTable = (lang) => {
         row.insertCell().innerHTML = item.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     });
 };
+
+// NEW: Function to populate Tags table
+const populateTagsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const tags = trans.tagsList || [];
+    
+    const thead = `<thead><tr><th>Tag</th><th>${trans.detailsTitle}</th></tr></thead>`;
+    let tbody = '<tbody>';
+    
+    tags.forEach(item => {
+        tbody += `
+            <tr>
+                <td onclick="copyTag('${item.code}')">${item.code}</td>
+                <td>${item.desc}</td>
+            </tr>
+        `;
+    });
+    tbody += '</tbody>';
+    
+    elements.tagsTable.innerHTML = thead + tbody;
+}
+
 
 // Keybind Helper Functions (Modified to support modifier keys and separate buttons)
 const formatKey = (keyString) => {
@@ -247,16 +323,9 @@ const populateKeybindsTable = (lang) => {
 const populateDynamicLists = (lang) => {
     const trans = translations[lang] || translations.en;
     // Details Popup
-    const detailsListContainer = elements.detailsPopup.querySelector('.item-list');
-    detailsListContainer.querySelectorAll('.item-list-item').forEach(item => item.remove());
-    if (trans.tagsList) {
-        trans.tagsList.forEach(item => {
-            const listItem = document.createElement('div');
-            listItem.className = 'item-list-item';
-            listItem.innerHTML = `<code>${item.code}</code> <span>${item.desc}</span>`;
-            detailsListContainer.appendChild(listItem);
-        });
-    }
+    // Populate Tags Table
+    populateTagsTable(lang); 
+
     // Keybinds Table
     populateKeybindsTable(lang);
     // Help Popup - Use new table function
@@ -821,7 +890,13 @@ const setupEventListeners = () => {
     elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
+    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup); 
     
+    // NEW: Copy Link Buttons for Welcome Popup
+    elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
+    elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+
+
     // Time Settings
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
     elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
@@ -964,5 +1039,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     fetchAnnouncement();
     // Re-fetch announcement every hour
-    setInterval(fetchAnnouncement, 3600000); 
+    setInterval(fetchAnnouncement, 3600000);
+
+    // **********************************************
+    // ******* สั่งให้ Pop-up Welcome แสดงทันที *******
+    // **********************************************
+    showWelcomePopup();
+    
+    // Make copyTag globally available for onclick events in the Tags table
+    window.copyTag = copyTag;
+    
+    // Ensure the default tab button is styled correctly after DOM load
+    const defaultButton = document.getElementById('defaultOpen');
+    if (defaultButton) defaultButton.classList.add('active');
 });

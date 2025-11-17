@@ -180,8 +180,14 @@
         .item-list th, .item-list td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: left; }
         .item-list th { color: var(--accent-color); font-weight: 600; background: #333; }
         .item-list td { color: var(--text-muted-color); }
-        .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
-        .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
+        /* Tags Table Styles */
+        .tags-table { width: 100%; border-collapse: collapse; margin-top: 5px;}
+        .tags-table th, .tags-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; }
+        .tags-table th { color: var(--accent-color); font-weight: 600; background: #333; }
+        .tags-table td:nth-child(1) { width: 120px; font-weight: bold; cursor: pointer; color: var(--text-color); }
+        .tags-table td:nth-child(1):hover { text-decoration: underline; color: var(--accent-color); }
+        .tags-table td:nth-child(2) { color: var(--text-muted-color); }
+        
         /* NEW: Keybind Table Styles */
         .keybind-table { width: 100%; }
         .keybind-table td { padding: 8px 4px; vertical-align: middle; }
@@ -229,6 +235,17 @@
         @keyframes fadeIn { to { opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
         .footer div[style*="font-size: 10px"] a[href*="correct-code"] { display: none !important; }
+
+        /* Styles for Tabs in Welcome Popup */
+        .tab-buttons { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .tab-button { background: #4a4a4a; color: #fff; padding: 8px 15px; cursor: pointer; border-radius: 4px; flex-grow: 1; text-align: center; margin: 0 5px; transition: background-color 0.2s; font-weight: 600; }
+        .tab-button.active { background: var(--accent-color); }
+        .tab-button:hover:not(.active) { background: #5a5a5a; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .copy-link-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+        .copy-link-area a { color: var(--text-muted-color); font-size: 0.9rem; word-break: break-all; }
+        .copy-link-area button { padding: 4px 8px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -393,6 +410,7 @@
         <textarea id="detailsText"></textarea>
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
+            <table class="tags-table" id="tagsTable"></table>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
@@ -448,6 +466,12 @@
         </div>
         <div class="popup-divider"></div>
         <div class="donate-section">
+            <h4>สนับสนุน Shopee (Affiliate)</h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L" alt="QR Code for Shopee Jamornz Media">
+            <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="donate-section">
             <h4 data-lang="donateForeign"></h4>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz" alt="QR Code for Ko-fi">
             <a href="https://ko-fi.com/jamornz" target="_blank">https://ko-fi.com/jamornz</a>
@@ -458,7 +482,46 @@
         </div>
         <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary" data-lang="close"></button></div>
     </div>
-    
+
+    <div id="welcomeSponsorPopup" class="popup-modal">
+        <h3><i class="fas fa-heart"></i> สนับสนุนผู้พัฒนา</h3>
+
+        <div class="tab-buttons">
+            <button class="tab-button" onclick="openWelcomeTab(event, 'ShopeeTab')" id="defaultOpen">Shopee</button>
+            <button class="tab-button" onclick="openWelcomeTab(event, 'EasyDonateTab')">EasyDonate</button>
+        </div>
+
+        <div id="ShopeeTab" class="tab-content">
+            <div class="donate-section">
+                <h4 style="font-size: 1rem; color: var(--text-color);">โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน</h4>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้</p>
+                
+                <img id="shopee-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L" alt="QR Code สำหรับ Shopee ของ Jamornz">
+                
+                <div class="copy-link-area">
+                    <a id="shopee-link" href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
+                    <button id="copyShopeeLinkBtn" class="btn-secondary" data-link="https://s.shopee.co.th/4foTAYE21L"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="EasyDonateTab" class="tab-content">
+            <div class="donate-section">
+                 <h4 style="font-size: 1rem; color: var(--text-color);">ทางเลือกอื่นในการสนับสนุน</h4>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">สนับสนุนผ่าน EasyDonate</p>
+
+                <img id="easydonate-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz" alt="QR Code for EasyDonate">
+                
+                <div class="copy-link-area">
+                    <a id="easydonate-link" href="https://easydonate.app/Jamornz" target="_blank">https://easydonate.app/Jamornz</a>
+                    <button id="copyEasyDonateLinkBtn" class="btn-secondary" data-link="https://easydonate.app/Jamornz"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="row center" style="margin-top: 20px;">
+            <button id="closeWelcomeBtn" class="btn-primary"><i class="fas fa-times"></i> ปิด</button>
+        </div>
+    </div>
     <div id="timeSettingsPopup" class="popup-modal">
         <h3 data-lang="timeSettingsTitle"></h3>
         <p id="timeSettingsError" style="color: var(--danger-color); font-weight: bold; display: none;"></p>
@@ -502,6 +565,24 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
     
+    <script>
+        function openWelcomeTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
 </body>
