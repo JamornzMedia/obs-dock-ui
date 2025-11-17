@@ -231,7 +231,7 @@
         .footer div[style*="font-size: 10px"] a[href*="correct-code"] { display: none !important; }
     </style>
 </head>
-<body>
+<body onload="showWelcomePopup()">
     <div id="toast-container"></div>
     <div class="container">
         <div class="announcement-container">
@@ -440,13 +440,36 @@
     </div>
 
     <div id="donatePopup" class="popup-modal">
-        <h3><i class="fas fa-hand-holding-usd"></i> สนับสนุน Jamornz Media</h3>
+        <h3 data-lang="donateTitle"></h3>
         <div class="donate-section">
-            <h4 data-lang="donateThai">สนับสนุนผมด้วยการซื้อของใน Shopee</h4>
+            <h4 data-lang="donateThai"></h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz" alt="QR Code for EasyDonate">
+            <a href="https://easydonate.app/Jamornz" target="_blank">https://easydonate.app/Jamornz</a>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="donate-section">
+            <h4 data-lang="donateForeign"></h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz" alt="QR Code for Ko-fi">
+            <a href="https://ko-fi.com/jamornz" target="_blank">https://ko-fi.com/jamornz</a>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="all-docks-section">
+            <a href="https://sites.google.com/view/jamornzmedia" target="_blank"><i class="fas fa-home"></i> Jamornz Media</a>
+        </div>
+        <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary" data-lang="close"></button></div>
+    </div>
+
+    <div id="welcomeSponsorPopup" class="popup-modal">
+        <h3><i class="fas fa-heart"></i> สนับสนุนผู้พัฒนา</h3>
+        <div class="donate-section">
+            <h4 style="font-size: 1rem; color: var(--text-color);">โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน</h4>
+            <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee (ร้านค้าของ Jamornz Media)</p>
             <img src="Shopee Jamornz_qrcode.png" alt="QR Code สำหรับ Shopee ของ Jamornz">
             <p style="font-size: 0.9rem; color: var(--text-color); margin-top: 10px;">สแกนเพื่อเข้าชมร้านค้า Shopee</p>
         </div>
-        <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary" data-lang="close"></button></div>
+        <div class="row center" style="margin-top: 20px;">
+            <button id="closeWelcomeBtn" class="btn-primary" onclick="closeWelcomePopup()"><i class="fas fa-times"></i> ปิด</button>
+        </div>
     </div>
     <div id="timeSettingsPopup" class="popup-modal">
         <h3 data-lang="timeSettingsTitle"></h3>
@@ -491,6 +514,25 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
     
+    <script>
+        function showWelcomePopup() {
+            var popup = document.getElementById('welcomeSponsorPopup');
+            var overlay = document.getElementById('popupOverlay');
+            if (popup && overlay) {
+                popup.style.display = 'block';
+                overlay.style.display = 'block';
+            }
+        }
+
+        function closeWelcomePopup() {
+            var popup = document.getElementById('welcomeSponsorPopup');
+            var overlay = document.getElementById('popupOverlay');
+            if (popup && overlay) {
+                popup.style.display = 'none';
+                overlay.style.display = 'none';
+            }
+        }
+    </script>
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
 </body>
