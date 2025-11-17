@@ -180,8 +180,14 @@
         .item-list th, .item-list td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: left; }
         .item-list th { color: var(--accent-color); font-weight: 600; background: #333; }
         .item-list td { color: var(--text-muted-color); }
-        .item-list td:first-child { font-weight: bold; cursor: pointer; color: var(--text-color); }
-        .item-list td:first-child:hover { text-decoration: underline; color: var(--accent-color); }
+        /* Tags Table Styles */
+        .tags-table { width: 100%; border-collapse: collapse; margin-top: 5px;}
+        .tags-table th, .tags-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; }
+        .tags-table th { color: var(--accent-color); font-weight: 600; background: #333; }
+        .tags-table td:nth-child(1) { width: 120px; font-weight: bold; cursor: pointer; color: var(--text-color); }
+        .tags-table td:nth-child(1):hover { text-decoration: underline; color: var(--accent-color); }
+        .tags-table td:nth-child(2) { color: var(--text-muted-color); }
+        
         /* NEW: Keybind Table Styles */
         .keybind-table { width: 100%; }
         .keybind-table td { padding: 8px 4px; vertical-align: middle; }
@@ -404,6 +410,7 @@
         <textarea id="detailsText"></textarea>
         <div class="item-list">
             <h4 data-lang="tagsTitle"></h4>
+            <table class="tags-table" id="tagsTable"></table>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span data-lang="save"></span></button>
@@ -459,9 +466,9 @@
         </div>
         <div class="popup-divider"></div>
         <div class="donate-section">
-            <h4>สนับสนุนผมด้วยการซื้อของใน Shopee</h4>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://shopee.co.th/aff.jamornz" alt="QR Code for Shopee Jamornz Media">
-            <a href="https://shopee.co.th/aff.jamornz" target="_blank">https://shopee.co.th/aff.jamornz</a>
+            <h4>สนับสนุน Shopee (Affiliate)</h4>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L" alt="QR Code for Shopee Jamornz Media">
+            <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
         </div>
         <div class="popup-divider"></div>
         <div class="donate-section">
@@ -480,20 +487,20 @@
         <h3><i class="fas fa-heart"></i> สนับสนุนผู้พัฒนา</h3>
 
         <div class="tab-buttons">
-            <button class="tab-button active" onclick="openWelcomeTab(event, 'ShopeeTab')" id="defaultOpen">Shopee</button>
+            <button class="tab-button" onclick="openWelcomeTab(event, 'ShopeeTab')" id="defaultOpen">Shopee</button>
             <button class="tab-button" onclick="openWelcomeTab(event, 'EasyDonateTab')">EasyDonate</button>
         </div>
 
-        <div id="ShopeeTab" class="tab-content active">
+        <div id="ShopeeTab" class="tab-content">
             <div class="donate-section">
                 <h4 style="font-size: 1rem; color: var(--text-color);">โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน</h4>
-                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee (Affiliate Jamornz Media)</p>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้</p>
                 
-                <img id="shopee-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://shopee.co.th/aff.jamornz" alt="QR Code สำหรับ Shopee ของ Jamornz">
+                <img id="shopee-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L" alt="QR Code สำหรับ Shopee ของ Jamornz">
                 
                 <div class="copy-link-area">
-                    <a id="shopee-link" href="https://shopee.co.th/aff.jamornz" target="_blank">https://shopee.co.th/aff.jamornz</a>
-                    <button id="copyShopeeLinkBtn" class="btn-secondary" data-link="https://shopee.co.th/aff.jamornz"><i class="fas fa-copy"></i></button>
+                    <a id="shopee-link" href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
+                    <button id="copyShopeeLinkBtn" class="btn-secondary" data-link="https://s.shopee.co.th/4foTAYE21L"><i class="fas fa-copy"></i></button>
                 </div>
             </div>
         </div>
