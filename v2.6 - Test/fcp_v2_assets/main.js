@@ -17,7 +17,8 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
-    "welcomeSponsorPopup", "closeWelcomeBtn", // NEW: Pop-up Welcome Elements
+    "welcomeSponsorPopup", "closeWelcomeBtn", // Pop-up Welcome Elements
+    "copyShopeeLinkBtn", "copyEasyDonateLinkBtn", // NEW: Copy Link Buttons
     "saveDetailsBtn", "closeDetailsBtn", // kept for compatibility in some browsers
     "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom", // Updated buttons
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
@@ -94,7 +95,7 @@ const closeAllPopups = () => {
     elements.changelogPopup.style.display = 'none';
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
-    elements.welcomeSponsorPopup.style.display = 'none'; // NEW: Close Welcome Popup
+    elements.welcomeSponsorPopup.style.display = 'none'; 
 };
 
 // --- Pop-up Welcome Functions ---
@@ -102,6 +103,10 @@ const showWelcomePopup = () => {
     if (elements.welcomeSponsorPopup && elements.popupOverlay) {
         elements.popupOverlay.style.display = 'block';
         elements.welcomeSponsorPopup.style.display = 'block';
+        
+        // NEW: เปิด Tab Shopee เป็นค่าเริ่มต้น
+        const defaultButton = document.getElementById('defaultOpen');
+        if (defaultButton) defaultButton.click(); 
     }
 };
 
@@ -111,6 +116,15 @@ const closeWelcomePopup = () => {
         elements.popupOverlay.style.display = 'none';
     }
 };
+
+// NEW: Function to handle copying link
+const copyLink = (link) => {
+    navigator.clipboard.writeText(link).then(() => {
+        showToast(translations[currentLang].toastCopied, 'success');
+    }).catch(err => {
+        showToast(translations[currentLang].toastCopyFailed, 'error');
+    });
+}
 
 
 const copySourceName = (sourceName) => {
@@ -839,8 +853,13 @@ const setupEventListeners = () => {
     elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
-    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup); // NEW: Close Welcome Button Listener
+    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup); 
     
+    // NEW: Copy Link Buttons for Welcome Popup
+    elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
+    elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+
+
     // Time Settings
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
     elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
@@ -986,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchAnnouncement, 3600000);
 
     // **********************************************
-    // ******* NEW: สั่งให้ Pop-up Welcome แสดง *******
+    // ******* สั่งให้ Pop-up Welcome แสดงทันที *******
     // **********************************************
     showWelcomePopup();
 });
