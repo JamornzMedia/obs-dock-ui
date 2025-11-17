@@ -17,6 +17,7 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
+    "welcomeSponsorPopup", "closeWelcomeBtn", // NEW: Pop-up Welcome Elements
     "saveDetailsBtn", "closeDetailsBtn", // kept for compatibility in some browsers
     "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom", // Updated buttons
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
@@ -93,7 +94,24 @@ const closeAllPopups = () => {
     elements.changelogPopup.style.display = 'none';
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
+    elements.welcomeSponsorPopup.style.display = 'none'; // NEW: Close Welcome Popup
 };
+
+// --- Pop-up Welcome Functions ---
+const showWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.popupOverlay.style.display = 'block';
+        elements.welcomeSponsorPopup.style.display = 'block';
+    }
+};
+
+const closeWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.welcomeSponsorPopup.style.display = 'none';
+        elements.popupOverlay.style.display = 'none';
+    }
+};
+
 
 const copySourceName = (sourceName) => {
     navigator.clipboard.writeText(sourceName.trim()).then(() => {
@@ -821,6 +839,7 @@ const setupEventListeners = () => {
     elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
+    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup); // NEW: Close Welcome Button Listener
     
     // Time Settings
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
@@ -964,5 +983,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     fetchAnnouncement();
     // Re-fetch announcement every hour
-    setInterval(fetchAnnouncement, 3600000); 
+    setInterval(fetchAnnouncement, 3600000);
+
+    // **********************************************
+    // ******* NEW: สั่งให้ Pop-up Welcome แสดง *******
+    // **********************************************
+    showWelcomePopup();
 });
