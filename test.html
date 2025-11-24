@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard ศูนย์บัญชาการ (Modern UI - Fixed Map)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Leaflet CSS: สำหรับการแสดงผลแผนที่ (เวอร์ชันฟรี) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <!-- Tailwind CSS (เพื่อความสวยงามและ Responsive) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CSS: Custom Styles for Modern Look */
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        /* สีหลัก: น้ำเงินเข้ม (Primary) */
+        .primary-bg { background-color: #1a4d6e; }
+        .primary-text { color: #1a4d6e; }
+        /* สีรอง: เหลือง/ส้ม (Accent/Alert) */
+        .accent-color { color: #f9d342; }
+        .alert-bg { background-color: #fef3c7; } /* bg-amber-100 */
+        .alert-text { color: #b45309; } /* text-amber-700 */
+
+        .sidebar { height: 100vh; overflow-y: auto; }
+        .map-container { height: 65vh; border: 1px solid #e2e8f0; }
+        #map { height: 100%; width: 100%; }
+        
+        /* Stat Box Card */
+        .stat-box { transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-box:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+        /* Alert Item */
+        .alert-item { border-left: 5px solid #cc0000; cursor: pointer; transition: background-color 0.2s; }
+        .alert-item:hover { background-color: #fee2e2; } /* bg-red-100 */
+
+        /* Responsive: ปรับสำหรับมือถือ */
+        @media (max-width: 768px) {
+            body { display: block; }
+            .sidebar { width: 100%; height: auto; order: 2; padding-bottom: 2rem; }
+            .main-content { padding: 1rem; order: 1; }
+            .map-container { height: 50vh; }
+            .md\:flex { flex-direction: column; }
+        }
+    </style>
+</head>
+<body class="md:flex">
+
+    <!-- 1. แถบด้านข้าง: สรุปและแจ้งเตือน (Sidebar) -->
+    <div id="sidebar" class="sidebar md:w-80 flex-shrink-0 primary-bg shadow-2xl">
+        <div class="p-5">
+            <h2 class="text-3xl font-extrabold mb-5 accent-color">🌊 Rescue Dashboard</h2>
+            
+            <!-- สรุปสถานการณ์ -->
+            <div class="mb-6 p-4 rounded-xl bg-blue-800 shadow-inner">
+                <h3 class="text-xl font-bold text-white mb-3 border-b border-blue-600 pb-2">สรุปสถานการณ์รวม</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- ผู้ประสบภัย -->
+                    <div class="stat-box bg-red-600 text-white shadow-lg">
+                        <span id="total-victims" class="stat-number">0</span>
+                        <span class="stat-label">ผู้ประสบภัย (รอช่วย)</span>
+                    </div>
+                    <!-- ทีมกู้ภัย -->
+                    <div class="stat-box bg-white primary-text shadow-lg">
+                        <span id="total-rescuers" class="stat-number">0</span>
+                        <span class="stat-label">ทีมกู้ภัยในพื้นที่</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ฟิลเตอร์การแสดงผล -->
+            <div class="mb-6 p-4 rounded-xl bg-blue-800 shadow-inner">
+                <h3 class="text-xl font-bold text-white mb-3 border-b border-blue-600 pb-2">กรองการแสดงผล (แผนที่)</h3>
+                <label class="block text-sm text-gray-200 mb-2 font-medium"><input type="checkbox" id="filter-victims" checked class="mr-2 accent-red-500"> ผู้ประสบภัย</label>
+                <label class="block text-sm text-gray-200 mb-2 font-medium"><input type="checkbox" id="filter-rescuers" checked class="mr-2 accent-green-500"> ทีมกู้ภัย</label>
+                <label class="block text-sm text-gray-200 font-medium"><input type="checkbox" id="filter-command" checked class="mr-2 accent-yellow-500"> ศูนย์บัญชาการ</label>
+            </div>
+            
+            <!-- ระบบแจ้งเตือน (Alerts) -->
+            <h3 class="text-xl font-bold accent-color mb-3 border-b border-blue-600 pb-2">🚨 การแจ้งเตือนฉุกเฉิน</h3>
+            <div id="alerts-list" class="space-y-2">
+                <!-- Alert items will be appended here -->
+                <div class="alert-item alert-bg alert-text p-3 rounded-md shadow-sm" onclick="zoomToLocation(7.0691, 100.3541, 'ร้องขอความช่วยเหลือ: บ้านโคก')">
+                    <span class="font-bold">NEW!</span> บ้านโคก ร้องขอความช่วยเหลือ
+                </div>
+                <div class="alert-item alert-bg alert-text p-3 rounded-md shadow-sm" onclick="zoomToLocation(7.0250, 100.4000, 'ร้องขอความช่วยเหลือ: สินไพโรจน์')">
+                    <span class="font-bold">NEW!</span> สินไพโรจน์ ติดบนหลังคา
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. พื้นที่หลัก: แผนที่และการติดตาม (Main Content) -->
+    <div id="main-content" class="main-content flex-grow p-4 md:p-6">
+        <h1 class="text-3xl font-extrabold primary-text mb-6">📍 แผนที่ติดตามสถานการณ์ (จังหวัดสงขลา)</h1>
+        
+        <!-- แผนที่ Leaflet -->
+        <div id="map-container" class="map-container rounded-xl shadow-2xl">
+            <div id="map"></div>
+        </div>
+
+        <!-- รายละเอียดทีมกู้ภัยแบ่งตามประเภท (ตาราง/รายการ) -->
+        <div id="rescue-summary-container" class="mt-8">
+            <h3 class="text-xl font-bold primary-text mb-4 border-b-2 border-blue-300 pb-2">🛠️ ยอดรวมทีมกู้ภัยตามประเภท</h3>
+            <div class="overflow-x-auto rounded-xl shadow-lg">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-blue-600 text-white uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">ประเภทหน่วย</th>
+                            <th class="py-3 px-6 text-center">รวมหน่วย</th>
+                            <th class="py-3 px-6 text-center">กำลังปฏิบัติการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rescue-type-body" class="bg-white text-gray-700 text-sm font-light divide-y divide-gray-200">
+                        <!-- Data will be inserted by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- 3. JavaScript และการเชื่อมต่อ Leaflet -->
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20n69z7kLqT1n8zI/r7V5w+wP/k5+R7lQ/3A+Q+4JcQ="
+        crossorigin=""></script>
+    
+    <script>
+        // ตำแหน่งศูนย์กลางแผนที่ (สงขลา)
+        const initialLocation = [7.00, 100.47]; 
+        const initialZoom = 11;
+        let map;
+        let markers = L.layerGroup(); 
+
+        // ** ข้อมูลจำลอง (Mock Data) **
+        const mockData = {
+            victims: [
+                { id: 1, lat: 7.0691, lng: 100.3541, type: 'Victim', status: 'Waiting', info: 'บ้านโคก - ผู้สูงอายุ 2 คน' },
+                { id: 2, lat: 7.0250, lng: 100.4000, type: 'Victim', status: 'Waiting', info: 'หมู่บ้านสินไพโรจน์ - ติดบนหลังคา 3 คน' },
+            ],
+            rescuers: [
+                { id: 101, lat: 7.0000, lng: 100.5000, type: 'Boat (Small)', status: 'Available', info: 'ทีม ปภ. - เรือเล็ก' },
+                { id: 102, lat: 7.0750, lng: 100.4500, type: 'Truck (High-Lift)', status: 'En Route', info: 'มูลนิธิร่วมกตัญญู - รถยกสูง' },
+                { id: 103, lat: 7.0100, lng: 100.3200, type: 'Helicopter', status: 'Returning', info: 'ทัพอากาศ - ฮ. ลำที่ 1' },
+                { id: 104, lat: 6.9800, lng: 100.5500, type: 'Boat (Flat-bottom)', status: 'Available', info: 'อาสาสมัคร - เรือท้องแบน' },
+            ],
+            commands: [
+                { id: 201, lat: 7.0125, lng: 100.4900, type: 'Command Center', info: 'ศูนย์บัญชาการหลัก สงขลา' },
+            ]
+        };
+
+        // **ฟังก์ชันหลักในการเริ่มต้นแผนที่**
+        function initMap() {
+            map = L.map('map').setView(initialLocation, initialZoom);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            markers.addTo(map); 
+
+            // **การแก้ไขปัญหาแผนที่ไม่แสดงผล: ให้ Leaflet คำนวณขนาดใหม่หลังจากโหลด**
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500); // หน่วงเวลา 500ms
+
+            // แสดง Marker
+            renderMarkers();
+            
+            // ตั้งค่า Filter Event Listeners
+            document.getElementById('filter-victims').addEventListener('change', renderMarkers);
+            document.getElementById('filter-rescuers').addEventListener('change', renderMarkers);
+            document.getElementById('filter-command').addEventListener('change', renderMarkers);
+
+            // อัพเดทข้อมูลสรุป
+            updateSummary();
+            updateRescueTypeSummary();
+
+            // จำลองการอัพเดทตำแหน่ง
+            setInterval(updateLocationSimulation, 10000); 
+        }
+
+        // **ฟังก์ชันสร้าง Leaflet Icon โดยใช้สี**
+        function createIcon(color) {
+            // ใช้ icon สีจาก pointhi/leaflet-color-markers
+            return new L.Icon({
+                iconUrl: `https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+        }
+
+        // **ฟังก์ชันแสดง Marker บนแผนที่**
+        function renderMarkers() {
+            markers.clearLayers(); 
+
+            const showVictims = document.getElementById('filter-victims').checked;
+            const showRescuers = document.getElementById('filter-rescuers').checked;
+            const showCommand = document.getElementById('filter-command').checked;
+            
+            const victimIcon = createIcon('red'); 
+            const commandIcon = createIcon('darkred'); 
+
+            // ผู้ประสบภัย (สีแดง)
+            if (showVictims) {
+                mockData.victims.forEach(v => {
+                    addMarker(v.lat, v.lng, `ผู้ประสบภัย: ${v.info}`, victimIcon);
+                });
+            }
+
+            // ทีมกู้ภัย (ใช้สีตามประเภท)
+            if (showRescuers) {
+                mockData.rescuers.forEach(r => {
+                    let iconColor;
+                    if (r.type.includes('Boat')) {
+                        iconColor = 'blue'; 
+                    } else if (r.type.includes('Truck')) {
+                        iconColor = 'green';
+                    } else if (r.type.includes('Helicopter')) {
+                        iconColor = 'purple';
+                    } else {
+                        iconColor = 'gray';
+                    }
+                    const rescueIcon = createIcon(iconColor);
+                    addMarker(r.lat, r.lng, `กู้ภัย: ${r.info} (${r.status})`, rescueIcon);
+                });
+            }
+
+            // ศูนย์บัญชาการ (สีแดงเข้ม)
+            if (showCommand) {
+                 mockData.commands.forEach(c => {
+                    addMarker(c.lat, c.lng, `ศูนย์บัญชาการ: ${c.info}`, commandIcon);
+                });
+            }
+        }
+
+        // **ฟังก์ชันเพิ่ม Marker เดี่ยว**
+        function addMarker(lat, lng, title, icon) {
+            const marker = L.marker([lat, lng], {icon: icon})
+                .bindPopup(`**${title}**`, { closeButton: false, autoClose: false }) 
+                .on('mouseover', function() { this.openPopup(); })
+                .on('mouseout', function() { this.closePopup(); });
+            
+            markers.addLayer(marker);
+        }
+
+        // **ฟังก์ชันอัพเดทสถิติรวม**
+        function updateSummary() {
+            document.getElementById('total-victims').innerText = mockData.victims.length;
+            document.getElementById('total-rescuers').innerText = mockData.rescuers.length;
+        }
+
+        // **ฟังก์ชันอัพเดทตารางสรุปประเภททีมกู้ภัย**
+        function updateRescueTypeSummary() {
+            const types = {};
+            const activeCount = {};
+
+            mockData.rescuers.forEach(r => {
+                types[r.type] = (types[r.type] || 0) + 1;
+                if (r.status !== 'Available') { 
+                    activeCount[r.type] = (activeCount[r.type] || 0) + 1;
+                }
+            });
+
+            const tbody = document.getElementById('rescue-type-body');
+            tbody.innerHTML = ''; 
+
+            for (const type in types) {
+                const total = types[type];
+                const active = activeCount[type] || 0;
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-blue-50 transition duration-150 ease-in-out';
+                
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left">${type}</td>
+                    <td class="py-3 px-6 text-center font-medium">${total}</td>
+                    <td class="py-3 px-6 text-center font-extrabold text-lg text-${active > 0 ? 'red-600' : 'green-600'}">${active}</td>
+                `;
+            }
+        }
+        
+        // **ฟังก์ชันจำลองการอัพเดทตำแหน่ง (Real-time)**
+        function updateLocationSimulation() {
+            // จำลองการขยับตำแหน่ง
+            mockData.rescuers.forEach(r => {
+                r.lat += (Math.random() - 0.5) * 0.005; 
+                r.lng += (Math.random() - 0.5) * 0.005; 
+                
+                // จำลองสถานะเปลี่ยน
+                if (Math.random() < 0.2) {
+                    const statuses = ['Available', 'En Route', 'Rescuing', 'Returning'];
+                    r.status = statuses[Math.floor(Math.random() * statuses.length)];
+                }
+            });
+            renderMarkers(); 
+            updateRescueTypeSummary(); 
+        }
+
+        // **ฟังก์ชันซูมไปยังตำแหน่ง (เมื่อคลิก Alert)**
+        function zoomToLocation(lat, lng, title) {
+            if (map) {
+                map.setView([lat, lng], 15); 
+            }
+            showToast(`🚀 กำลังซูมไปที่: ${title}`);
+        }
+
+        // **ฟังก์ชันแสดง Toast Message (จำลองการแจ้งเตือนแบบ Pop-up)**
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 p-4 bg-blue-600 text-white font-semibold rounded-lg shadow-xl transition-opacity duration-300 z-50';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // ทำให้หายไปเองใน 3 วินาที
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // เริ่มต้นแผนที่เมื่อหน้าโหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', initMap);
+        
+    </script>
+
+</body>
+</html>
