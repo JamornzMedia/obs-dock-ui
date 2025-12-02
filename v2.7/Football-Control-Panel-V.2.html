@@ -59,17 +59,8 @@
             border-radius: var(--border-radius);
             padding: 12px;
             border: 1px solid var(--border-color);
-            transition: max-height 0.3s ease-out, padding 0.3s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
         }
-
-            .card.hidden {
-                max-height: 0;
-                opacity: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                margin-top: 0;
-                overflow: hidden;
-            }
 
         .row {
             display: flex;
@@ -168,7 +159,6 @@
             .btn-success:hover {
                 background: var(--success-hover-color);
             }
-        /* NEW: Button Colors for Action Panel - Simplified to use custom BG */
 
         .team-row {
             display: flex;
@@ -302,8 +292,7 @@
         }
 
         .labels-row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            display: flex;
             gap: 8px;
             margin-top: 10px;
         }
@@ -488,7 +477,7 @@
             padding: 20px;
             border-radius: var(--border-radius);
             width: 90%;
-            max-width: 450px;
+            max-width: 400px;
             border: 1px solid var(--border-color);
             z-index: 100;
             max-height: 90vh;
@@ -650,88 +639,6 @@
                 padding: 0;
             }
         /* End Keybind Table Styles */
-
-        /* NEW: Action Button Settings Table Styles (Simplified) */
-        .action-config-table {
-            font-size: 0.85rem;
-        }
-
-            .action-config-table th {
-                background: #4a4a4a;
-            }
-
-            .action-config-table input[type="text"], .action-config-table input[type="color"] {
-                font-size: 0.8rem;
-                padding: 4px;
-                height: 30px;
-                box-sizing: border-box;
-            }
-
-            .action-config-table td:nth-child(1) {
-                width: 30px;
-                text-align: center;
-                font-weight: bold;
-            }
-            /* ID */
-            .action-config-table td:nth-child(2) {
-                width: 100px;
-            }
-            /* Label */
-            .action-config-table td:nth-child(3) {
-                width: 60px;
-            }
-            /* Color */
-            .action-config-table td:nth-child(4) {
-                width: 110px;
-            }
-            /* Keybind */
-            .action-config-table td:nth-child(5) {
-                width: 70px;
-                text-align: right;
-            }
-            /* Controls */
-            .action-config-table .keybind-input {
-                width: 100%;
-            }
-
-            .action-config-table .action-name-input {
-                width: 100%;
-            }
-
-            .action-config-table .color-picker {
-                width: 20px;
-                height: 20px;
-                padding: 0;
-            }
-
-            .action-config-table .key-action-buttons {
-                display: flex;
-                gap: 5px;
-                justify-content: flex-end;
-            }
-        /* End Action Button Settings Table Styles */
-
-        /* NEW: Visibility Table Styles */
-        .visibility-table {
-            width: 100%;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-
-            .visibility-table th {
-                background: #4a4a4a;
-            }
-
-            .visibility-table td {
-                padding: 8px 4px;
-            }
-
-                .visibility-table td:nth-child(2) {
-                    width: 80px;
-                    text-align: center;
-                }
-        /* End Visibility Table Styles */
-
 
         .changelog-list {
             list-style: none;
@@ -933,19 +840,32 @@
                 font-size: 0.8rem;
             }
 
-        /* NEW: Action Button Card Styles */
-        #actionButtonsCard .row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-            gap: 8px;
-            margin-bottom: 0;
+        /* NEW V2.7 Styles for Swap/Action Card Visibility */
+        #swapCard {
+            padding: 8px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
         }
 
-        #actionButtonsCard button {
-            flex-direction: column;
-            height: 50px;
-            font-weight: 600;
-            color: #1f2937;
+            #swapCard.hidden {
+                max-height: 0;
+                padding: 0 8px;
+            }
+
+        #actionButtonsCard {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+            #actionButtonsCard.hidden {
+                max-height: 0;
+                padding: 0 12px;
+            }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
         }
     </style>
 </head>
@@ -999,29 +919,17 @@
                 </div>
             </div>
             <div class="labels-row">
-                <div id="label1" data-lang="label1"></div>
-                <div id="label2" data-lang="label2"></div>
-                <div id="label3" data-lang="label3"></div>
-                <div id="label4" data-lang="label4"></div>
-                <div id="label5" data-lang="label5"></div>
+                <div id="label1" data-lang="label1"></div> <div id="label2" data-lang="label2"></div>
+                <div id="label3" data-lang="label3"></div> <div id="label4" data-lang="label4"></div> <div id="label5" data-lang="label5"></div>
             </div>
         </div>
 
-        <div class="card" id="actionButtonsCard">
-            <div class="row">
-                <button id="actionBtn1" class="btn-secondary" style="background-color: #eab308;">Action 1</button>
-                <button id="actionBtn2" class="btn-secondary" style="background-color: #06b6d4;">Action 2</button>
-                <button id="actionBtn3" class="btn-secondary" style="background-color: #84cc16;">Action 3</button>
-                <button id="actionBtn4" class="btn-secondary" style="background-color: #a855f7;">Action 4</button>
-                <button id="actionBtn5" class="btn-secondary" style="background-color: #fb923c;">Action 5</button>
-                <button id="actionBtn6" class="btn-secondary" style="background-color: #f472b6;">Action 6</button>
-            </div>
-        </div>
-        <div class="card" style="padding: 8px;" id="swapCard">
-            <div class="row center">
+        <div class="card" id="swapCard">
+            <div class="row center" style="margin-bottom: 0;">
                 <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span data-lang="swap"></span></button>
             </div>
         </div>
+
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn" class="minus">-</button></div>
@@ -1057,6 +965,18 @@
                 </div>
             </div>
         </div>
+
+        <div class="card" id="actionButtonsCard">
+            <div class="action-grid">
+                <button id="actionBtn1" class="btn-secondary" data-lang="actionBtn1">Action 1</button>
+                <button id="actionBtn2" class="btn-secondary" data-lang="actionBtn2">Action 2</button>
+                <button id="actionBtn3" class="btn-secondary" data-lang="actionBtn3">Action 3</button>
+                <button id="actionBtn4" class="btn-secondary" data-lang="actionBtn4">Action 4</button>
+                <button id="actionBtn5" class="btn-secondary" data-lang="actionBtn5">Action 5</button>
+                <button id="actionBtn6" class="btn-secondary" data-lang="actionBtn6">Action 6</button>
+            </div>
+        </div>
+
         <div class="card">
             <div class="row timer-area-container">
                 <div style="flex: 0 0 70px; display: flex;">
@@ -1119,7 +1039,7 @@
     </div>
     <div id="popupOverlay" class="popup-overlay"></div>
 
-    <div id="detailsPopup" class="popup-modal" style="max-width: 500px;">
+    <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
         <p data-lang="detailsDesc"></p>
 
@@ -1134,23 +1054,6 @@
         </div>
 
         <div class="popup-divider"></div>
-
-        <h4 style="margin: 0; margin-bottom: 10px;"><i class="fas fa-clock"></i> <span data-lang="periodsSettingTitle"></span></h4>
-        <div class="row center" style="gap: 15px; margin-bottom: 15px;">
-            <label for="maxPeriods" data-lang="maxPeriodsLabel"></label>
-            <input type="number" id="maxPeriods" min="1" max="9" value="2" style="width: 50px; font-size: 1rem; padding: 5px;">
-        </div>
-
-        <div class="popup-divider"></div>
-
-        <h4 style="margin: 0; margin-bottom: 10px;"><i class="fas fa-bolt"></i> <span data-lang="actionButtonsTitle"></span></h4>
-        <table class="action-config-table" id="actionConfigTable"></table>
-        <div class="row center" style="margin-top: 10px;">
-            <button id="resetActionKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetActionKeybinds"></span></button>
-        </div>
-
-        <div class="popup-divider"></div>
-
         <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
         <table class="keybind-table" id="keybindsTable"></table>
         <div class="row center" style="margin-top: 10px;">
@@ -1158,30 +1061,24 @@
         </div>
 
         <div class="popup-divider"></div>
+        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
+            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="visibilityControlGroup">Visibility Control</span></h4>
+            <div class="row center" style="margin-bottom: 0; gap: 10px;">
+                <div class="row center" style="margin-bottom: 0;">
+                    <label for="toggleScore2Visible" data-lang="score2Label" style="font-size: 0.9rem; margin-right: 5px;"></label>
+                    <input type="checkbox" id="toggleScore2Visible">
+                </div>
+                <div class="row center" style="margin-bottom: 0;">
+                    <label for="toggleSwapVisible" data-lang="swap" style="font-size: 0.9rem; margin-right: 5px;"></label>
+                    <input type="checkbox" id="toggleSwapVisible">
+                </div>
+                <div class="row center" style="margin-bottom: 0;">
+                    <label for="toggleActionVisible" data-lang="actionBtn1" style="font-size: 0.9rem; margin-right: 5px;">Actions</label>
+                    <input type="checkbox" id="toggleActionVisible">
+                </div>
+            </div>
+        </div>
 
-        <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="visibilityTitle"></span></h4>
-        <table class="visibility-table">
-            <thead>
-                <tr>
-                    <th data-lang="featureName"></th>
-                    <th data-lang="visibilityToggle"></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td data-lang="score2VisibilityGroup"></td>
-                    <td><input type="checkbox" id="toggleScore2Visible"></td>
-                </tr>
-                <tr>
-                    <td data-lang="swapVisibilityGroup"></td>
-                    <td><input type="checkbox" id="toggleSwapVisible"></td>
-                </tr>
-                <tr>
-                    <td data-lang="actionGroupVisibility"></td>
-                    <td><input type="checkbox" id="toggleActionVisible"></td>
-                </tr>
-            </tbody>
-        </table>
         <div class="popup-divider"></div>
         <div class="row center" style="margin-bottom: 0;">
             <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>

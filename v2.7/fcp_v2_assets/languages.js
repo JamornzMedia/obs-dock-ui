@@ -16,25 +16,18 @@ export const translations = {
         label1: "Label 1",
         label2: "Label 2",
         label3: "Label 3",
-        label4: "Label 4",
-        label5: "Label 5",
+        label4: "Label 4", // NEW
+        label5: "Label 5", // NEW
         swap: "Swap Teams",
         reset: "Reset",
         fullReset: "Full Reset",
         score2Label: "Fouls/Counts",
         hide: "Hide",
         show: "Show",
+        score2VisibilityGroup: "Score 2 Visibility Control",
+        visibilityControlGroup: "Card Visibility Control", // NEW
         resetKeybinds: "Reset Keybinds",
         resetColors: "Clear Team Color Memory",
-        // NEW Action Buttons
-        actionButtonsTitle: "Action Buttons Config (6 Buttons)",
-        actionName: "Label",
-        actionColor: "Color",
-        resetActionKeybinds: "Reset Action Keys",
-        // NEW Periods Setting
-        periodsSettingTitle: "Half/Periods Setting",
-        maxPeriodsLabel: "Max Periods (1-9)",
-
         half: "Half",
         injuryTime: "Added Time",
         countdown: "Down",
@@ -51,14 +44,16 @@ export const translations = {
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Custom Keyboard Shortcuts",
-        // NEW Visibility Table Headers
-        visibilityTitle: "Visibility Control",
-        featureName: "Feature",
-        visibilityToggle: "Show/Hide",
-        score2VisibilityGroup: "Score 2 Panel (Fouls/Counts)",
-        swapVisibilityGroup: "Swap Teams Button",
-        actionGroupVisibility: "Action Buttons Group (6 Buttons)",
 
+        // NEW V2.7 Action Buttons
+        actionBtn1: "Action 1",
+        actionBtn2: "Action 2",
+        actionBtn3: "Action 3",
+        actionBtn4: "Action 4",
+        actionBtn5: "Action 5",
+        actionBtn6: "Action 6",
+
+        // Keybind List (Unchanged for this fix)
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -73,15 +68,8 @@ export const translations = {
             { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
             { id: "full_reset", label: "Full Reset (All)", default: "F12" },
         ],
-        // NEW Action Keybinds (6 Buttons)
-        actionKeybindsList: [
-            { id: "action_btn_1", label: "Action Button 1", default: "CONTROL+1" },
-            { id: "action_btn_2", label: "Action Button 2", default: "CONTROL+2" },
-            { id: "action_btn_3", label: "Action Button 3", default: "CONTROL+3" },
-            { id: "action_btn_4", label: "Action Button 4", default: "CONTROL+4" },
-            { id: "action_btn_5", label: "Action Button 5", default: "CONTROL+5" },
-            { id: "action_btn_6", label: "Action Button 6", default: "CONTROL+6" },
-        ],
+
+        // Tags List (Updated for new Labels)
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'Team A Name' },
             { code: '&lt;TeamB&gt;', desc: 'Team B Name' },
@@ -90,12 +78,12 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'Team A Score 2 (Fouls/Counts)' },
             { code: '&lt;score2_team_b&gt;', desc: 'Team B Score 2 (Fouls/Counts)' },
             { code: '&lt;time_counter&gt;', desc: 'Current Time (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'Half (1st/2nd/3rd...)' },
+            { code: '&lt;half_text&gt;', desc: 'Half (1st/2nd)' },
             { code: '&lt;label1&gt;', desc: 'Label 1 Text' },
             { code: '&lt;label2&gt;', desc: 'Label 2 Text' },
             { code: '&lt;label3&gt;', desc: 'Label 3 Text' },
-            { code: '&lt;label4&gt;', desc: 'Label 4 Text' },
-            { code: '&lt;label5&gt;', desc: 'Label 5 Text' },
+            { code: '&lt;label4&gt;', desc: 'Label 4 Text' }, // NEW
+            { code: '&lt;label5&gt;', desc: 'Label 5 Text' }, // NEW
         ],
         save: "Save",
         close: "Close",
@@ -104,6 +92,8 @@ export const translations = {
         helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. The default is <code>C:/OBSAssets/logos</code>. **You need to click the Edit button inside the popup to change and save the path.**",
         helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
         helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
+
+        // Sources List (Assumed new sources for Label 4, 5)
         sourcesTitle: "Required OBS Sources",
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
         sourcesList: [
@@ -122,13 +112,12 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'Label 1 Text' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'Label 2 Text' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'Label 3 Text' },
-            { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' },
-            { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' },
-            { code: 'half_text', type: 'Text (GDI+)', desc: 'Half/Period Text (1st/2nd/3rd...)' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' }, // NEW
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' }, // NEW
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
-            { code: 'action_output_1', type: 'Text (GDI+)', desc: 'Action Button 1 Output (Recommended)' },
-            { code: 'action_output_6', type: 'Text (GDI+)', desc: 'Action Button 6 Output (Recommended)' },
+            // V2.7 Actions will likely use separate Text/Image sources, not listed here for simplicity
         ],
         understand: "Got it",
         donateTitle: "Support Us",
@@ -141,27 +130,18 @@ export const translations = {
         logoPathDesc: "The current logo folder path is:",
         logoPathHint: "Set logo folder path",
         changelogTitle: "Update History",
+
+        // V2.7 Changelog Content
         changelogContent: `
             <ul class="changelog-list">
-                 <li>
+                <li>
                     <h5>Version 2.7 (Latest)</h5>
                     <ul>
-                        <li>**Swap Fix:** Implemented Master Data logic for Team A/B to ensure logos, names, and colors sync perfectly upon swap.</li>
-                        <li>**Action Buttons (6):** Increased to 6 buttons. Simplified the config (Name, Color, Keybind only) and moved them above the Swap button.</li>
-                        <li>**Custom Periods:** Added setting to define max periods/halves (default 2), allowing use for other sports.</li>
-                        <li>**UI Cleanup:** Consolidated all visibility toggles (Score 2, Swap, Action Group) into a single, compact table with checkboxes in Settings.</li>
-                        <li>**Label Expansion:** Increased custom labels from 3 to 5 (Label 1-5).</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>Version 2.6</h5>
-                    <ul>
-                        <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
-                        <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
-                        <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
-                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel supporting modifier keys (Ctrl/Alt/Shift).</li>
-                        <li>**OBS Integration:** Improved key binding to pass through the Dock UI to OBS for instant control.</li>
-                        <li>**Setup:** Updated OBS Source list and streamlined announcement loading from local TXT file.</li>
+                        <li>**Core Logic Refactor (Master Data):** Rewrote core team logic to use Master Data structure, ensuring **Swap Teams** fully transfers Name, Logo, Colors, Score 1, and Score 2 correctly.</li>
+                        <li>**UI Customization:** Added visibility toggles in Settings for Score 2 Card, Swap Button Card, and Action Button Card.</li>
+                        <li>**New Elements:** Added **Label 4** and **Label 5** for more custom text fields.</li>
+                        <li>**New Elements:** Added **6 Action Buttons** for customizable OBS scene switching or triggers (keybinds forthcoming).</li>
+                        <li>**Fix:** Resolved initialization crash issue upon loading.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -183,7 +163,6 @@ export const translations = {
         toastObsError: "Failed to connect to OBS",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
         toastTimeSet: "Start time has been set and updated.",
-        toastMaxPeriodsSet: "Max periods set to:",
     },
     // ภาษาไทย
     th: {
@@ -199,25 +178,18 @@ export const translations = {
         label1: "ป้าย 1",
         label2: "ป้าย 2",
         label3: "ป้าย 3",
-        label4: "ป้าย 4",
-        label5: "ป้าย 5",
+        label4: "ป้าย 4", // NEW
+        label5: "ป้าย 5", // NEW
         swap: "สลับฝั่ง",
         reset: "รีเซ็ต",
         fullReset: "รีเซ็ตทั้งหมด",
         score2Label: "ฟาวล์/แต้ม 2",
         hide: "ซ่อน",
         show: "แสดง",
+        score2VisibilityGroup: "ควบคุมการแสดงผลคะแนน 2",
+        visibilityControlGroup: "ควบคุมการแสดงผลส่วนต่างๆ", // NEW
         resetKeybinds: "รีเซ็ตคีย์ลัด",
         resetColors: "ล้างหน่วยความจำสีทีม",
-        // NEW Action Buttons
-        actionButtonsTitle: "ตั้งค่าปุ่มแอคชัน (6 ปุ่ม)",
-        actionName: "ชื่อปุ่ม",
-        actionColor: "สี",
-        resetActionKeybinds: "รีเซ็ตคีย์ลัดแอคชัน",
-        // NEW Periods Setting
-        periodsSettingTitle: "ตั้งค่าครึ่งเวลา/ช่วงเวลา",
-        maxPeriodsLabel: "จำนวนครึ่งเวลาสูงสุด (1-9)",
-
         half: "ครึ่ง",
         injuryTime: "ทดเวลา",
         countdown: "นับถอยหลัง",
@@ -234,14 +206,16 @@ export const translations = {
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
-        // NEW Visibility Table Headers
-        visibilityTitle: "ควบคุมการแสดงผล",
-        featureName: "คุณสมบัติ",
-        visibilityToggle: "แสดง/ซ่อน",
-        score2VisibilityGroup: "แผงคะแนน 2 (ฟาวล์/แต้ม)",
-        swapVisibilityGroup: "ปุ่มสลับฝั่ง",
-        actionGroupVisibility: "กลุ่มปุ่มแอคชัน (6 ปุ่ม)",
 
+        // NEW V2.7 Action Buttons
+        actionBtn1: "ปุ่ม A1",
+        actionBtn2: "ปุ่ม A2",
+        actionBtn3: "ปุ่ม A3",
+        actionBtn4: "ปุ่ม A4",
+        actionBtn5: "ปุ่ม A5",
+        actionBtn6: "ปุ่ม A6",
+
+        // Keybind List (Unchanged for this fix)
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -256,15 +230,8 @@ export const translations = {
             { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
             { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
         ],
-        // NEW Action Keybinds (6 Buttons)
-        actionKeybindsList: [
-            { id: "action_btn_1", label: "ปุ่มแอคชัน 1", default: "CONTROL+1" },
-            { id: "action_btn_2", label: "ปุ่มแอคชัน 2", default: "CONTROL+2" },
-            { id: "action_btn_3", label: "ปุ่มแอคชัน 3", default: "CONTROL+3" },
-            { id: "action_btn_4", label: "ปุ่มแอคชัน 4", default: "CONTROL+4" },
-            { id: "action_btn_5", label: "ปุ่มแอคชัน 5", default: "CONTROL+5" },
-            { id: "action_btn_6", label: "ปุ่มแอคชัน 6", default: "CONTROL+6" },
-        ],
+
+        // Tags List (Updated for new Labels)
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'ชื่อทีม A' },
             { code: '&lt;TeamB&gt;', desc: 'ชื่อทีม B' },
@@ -273,12 +240,12 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'คะแนน 2 ทีม A (ฟาวล์/แต้ม)' },
             { code: '&lt;score2_team_b&gt;', desc: 'คะแนน 2 ทีม B (ฟาวล์/แต้ม)' },
             { code: '&lt;time_counter&gt;', desc: 'เวลาปัจจุบัน (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'ครึ่งเวลา (1st/2nd/3rd...)' },
+            { code: '&lt;half_text&gt;', desc: 'ครึ่งเวลา (1st/2nd)' },
             { code: '&lt;label1&gt;', desc: 'ข้อความ Label 1' },
             { code: '&lt;label2&gt;', desc: 'ข้อความ Label 2' },
             { code: '&lt;label3&gt;', desc: 'ข้อความ Label 3' },
-            { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4' },
-            { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' },
+            { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4' }, // NEW
+            { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' }, // NEW
         ],
         save: "บันทึก",
         close: "ปิด",
@@ -287,6 +254,8 @@ export const translations = {
         helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>) **คุณต้องกดปุ่ม แก้ไข ใน Popup เพื่อเปลี่ยนและบันทึกที่อยู่**",
         helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
         helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
+
+        // Sources List (Assumed new sources for Label 4, 5)
         sourcesTitle: "OBS Sources ที่ต้องมี",
         sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"],
         sourcesList: [
@@ -305,13 +274,11 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'ข้อความ Label 1' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'ข้อความ Label 2' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'ข้อความ Label 3' },
-            { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' },
-            { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' },
-            { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา/ช่วงเวลา (1st/2nd/3rd...)' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' }, // NEW
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' }, // NEW
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'ตัวนับเวลา' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ทดเวลาบาดเจ็บ (+1)' },
-            { code: 'action_output_1', type: 'Text (GDI+)', desc: 'ผลลัพธ์ปุ่มแอคชัน 1 (แนะนำ)' },
-            { code: 'action_output_6', type: 'Text (GDI+)', desc: 'ผลลัพธ์ปุ่มแอคชัน 6 (แนะนำ)' },
         ],
         understand: "เข้าใจแล้ว",
         donateTitle: "ร่วมสนับสนุน",
@@ -324,27 +291,18 @@ export const translations = {
         logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ปัจจุบันคือ:",
         logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
         changelogTitle: "ประวัติการอัปเดต",
+
+        // V2.7 Changelog Content
         changelogContent: `
             <ul class="changelog-list">
-                 <li>
+                <li>
                     <h5>เวอร์ชัน 2.7 (ล่าสุด)</h5>
                     <ul>
-                        <li>**แก้ไขบั๊กสลับฝั่ง:** ใช้ Master Data Logic เพื่อให้โลโก้, ชื่อ และสีสลับตรงกันทุกครั้งอย่างสมบูรณ์.</li>
-                        <li>**ปุ่มแอคชัน (6 ปุ่ม):** เพิ่มเป็น 6 ปุ่ม ปรับการตั้งค่าให้ง่ายขึ้น (ชื่อ, สี, คีย์ลัดเท่านั้น) และย้ายไปอยู่เหนือปุ่มสลับทีม.</li>
-                        <li>**ตั้งค่าช่วงเวลา:** เพิ่มการตั้งค่าจำนวนครึ่งเวลา/ช่วงเวลาสูงสุด (ค่าเริ่มต้น 2) เพื่อให้ใช้กับกีฬาอื่นได้.</li>
-                        <li>**ปรับปรุง UI Setting:** รวมการควบคุมการแสดงผล (คะแนน 2, สลับฝั่ง, กลุ่มปุ่มแอคชัน) เข้าไว้ในตารางเดียวพร้อม Checkbox เพื่อความกระชับ.</li>
-                        <li>**เพิ่มป้ายข้อความ:** เพิ่มจำนวนป้ายข้อความ (Label) จาก 3 เป็น 5 (Label 1-5).</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.6</h5>
-                    <ul>
-                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง).</li>
-                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้.</li>
-                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้.</li>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
-                        <li>**การเชื่อมต่อ OBS:** ปรับปรุงการทำงานของคีย์ลัดเพื่อให้ส่งคำสั่งผ่าน Dock UI ไปยัง OBS ได้โดยตรง.</li>
-                        <li>**การตั้งค่า:** ปรับปรุงรายการ OBS Source ที่ต้องมีและย้ายการโหลดข้อความประกาศไปใช้ไฟล์ TXT ภายใน.</li>
+                        <li>**ปรับโครงสร้างหลัก (Master Data):** เขียน Logic ทีมใหม่ทั้งหมดเพื่อใช้โครงสร้าง Master Data ทำให้การ **สลับฝั่ง** (Swap) โอนถ่ายชื่อ โลโก้ สี คะแนน 1 และ คะแนน 2 ได้อย่างสมบูรณ์</li>
+                        <li>**ปรับแต่ง UI:** เพิ่มปุ่มควบคุมการแสดงผลในหน้าตั้งค่าสำหรับ คะแนน 2, ปุ่มสลับฝั่ง, และปุ่ม Action ต่างๆ</li>
+                        <li>**เพิ่ม Element ใหม่:** เพิ่ม **ป้าย 4** (Label 4) และ **ป้าย 5** (Label 5) สำหรับข้อความที่กำหนดเองมากขึ้น</li>
+                        <li>**เพิ่ม Element ใหม่:** เพิ่ม **6 ปุ่ม Action** สำหรับการสั่งงาน OBS Scene Switching หรือ Trigger อื่นๆ (รองรับคีย์ลัดในอนาคต)</li>
+                        <li>**แก้ไข:** แก้ไขปัญหาโปรแกรมหยุดทำงานในตอนเริ่มต้น (Initialization Crash)</li>
                     </ul>
                 </li>
             </ul>`,
@@ -366,6 +324,5 @@ export const translations = {
         toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
-        toastMaxPeriodsSet: "ตั้งค่าครึ่งเวลาสูงสุดเป็น:",
     },
 };
