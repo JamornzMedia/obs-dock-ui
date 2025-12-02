@@ -6,13 +6,13 @@ import { translations } from './languages.js';
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
 const elements = [
-    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5", // NEW: Label 4/5
+    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5",
     "logoA", "logoB", "initialsA", "initialsB",
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
-    "swapCard", // NEW: Swap Card for visibility
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", // NEW: Visibility Checkboxes
-    "actionButtonsCard", "actionButtonsGrid", // NEW: Action Buttons
+    "swapCard",
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
+    "actionButtonsCard", "actionButtonsGrid",
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
@@ -31,7 +31,9 @@ const elements = [
     "sourcesTableHeaders", "sourcesTableBody",
     "keybindsTable", "resetKeybindsBtn", "resetColorsBtn",
     "tagsTable",
-    "actionSettingsTable", // NEW: Action Settings Table
+    "actionSettingsTable",
+    // NEW LOGO CACHE ELEMENTS
+    "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -46,6 +48,7 @@ let isCountdown = false;
 let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
+let logoCache = {}; // NEW: Store Logo Data URLs here
 
 // NEW: Master Data Objects for Team A and B
 let masterTeamA = createDefaultTeam('A');
@@ -55,6 +58,7 @@ const TEAM_COLORS_KEY = 'teamColorMemory';
 const VISIBILITY_KEY = 'cardVisibility';
 const KEYBINDS_KEY = 'customKeybinds';
 const ACTION_SETTINGS_KEY = 'actionButtonSettings';
+const LOGO_CACHE_KEY = 'logoDataCache'; // NEW
 const ACTION_BUTTON_COUNT = 6;
 
 function createDefaultTeam(teamId) {
@@ -102,6 +106,7 @@ const setSourceColor = (sourceName, hexColor) => {
 };
 // NEW: OBS Hotkey Trigger (Pass Key Combination as Hotkey Name)
 const triggerObsHotkey = (hotkeyCombination) => {
+    // IMPORTANT: Hotkey Combination is used as the Hotkey Name for OBS.
     obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyCombination }).catch(err => {
         showToast(`${translations[currentLang].toastHotkeyFailed} ${hotkeyCombination}`, 'error');
     });
@@ -669,6 +674,64 @@ const loadTeamColors = (teamName) => {
     }
 };
 
+// --- LOGO CACHE LOGIC (NEW) ---
+const loadLogoCache = () => {
+    try {
+        logoCache = JSON.parse(localStorage.getItem(LOGO_CACHE_KEY) || '{}');
+    } catch (e) {
+        console.error("Failed to load logo cache:", e);
+        logoCache = {};
+    }
+}
+
+const saveLogoCache = () => {
+    try {
+        localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(logoCache));
+        populateLogoCacheList();
+        showToast(translations[currentLang].toastSaved, 'success');
+    } catch (e) {
+        showToast(translations[currentLang].toastCacheSaveFailed, 'error');
+        console.error("Failed to save logo cache:", e);
+    }
+}
+
+const clearLogoCache = () => {
+    logoCache = {};
+    localStorage.removeItem(LOGO_CACHE_KEY);
+    populateLogoCacheList();
+    // Force UI refresh in case logos were showing from cache
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
+    showToast(translations[currentLang].toastCacheCleared, 'info');
+}
+
+const populateLogoCacheList = () => {
+    elements.logoCacheList.innerHTML = '';
+    const keys = Object.keys(logoCache);
+    if (keys.length === 0) {
+        elements.logoCacheList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted-color);">${translations[currentLang].logoCacheEmpty}</p>`;
+        return;
+    }
+
+    keys.forEach(key => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem;';
+
+        const img = document.createElement('img');
+        img.src = logoCache[key];
+        img.alt = key;
+        img.style.cssText = 'width: 24px; height: 24px; object-fit: contain; border-radius: 4px;';
+
+        const span = document.createElement('span');
+        span.textContent = key;
+
+        li.appendChild(img);
+        li.appendChild(span);
+        elements.logoCacheList.appendChild(li);
+    });
+}
+// --- END LOGO CACHE LOGIC ---
+
 // --- Scoreboard Logic ---
 const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : '';
 
@@ -713,17 +776,27 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
     // Show/Hide logo based on file
     if (masterTeam.logoFile) {
-        const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
-        logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
-        logoEl.style.display = 'block';
-        initialsEl.style.display = 'none';
+        const logoKey = masterTeam.logoFile.replace(/\s/g, '').toLowerCase();
+
+        if (logoCache[logoKey]) {
+            // NEW: Show Logo from Cache (Base64 Data URL) on Dock UI
+            logoEl.src = logoCache[logoKey];
+            logoEl.style.display = 'block';
+            initialsEl.style.display = 'none';
+        } else {
+            // Use File URL for OBS source (LogoFolderPath) and for preview if no cache
+            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
+            logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
+            logoEl.style.display = 'block';
+            initialsEl.style.display = 'none';
+        }
     } else {
         logoEl.src = '';
         logoEl.style.display = 'none';
         initialsEl.style.display = 'block';
     }
 
-    // Update OBS
+    // Update OBS (Always use the OBS logic, which needs logoFile and logoFolderPath)
     setText(obsNameSource, masterTeam.name.replace(/\//g, '\n'));
     setImage(obsLogoSource, masterTeam.logoFile);
     setSourceColor(obsColorSource1, masterTeam.color1);
@@ -773,14 +846,14 @@ const applyMatch = () => {
     elements.label1.textContent = get('label1');
     elements.label2.textContent = get('label2');
     elements.label3.textContent = get('label3');
-    elements.label4.textContent = get('label4'); // NEW: Label 4
-    elements.label5.textContent = get('label5'); // NEW: Label 5
+    elements.label4.textContent = get('label4');
+    elements.label5.textContent = get('label5');
 
     setText('label_1', get('label1'));
     setText('label_2', get('label2'));
     setText('label_3', get('label3'));
-    setText('label_4', get('label4')); // NEW: Source 4
-    setText('label_5', get('label5')); // NEW: Source 5
+    setText('label_4', get('label4'));
+    setText('label_5', get('label5'));
 
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
@@ -985,8 +1058,8 @@ const copyDetails = () => {
         .replace(/<label1>/gi, elements.label1.textContent)
         .replace(/<label2>/gi, elements.label2.textContent)
         .replace(/<label3>/gi, elements.label3.textContent)
-        .replace(/<label4>/gi, elements.label4.textContent) // NEW: Tag 4
-        .replace(/<label5>/gi, elements.label5.textContent) // NEW: Tag 5
+        .replace(/<label4>/gi, elements.label4.textContent)
+        .replace(/<label5>/gi, elements.label5.textContent)
         .replace(/<score_team_a>/gi, masterTeamA.score)
         .replace(/<score_team_b>/gi, masterTeamB.score)
         .replace(/<score2_team_a>/gi, masterTeamA.score2)
@@ -1036,6 +1109,44 @@ const exitEditMode = (team, applyChanges) => {
     nameInput.style.display = 'none';
     okBtn.style.display = 'none';
 };
+
+// NEW: Logo Drop Zone Handlers
+const handleFileDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileName = file.name.replace(/\.(png|jpe?g|gif|webp)$/i, '');
+            const logoKey = fileName.replace(/\s/g, '').toLowerCase();
+
+            logoCache[logoKey] = event.target.result;
+            saveLogoCache(); // Save cache to localStorage
+            showToast(`${translations[currentLang].logoCacheSaved} ${fileName}`, 'success');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = '#4a4a4a';
+}
+
+const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
+}
+// END Logo Drop Zone Handlers
 
 const setupEventListeners = () => {
     // Bind Save buttons to the same logic
@@ -1101,12 +1212,14 @@ const setupEventListeners = () => {
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
         // Re-populate all dynamic tables on open to load latest saved/default values
-        populateActionSettingsTable(currentLang); // NEW
+        populateActionSettingsTable(currentLang);
         populateKeybindsTable(currentLang);
         applyVisibilitySettings(); // Load visibility settings to checkboxes
         openPopup(elements.detailsPopup);
     });
+    // --- MOVED AND RECOLORED BUTTON ---
     elements.copyBtn.addEventListener('click', copyDetails);
+    // -----------------------------------
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
@@ -1154,7 +1267,10 @@ const setupEventListeners = () => {
     elements.injuryTimeMinusBtn.addEventListener('click', () => changeInjuryTime(-1));
 
     // Logo Path Settings
-    elements.logoPathBtn.addEventListener('click', () => openPopup(elements.logoPathPopup));
+    elements.logoPathBtn.addEventListener('click', () => {
+        populateLogoCacheList();
+        openPopup(elements.logoPathPopup);
+    });
     elements.editLogoPathBtn.addEventListener('click', () => {
         const trans = translations[currentLang] || translations.en;
         const btnSpan = elements.editLogoPathBtn.querySelector('span');
@@ -1173,6 +1289,13 @@ const setupEventListeners = () => {
             showToast(trans.toastSaved, 'success');
         }
     });
+
+    // NEW: Logo Cache Handlers
+    elements.clearLogoCacheBtn.addEventListener('click', clearLogoCache);
+    elements.logoDropZone.addEventListener('dragover', handleDragOver);
+    elements.logoDropZone.addEventListener('dragleave', handleDragLeave);
+    elements.logoDropZone.addEventListener('drop', handleFileDrop);
+
 
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
@@ -1249,6 +1372,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedPath) {
         logoFolderPath = savedPath;
     }
+
+    loadLogoCache(); // NEW: Load logo cache
 
     // Initialize Master Data before setting language (to use default values)
     masterTeamA = createDefaultTeam('A');

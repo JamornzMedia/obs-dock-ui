@@ -434,6 +434,8 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
+            /* ลบเส้นคั่นของแต่ละปุ่มออกตามที่ร้องขอ */
+            border: none;
         }
 
             .action-buttons-grid button {
@@ -442,7 +444,7 @@
                 font-size: 0.85rem;
                 font-weight: 600;
                 color: #fff;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                box-shadow: 0 0 0 rgba(0,0,0,0.2); /* ทำให้ดูไม่รก */
                 transition: opacity 0.2s;
             }
         /* End Action Buttons Card Styles */
@@ -644,11 +646,11 @@
             }
 
                 .keybind-table td:nth-child(1) {
-                    width: 50%;
+                    width: 40%; /* ลดความกว้างของ Label */
                 }
 
                 .keybind-table td:nth-child(2) {
-                    width: 120px;
+                    width: 100px; /* ลดความกว้างของ Input Keybinds */
                 }
 
                 .keybind-table td:nth-child(3) {
@@ -684,7 +686,7 @@
             }
         /* End Keybind Table Styles */
 
-        /* Action Settings Table Styles (Revised) */
+        /* Action Settings Table Styles (Revised for smaller size) */
         .action-settings-table {
             width: 100%;
             border-collapse: collapse;
@@ -711,19 +713,19 @@
             }
             /* # */
             .action-settings-table td:nth-child(2) {
-                width: 90px;
+                width: 80px; /* ลดจาก 90px */
             }
-            /* Name */
+            /* Name Input */
             .action-settings-table td:nth-child(3) {
                 width: 30px;
             }
             /* Color */
             .action-settings-table td:nth-child(4) {
-                width: 60px;
+                width: 50px; /* ลดจาก 60px */
             }
             /* Height */
             .action-settings-table td:nth-child(5) {
-                width: 100px;
+                width: 80px; /* ลดจาก 100px */
             }
             /* Keybind Input */
             .action-settings-table td:nth-child(6) {
@@ -735,6 +737,13 @@
                 padding: 4px;
                 height: 30px;
                 font-size: 0.8rem;
+            }
+
+            /* แยก Name Input และ Keybind Input ลงครึ่งบรรทัดเพื่อให้ใช้พื้นที่แคบได้ */
+            .action-settings-table td:nth-child(2) input[type="text"] {
+                height: 60px;
+                white-space: normal;
+                word-break: break-all;
             }
 
             .action-settings-table input[type="color"] {
@@ -960,6 +969,19 @@
                 padding: 4px 8px;
                 font-size: 0.8rem;
             }
+
+        /* NEW: Logo Drop Zone Styles */
+        #logoDropZone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            text-align: center;
+            color: var(--text-muted-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -979,6 +1001,7 @@
                     <label for="matchID" data-lang="matchId"></label>
                     <input type="number" id="matchID" min="1" value="1">
                     <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span data-lang="load"></span></button>
+                    <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span data-lang="copy"></span></button>
                 </div>
             </div>
         </div>
@@ -1104,7 +1127,7 @@
         <div class="card">
             <div class="row center" style="gap: 10px;">
                 <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i class="fas fa-cog"></i></button>
-                <button id="copyBtn" class="btn-secondary" data-lang-title="copy"><i class="fas fa-copy"></i></button>
+
                 <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i class="fas fa-question-circle"></i></button>
                 <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i class="fas fa-hand-holding-usd"></i></button>
                 <select id="languageSelector" title="Select Language">
@@ -1315,6 +1338,20 @@
         <div class="row" style="gap: 5px;">
             <input type="text" id="logoPathInput" style="width: 100%;" disabled>
             <button id="editLogoPathBtn" class="btn-primary"><i class="fas fa-pencil-alt"></i> <span data-lang="edit"></span></button>
+        </div>
+
+        <div class="popup-divider"></div>
+        <h4 style="margin: 0;"><i class="fas fa-image"></i> <span data-lang="logoCacheTitle"></span></h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;" data-lang="logoCacheDesc"></p>
+
+        <div id="logoDropZone" data-lang="logoDropZoneText"></div>
+
+        <div class="item-list">
+            <h4 data-lang="logoCacheListTitle"></h4>
+            <ul id="logoCacheList" style="list-style: none; padding: 0;"></ul>
+            <div class="row center" style="margin-top: 10px;">
+                <button id="clearLogoCacheBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> <span data-lang="clearCache"></span></button>
+            </div>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="closeLogoPathBtn" class="btn-secondary"><i class="fas fa-times"></i> <span data-lang="close"></span></button>
