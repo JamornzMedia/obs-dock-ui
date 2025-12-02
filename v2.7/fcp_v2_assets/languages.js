@@ -16,8 +16,8 @@ export const translations = {
         label1: "Label 1",
         label2: "Label 2",
         label3: "Label 3",
-        label4: "Label 4", // NEW
-        label5: "Label 5", // NEW
+        label4: "Label 4",
+        label5: "Label 5",
         swap: "Swap Teams",
         reset: "Reset",
         fullReset: "Full Reset",
@@ -25,9 +25,10 @@ export const translations = {
         hide: "Hide",
         show: "Show",
         score2VisibilityGroup: "Score 2 Visibility Control",
-        swapCardVisibility: "Swap Card Visibility", // NEW
-        actionCardVisibility: "Action Buttons Visibility", // NEW
-        visibilityTitle: "Card Visibility Control", // NEW
+        swapCardVisibility: "Swap Card Visibility",
+        actionCardVisibility: "Action Buttons Visibility",
+        visibilityTitle: "Card Visibility Control",
+        copyAnnouncement: "Copy Announcement", // NEW
         resetKeybinds: "Reset Keybinds",
         resetColors: "Clear Team Color Memory",
         half: "Half",
@@ -41,19 +42,25 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.7", // UPDATED
+        changelog: "Update Version 2.7",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
-        keybindsTitle: "Keyboard Shortcuts", // UPDATED
-        keybindsListLabel: "Item", // NEW
-        actionSettingsTitle: "Action Button Settings", // NEW
-        actionSettingsDesc: "Set button names, colors, height, and the key combination used to trigger the OBS Hotkey. The Hotkey Name in OBS must match the Key Combination set here (e.g., CONTROL+F1).", // UPDATED DESCRIPTION
-        actionSettingsName: "Name", // NEW
-        actionSettingsColor: "Color", // NEW
-        actionSettingsHeight: "Height (px)", // NEW
-        actionSettingsHotkey: "Hotkey", // UPDATED
-        actionSettingsEditSave: "Edit/Save", // NEW
+        keybindsTitle: "Keyboard Shortcuts",
+        keybindsListLabel: "Item",
+        actionSettingsTitle: "Action Button Settings",
+        actionSettingsDesc: "Set button names, colors, height, and the key combination used to trigger the OBS Hotkey. The Hotkey Name in OBS must match the Key Combination set here (e.g., CONTROL+F1).",
+        actionSettingsName: "Name",
+        actionSettingsColor: "Color",
+        actionSettingsHeight: "Height (px)",
+        actionSettingsHotkey: "Hotkey",
+        actionSettingsEditSave: "Edit/Save",
+        periodSettingsTitle: "Half/Period Settings", // NEW
+        periodSettingsDesc: "Customize the names of up to 6 periods (e.g., Q1, Half 1, FT).", // NEW
+        logoCacheTitle: "Logo Display Cache (Dock UI Only)", // NEW
+        logoCacheDesc: "Logos may not show on the Dock UI due to security. Drop image files here to cache them (as Base64) for local display.", // NEW
+        logoDropZoneText: "Drag & Drop Image Files Here", // NEW
+        clearCache: "Clear Logo Cache", // NEW
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -65,9 +72,8 @@ export const translations = {
             { id: "score2B_minus", label: "- Score B (Sub)", default: "0" },
             { id: "timer_playpause", label: "Play/Pause Timer", default: "SPACE" },
             { id: "timer_resetstart", label: "Reset to Start Time", default: "F10" },
-            { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
+            { id: "timer_togglehalf", label: "Next Period", default: "F11" }, // Updated label
             { id: "full_reset", label: "Full Reset (All)", default: "F12" },
-            // Removed actionBtn keybinds from this list to simplify the main Keybinds table
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'Team A Name' },
@@ -77,12 +83,12 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'Team A Score 2 (Fouls/Counts)' },
             { code: '&lt;score2_team_b&gt;', desc: 'Team B Score 2 (Fouls/Counts)' },
             { code: '&lt;time_counter&gt;', desc: 'Current Time (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'Half (1st/2nd)' },
+            { code: '&lt;half_text&gt;', desc: 'Current Period (1st/2nd/FT...)' },
             { code: '&lt;label1&gt;', desc: 'Label 1 Text' },
             { code: '&lt;label2&gt;', desc: 'Label 2 Text' },
             { code: '&lt;label3&gt;', desc: 'Label 3 Text' },
-            { code: '&lt;label4&gt;', desc: 'Label 4 Text' }, // NEW
-            { code: '&lt;label5&gt;', desc: 'Label 5 Text' }, // NEW
+            { code: '&lt;label4&gt;', desc: 'Label 4 Text' },
+            { code: '&lt;label5&gt;', desc: 'Label 5 Text' },
         ],
         save: "Save",
         close: "Close",
@@ -109,9 +115,9 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'Label 1 Text' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'Label 2 Text' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'Label 3 Text' },
-            { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' }, // NEW
-            { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' }, // NEW
-            { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' },
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'Period/Half' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
         ],
@@ -133,23 +139,10 @@ export const translations = {
                     <ul>
                         <li>**Core Update:** Refactored Team A/B data into a unified Master Data Object.</li>
                         <li>**Swap Fix:** Fixed \`swapTeams()\` to ensure a complete and reliable swap of all team data (name, score, colors, logo).</li>
-                        <li>**Action Buttons:** Added 6 customizable action buttons. The settings now use a **Keybind Input** system (Edit/Capture/Save) to set the Hotkey Combination, which triggers \`TriggerHotkeyByName\` in OBS-WebSocket.</li>
-                        <li>**UI/UX:** Improved layout of Action Button settings (field widths, disabled state for inputs, and separate Edit/Save buttons for each row).</li>
-                        <li>**Visibility Controls:** Added checkboxes in settings to control the visibility of the Score 2 Card, Swap Card, and Action Button Card.</li>
-                        <li>**New Features:** Added Label 4 and Label 5 with corresponding OBS Sources and Announcement Tags.</li>
-                        <li>**Copy Fix:** Confirmed clicking on OBS Source Names in the Help popup copies the name to the clipboard.</li>
-                        <li>**Cleanup:** Removed immediate call to \`showWelcomePopup()\` to prevent potential crash on initialization.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>Version 2.6</h5>
-                    <ul>
-                        <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
-                        <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
-                        <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
-                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel supporting modifier keys (Ctrl/Alt/Shift).</li>
-                        <li>**OBS Integration:** Improved key binding to pass through the Dock UI to OBS for instant control.</li>
-                        <li>**Setup:** Updated OBS Source list and streamlined announcement loading from local TXT file.</li>
+                        <li>**Action Buttons:** Added 6 customizable action buttons with **Keybind Input** system (Edit/Capture/Save) and removed distracting borders.</li>
+                        <li>**Half/Period Control:** Added Period settings (up to 6) and Up/Down buttons to cycle periods.</li>
+                        <li>**Logo Cache (Dock UI Fix):** Added a Logo Drop Zone feature to cache image files locally (Base64) to fix Logo display on the Dock UI (Note: OBS still reads from \`logoFolderPath\`).</li>
+                        <li>**UI/UX:** Improved layout of Action Button and Keybind tables. Moved the Copy/Announcement button next to Load and changed its color to green.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -167,12 +160,16 @@ export const translations = {
         toastCopiedSourceName: "Copied source name:",
         toastSaved: "Saved",
         toastKeybindsSaved: "Keybind saved!",
-        toastActionSaved: "Action button settings saved!", // NEW
+        toastActionSaved: "Action button settings saved!",
+        toastPeriodSaved: "Period settings saved!", // NEW
         toastColorsCleared: "Team color memory cleared!",
         toastObsError: "Failed to connect to OBS",
-        toastHotkeyFailed: "Failed to trigger OBS Hotkey:", // NEW
+        toastHotkeyFailed: "Failed to trigger OBS Hotkey:",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
         toastTimeSet: "Start time has been set and updated.",
+        toastLogoCached: "Logo cached:", // NEW
+        toastCacheCleared: "Logo cache cleared!", // NEW
+        toastInvalidFile: "Invalid file type. Please drop image files (.png, .jpg).", // NEW
     },
     // ภาษาไทย
     th: {
@@ -188,8 +185,8 @@ export const translations = {
         label1: "ป้าย 1",
         label2: "ป้าย 2",
         label3: "ป้าย 3",
-        label4: "ป้าย 4", // NEW
-        label5: "ป้าย 5", // NEW
+        label4: "ป้าย 4",
+        label5: "ป้าย 5",
         swap: "สลับฝั่ง",
         reset: "รีเซ็ต",
         fullReset: "รีเซ็ตทั้งหมด",
@@ -197,9 +194,10 @@ export const translations = {
         hide: "ซ่อน",
         show: "แสดง",
         score2VisibilityGroup: "ควบคุมการแสดงผลคะแนน 2",
-        swapCardVisibility: "ควบคุมการแสดงผล Card สลับฝั่ง", // NEW
-        actionCardVisibility: "ควบคุมการแสดงผล Action Buttons", // NEW
-        visibilityTitle: "ควบคุมการแสดงผล Card", // NEW
+        swapCardVisibility: "ควบคุมการแสดงผล Card สลับฝั่ง",
+        actionCardVisibility: "ควบคุมการแสดงผล Action Buttons",
+        visibilityTitle: "ควบคุมการแสดงผล Card",
+        copyAnnouncement: "คัดลอกข้อความประกาศ", // NEW
         resetKeybinds: "รีเซ็ตคีย์ลัด",
         resetColors: "ล้างหน่วยความจำสีทีม",
         half: "ครึ่ง",
@@ -213,19 +211,25 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.7", // UPDATED
+        changelog: "อัปเดตเวอร์ชัน 2.7",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
-        keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)", // UPDATED
-        keybindsListLabel: "รายการ", // NEW
-        actionSettingsTitle: "ตั้งค่า Action Button", // NEW
-        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และคีย์ลัด Hotkey ใน OBS สำหรับ Action Button สูงสุด 6 ปุ่ม คีย์ลัดต้องตรงกับ Hotkey Name ที่ตั้งค่าไว้ใน OBS.", // UPDATED DESCRIPTION
-        actionSettingsName: "ชื่อปุ่ม", // NEW
-        actionSettingsColor: "สี", // NEW
-        actionSettingsHeight: "ความสูง (px)", // NEW
-        actionSettingsHotkey: "คีย์ลัด", // UPDATED
-        actionSettingsEditSave: "แก้ไข/บันทึก", // NEW
+        keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
+        keybindsListLabel: "รายการ",
+        actionSettingsTitle: "ตั้งค่า Action Button",
+        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และคีย์ลัด Hotkey ใน OBS สำหรับ Action Button สูงสุด 6 ปุ่ม คีย์ลัดต้องตรงกับ Hotkey Name ที่ตั้งค่าไว้ใน OBS.",
+        actionSettingsName: "ชื่อปุ่ม",
+        actionSettingsColor: "สี",
+        actionSettingsHeight: "ความสูง (px)",
+        actionSettingsHotkey: "คีย์ลัด",
+        actionSettingsEditSave: "แก้ไข/บันทึก",
+        periodSettingsTitle: "ตั้งค่าครึ่งเวลา/รอบ", // NEW
+        periodSettingsDesc: "กำหนดชื่อครึ่งเวลา/รอบ ได้สูงสุด 6 รอบ (เช่น Q1, ครึ่ง 1, FT).", // NEW
+        logoCacheTitle: "แคชโลโก้ (สำหรับ Dock UI เท่านั้น)", // NEW
+        logoCacheDesc: "โลโก้อาจไม่แสดงผลบน Dock UI เนื่องจากข้อจำกัดด้านความปลอดภัย ลากไฟล์ภาพมาวางที่นี่เพื่อแคช (เป็น Base64) สำหรับแสดงผลเฉพาะบน Dock UI.", // NEW
+        logoDropZoneText: "ลากและวางไฟล์ภาพที่นี่", // NEW
+        clearCache: "ล้างแคชโลโก้", // NEW
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -237,9 +241,8 @@ export const translations = {
             { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "0" },
             { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: "SPACE" },
             { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "F10" },
-            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
+            { id: "timer_togglehalf", label: "ครึ่งเวลาถัดไป", default: "F11" }, // Updated label
             { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
-            // Removed actionBtn keybinds from this list to simplify the main Keybinds table
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'ชื่อทีม A' },
@@ -249,12 +252,12 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'คะแนน 2 ทีม A (ฟาวล์/แต้ม)' },
             { code: '&lt;score2_team_b&gt;', desc: 'คะแนน 2 ทีม B (ฟาวล์/แต้ม)' },
             { code: '&lt;time_counter&gt;', desc: 'เวลาปัจจุบัน (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'ครึ่งเวลา (1st/2nd)' },
+            { code: '&lt;half_text&gt;', desc: 'ครึ่งเวลาปัจจุบัน (1st/2nd/FT...)' },
             { code: '&lt;label1&gt;', desc: 'ข้อความ Label 1' },
             { code: '&lt;label2&gt;', desc: 'ข้อความ Label 2' },
             { code: '&lt;label3&gt;', desc: 'ข้อความ Label 3' },
-            { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4' }, // NEW
-            { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' }, // NEW
+            { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4' },
+            { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' },
         ],
         save: "บันทึก",
         close: "ปิด",
@@ -281,9 +284,9 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'ข้อความ Label 1' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'ข้อความ Label 2' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'ข้อความ Label 3' },
-            { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' }, // NEW
-            { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' }, // NEW
-            { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' },
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' },
+            { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา/รอบ' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'ตัวนับเวลา' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ทดเวลาบาดเจ็บ (+1)' },
         ],
@@ -305,23 +308,10 @@ export const translations = {
                     <ul>
                         <li>**อัปเดตแกนหลัก:** ปรับโครงสร้างข้อมูลทีม A/B ทั้งหมดให้เป็น Master Data Object ที่รวมศูนย์.</li>
                         <li>**แก้ไขการสลับทีม:** แก้ไขฟังก์ชัน \`swapTeams()\` ให้ทำการสลับ Object Master Data ทั้งหมด เพื่อการสลับข้อมูลทีม (ชื่อ, คะแนน, สี, โลโก้) ที่สมบูรณ์ 100%.</li>
-                        <li>**Action Buttons (ปรับปรุง):** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่ม. การตั้งค่าใช้ระบบ **Keybind Input** (แก้ไข/จับ/บันทึก) เพื่อตั้งค่า Hotkey Combination ซึ่งจะใช้เรียก \`TriggerHotkeyByName\` ใน OBS-WebSocket.</li>
-                        <li>**ปรับปรุง UI/UX:** ปรับ Layout การตั้งค่า Action Button (ความกว้างช่อง, สถานะ Disabled ของ Input, และปุ่มแก้ไข/บันทึกแยกรายแถว) และย้าย Card Action Buttons ไปอยู่ใต้ Card สลับฝั่ง.</li>
-                        <li>**ควบคุมการแสดงผล:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card.</li>
-                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5 พร้อม Source ที่ต้องใช้ใน OBS และ Tags สำหรับข้อความประกาศ.</li>
-                        <li>**แก้ไขการคัดลอก:** ยืนยันว่าการคลิกที่ชื่อ OBS Source ในหน้าวิธีใช้จะสามารถคัดลอกชื่อได้.</li>
-                        <li>**การแก้ไข:** ลบโค้ดเรียก \`showWelcomePopup()\` ทันทีออกไปเพื่อแก้ไขปัญหาโปรแกรมหยุดทำงาน (Crash) ในช่วงเริ่มต้น.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.6</h5>
-                    <ul>
-                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง).</li>
-                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้.</li>
-                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้.</li>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
-                        <li>**การเชื่อมต่อ OBS:** ปรับปรุงการทำงานของคีย์ลัดเพื่อให้ส่งคำสั่งผ่าน Dock UI ไปยัง OBS ได้โดยตรง.</li>
-                        <li>**การตั้งค่า:** ปรับปรุงรายการ OBS Source ที่ต้องมีและย้ายการโหลดข้อความประกาศไปใช้ไฟล์ TXT ภายใน.</li>
+                        <li>**Action Buttons:** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่ม. การตั้งค่าใช้ระบบ **Keybind Input** (แก้ไข/จับ/บันทึก) และลบเส้นขอบปุ่มออกเพื่อความสะอาดตา.</li>
+                        <li>**ตั้งค่าครึ่งเวลา/รอบ:** เพิ่มการตั้งค่าชื่อครึ่งเวลา/รอบ (สูงสุด 6 รอบ) และปุ่มขึ้น/ลงเพื่อเลื่อนรอบ.</li>
+                        <li>**Logo Cache (แก้ไข Dock UI):** เพิ่มฟีเจอร์ Drop Zone สำหรับแคชไฟล์โลโก้ (Base64) เพื่อแก้ไขปัญหาโลโก้ไม่แสดงผลบน Dock UI.</li>
+                        <li>**ปรับปรุง UI/UX:** ปรับ Layout ตาราง Action Button และ Keybinds. ย้ายปุ่ม **"คัดลอกข้อความประกาศ"** ไปอยู่ติดกับปุ่มโหลดและเปลี่ยนเป็นสีเขียว.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -339,11 +329,15 @@ export const translations = {
         toastCopiedSourceName: "คัดลอกชื่อ Source แล้ว:",
         toastSaved: "บันทึกแล้ว",
         toastKeybindsSaved: "บันทึกคีย์ลัดแล้ว!",
-        toastActionSaved: "บันทึกการตั้งค่า Action Button แล้ว!", // NEW
+        toastActionSaved: "บันทึกการตั้งค่า Action Button แล้ว!",
+        toastPeriodSaved: "บันทึกการตั้งค่าครึ่งเวลา/รอบแล้ว!", // NEW
         toastColorsCleared: "ล้างหน่วยความจำสีทีมแล้ว!",
         toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
-        toastHotkeyFailed: "ส่ง Hotkey ไป OBS ไม่สำเร็จ:", // NEW
+        toastHotkeyFailed: "ส่ง Hotkey ไป OBS ไม่สำเร็จ:",
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
+        toastLogoCached: "แคชโลโก้สำเร็จ:", // NEW
+        toastCacheCleared: "ล้างแคชโลโก้แล้ว!", // NEW
+        toastInvalidFile: "ประเภทไฟล์ไม่ถูกต้อง กรุณาลากไฟล์ภาพ (.png, .jpg).", // NEW
     },
 };
