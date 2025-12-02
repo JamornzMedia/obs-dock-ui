@@ -442,26 +442,10 @@
                 font-size: 0.85rem;
                 font-weight: 600;
                 color: #fff;
-                /* REMOVED border/box-shadow for cleaner look */
-                border: none;
-                box-shadow: none;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
                 transition: opacity 0.2s;
             }
         /* End Action Buttons Card Styles */
-
-        /* Half Control Styles */
-        .period-plus-minus {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-            .period-plus-minus button {
-                padding: 0 4px;
-                font-size: 0.8rem;
-                height: 18px;
-                line-height: 1;
-            }
 
         .timer-area-container {
             display: flex;
@@ -613,7 +597,6 @@
             .item-list td {
                 color: var(--text-muted-color);
             }
-
         /* Tags Table Styles */
         .tags-table {
             width: 100%;
@@ -650,7 +633,7 @@
                 color: var(--text-muted-color);
             }
 
-        /* Keybind Table Styles (Original - Adjusted width) */
+        /* Keybind Table Styles (Original) */
         .keybind-table {
             width: 100%;
         }
@@ -661,18 +644,18 @@
             }
 
                 .keybind-table td:nth-child(1) {
-                    width: 40%;
+                    width: 50%;
                 }
-                /* Item */
+
                 .keybind-table td:nth-child(2) {
-                    width: 100px;
+                    width: 120px;
                 }
-                /* Keybind */
+
                 .keybind-table td:nth-child(3) {
                     width: 70px;
                     text-align: right;
                 }
-            /* Edit/Save */
+
             .keybind-table input[type="text"] {
                 width: 100%;
                 padding: 4px;
@@ -701,7 +684,7 @@
             }
         /* End Keybind Table Styles */
 
-        /* Action Settings Table Styles (Revised based on feedback) */
+        /* Action Settings Table Styles (Revised) */
         .action-settings-table {
             width: 100%;
             border-collapse: collapse;
@@ -728,21 +711,21 @@
             }
             /* # */
             .action-settings-table td:nth-child(2) {
-                width: 80px;
+                width: 90px;
             }
-            /* Name (Adjusted) */
+            /* Name */
             .action-settings-table td:nth-child(3) {
                 width: 30px;
             }
             /* Color */
             .action-settings-table td:nth-child(4) {
-                width: 55px;
+                width: 60px;
             }
-            /* Height (Adjusted) */
+            /* Height */
             .action-settings-table td:nth-child(5) {
                 width: 100px;
             }
-            /* Keybind Input (Adjusted) */
+            /* Keybind Input */
             .action-settings-table td:nth-child(6) {
                 width: 70px;
                 text-align: right;
@@ -777,40 +760,6 @@
                 color: var(--accent-color);
             }
 
-        /* Period Settings Table */
-        .period-settings-table {
-            width: 100%;
-        }
-
-            .period-settings-table td {
-                padding: 4px 4px;
-                vertical-align: middle;
-            }
-
-            .period-settings-table input[type="text"] {
-                width: 100%;
-                padding: 4px;
-                text-align: center;
-                font-size: 0.85rem;
-                height: 30px;
-                box-sizing: border-box;
-            }
-
-
-        /* Logo Drop Zone Styles */
-        #logoDropZone {
-            border: 2px dashed var(--border-color);
-            padding: 15px;
-            text-align: center;
-            color: var(--text-muted-color);
-            margin-top: 10px;
-            cursor: pointer;
-        }
-
-            #logoDropZone.dragover {
-                border-color: var(--success-color);
-                background: rgba(34, 197, 94, 0.1);
-            }
 
         .changelog-list {
             list-style: none;
@@ -1030,7 +979,6 @@
                     <label for="matchID" data-lang="matchId"></label>
                     <input type="number" id="matchID" min="1" value="1">
                     <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span data-lang="load"></span></button>
-                    <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-bullhorn"></i> <span data-lang="copyAnnouncement"></span></button>
                 </div>
             </div>
         </div>
@@ -1122,10 +1070,6 @@
                     <button id="halfBtn" class="btn-secondary" style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
                         <span style="font-size:0.8rem" data-lang="half"></span>
                         <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
-                        <div class="period-plus-minus">
-                            <button id="periodPlusBtn" class="btn-secondary"><i class="fas fa-chevron-up"></i></button>
-                            <button id="periodMinusBtn" class="btn-secondary"><i class="fas fa-chevron-down"></i></button>
-                        </div>
                     </button>
                 </div>
 
@@ -1160,6 +1104,7 @@
         <div class="card">
             <div class="row center" style="gap: 10px;">
                 <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i class="fas fa-cog"></i></button>
+                <button id="copyBtn" class="btn-secondary" data-lang-title="copy"><i class="fas fa-copy"></i></button>
                 <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i class="fas fa-question-circle"></i></button>
                 <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i class="fas fa-hand-holding-usd"></i></button>
                 <select id="languageSelector" title="Select Language">
@@ -1196,21 +1141,6 @@
         </div>
 
         <div class="popup-divider"></div>
-        <h4 style="margin: 0;"><i class="fas fa-clock"></i> <span data-lang="periodSettingsTitle"></span></h4>
-        <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;" data-lang="periodSettingsDesc"></p>
-        <table class="period-settings-table" id="periodSettingsTable">
-            <thead>
-                <tr>
-                    <th style="width: 30px;">#</th>
-                    <th style="width: 100px;" data-lang="actionSettingsName"></th>
-                    <th style="width: 70px;" data-lang="actionSettingsEditSave"></th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-
-        <div class="popup-divider"></div>
         <h4 style="margin: 0;"><i class="fas fa-cogs"></i> <span data-lang="actionSettingsTitle"></span></h4>
         <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;" data-lang="actionSettingsDesc"></p>
         <table class="action-settings-table" id="actionSettingsTable">
@@ -1218,7 +1148,7 @@
                 <tr>
                     <th>#</th>
                     <th data-lang="actionSettingsName"></th>
-                    <th><i class="fas fa-paint-brush"></i></th>
+                    <th data-lang="actionSettingsColor"></th>
                     <th data-lang="actionSettingsHeight"></th>
                     <th data-lang="actionSettingsHotkey"></th>
                     <th><span data-lang="actionSettingsEditSave"></span></th>
@@ -1246,15 +1176,6 @@
         </div>
         <div class="popup-divider"></div>
 
-        <h4 style="margin: 0;"><i class="fas fa-images"></i> <span data-lang="logoCacheTitle"></span></h4>
-        <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;" data-lang="logoCacheDesc"></p>
-        <div id="logoDropZone" title="Drop Logo Files (.png, .jpg) here">
-            <i class="fas fa-cloud-upload-alt"></i> <span data-lang="logoDropZoneText"></span>
-        </div>
-        <div class="row center" style="margin-top: 10px;">
-            <button id="clearLogoCacheBtn" class="btn-danger"><i class="fas fa-trash"></i> <span data-lang="clearCache"></span></button>
-        </div>
-        <div class="popup-divider"></div>
         <h4 style="margin: 0;"><i class="fas fa-eye"></i> <span data-lang="visibilityTitle"></span></h4>
         <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
             <label class="countdown-toggle">

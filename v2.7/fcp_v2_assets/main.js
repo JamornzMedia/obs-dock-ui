@@ -6,13 +6,13 @@ import { translations } from './languages.js';
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
 const elements = [
-    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5",
+    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5", // NEW: Label 4/5
     "logoA", "logoB", "initialsA", "initialsB",
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
-    "swapCard",
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
-    "actionButtonsCard", "actionButtonsGrid",
+    "swapCard", // NEW: Swap Card for visibility
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", // NEW: Visibility Checkboxes
+    "actionButtonsCard", "actionButtonsGrid", // NEW: Action Buttons
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
@@ -31,11 +31,7 @@ const elements = [
     "sourcesTableHeaders", "sourcesTableBody",
     "keybindsTable", "resetKeybindsBtn", "resetColorsBtn",
     "tagsTable",
-    "actionSettingsTable",
-    // NEW: Logo Cache Elements
-    "logoDropZone", "clearLogoCacheBtn",
-    // NEW: Period Control Elements
-    "periodSettingsTitle", "periodSettingsDesc", "periodSettingsTable", "periodPlusBtn", "periodMinusBtn",
+    "actionSettingsTable", // NEW: Action Settings Table
 ].reduce((acc, id) => {
     acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
@@ -44,26 +40,22 @@ const elements = [
 
 // --- STATE VARIABLES ---
 let sheetData = [];
-let timer = 0, interval = null;
-let periodIndex = 0; // Default to 0 (1st/Half 1)
+let timer = 0, interval = null, half = '1st';
 let injuryTime = 0;
 let isCountdown = false;
 let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 
+// NEW: Master Data Objects for Team A and B
+let masterTeamA = createDefaultTeam('A');
+let masterTeamB = createDefaultTeam('B');
+
 const TEAM_COLORS_KEY = 'teamColorMemory';
 const VISIBILITY_KEY = 'cardVisibility';
 const KEYBINDS_KEY = 'customKeybinds';
 const ACTION_SETTINGS_KEY = 'actionButtonSettings';
-const PERIOD_LIST_KEY = 'periodListSettings';
-const LOGO_CACHE_KEY = 'logoCache';
 const ACTION_BUTTON_COUNT = 6;
-const PERIOD_COUNT = 6;
-
-// NEW: Master Data Objects for Team A and B
-let masterTeamA = createDefaultTeam('A');
-let masterTeamB = createDefaultTeam('B');
 
 function createDefaultTeam(teamId) {
     return {
@@ -76,7 +68,7 @@ function createDefaultTeam(teamId) {
     };
 }
 
-// NEW: Default Action Button Settings
+// NEW: Default Action Button Settings (Using Key Combination for hotkey and display)
 const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i) => ({
     id: `actionBtn${i + 1}`,
     name: `Action ${i + 1}`,
@@ -84,16 +76,6 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     height: 35, // default height in pixels
     hotkey: `CONTROL+F${i + 1}` // Hotkey Combination
 }));
-
-// NEW: Default Period Settings
-const defaultPeriodSettings = [
-    { id: 'period1', name: '1st', default: true },
-    { id: 'period2', name: '2nd', default: true },
-    { id: 'period3', name: 'OT1', default: false },
-    { id: 'period4', name: 'OT2', default: false },
-    { id: 'period5', name: 'Pen', default: false },
-    { id: 'period6', name: 'FT', default: false },
-];
 
 
 // --- OBS ---
@@ -120,37 +102,9 @@ const setSourceColor = (sourceName, hexColor) => {
 };
 // NEW: OBS Hotkey Trigger (Pass Key Combination as Hotkey Name)
 const triggerObsHotkey = (hotkeyCombination) => {
-    if (!obs.isConnected) return showToast(translations[currentLang].toastObsError, 'error');
     obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyCombination }).catch(err => {
         showToast(`${translations[currentLang].toastHotkeyFailed} ${hotkeyCombination}`, 'error');
     });
-}
-
-// --- Logo Cache ---
-const loadLogoCache = () => JSON.parse(localStorage.getItem(LOGO_CACHE_KEY) || '{}');
-const saveLogoCache = (cache) => localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(cache));
-
-// Function to convert file to Base64 and cache it
-const cacheLogoFile = (file) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const cache = loadLogoCache();
-            // Use filename (without extension) as the key
-            const filenameKey = file.name.split('.').slice(0, -1).join('.');
-            cache[filenameKey] = reader.result;
-            saveLogoCache(cache);
-            showToast(`${translations[currentLang].toastLogoCached} ${file.name}`, 'success');
-            resolve(reader.result);
-        };
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-    });
-}
-
-const clearLogoCache = () => {
-    localStorage.removeItem(LOGO_CACHE_KEY);
-    showToast(translations[currentLang].toastCacheCleared, 'info');
 }
 
 // --- UI & Language ---
@@ -179,10 +133,56 @@ const closeAllPopups = () => {
     elements.welcomeSponsorPopup.style.display = 'none';
 };
 
-// ... [Copy, populateHelpTable, populateTagsTable remain largely the same] ...
+// --- Pop-up Welcome Functions ---
+const showWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.popupOverlay.style.display = 'block';
+        elements.welcomeSponsorPopup.style.display = 'block';
+
+        // Open default tab (ShopeeTab)
+        const defaultButton = document.getElementById('defaultOpen');
+        if (defaultButton) {
+            if (typeof openWelcomeTab === 'function') {
+                openWelcomeTab({ currentTarget: defaultButton }, 'ShopeeTab');
+            } else {
+                defaultButton.click();
+                document.getElementById('ShopeeTab').style.display = 'block';
+            }
+        }
+    }
+};
+
+const closeWelcomePopup = () => {
+    if (elements.welcomeSponsorPopup && elements.popupOverlay) {
+        elements.welcomeSponsorPopup.style.display = 'none';
+        elements.popupOverlay.style.display = 'none';
+    }
+};
+
+// Function to handle copying link
+const copyLink = (link) => {
+    navigator.clipboard.writeText(link).then(() => {
+        showToast(translations[currentLang].toastCopied, 'success');
+    }).catch(err => {
+        showToast(translations[currentLang].toastCopyFailed, 'error');
+    });
+}
+
+
 const copySourceName = (sourceName) => {
     navigator.clipboard.writeText(sourceName.trim()).then(() => {
         showToast(`${translations[currentLang].toastCopiedSourceName} ${sourceName}`, 'info');
+    }).catch(err => {
+        showToast(translations[currentLang].toastCopyFailed, 'error');
+    });
+}
+
+// Function to handle copying Tags
+const copyTag = (tagCode) => {
+    // Remove HTML code entities like &lt; and &gt;
+    const cleanTag = tagCode.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    navigator.clipboard.writeText(cleanTag).then(() => {
+        showToast(`${translations[currentLang].toastCopied} Tag: ${tagCode}`, 'info');
     }).catch(err => {
         showToast(translations[currentLang].toastCopyFailed, 'error');
     });
@@ -214,6 +214,28 @@ const populateHelpTable = (lang) => {
     });
 };
 
+// Function to populate Tags table
+const populateTagsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const tags = trans.tagsList || [];
+
+    const thead = `<thead><tr><th>Tag</th><th>${trans.detailsTitle}</th></tr></thead>`;
+    let tbody = '<tbody>';
+
+    tags.forEach(item => {
+        tbody += `
+            <tr>
+                <td onclick="copyTag('${item.code}')">${item.code}</td>
+                <td>${item.desc}</td>
+            </tr>
+        `;
+    });
+    tbody += '</tbody>';
+
+    elements.tagsTable.innerHTML = thead + tbody;
+}
+
+// Keybind Helper Functions (Modified to support modifier keys and separate buttons)
 const formatKey = (keyString) => {
     if (!keyString) return '';
     return keyString.replace(/CONTROL/g, 'Ctrl').replace(/ALT/g, 'Alt').replace(/SHIFT/g, 'Shift').replace(/ /g, 'SPACE');
@@ -280,6 +302,7 @@ const toggleKeybindEditMode = (id, enable) => {
 
 // NEW: Action Button Specific Edit Toggle
 const toggleActionEditMode = (index, enable) => {
+    const trans = translations[currentLang];
     const id = `actionBtn${index}`;
     const nameInput = $(`action-name-${index}`);
     const heightInput = $(`action-height-${index}`);
@@ -304,6 +327,7 @@ const toggleActionEditMode = (index, enable) => {
         // Blur handler for keybind input
         keybindInput.onblur = () => {
             setTimeout(() => {
+                // If focus moves away from keybind input and save button, revert to disabled state
                 if (document.activeElement !== saveButton && document.activeElement !== keybindInput) {
                     toggleActionEditMode(index, false);
                 }
@@ -327,9 +351,6 @@ const saveActionSettingsRow = (index) => {
     // 1. Save all settings globally
     const settings = loadActionSettings().map((setting, i) => {
         const idx = i + 1;
-
-        if (idx !== index) return setting; // Only save the row that triggered the save
-
         const nameInput = $(`action-name-${idx}`);
         const colorInput = $(`action-color-${idx}`);
         const heightInput = $(`action-height-${idx}`);
@@ -416,10 +437,11 @@ const populateKeybindsTable = (lang) => {
 const loadActionSettings = () => {
     const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
     if (savedSettings && savedSettings.length === ACTION_BUTTON_COUNT) {
+        // Ensure new properties (like keybind input value) are handled on first load after update
         return savedSettings.map((setting, i) => ({
-            ...defaultActionSettings[i],
-            ...setting,
-            hotkey: setting.hotkey || defaultActionSettings[i].hotkey
+            ...defaultActionSettings[i], // default structure
+            ...setting, // override with saved values
+            hotkey: setting.hotkey || defaultActionSettings[i].hotkey // Ensure hotkey is present
         }));
     }
     return defaultActionSettings;
@@ -429,17 +451,19 @@ const renderActionButtons = () => {
     const settings = loadActionSettings();
     elements.actionButtonsGrid.innerHTML = ''; // Clear previous buttons
 
-    settings.forEach((setting) => {
+    settings.forEach((setting, i) => {
         const button = document.createElement('button');
         button.id = setting.id;
         button.textContent = setting.name;
         button.style.backgroundColor = setting.backgroundColor;
         button.style.height = `${setting.height}px`;
 
+        // Use the saved hotkey combination to trigger OBS (TriggerHotkeyByName)
         const hotkeyCombination = setting.hotkey;
 
         button.onclick = () => {
             if (hotkeyCombination) {
+                // IMPORTANT: The hotkey combination itself is used as the Hotkey Name for OBS
                 triggerObsHotkey(hotkeyCombination);
             }
         };
@@ -462,110 +486,29 @@ const populateActionSettingsTable = (lang) => {
             <td>#${index}</td>
             <td><input type="text" id="action-name-${index}" value="${setting.name}" disabled></td>
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
-            <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" disabled></td>
+            <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td>
                 <input type="text" id="action-keybind-input-${index}" value="${formattedKey}" disabled>
             </td>
             <td>
                 <div class="action-buttons">
-                    <button id="action-keybind-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="action-keybind-save-${index}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                    <button id="action-keybind-edit-${index}" class="btn-secondary" title="${trans.edit}" onclick="toggleActionEditMode(${index}, true)"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="action-keybind-save-${index}" class="btn-success" title="${trans.save}" style="display: none;" onclick="saveActionSettingsRow(${index})"><i class="fas fa-save"></i></button>
                 </div>
             </td>
         `;
 
-        // Attach event listeners via ID (since we need to pass index)
-        $(`action-keybind-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
-        $(`action-keybind-save-${index}`).onclick = () => saveActionSettingsRow(index);
-
-        // Update color preview in the action button if color input changes
-        $(`action-color-${index}`).onchange = (e) => {
-            $(`actionBtn${index}`).style.backgroundColor = e.target.value;
-        };
-        // Also update height preview live
-        $(`action-height-${index}`).oninput = (e) => {
-            $(`actionBtn${index}`).style.height = `${e.target.value}px`;
+        // Set colors to inputs that are not the primary focus of edit toggle
+        $(`action-color-${index}`).onchange = () => {
+            // Update color in button preview and then rely on Save button
+            $(`actionBtn${index}`).style.backgroundColor = $(`action-color-${index}`).value;
         };
     });
+
+    // Make utility functions available globally for onclick from the table rows
+    window.toggleActionEditMode = toggleActionEditMode;
+    window.saveActionSettingsRow = saveActionSettingsRow;
 }
-
-// NEW: Period Control Logic
-const loadPeriodSettings = () => {
-    const saved = JSON.parse(localStorage.getItem(PERIOD_LIST_KEY) || '[]');
-    if (saved.length === PERIOD_COUNT) {
-        return saved;
-    }
-    return defaultPeriodSettings;
-}
-
-const savePeriodSettings = () => {
-    const settings = loadPeriodSettings().map((setting, i) => {
-        const newName = $(`period-name-${i}`).value.trim();
-        return {
-            ...setting,
-            name: newName || `Period ${i + 1}`,
-        };
-    });
-    localStorage.setItem(PERIOD_LIST_KEY, JSON.stringify(settings));
-    updateHalfDisplay();
-    showToast(translations[currentLang].toastPeriodSaved, 'success');
-}
-
-const populatePeriodSettingsTable = (lang) => {
-    const trans = translations[lang] || translations.en;
-    const settings = loadPeriodSettings();
-    const tbody = elements.periodSettingsTable.querySelector('tbody');
-
-    tbody.innerHTML = '';
-    settings.forEach((setting, i) => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>#${i + 1}</td>
-            <td><input type="text" id="period-name-${i}" value="${setting.name}" disabled></td>
-            <td>
-                <div class="action-buttons">
-                    <button id="period-edit-${i}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="period-save-${i}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
-                </div>
-            </td>
-        `;
-
-        // Attach event listeners
-        $(`period-edit-${i}`).onclick = () => {
-            $(`period-name-${i}`).disabled = false;
-            $(`period-edit-${i}`).style.display = 'none';
-            $(`period-save-${i}`).style.display = 'inline-flex';
-            $(`period-name-${i}`).focus();
-        };
-        $(`period-save-${i}`).onclick = () => {
-            savePeriodSettings();
-            $(`period-name-${i}`).disabled = true;
-            $(`period-save-${i}`).style.display = 'none';
-            $(`period-edit-${i}`).style.display = 'inline-flex';
-        };
-    });
-}
-
-const updateHalfDisplay = () => {
-    const settings = loadPeriodSettings();
-    // Ensure periodIndex is within bounds [0, PERIOD_COUNT - 1]
-    periodIndex = Math.max(0, Math.min(PERIOD_COUNT - 1, periodIndex));
-
-    half = settings[periodIndex].name;
-    elements.halfText.textContent = half;
-    setText('half_text', half);
-    localStorage.setItem('currentPeriodIndex', periodIndex);
-}
-
-const changePeriod = (delta) => {
-    const newIndex = periodIndex + delta;
-    if (newIndex >= 0 && newIndex < PERIOD_COUNT) {
-        periodIndex = newIndex;
-        updateHalfDisplay();
-    }
-}
-// END NEW: Period Control Logic
-
 
 // NEW: Visibility Controls Logic
 const loadVisibilitySettings = () => {
@@ -602,11 +545,9 @@ const saveVisibilitySetting = (key, value) => {
 // END NEW: Visibility Controls Logic
 
 const populateDynamicLists = (lang) => {
+    const trans = translations[lang] || translations.en;
     // Details Popup
     populateTagsTable(lang);
-
-    // Period Settings Table
-    populatePeriodSettingsTable(lang);
 
     // Action Settings Table
     populateActionSettingsTable(lang);
@@ -654,7 +595,6 @@ const setLanguage = (lang) => {
     updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
 
     populateDynamicLists(lang);
-    updateHalfDisplay(); // Update half display based on new language settings
 };
 
 
@@ -675,6 +615,7 @@ const getStoredKeybinds = () => {
 }
 
 const resetKeybinds = () => {
+    // Note: Action buttons now save their keybinds in ACTION_SETTINGS_KEY
     localStorage.removeItem(KEYBINDS_KEY);
     populateKeybindsTable(currentLang);
     showToast(translations[currentLang].resetKeybinds, 'info');
@@ -735,13 +676,13 @@ const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length
 const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isA = team === 'A';
     const masterTeam = isA ? masterTeamA : masterTeamB;
-    const cache = loadLogoCache();
 
     // Update Master Data
     masterTeam.name = name;
     masterTeam.logoFile = logoFile;
     masterTeam.color1 = color1;
     masterTeam.color2 = color2;
+    // Only update score if provided, otherwise retain current value
     masterTeam.score = score !== undefined ? score : masterTeam.score;
     masterTeam.score2 = score2 !== undefined ? score2 : masterTeam.score2;
 
@@ -770,33 +711,21 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     scoreEl.textContent = masterTeam.score;
     score2El.textContent = masterTeam.score2;
 
-    // Check Logo Cache for display on Dock UI
-    const logoBaseName = masterTeam.logoFile.split('.').slice(0, -1).join('.');
-    const cachedLogo = cache[logoBaseName];
-
-    if (cachedLogo) {
-        // Display from cache (Base64) on Dock UI
-        logoEl.src = cachedLogo;
+    // Show/Hide logo based on file
+    if (masterTeam.logoFile) {
+        const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
+        logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
         logoEl.style.display = 'block';
         initialsEl.style.display = 'none';
-        setImage(obsLogoSource, masterTeam.logoFile); // OBS still uses file path
-    } else if (masterTeam.logoFile) {
-        // Fallback to regular file path logic for OBS only (Dock UI will show initials)
-        const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
-        logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`; // Fallback to try load (might fail due to security)
-        logoEl.style.display = 'none'; // Hide if not cached
-        initialsEl.style.display = 'block';
-        setImage(obsLogoSource, masterTeam.logoFile); // OBS still uses file path
     } else {
-        // No logo file
         logoEl.src = '';
         logoEl.style.display = 'none';
         initialsEl.style.display = 'block';
-        setImage(obsLogoSource, "");
     }
 
     // Update OBS
     setText(obsNameSource, masterTeam.name.replace(/\//g, '\n'));
+    setImage(obsLogoSource, masterTeam.logoFile);
     setSourceColor(obsColorSource1, masterTeam.color1);
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
@@ -805,7 +734,6 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     // Save colors to memory
     saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
 };
-
 
 const applyMatch = () => {
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
@@ -845,14 +773,14 @@ const applyMatch = () => {
     elements.label1.textContent = get('label1');
     elements.label2.textContent = get('label2');
     elements.label3.textContent = get('label3');
-    elements.label4.textContent = get('label4');
-    elements.label5.textContent = get('label5');
+    elements.label4.textContent = get('label4'); // NEW: Label 4
+    elements.label5.textContent = get('label5'); // NEW: Label 5
 
     setText('label_1', get('label1'));
     setText('label_2', get('label2'));
     setText('label_3', get('label3'));
-    setText('label_4', get('label4'));
-    setText('label_5', get('label5'));
+    setText('label_4', get('label4')); // NEW: Source 4
+    setText('label_5', get('label5')); // NEW: Source 5
 
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
@@ -862,6 +790,7 @@ const swapTeams = () => {
     [masterTeamA, masterTeamB] = [masterTeamB, masterTeamA];
 
     // Re-render UI and update OBS based on the swapped master objects
+    // Use an object destructuring trick to update all properties in one call
     const tempA = { ...masterTeamA };
     const tempB = { ...masterTeamB };
 
@@ -907,11 +836,12 @@ const fullReset = () => {
     // Reset Timer & Half
     stopTimer();
     timer = 0;
-    periodIndex = 0; // Reset period to first index
+    half = '1st';
     injuryTime = 0;
     updateTimerDisplay();
     updateInjuryTimeDisplay();
-    updateHalfDisplay(); // Update based on periodIndex
+    elements.halfText.textContent = half;
+    setText('half_text', half);
 
     showToast(translations[currentLang].toastFullReset, 'info');
 };
@@ -1000,9 +930,11 @@ const saveAndUpdateTime = () => {
     showToast(translations[currentLang].toastTimeSet, 'success');
 }
 
-// Functionality of halfBtn is now Period cycle
+
 const toggleHalf = () => {
-    changePeriod(1);
+    half = half === '1st' ? '2nd' : '1st';
+    elements.halfText.textContent = half;
+    setText('half_text', half);
 };
 
 const updateInjuryTimeDisplay = () => {
@@ -1053,8 +985,8 @@ const copyDetails = () => {
         .replace(/<label1>/gi, elements.label1.textContent)
         .replace(/<label2>/gi, elements.label2.textContent)
         .replace(/<label3>/gi, elements.label3.textContent)
-        .replace(/<label4>/gi, elements.label4.textContent)
-        .replace(/<label5>/gi, elements.label5.textContent)
+        .replace(/<label4>/gi, elements.label4.textContent) // NEW: Tag 4
+        .replace(/<label5>/gi, elements.label5.textContent) // NEW: Tag 5
         .replace(/<score_team_a>/gi, masterTeamA.score)
         .replace(/<score_team_b>/gi, masterTeamB.score)
         .replace(/<score2_team_a>/gi, masterTeamA.score2)
@@ -1075,7 +1007,7 @@ const enterEditMode = (team) => {
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
     nameDiv.style.display = 'none';
     editBtn.style.display = 'none';
-    nameInput.value = masterTeam.name.replace(/\//g, '/');
+    nameInput.value = masterTeam.name.replace(/\//g, '/'); // Use current master name
     nameInput.style.display = 'block';
     okBtn.style.display = 'inline-flex';
     nameInput.focus();
@@ -1109,6 +1041,8 @@ const setupEventListeners = () => {
     // Bind Save buttons to the same logic
     const saveHandler = () => {
         localStorage.setItem('detailsText', elements.detailsText.value);
+        // We only save action settings here, not keybinds (they are saved individually)
+        // Note: Global save is disabled since action settings save independently by row
         closeAllPopups();
         showToast(translations[currentLang].toastSaved, 'success');
     };
@@ -1121,13 +1055,6 @@ const setupEventListeners = () => {
         keybindsList.forEach(item => toggleKeybindEditMode(item.id, false));
         // Ensure all Action keybind inputs are disabled before closing
         loadActionSettings().forEach((_, i) => toggleActionEditMode(i + 1, false));
-        loadPeriodSettings().forEach((_, i) => {
-            if ($(`period-name-${i}`)) $(`period-name-${i}`).disabled = true;
-            if ($(`period-save-${i}`)) {
-                $(`period-save-${i}`).style.display = 'none';
-                $(`period-edit-${i}`).style.display = 'inline-flex';
-            }
-        });
 
         closeAllPopups();
     };
@@ -1164,11 +1091,7 @@ const setupEventListeners = () => {
     // Team Color Reset
     elements.resetColorsBtn.addEventListener('click', resetTeamColors);
 
-    // Period Controls
-    elements.halfBtn.addEventListener('click', toggleHalf); // Use as NEXT Period
-    elements.periodPlusBtn.addEventListener('click', () => changePeriod(1));
-    elements.periodMinusBtn.addEventListener('click', () => changePeriod(-1));
-
+    elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
     elements.pauseBtn.addEventListener('click', stopTimer);
     elements.resetToStartBtn.addEventListener('click', resetToStartTime);
@@ -1178,15 +1101,12 @@ const setupEventListeners = () => {
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
         // Re-populate all dynamic tables on open to load latest saved/default values
-        populatePeriodSettingsTable(currentLang);
-        populateActionSettingsTable(currentLang);
+        populateActionSettingsTable(currentLang); // NEW
         populateKeybindsTable(currentLang);
         applyVisibilitySettings(); // Load visibility settings to checkboxes
         openPopup(elements.detailsPopup);
     });
-    // COPY BUTTON (now Announcement Button)
     elements.copyBtn.addEventListener('click', copyDetails);
-
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
@@ -1201,7 +1121,9 @@ const setupEventListeners = () => {
     elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup);
 
     // Copy Link Buttons for Welcome Popup
-    // ... (unchanged)
+    elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
+    elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+
 
     // Time Settings
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
@@ -1252,42 +1174,13 @@ const setupEventListeners = () => {
         }
     });
 
-    // NEW: Logo Drop Zone Handlers
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        elements.logoDropZone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, false);
-    });
-    elements.logoDropZone.addEventListener('dragenter', () => elements.logoDropZone.classList.add('dragover'));
-    elements.logoDropZone.addEventListener('dragleave', () => elements.logoDropZone.classList.remove('dragover'));
-    elements.logoDropZone.addEventListener('drop', (e) => {
-        elements.logoDropZone.classList.remove('dragover');
-        const dt = e.dataTransfer;
-        const files = dt.files;
-
-        Array.from(files).forEach(file => {
-            if (file.type.startsWith('image/')) {
-                cacheLogoFile(file).then(() => {
-                    // Try to re-render teams if the dropped logo matches one currently displayed
-                    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
-                    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
-                });
-            } else {
-                showToast(translations[currentLang].toastInvalidFile, 'error');
-            }
-        });
-    });
-
-    elements.clearLogoCacheBtn.addEventListener('click', clearLogoCache);
-
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
         // Only trigger keybinds if user is not typing in a general input field
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-keybind-input') || e.target.getAttribute('id')?.startsWith('period-name')) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-keybind-input')) return;
 
         const keybinds = getStoredKeybinds();
-        const actionSettings = loadActionSettings();
+        const actionSettings = loadActionSettings(); // Load action hotkeys
 
         // Build combination string (e.g., CONTROL+ALT+F1)
         const modifiers = [];
@@ -1332,7 +1225,7 @@ const setupEventListeners = () => {
             }
         }
 
-        // Check for Action Button hotkeys separately
+        // NEW: Check for Action Button hotkeys separately
         for (let i = 0; i < actionSettings.length; i++) {
             if (actionSettings[i].hotkey === keyCombination) {
                 e.preventDefault();
@@ -1356,10 +1249,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedPath) {
         logoFolderPath = savedPath;
     }
-    const savedPeriodIndex = localStorage.getItem('currentPeriodIndex');
-    if (savedPeriodIndex !== null) {
-        periodIndex = parseInt(savedPeriodIndex, 10);
-    }
 
     // Initialize Master Data before setting language (to use default values)
     masterTeamA = createDefaultTeam('A');
@@ -1371,24 +1260,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setLanguage(savedLang); // This will update the UI with masterTeam data
 
-    applyVisibilitySettings();
-    renderActionButtons();
+    applyVisibilitySettings(); // Apply initial visibility state
+    renderActionButtons(); // Render action buttons with saved/default settings
 
-    resetToZero();
+    resetToZero(); // Set timer to 00:00, update OBS
 
-    // Make utility functions globally available for onclick from HTML/tables
-    window.copyTag = (tagCode) => {
-        // Simple implementation for inline usage
-        const cleanTag = tagCode.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        navigator.clipboard.writeText(cleanTag).then(() => {
-            showToast(`${translations[currentLang].toastCopied} Tag: ${tagCode}`, 'info');
-        });
-    };
-    window.toggleActionEditMode = toggleActionEditMode;
-    window.saveActionSettingsRow = saveActionSettingsRow;
+    // Make copyTag and the new action functions globally available for onclick from HTML/tables
+    window.copyTag = copyTag;
 
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
 
     fetchAnnouncement();
+    // Re-fetch announcement every hour
     setInterval(fetchAnnouncement, 3600000);
+
+    // Ensure the default tab button is styled correctly after DOM load
+    const defaultButton = document.getElementById('defaultOpen');
+    if (defaultButton) defaultButton.classList.add('active');
+
+    // REMOVED: showWelcomePopup();
 });
