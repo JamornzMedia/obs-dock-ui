@@ -589,7 +589,7 @@
                 color: var(--text-muted-color);
             }
 
-        /* NEW: Keybind Table Styles */
+        /* NEW: Keybind Table Styles (Also used for Action Settings) */
         .keybind-table {
             width: 100%;
         }
@@ -638,6 +638,26 @@
                 height: 30px;
                 padding: 0;
             }
+
+        /* V2.7 Action Settings Specific */
+        .action-settings-table td:nth-child(1) {
+            width: 40%;
+        }
+
+        .action-settings-table td:nth-child(2) {
+            width: 45%;
+        }
+
+        .action-settings-table td:nth-child(3) {
+            width: 15%;
+        }
+
+        .action-settings-table input[type="color"] {
+            width: 25px;
+            height: 25px;
+            padding: 0;
+            flex-shrink: 0;
+        }
         /* End Keybind Table Styles */
 
         .changelog-list {
@@ -855,6 +875,7 @@
         #actionButtonsCard {
             overflow: hidden;
             transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            max-height: 150px; /* Max height for initial display if visible */
         }
 
             #actionButtonsCard.hidden {
@@ -930,6 +951,17 @@
             </div>
         </div>
 
+        <div class="card" id="actionButtonsCard">
+            <div class="action-grid">
+                <button id="actionBtn1" class="btn-secondary" data-lang="actionBtn1" style="height: 35px;">Action 1</button>
+                <button id="actionBtn2" class="btn-secondary" data-lang="actionBtn2" style="height: 35px;">Action 2</button>
+                <button id="actionBtn3" class="btn-secondary" data-lang="actionBtn3" style="height: 35px;">Action 3</button>
+                <button id="actionBtn4" class="btn-secondary" data-lang="actionBtn4" style="height: 35px;">Action 4</button>
+                <button id="actionBtn5" class="btn-secondary" data-lang="actionBtn5" style="height: 35px;">Action 5</button>
+                <button id="actionBtn6" class="btn-secondary" data-lang="actionBtn6" style="height: 35px;">Action 6</button>
+            </div>
+        </div>
+
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn" class="minus">-</button></div>
@@ -963,17 +995,6 @@
                         <button id="score2BMinusBtn" class="minus">-</button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="card" id="actionButtonsCard">
-            <div class="action-grid">
-                <button id="actionBtn1" class="btn-secondary" data-lang="actionBtn1">Action 1</button>
-                <button id="actionBtn2" class="btn-secondary" data-lang="actionBtn2">Action 2</button>
-                <button id="actionBtn3" class="btn-secondary" data-lang="actionBtn3">Action 3</button>
-                <button id="actionBtn4" class="btn-secondary" data-lang="actionBtn4">Action 4</button>
-                <button id="actionBtn5" class="btn-secondary" data-lang="actionBtn5">Action 5</button>
-                <button id="actionBtn6" class="btn-secondary" data-lang="actionBtn6">Action 6</button>
             </div>
         </div>
 
@@ -1058,6 +1079,13 @@
         <table class="keybind-table" id="keybindsTable"></table>
         <div class="row center" style="margin-top: 10px;">
             <button id="resetKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetKeybinds"></span></button>
+        </div>
+
+        <div class="popup-divider"></div>
+        <h4 style="margin: 0;"><i class="fas fa-gamepad"></i> Action Button Settings</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted-color);">ตั้งค่าชื่อปุ่ม, สี, ความสูง (H) และคีย์ลัด OBS Hotkey</p>
+
+        <div id="action-settings-container">
         </div>
 
         <div class="popup-divider"></div>

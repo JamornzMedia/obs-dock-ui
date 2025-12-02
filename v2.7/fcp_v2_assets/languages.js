@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.7", // Updated Version
+        appTitle: "Football Scoreboard Controller - V2.7",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -53,7 +53,7 @@ export const translations = {
         actionBtn5: "Action 5",
         actionBtn6: "Action 6",
 
-        // Keybind List (Unchanged for this fix)
+        // Keybind List (เพิ่มคีย์ลัดสำหรับปุ่ม Action)
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -67,6 +67,13 @@ export const translations = {
             { id: "timer_resetstart", label: "Reset to Start Time", default: "F10" },
             { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
             { id: "full_reset", label: "Full Reset (All)", default: "F12" },
+            // --- NEW ACTION BUTTON KEYBINDS ---
+            { id: "action_btn1", label: "Action Button 1", default: "CTRL+ALT+1" },
+            { id: "action_btn2", label: "Action Button 2", default: "CTRL+ALT+2" },
+            { id: "action_btn3", label: "Action Button 3", default: "CTRL+ALT+3" },
+            { id: "action_btn4", label: "Action Button 4", default: "CTRL+ALT+4" },
+            { id: "action_btn5", label: "Action Button 5", default: "CTRL+ALT+5" },
+            { id: "action_btn6", label: "Action Button 6", default: "CTRL+ALT+6" },
         ],
 
         // Tags List (Updated for new Labels)
@@ -117,7 +124,6 @@ export const translations = {
             { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
-            // V2.7 Actions will likely use separate Text/Image sources, not listed here for simplicity
         ],
         understand: "Got it",
         donateTitle: "Support Us",
@@ -140,7 +146,7 @@ export const translations = {
                         <li>**Core Logic Refactor (Master Data):** Rewrote core team logic to use Master Data structure, ensuring **Swap Teams** fully transfers Name, Logo, Colors, Score 1, and Score 2 correctly.</li>
                         <li>**UI Customization:** Added visibility toggles in Settings for Score 2 Card, Swap Button Card, and Action Button Card.</li>
                         <li>**New Elements:** Added **Label 4** and **Label 5** for more custom text fields.</li>
-                        <li>**New Elements:** Added **6 Action Buttons** for customizable OBS scene switching or triggers (keybinds forthcoming).</li>
+                        <li>**New Feature:** Added **6 Action Buttons** with custom name/color/height and dedicated OBS Hotkey triggers.</li>
                         <li>**Fix:** Resolved initialization crash issue upon loading.</li>
                     </ul>
                 </li>
@@ -215,7 +221,7 @@ export const translations = {
         actionBtn5: "ปุ่ม A5",
         actionBtn6: "ปุ่ม A6",
 
-        // Keybind List (Unchanged for this fix)
+        // Keybind List (เพิ่มคีย์ลัดสำหรับปุ่ม Action)
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -229,6 +235,13 @@ export const translations = {
             { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "F10" },
             { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
             { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
+            // --- NEW ACTION BUTTON KEYBINDS ---
+            { id: "action_btn1", label: "ปุ่ม Action 1", default: "CTRL+ALT+1" },
+            { id: "action_btn2", label: "ปุ่ม Action 2", default: "CTRL+ALT+2" },
+            { id: "action_btn3", label: "ปุ่ม Action 3", default: "CTRL+ALT+3" },
+            { id: "action_btn4", label: "ปุ่ม Action 4", default: "CTRL+ALT+4" },
+            { id: "action_btn5", label: "ปุ่ม Action 5", default: "CTRL+ALT+5" },
+            { id: "action_btn6", label: "ปุ่ม Action 6", default: "CTRL+ALT+6" },
         ],
 
         // Tags List (Updated for new Labels)
@@ -301,7 +314,7 @@ export const translations = {
                         <li>**ปรับโครงสร้างหลัก (Master Data):** เขียน Logic ทีมใหม่ทั้งหมดเพื่อใช้โครงสร้าง Master Data ทำให้การ **สลับฝั่ง** (Swap) โอนถ่ายชื่อ โลโก้ สี คะแนน 1 และ คะแนน 2 ได้อย่างสมบูรณ์</li>
                         <li>**ปรับแต่ง UI:** เพิ่มปุ่มควบคุมการแสดงผลในหน้าตั้งค่าสำหรับ คะแนน 2, ปุ่มสลับฝั่ง, และปุ่ม Action ต่างๆ</li>
                         <li>**เพิ่ม Element ใหม่:** เพิ่ม **ป้าย 4** (Label 4) และ **ป้าย 5** (Label 5) สำหรับข้อความที่กำหนดเองมากขึ้น</li>
-                        <li>**เพิ่ม Element ใหม่:** เพิ่ม **6 ปุ่ม Action** สำหรับการสั่งงาน OBS Scene Switching หรือ Trigger อื่นๆ (รองรับคีย์ลัดในอนาคต)</li>
+                        <li>**เพิ่มฟีเจอร์ใหม่:** เพิ่ม **6 ปุ่ม Action** พร้อมการตั้งค่าชื่อ/สี/ความสูง และคีย์ลัด OBS Hotkey ที่กำหนดเองได้</li>
                         <li>**แก้ไข:** แก้ไขปัญหาโปรแกรมหยุดทำงานในตอนเริ่มต้น (Initialization Crash)</li>
                     </ul>
                 </li>
