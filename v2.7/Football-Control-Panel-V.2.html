@@ -633,7 +633,7 @@
                 color: var(--text-muted-color);
             }
 
-        /* Keybind Table Styles */
+        /* Keybind Table Styles (Original) */
         .keybind-table {
             width: 100%;
         }
@@ -684,7 +684,7 @@
             }
         /* End Keybind Table Styles */
 
-        /* Action Settings Table Styles */
+        /* Action Settings Table Styles (Revised) */
         .action-settings-table {
             width: 100%;
             border-collapse: collapse;
@@ -705,24 +705,28 @@
             }
 
             .action-settings-table td:nth-child(1) {
-                width: 40px;
+                width: 30px;
                 text-align: center;
                 font-weight: bold;
             }
-
+            /* # */
             .action-settings-table td:nth-child(2) {
-                width: 80px;
+                width: 90px;
             }
-
+            /* Name */
             .action-settings-table td:nth-child(3) {
-                width: 50px;
+                width: 30px;
             }
-
+            /* Color */
             .action-settings-table td:nth-child(4) {
-                width: 120px;
+                width: 60px;
+            }
+            /* Height */
+            .action-settings-table td:nth-child(5) {
+                width: 100px;
             }
             /* Keybind Input */
-            .action-settings-table td:nth-child(5) {
+            .action-settings-table td:nth-child(6) {
                 width: 70px;
                 text-align: right;
             }
@@ -738,7 +742,24 @@
                 height: 28px;
                 padding: 0;
             }
+
+            .action-settings-table input:disabled {
+                background: #333;
+            }
         /* End Action Settings Table Styles */
+
+        /* Help Table Source Name (Click to Copy) */
+        #sourcesTableBody td:nth-child(1) {
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-color);
+            text-decoration: underline;
+        }
+
+            #sourcesTableBody td:nth-child(1):hover {
+                color: var(--accent-color);
+            }
+
 
         .changelog-list {
             list-style: none;
@@ -1130,7 +1151,7 @@
                     <th data-lang="actionSettingsColor"></th>
                     <th data-lang="actionSettingsHeight"></th>
                     <th data-lang="actionSettingsHotkey"></th>
-                    <th>${translations.th.save}</th>
+                    <th><span data-lang="actionSettingsEditSave"></span></th>
                 </tr>
             </thead>
             <tbody>
@@ -1139,7 +1160,17 @@
 
         <div class="popup-divider"></div>
         <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
-        <table class="keybind-table" id="keybindsTable"></table>
+        <table class="keybind-table" id="keybindsTable">
+            <thead>
+                <tr>
+                    <th data-lang="keybindsListLabel"></th>
+                    <th data-lang="actionSettingsHotkey"></th>
+                    <th><span data-lang="actionSettingsEditSave"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
         <div class="row center" style="margin-top: 10px;">
             <button id="resetKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetKeybinds"></span></button>
         </div>

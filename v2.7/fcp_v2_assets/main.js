@@ -207,6 +207,7 @@ const populateHelpTable = (lang) => {
         const row = elements.sourcesTableBody.insertRow();
         const nameCell = row.insertCell();
         nameCell.textContent = item.code;
+        // Make the text content of the name cell clickable for copying
         nameCell.onclick = () => copySourceName(item.code);
         row.insertCell().textContent = item.type;
         row.insertCell().innerHTML = item.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -299,6 +300,90 @@ const toggleKeybindEditMode = (id, enable) => {
     }
 }
 
+// NEW: Action Button Specific Edit Toggle
+const toggleActionEditMode = (index, enable) => {
+    const trans = translations[currentLang];
+    const id = `actionBtn${index}`;
+    const nameInput = $(`action-name-${index}`);
+    const heightInput = $(`action-height-${index}`);
+    const keybindInput = $(`action-keybind-input-${index}`);
+    const editButton = $(`action-keybind-edit-${index}`);
+    const saveButton = $(`action-keybind-save-${index}`);
+
+    if (enable) {
+        // Enable inputs
+        nameInput.disabled = false;
+        heightInput.disabled = false;
+        keybindInput.disabled = false;
+
+        editButton.style.display = 'none';
+        saveButton.style.display = 'inline-flex';
+        nameInput.focus();
+
+        // Clear existing listener and set new one for key capture
+        keybindInput.onkeydown = null;
+        keybindInput.onkeydown = (e) => captureKeyInput(e, keybindInput, saveButton);
+
+        // Blur handler for keybind input
+        keybindInput.onblur = () => {
+            setTimeout(() => {
+                // If focus moves away from keybind input and save button, revert to disabled state
+                if (document.activeElement !== saveButton && document.activeElement !== keybindInput) {
+                    toggleActionEditMode(index, false);
+                }
+            }, 50);
+        };
+
+    } else {
+        // Disable inputs
+        nameInput.disabled = true;
+        heightInput.disabled = true;
+        keybindInput.disabled = true;
+
+        editButton.style.display = 'inline-flex';
+        saveButton.style.display = 'none';
+        keybindInput.onkeydown = null;
+    }
+}
+
+// NEW: Action Button Specific Save Function
+const saveActionSettingsRow = (index) => {
+    // 1. Save all settings globally
+    const settings = loadActionSettings().map((setting, i) => {
+        const idx = i + 1;
+        const nameInput = $(`action-name-${idx}`);
+        const colorInput = $(`action-color-${idx}`);
+        const heightInput = $(`action-height-${idx}`);
+        const keybindInput = $(`action-keybind-input-${idx}`);
+
+        // Convert formatted key (Ctrl+F1) back to raw key (CONTROL+F1)
+        const rawKeybind = keybindInput.value
+            .trim().toUpperCase()
+            .replace(/CTRL/g, 'CONTROL')
+            .replace(/ALT/g, 'ALT')
+            .replace(/SHIFT/g, 'SHIFT')
+            .replace(/SPACE/g, ' ');
+
+        return {
+            ...setting,
+            name: nameInput.value,
+            backgroundColor: colorInput.value,
+            height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
+            hotkey: rawKeybind
+        };
+    });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+
+    // 2. Re-render Action Buttons (only the UI buttons need update)
+    renderActionButtons();
+
+    // 3. Disable edit mode for this row
+    toggleActionEditMode(index, false);
+
+    showToast(translations[currentLang].toastActionSaved, 'success');
+}
+
+
 const saveKeybind = (id) => {
     const inputElement = $(`keybind-input-${id}`);
     const keyString = inputElement.value.trim().toUpperCase();
@@ -314,15 +399,15 @@ const saveKeybind = (id) => {
 
 const populateKeybindsTable = (lang) => {
     const trans = translations[lang] || translations.en;
-    const keybindsList = trans.keybindsList || [];
+    // Filter out action button keybinds
+    const filteredKeybindsList = trans.keybindsList.filter(item => !item.id.startsWith('actionBtn'));
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
 
-    elements.keybindsTable.innerHTML = `<thead>
-        <tr><th>${trans.keybindsTitle}</th><th style="width: 110px;">${trans.edit}</th><th>${trans.save}</th></tr>
-    </thead><tbody></tbody>`;
+    // Use headers from HTML definition
     const tbody = elements.keybindsTable.querySelector('tbody');
+    tbody.innerHTML = '';
 
-    keybindsList.forEach(item => {
+    filteredKeybindsList.forEach(item => {
         const rawKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
         const formattedKey = formatKey(rawKey);
 
@@ -356,31 +441,10 @@ const loadActionSettings = () => {
         return savedSettings.map((setting, i) => ({
             ...defaultActionSettings[i], // default structure
             ...setting, // override with saved values
-            // Fix: ensure 'hotkeyName' from old v2.6 is mapped to 'hotkey' for compatibility on upgrade
-            hotkey: setting.hotkey || setting.hotkeyName || defaultActionSettings[i].hotkey
+            hotkey: setting.hotkey || defaultActionSettings[i].hotkey // Ensure hotkey is present
         }));
     }
     return defaultActionSettings;
-}
-
-const saveActionSettings = () => {
-    const settings = loadActionSettings().map((setting, i) => {
-        const index = i + 1;
-        const inputKeybind = $(`action-keybind-input-${index}`).value.trim().toUpperCase();
-        // Convert formatted key (Ctrl+F1) back to raw key (CONTROL+F1)
-        const rawKeybind = inputKeybind.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT').replace(/SPACE/g, ' ');
-
-        return {
-            ...setting,
-            name: $(`action-name-${index}`).value,
-            backgroundColor: $(`action-color-${index}`).value,
-            height: parseInt($(`action-height-${index}`).value) || 35,
-            hotkey: rawKeybind // Save the raw keybind
-        };
-    });
-    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
-    renderActionButtons(); // Re-render UI after saving
-    showToast(translations[currentLang].toastActionSaved, 'success');
 }
 
 const renderActionButtons = () => {
@@ -420,44 +484,30 @@ const populateActionSettingsTable = (lang) => {
         const row = actionTableBody.insertRow();
         row.innerHTML = `
             <td>#${index}</td>
-            <td><input type="text" id="action-name-${index}" value="${setting.name}" style="width: 100%;"></td>
+            <td><input type="text" id="action-name-${index}" value="${setting.name}" disabled></td>
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
-            <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 50px;"></td>
+            <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td>
-                <input type="text" id="action-keybind-input-${index}" value="${formattedKey}" disabled style="width: 100%;">
+                <input type="text" id="action-keybind-input-${index}" value="${formattedKey}" disabled>
             </td>
             <td>
                 <div class="action-buttons">
-                    <button id="action-keybind-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="action-keybind-save-${index}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                    <button id="action-keybind-edit-${index}" class="btn-secondary" title="${trans.edit}" onclick="toggleActionEditMode(${index}, true)"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="action-keybind-save-${index}" class="btn-success" title="${trans.save}" style="display: none;" onclick="saveActionSettingsRow(${index})"><i class="fas fa-save"></i></button>
                 </div>
             </td>
         `;
 
-        // Attach event listeners for each button (using the new IDs)
-        $(`action-keybind-edit-${index}`).onclick = () => toggleKeybindEditMode(`action-keybind-${index}`, true);
-        $(`action-keybind-save-${index}`).onclick = () => {
-            // No individual save, rely on popup global save button to save all settings
-            toggleKeybindEditMode(`action-keybind-${index}`, false);
-        };
-
-        // Attach dedicated listeners for keybind input
-        const inputElement = $(`action-keybind-input-${index}`);
-        const saveButton = $(`action-keybind-save-${index}`);
-        inputElement.onkeydown = (e) => captureKeyInput(e, inputElement, saveButton);
-        inputElement.onblur = () => {
-            setTimeout(() => {
-                if (document.activeElement !== saveButton) {
-                    if (inputElement.disabled === false) {
-                        inputElement.disabled = true;
-                        $(`action-keybind-edit-${index}`).style.display = 'inline-flex';
-                        saveButton.style.display = 'none';
-                        inputElement.onkeydown = null;
-                    }
-                }
-            }, 50);
+        // Set colors to inputs that are not the primary focus of edit toggle
+        $(`action-color-${index}`).onchange = () => {
+            // Update color in button preview and then rely on Save button
+            $(`actionBtn${index}`).style.backgroundColor = $(`action-color-${index}`).value;
         };
     });
+
+    // Make utility functions available globally for onclick from the table rows
+    window.toggleActionEditMode = toggleActionEditMode;
+    window.saveActionSettingsRow = saveActionSettingsRow;
 }
 
 // NEW: Visibility Controls Logic
@@ -553,7 +603,10 @@ const getStoredKeybinds = () => {
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
     const activeKeybinds = {};
 
-    keybindsList.forEach(item => {
+    // Filter to only include non-action button keybinds for global use
+    const filteredKeybindsList = keybindsList.filter(item => !item.id.startsWith('actionBtn'));
+
+    filteredKeybindsList.forEach(item => {
         const key = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
         activeKeybinds[item.id] = key.trim().toUpperCase(); // Normalize key
     });
@@ -562,6 +615,7 @@ const getStoredKeybinds = () => {
 }
 
 const resetKeybinds = () => {
+    // Note: Action buttons now save their keybinds in ACTION_SETTINGS_KEY
     localStorage.removeItem(KEYBINDS_KEY);
     populateKeybindsTable(currentLang);
     showToast(translations[currentLang].resetKeybinds, 'info');
@@ -590,7 +644,6 @@ const fetchAnnouncement = async () => {
 };
 
 // --- Team Color Memory Functions ---
-// Uses Master Data's team name
 const saveTeamColors = (teamName, color1, color2) => {
     const defaultNameA = translations[currentLang].teamA;
     const defaultNameB = translations[currentLang].teamB;
@@ -989,7 +1042,7 @@ const setupEventListeners = () => {
     const saveHandler = () => {
         localStorage.setItem('detailsText', elements.detailsText.value);
         // We only save action settings here, not keybinds (they are saved individually)
-        saveActionSettings(); // NEW: Save Action Settings
+        // Note: Global save is disabled since action settings save independently by row
         closeAllPopups();
         showToast(translations[currentLang].toastSaved, 'success');
     };
@@ -1001,7 +1054,7 @@ const setupEventListeners = () => {
         const keybindsList = translations[currentLang].keybindsList || [];
         keybindsList.forEach(item => toggleKeybindEditMode(item.id, false));
         // Ensure all Action keybind inputs are disabled before closing
-        loadActionSettings().forEach((_, i) => toggleKeybindEditMode(`action-keybind-${i + 1}`, false));
+        loadActionSettings().forEach((_, i) => toggleActionEditMode(i + 1, false));
 
         closeAllPopups();
     };
@@ -1124,7 +1177,7 @@ const setupEventListeners = () => {
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
         // Only trigger keybinds if user is not typing in a general input field
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input')) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-keybind-input')) return;
 
         const keybinds = getStoredKeybinds();
         const actionSettings = loadActionSettings(); // Load action hotkeys
@@ -1168,14 +1221,16 @@ const setupEventListeners = () => {
                 case 'timer_resetstart': resetToStartTime(); break;
                 case 'timer_togglehalf': toggleHalf(); break;
                 case 'full_reset': fullReset(); break;
-                // NEW: Action Hotkeys - We use the keybind ID to map to the action button index
-                case 'actionBtn1_hotkey': triggerObsHotkey(actionSettings[0].hotkey); break;
-                case 'actionBtn2_hotkey': triggerObsHotkey(actionSettings[1].hotkey); break;
-                case 'actionBtn3_hotkey': triggerObsHotkey(actionSettings[2].hotkey); break;
-                case 'actionBtn4_hotkey': triggerObsHotkey(actionSettings[3].hotkey); break;
-                case 'actionBtn5_hotkey': triggerObsHotkey(actionSettings[4].hotkey); break;
-                case 'actionBtn6_hotkey': triggerObsHotkey(actionSettings[5].hotkey); break;
                 default: return;
+            }
+        }
+
+        // NEW: Check for Action Button hotkeys separately
+        for (let i = 0; i < actionSettings.length; i++) {
+            if (actionSettings[i].hotkey === keyCombination) {
+                e.preventDefault();
+                triggerObsHotkey(actionSettings[i].hotkey);
+                return;
             }
         }
     });
@@ -1210,16 +1265,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetToZero(); // Set timer to 00:00, update OBS
 
-    // Send initial Score 2 data to OBS as well (handled in resetToZero->updateTeamUI)
+    // Make copyTag and the new action functions globally available for onclick from HTML/tables
+    window.copyTag = copyTag;
 
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
 
     fetchAnnouncement();
     // Re-fetch announcement every hour
     setInterval(fetchAnnouncement, 3600000);
-
-    // Make copyTag globally available for onclick events in the Tags table
-    window.copyTag = copyTag;
 
     // Ensure the default tab button is styled correctly after DOM load
     const defaultButton = document.getElementById('defaultOpen');
