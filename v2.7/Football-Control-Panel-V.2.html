@@ -684,7 +684,7 @@
             }
         /* End Keybind Table Styles */
 
-        /* NEW: Action Settings Table Styles */
+        /* Action Settings Table Styles */
         .action-settings-table {
             width: 100%;
             border-collapse: collapse;
@@ -705,19 +705,28 @@
             }
 
             .action-settings-table td:nth-child(1) {
-                width: 60px;
+                width: 40px;
                 text-align: center;
                 font-weight: bold;
             }
 
             .action-settings-table td:nth-child(2) {
-                width: 100px;
+                width: 80px;
             }
 
             .action-settings-table td:nth-child(3) {
                 width: 50px;
             }
 
+            .action-settings-table td:nth-child(4) {
+                width: 120px;
+            }
+            /* Keybind Input */
+            .action-settings-table td:nth-child(5) {
+                width: 70px;
+                text-align: right;
+            }
+            /* Edit/Save */
             .action-settings-table input[type="text"], .action-settings-table input[type="number"] {
                 padding: 4px;
                 height: 30px;
@@ -993,6 +1002,11 @@
                 <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span data-lang="swap"></span></button>
             </div>
         </div>
+
+        <div class="card" id="actionButtonsCard">
+            <div class="action-buttons-grid" id="actionButtonsGrid">
+            </div>
+        </div>
         <div class="card">
             <div class="score-control">
                 <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn" class="minus">-</button></div>
@@ -1029,10 +1043,6 @@
             </div>
         </div>
 
-        <div class="card" id="actionButtonsCard">
-            <div class="action-buttons-grid" id="actionButtonsGrid">
-            </div>
-        </div>
         <div class="card">
             <div class="row timer-area-container">
                 <div style="flex: 0 0 70px; display: flex;">
@@ -1120,6 +1130,7 @@
                     <th data-lang="actionSettingsColor"></th>
                     <th data-lang="actionSettingsHeight"></th>
                     <th data-lang="actionSettingsHotkey"></th>
+                    <th>${translations.th.save}</th>
                 </tr>
             </thead>
             <tbody>

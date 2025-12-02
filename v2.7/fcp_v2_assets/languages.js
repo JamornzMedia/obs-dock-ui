@@ -47,11 +47,11 @@ export const translations = {
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Custom Keyboard Shortcuts",
         actionSettingsTitle: "Action Button Settings", // NEW
-        actionSettingsDesc: "Set button names, colors, height, and OBS Hotkey Name for up to 6 action buttons.", // NEW
+        actionSettingsDesc: "Set button names, colors, height, and OBS Hotkey Name for up to 6 action buttons. Hotkey Name must match the Key Combination (e.g., CONTROL+F1) set here.", // UPDATED DESCRIPTION
         actionSettingsName: "Name", // NEW
         actionSettingsColor: "Color", // NEW
         actionSettingsHeight: "Height (px)", // NEW
-        actionSettingsHotkey: "Hotkey Name", // NEW
+        actionSettingsHotkey: "Hotkey", // UPDATED TO HOTKEY
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -94,7 +94,7 @@ export const translations = {
         helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. The default is <code>C:/OBSAssets/logos</code>. **You need to click the Edit button inside the popup to change and save the path.**",
         helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
         helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
-        sourcesTitle: "Required OBS Sources",
+        sourcesTitle: "Required OBS Sources (Click to Copy)", // UPDATED TEXT
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'Team A (Primary Color)' },
@@ -136,7 +136,8 @@ export const translations = {
                     <ul>
                         <li>**Master Data Refactor:** Changed the logic to store all Team A and B data (name, logo, colors, scores) in a single object (masterTeamA, masterTeamB).</li>
                         <li>**Full Swap Function:** The \`swapTeams()\` function now swaps the entire Master Data objects, ensuring 100% complete data swap.</li>
-                        <li>**Action Buttons:** Added 6 customizable action buttons in the UI with settings for name, color, height, and OBS Hotkey Name, triggering \`TriggerHotkeyByName\` via OBS-WebSocket.</li>
+                        <li>**Action Buttons (Enhanced):** Added 6 customizable action buttons. Settings now use a **Keybind Input** system (Edit/Capture/Save) to set the Hotkey Combination, which is used to trigger \`TriggerHotkeyByName\` in OBS-WebSocket.</li>
+                        <li>**UI Reorder:** Moved Action Buttons Card below the Swap Card.</li>
                         <li>**Visibility Controls:** Added checkboxes in settings to control the visibility of the Score 2 Card, Swap Card, and Action Button Card.</li>
                         <li>**New Labels:** Added Label 4 and Label 5 with corresponding OBS Sources (\`label_4\`, \`label_5\`) and Announcement Tags.</li>
                         <li>**Initialization Fix:** Removed immediate call to \`showWelcomePopup()\` to fix a potential initialization crash on load.</li>
@@ -220,11 +221,11 @@ export const translations = {
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
         actionSettingsTitle: "ตั้งค่า Action Button", // NEW
-        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Hotkey ใน OBS สำหรับ Action Button สูงสุด 6 ปุ่ม", // NEW
+        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และคีย์ลัด Hotkey ใน OBS สำหรับ Action Button สูงสุด 6 ปุ่ม คีย์ลัดต้องตรงกับ Hotkey Name ที่ตั้งค่าไว้ใน OBS.", // UPDATED DESCRIPTION
         actionSettingsName: "ชื่อปุ่ม", // NEW
         actionSettingsColor: "สี", // NEW
         actionSettingsHeight: "ความสูง (px)", // NEW
-        actionSettingsHotkey: "ชื่อ Hotkey", // NEW
+        actionSettingsHotkey: "คีย์ลัด", // UPDATED TO HOTKEY
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -267,7 +268,7 @@ export const translations = {
         helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>) **คุณต้องกดปุ่ม แก้ไข ใน Popup เพื่อเปลี่ยนและบันทึกที่อยู่**",
         helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
         helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
-        sourcesTitle: "OBS Sources ที่ต้องมี",
+        sourcesTitle: "OBS Sources ที่ต้องมี (คลิกเพื่อคัดลอก)", // UPDATED TEXT
         sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"],
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'สีทีม A (สีหลัก)' },
@@ -309,7 +310,8 @@ export const translations = {
                     <ul>
                         <li>**ปรับโครงสร้าง Master Data:** เปลี่ยน Logic การเก็บข้อมูลทีม A และ B ทั้งหมด (ชื่อ, โลโก้, สี, คะแนน) ให้เป็น Object เดียว (masterTeamA, masterTeamB).</li>
                         <li>**ฟังก์ชันสลับสมบูรณ์:** แก้ไขฟังก์ชัน \`swapTeams()\` ให้ทำการสลับ Object Master Data แทนการสลับค่าทีละตัวแปร ส่งผลให้การสลับทีมสมบูรณ์ 100%.</li>
-                        <li>**ปุ่ม Action:** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่มใน UI โดยสามารถตั้งค่า ชื่อปุ่ม, สี, ความสูง และชื่อ Hotkey ใน OBS เพื่อส่งคำสั่ง \`TriggerHotkeyByName\` ผ่าน OBS-WebSocket.</li>
+                        <li>**Action Buttons (ปรับปรุง):** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่ม. การตั้งค่าใช้ระบบ **Keybind Input** (แก้ไข/จับ/บันทึก) เพื่อตั้งค่า Hotkey Combination ซึ่งจะใช้เรียก \`TriggerHotkeyByName\` ใน OBS-WebSocket.</li>
+                        <li>**จัดเรียง UI ใหม่:** ย้าย Card Action Buttons ไปอยู่ใต้ Card สลับฝั่ง.</li>
                         <li>**ควบคุมการแสดงผล:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card.</li>
                         <li>**Label เพิ่มเติม:** เพิ่ม Label 4 และ Label 5 พร้อม Source ที่ต้องใช้ใน OBS (\`label_4\`, \`label_5\`) และ Tags สำหรับข้อความประกาศ.</li>
                         <li>**แก้ไขการเริ่มต้น:** ลบโค้ดเรียก \`showWelcomePopup()\` ทันทีออกไปเพื่อแก้ไขปัญหาโปรแกรมหยุดทำงาน (Crash) ในช่วงเริ่มต้น.</li>
