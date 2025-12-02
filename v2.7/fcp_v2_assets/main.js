@@ -3,28 +3,20 @@
 // 1. นำเข้าข้อมูลภาษาจากไฟล์ languages.js
 import { translations } from './languages.js';
 
-// --- CONSTANTS ---
-const ACTION_BUTTON_COUNT = 6;
-const ACTION_BUTTONS_KEY = 'actionButtonSettings'; // Key for saving action button configuration
-const SCORE2_VISIBILITY_KEY = 'score2Visible';
-const SWAP_VISIBILITY_KEY = 'swapVisible';
-const ACTION_VISIBILITY_KEY = 'actionVisible';
-const TEAM_COLORS_KEY = 'teamColorMemory';
-const KEYBINDS_KEY = 'customKeybinds';
-
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
 const elements = [
-    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5",
-    "logoA", "logoB", "initialsA", "initialsB", "scoreA", "scoreB",
+    "nameA", "nameB", "label1", "label2", "label3", "label4", "label5", // NEW: Label 4/5
+    "logoA", "logoB", "initialsA", "initialsB",
+    "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
-    "swapCard", "swapBtn",
-    "actionButtonsCard", "actionBtn1", "actionBtn2", "actionBtn3", "actionBtn4", "actionBtn5", "actionBtn6",
-    "toggleScore2Visible", "toggleSwapVisible", "toggleActionVisible",
+    "swapCard", // NEW: Swap Card for visibility
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", // NEW: Visibility Checkboxes
+    "actionButtonsCard", "actionButtonsGrid", // NEW: Action Buttons
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
-    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "scoreAPlusBtn", "scoreAMinusBtn",
+    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn",
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
@@ -36,14 +28,17 @@ const elements = [
     "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
     "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn",
     "logoPathBtn", "logoPathPopup", "currentLogoPath", "logoPathInput", "editLogoPathBtn", "closeLogoPathBtn",
-    "sourcesTableHeaders", "sourcesTableBody", "keybindsTable", "resetKeybindsBtn", "resetColorsBtn", "tagsTable",
+    "sourcesTableHeaders", "sourcesTableBody",
+    "keybindsTable", "resetKeybindsBtn", "resetColorsBtn",
+    "tagsTable",
+    "actionSettingsTable", // NEW: Action Settings Table
 ].reduce((acc, id) => {
-    const camelCaseId = id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase());
-    acc[camelCaseId] = $(id);
+    acc[id.replace(/-(\w)/g, (m, p1) => p1.toUpperCase())] = $(id);
     return acc;
 }, {});
 
-// --- MASTER STATE VARIABLES ---
+
+// --- STATE VARIABLES ---
 let sheetData = [];
 let timer = 0, interval = null, half = '1st';
 let injuryTime = 0;
@@ -52,17 +47,38 @@ let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 
-// Master Data structure for Team A and B
-let masterTeamA = {
-    name: translations['th'].teamA, score: 0, score2: 0,
-    logo: '', color1: '#ffffff', color2: '#000000'
-};
-let masterTeamB = {
-    name: translations['th'].teamB, score: 0, score2: 0,
-    logo: '', color1: '#ffffff', color2: '#000000'
-};
+// NEW: Master Data Objects for Team A and B
+let masterTeamA = createDefaultTeam('A');
+let masterTeamB = createDefaultTeam('B');
 
-// --- OBS & Utility Functions ---
+const TEAM_COLORS_KEY = 'teamColorMemory';
+const VISIBILITY_KEY = 'cardVisibility';
+const KEYBINDS_KEY = 'customKeybinds';
+const ACTION_SETTINGS_KEY = 'actionButtonSettings';
+const ACTION_BUTTON_COUNT = 6;
+
+function createDefaultTeam(teamId) {
+    return {
+        name: translations[currentLang][`team${teamId}`],
+        logoFile: '',
+        color1: '#ffffff',
+        color2: '#000000',
+        score: 0,
+        score2: 0,
+    };
+}
+
+// NEW: Default Action Button Settings
+const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i) => ({
+    id: `actionBtn${i + 1}`,
+    name: `Action ${i + 1}`,
+    backgroundColor: (i % 3 === 0) ? '#22c55e' : (i % 3 === 1 ? '#f97316' : '#3b82f6'),
+    height: 35, // default height in pixels
+    hotkeyName: `HotKey${i + 1}`
+}));
+
+
+// --- OBS ---
 const obs = new OBSWebSocket();
 const setText = (source, text) => obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => { });
 const setImage = (sourceName, filename) => {
@@ -84,6 +100,14 @@ const setSourceColor = (sourceName, hexColor) => {
     };
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => { });
 };
+// NEW: OBS Hotkey Trigger
+const triggerObsHotkey = (hotkeyName) => {
+    obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyName }).catch(err => {
+        showToast(`${translations[currentLang].toastHotkeyFailed} ${hotkeyName}`, 'error');
+    });
+}
+
+// --- UI & Language ---
 const showToast = (message, type = 'info') => {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -91,10 +115,12 @@ const showToast = (message, type = 'info') => {
     elements.toastContainer.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
 };
+
 const openPopup = (popup) => {
     elements.popupOverlay.style.display = 'block';
     popup.style.display = 'block';
 };
+
 const closeAllPopups = () => {
     elements.popupOverlay.style.display = 'none';
     elements.detailsPopup.style.display = 'none';
@@ -106,26 +132,34 @@ const closeAllPopups = () => {
     elements.timeSettingsError.style.display = 'none';
     elements.welcomeSponsorPopup.style.display = 'none';
 };
+
+// --- Pop-up Welcome Functions ---
 const showWelcomePopup = () => {
     if (elements.welcomeSponsorPopup && elements.popupOverlay) {
         elements.popupOverlay.style.display = 'block';
         elements.welcomeSponsorPopup.style.display = 'block';
 
+        // Open default tab (ShopeeTab)
         const defaultButton = document.getElementById('defaultOpen');
-        if (defaultButton && typeof openWelcomeTab === 'function') {
-            openWelcomeTab({ currentTarget: defaultButton }, 'ShopeeTab');
-        } else if (defaultButton) {
-            defaultButton.click();
-            document.getElementById('ShopeeTab').style.display = 'block';
+        if (defaultButton) {
+            if (typeof openWelcomeTab === 'function') {
+                openWelcomeTab({ currentTarget: defaultButton }, 'ShopeeTab');
+            } else {
+                defaultButton.click();
+                document.getElementById('ShopeeTab').style.display = 'block';
+            }
         }
     }
 };
+
 const closeWelcomePopup = () => {
     if (elements.welcomeSponsorPopup && elements.popupOverlay) {
         elements.welcomeSponsorPopup.style.display = 'none';
         elements.popupOverlay.style.display = 'none';
     }
 };
+
+// Function to handle copying link
 const copyLink = (link) => {
     navigator.clipboard.writeText(link).then(() => {
         showToast(translations[currentLang].toastCopied, 'success');
@@ -133,6 +167,8 @@ const copyLink = (link) => {
         showToast(translations[currentLang].toastCopyFailed, 'error');
     });
 }
+
+
 const copySourceName = (sourceName) => {
     navigator.clipboard.writeText(sourceName.trim()).then(() => {
         showToast(`${translations[currentLang].toastCopiedSourceName} ${sourceName}`, 'info');
@@ -140,6 +176,8 @@ const copySourceName = (sourceName) => {
         showToast(translations[currentLang].toastCopyFailed, 'error');
     });
 }
+
+// Function to handle copying Tags
 const copyTag = (tagCode) => {
     // Remove HTML code entities like &lt; and &gt;
     const cleanTag = tagCode.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
@@ -149,6 +187,8 @@ const copyTag = (tagCode) => {
         showToast(translations[currentLang].toastCopyFailed, 'error');
     });
 }
+
+
 const populateHelpTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const sources = trans.sourcesList || [];
@@ -172,6 +212,8 @@ const populateHelpTable = (lang) => {
         row.insertCell().innerHTML = item.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     });
 };
+
+// Function to populate Tags table
 const populateTagsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const tags = trans.tagsList || [];
@@ -191,10 +233,13 @@ const populateTagsTable = (lang) => {
 
     elements.tagsTable.innerHTML = thead + tbody;
 }
+
+// Keybind Helper Functions (Modified to support modifier keys and separate buttons)
 const formatKey = (keyString) => {
     if (!keyString) return '';
     return keyString.replace(/CONTROL/g, 'Ctrl').replace(/ALT/g, 'Alt').replace(/SHIFT/g, 'Shift').replace(/ /g, 'SPACE');
 };
+
 const captureKeyInput = (e, inputElement, saveButton) => {
     e.preventDefault();
     if (e.repeat) return;
@@ -215,10 +260,13 @@ const captureKeyInput = (e, inputElement, saveButton) => {
     inputElement.value = finalKey;
     saveButton.style.display = 'inline-flex';
 }
-const toggleKeybindEditMode = (id, enable) => {
+
+const toggleKeybindEditMode = (id, enable, isActionHotkey = false) => {
     const inputElement = $(`keybind-input-${id}`);
     const editButton = $(`keybind-edit-${id}`);
     const saveButton = $(`keybind-save-${id}`);
+
+    if (!inputElement || !editButton || !saveButton) return;
 
     if (enable) {
         inputElement.disabled = false;
@@ -250,10 +298,12 @@ const toggleKeybindEditMode = (id, enable) => {
         inputElement.onkeydown = null;
     }
 }
+
 const saveKeybind = (id) => {
     const inputElement = $(`keybind-input-${id}`);
     const keyString = inputElement.value.trim().toUpperCase();
 
+    // Revert formatting for saving (Ctrl+Alt+S -> CONTROL+ALT+S)
     const rawKeyString = keyString.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT').replace(/SPACE/g, ' ');
 
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
@@ -261,6 +311,7 @@ const saveKeybind = (id) => {
     localStorage.setItem(KEYBINDS_KEY, JSON.stringify(savedKeybinds));
     showToast(translations[currentLang].toastKeybindsSaved, 'success');
 }
+
 const populateKeybindsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const keybindsList = trans.keybindsList || [];
@@ -272,9 +323,6 @@ const populateKeybindsTable = (lang) => {
     const tbody = elements.keybindsTable.querySelector('tbody');
 
     keybindsList.forEach(item => {
-        // Exclude Action Buttons from the main keybind table (they have their own table)
-        if (item.id.startsWith('action_btn')) return;
-
         const rawKey = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
         const formattedKey = formatKey(rawKey);
 
@@ -291,6 +339,7 @@ const populateKeybindsTable = (lang) => {
                 </div>
             </td>
         `;
+        // Attach event listeners for each button
         $(`keybind-edit-${item.id}`).onclick = () => toggleKeybindEditMode(item.id, true);
         $(`keybind-save-${item.id}`).onclick = () => {
             saveKeybind(item.id);
@@ -298,44 +347,124 @@ const populateKeybindsTable = (lang) => {
         };
     });
 }
+
+// NEW: Action Buttons Setup and Logic
+const loadActionSettings = () => {
+    const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
+    if (savedSettings && savedSettings.length === ACTION_BUTTON_COUNT) {
+        return savedSettings;
+    }
+    return defaultActionSettings;
+}
+
+const saveActionSettings = () => {
+    const settings = loadActionSettings().map((setting, i) => {
+        const index = i + 1;
+        const newName = $(`action-name-${index}`).value;
+        const newColor = $(`action-color-${index}`).value;
+        const newHeight = parseInt($(`action-height-${index}`).value) || 35;
+        const newHotkey = $(`action-hotkey-${index}`).value;
+        return {
+            ...setting,
+            name: newName,
+            backgroundColor: newColor,
+            height: Math.max(25, Math.min(100, newHeight)), // Clamp between 25px and 100px
+            hotkeyName: newHotkey.trim()
+        };
+    });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+    renderActionButtons(); // Re-render UI after saving
+    showToast(translations[currentLang].toastActionSaved, 'success');
+}
+
+const renderActionButtons = () => {
+    const settings = loadActionSettings();
+    elements.actionButtonsGrid.innerHTML = ''; // Clear previous buttons
+
+    settings.forEach((setting, i) => {
+        const button = document.createElement('button');
+        button.id = setting.id;
+        button.textContent = setting.name;
+        button.style.backgroundColor = setting.backgroundColor;
+        button.style.height = `${setting.height}px`;
+        button.onclick = () => {
+            if (setting.hotkeyName) {
+                triggerObsHotkey(setting.hotkeyName);
+            }
+        };
+        elements.actionButtonsGrid.appendChild(button);
+    });
+}
+
+const populateActionSettingsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const settings = loadActionSettings();
+
+    let tbodyContent = '';
+    settings.forEach((setting, i) => {
+        const index = i + 1;
+        tbodyContent += `
+            <tr>
+                <td>#${index}</td>
+                <td><input type="text" id="action-name-${index}" value="${setting.name}" style="width: 100%;"></td>
+                <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
+                <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 50px;"></td>
+                <td><input type="text" id="action-hotkey-${index}" value="${setting.hotkeyName}" style="width: 100%;"></td>
+            </tr>
+        `;
+    });
+    elements.actionSettingsTable.querySelector('tbody').innerHTML = tbodyContent;
+}
+
+// NEW: Visibility Controls Logic
+const loadVisibilitySettings = () => {
+    const defaultSettings = {
+        score2: true,
+        swapCard: true,
+        actionButtons: true,
+    };
+    const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
+    return { ...defaultSettings, ...saved };
+}
+
+const applyVisibilitySettings = () => {
+    const settings = loadVisibilitySettings();
+
+    // Apply to UI cards
+    elements.score2Card.classList.toggle('hidden', !settings.score2);
+    elements.swapCard.classList.toggle('hidden', !settings.swapCard);
+    elements.actionButtonsCard.classList.toggle('hidden', !settings.actionButtons);
+
+    // Apply to checkboxes in settings popup
+    if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
+    if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
+    if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+}
+
+const saveVisibilitySetting = (key, value) => {
+    const settings = loadVisibilitySettings();
+    settings[key] = value;
+    localStorage.setItem(VISIBILITY_KEY, JSON.stringify(settings));
+    applyVisibilitySettings();
+    showToast(translations[currentLang].toastSaved, 'success');
+}
+// END NEW: Visibility Controls Logic
+
 const populateDynamicLists = (lang) => {
     const trans = translations[lang] || translations.en;
+    // Details Popup
     populateTagsTable(lang);
+
+    // Action Settings Table
+    populateActionSettingsTable(lang);
+
+    // Keybinds Table
     populateKeybindsTable(lang);
-    populateActionButtonTable(lang); // NEW: Populate action button settings table
+
+    // Help Popup - Use new table function
     populateHelpTable(lang);
 };
-const updateVisibilityToggleUI = (element, key, defaultValue) => {
-    const isVisible = localStorage.getItem(key) === null ? defaultValue : JSON.parse(localStorage.getItem(key));
-    element.checked = isVisible;
 
-    const card = element.id === 'toggleScore2Visible' ? elements.score2Card :
-        element.id === 'toggleSwapVisible' ? elements.swapCard :
-            elements.actionButtonsCard;
-    if (card) {
-        if (isVisible) {
-            card.classList.remove('hidden');
-        } else {
-            card.classList.add('hidden');
-        }
-    }
-}
-const toggleCardVisibility = (element, key) => {
-    const isVisible = element.checked;
-    localStorage.setItem(key, isVisible);
-
-    const card = element.id === 'toggleScore2Visible' ? elements.score2Card :
-        element.id === 'toggleSwapVisible' ? elements.swapCard :
-            elements.actionButtonsCard;
-    if (card) {
-        if (isVisible) {
-            card.classList.remove('hidden');
-        } else {
-            card.classList.add('hidden');
-        }
-    }
-    showToast(isVisible ? translations[currentLang].show : translations[currentLang].hide, 'info');
-}
 const setLanguage = (lang) => {
     currentLang = lang;
     localStorage.setItem('scoreboardLang', lang);
@@ -355,6 +484,7 @@ const setLanguage = (lang) => {
         if (trans[key]) el.innerHTML = trans[key];
     });
 
+    // Update specific buttons that change text
     const editLogoPathBtnSpan = elements.editLogoPathBtn.querySelector('span');
     if (elements.logoPathInput.disabled) {
         editLogoPathBtnSpan.textContent = trans.edit;
@@ -362,9 +492,18 @@ const setLanguage = (lang) => {
         editLogoPathBtnSpan.textContent = trans.save;
     }
 
+    // Update master team names from new language
+    masterTeamA.name = masterTeamA.name === translations.en.teamA || masterTeamA.name === translations.th.teamA ? trans.teamA : masterTeamA.name;
+    masterTeamB.name = masterTeamB.name === translations.en.teamB || masterTeamB.name === translations.th.teamB ? trans.teamB : masterTeamB.name;
+
+    // Re-render team UI to update default names and initials
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
+
     populateDynamicLists(lang);
-    updateActionButtonsUI(); // Ensure button names update with language change
 };
+
+
 const getStoredKeybinds = () => {
     const keybindsList = translations[currentLang].keybindsList || [];
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
@@ -372,22 +511,24 @@ const getStoredKeybinds = () => {
 
     keybindsList.forEach(item => {
         const key = savedKeybinds[item.id] !== undefined ? savedKeybinds[item.id] : item.default;
-        activeKeybinds[item.id] = key.trim().toUpperCase();
+        activeKeybinds[item.id] = key.trim().toUpperCase(); // Normalize key
     });
 
     return activeKeybinds;
 }
+
 const resetKeybinds = () => {
     localStorage.removeItem(KEYBINDS_KEY);
     populateKeybindsTable(currentLang);
-    // Also reset keybinds for action buttons
-    populateActionButtonTable(currentLang);
     showToast(translations[currentLang].resetKeybinds, 'info');
 }
+
 const resetTeamColors = () => {
     localStorage.removeItem(TEAM_COLORS_KEY);
     showToast(translations[currentLang].toastColorsCleared, 'info');
 }
+
+// --- Announcement (Updated to read local TXT file) ---
 const fetchAnnouncement = async () => {
     const filePath = 'fcp_v2_assets/announcement.txt';
     try {
@@ -403,6 +544,9 @@ const fetchAnnouncement = async () => {
         elements.announcementText.textContent = "Load Failed (Check fcp_v2_assets/announcement.txt)";
     }
 };
+
+// --- Team Color Memory Functions ---
+// Uses Master Data's team name
 const saveTeamColors = (teamName, color1, color2) => {
     const defaultNameA = translations[currentLang].teamA;
     const defaultNameB = translations[currentLang].teamB;
@@ -416,6 +560,8 @@ const saveTeamColors = (teamName, color1, color2) => {
         console.error("Failed to save team colors:", e);
     }
 };
+
+// Uses Master Data's team name
 const loadTeamColors = (teamName) => {
     try {
         const colors = JSON.parse(localStorage.getItem(TEAM_COLORS_KEY) || '{}');
@@ -426,17 +572,30 @@ const loadTeamColors = (teamName) => {
     }
 };
 
-// --- CORE UPDATE FUNCTIONS ---
+// --- Scoreboard Logic ---
 const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : '';
 
-/**
- * Updates the UI and OBS for a specific team (A or B) based on its Master Data.
- * @param {string} team 'A' or 'B'
- * @param {object} teamData Master data object (masterTeamA or masterTeamB)
- */
-const updateDisplayUI = (team, teamData) => {
+// Function to update the team's master data and UI/OBS sources
+const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isA = team === 'A';
-    const data = teamData;
+    const masterTeam = isA ? masterTeamA : masterTeamB;
+
+    // Update Master Data
+    masterTeam.name = name;
+    masterTeam.logoFile = logoFile;
+    masterTeam.color1 = color1;
+    masterTeam.color2 = color2;
+    // Only update score if provided, otherwise retain current value
+    masterTeam.score = score !== undefined ? score : masterTeam.score;
+    masterTeam.score2 = score2 !== undefined ? score2 : masterTeam.score2;
+
+    // OBS Source Names
+    const obsNameSource = isA ? 'name_team_a' : 'name_team_b';
+    const obsLogoSource = isA ? 'logo_team_a' : 'logo_team_b';
+    const obsColorSource1 = isA ? 'Color_Team_A' : 'Color_Team_B';
+    const obsColorSource2 = isA ? 'Color_Team_A_2' : 'Color_Team_B_2';
+    const obsScoreSource = isA ? 'score_team_a' : 'score_team_b';
+    const obsScore2Source = isA ? 'score2_team_a' : 'score2_team_b';
 
     // UI Elements
     const nameEl = isA ? elements.nameA : elements.nameB;
@@ -447,27 +606,18 @@ const updateDisplayUI = (team, teamData) => {
     const scoreEl = isA ? elements.scoreA : elements.scoreB;
     const score2El = isA ? elements.score2A : elements.score2B;
 
-    // OBS Sources
-    const obsNameSource = isA ? 'name_team_a' : 'name_team_b';
-    const obsLogoSource = isA ? 'logo_team_a' : 'logo_team_b';
-    const obsColorSource1 = isA ? 'Color_Team_A' : 'Color_Team_B';
-    const obsColorSource2 = isA ? 'Color_Team_A_2' : 'Color_Team_B_2';
-    const obsScoreSource = isA ? 'score_team_a' : 'score_team_b';
-    const obsScore2Source = isA ? 'score2_team_a' : 'score2_team_b';
+    // Update UI elements
+    nameEl.innerHTML = masterTeam.name.replace(/\//g, '<br>');
+    colorEl1.value = masterTeam.color1;
+    colorEl2.value = masterTeam.color2;
+    initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
+    scoreEl.textContent = masterTeam.score;
+    score2El.textContent = masterTeam.score2;
 
-    // 1. Update Team Name, Logo, Colors
-    const displayColor1 = data.color1 || '#ffffff';
-    const displayColor2 = data.color2 || '#000000';
-    const displayName = data.name || (isA ? translations[currentLang].teamA : translations[currentLang].teamB);
-
-    nameEl.innerHTML = displayName.replace(/\//g, '<br>');
-    colorEl1.value = displayColor1;
-    colorEl2.value = displayColor2;
-    initialsEl.textContent = getTeamInitials(displayName.replace(/\//g, ' '));
-
-    if (data.logo) {
-        const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(data.logo);
-        logoEl.src = `file:///${logoFolderPath}/${data.logo}${hasExt ? '' : '.png'}`;
+    // Show/Hide logo based on file
+    if (masterTeam.logoFile) {
+        const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
+        logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
         logoEl.style.display = 'block';
         initialsEl.style.display = 'none';
     } else {
@@ -476,191 +626,18 @@ const updateDisplayUI = (team, teamData) => {
         initialsEl.style.display = 'block';
     }
 
-    // 2. Update Scores
-    scoreEl.textContent = data.score;
-    score2El.textContent = data.score2;
+    // Update OBS
+    setText(obsNameSource, masterTeam.name.replace(/\//g, '\n'));
+    setImage(obsLogoSource, masterTeam.logoFile);
+    setSourceColor(obsColorSource1, masterTeam.color1);
+    setSourceColor(obsColorSource2, masterTeam.color2);
+    setText(obsScoreSource, masterTeam.score);
+    setText(obsScore2Source, masterTeam.score2);
 
-    // 3. Update OBS
-    setText(obsNameSource, displayName.replace(/\//g, '\n'));
-    setImage(obsLogoSource, data.logo);
-    setSourceColor(obsColorSource1, displayColor1);
-    setSourceColor(obsColorSource2, displayColor2);
-    setText(obsScoreSource, data.score);
-    setText(obsScore2Source, data.score2);
-
-    // 4. Save colors to memory (based on name)
-    saveTeamColors(displayName, displayColor1, displayColor2);
+    // Save colors to memory
+    saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
 };
 
-
-// --- ACTION BUTTON LOGIC ---
-const loadActionSettings = () => {
-    const savedSettings = JSON.parse(localStorage.getItem(ACTION_BUTTONS_KEY) || '[]');
-    const defaultSettings = [];
-    const trans = translations[currentLang] || translations.th;
-
-    for (let i = 1; i <= ACTION_BUTTON_COUNT; i++) {
-        const defaultName = trans[`actionBtn${i}`] || `Action ${i}`;
-        defaultSettings.push({
-            id: `actionBtn${i}`,
-            name: defaultName,
-            color: '#4a4a4a', // Default secondary color
-            height: 35, // Default height
-        });
-    }
-
-    const settings = defaultSettings.map((defaultBtn, index) => {
-        const savedBtn = savedSettings.find(s => s.id === defaultBtn.id) || {};
-        return {
-            ...defaultBtn,
-            name: savedBtn.name || defaultBtn.name,
-            color: savedBtn.color || defaultBtn.color,
-            height: savedBtn.height || defaultBtn.height,
-        };
-    });
-
-    return settings;
-}
-
-const saveActionSettings = (settings) => {
-    localStorage.setItem(ACTION_BUTTONS_KEY, JSON.stringify(settings));
-}
-
-const updateActionButtonsUI = () => {
-    const settings = loadActionSettings();
-    settings.forEach((btn, index) => {
-        const btnElement = elements[`actionBtn${index + 1}`];
-        if (btnElement) {
-            btnElement.textContent = btn.name;
-            btnElement.style.backgroundColor = btn.color;
-            btnElement.style.height = `${btn.height}px`;
-        }
-    });
-
-    // Show/Hide card based on visibility toggle
-    const isVisible = localStorage.getItem(ACTION_VISIBILITY_KEY) === null ? false : JSON.parse(localStorage.getItem(ACTION_VISIBILITY_KEY));
-    if (isVisible) {
-        elements.actionButtonsCard.classList.remove('hidden');
-    } else {
-        elements.actionButtonsCard.classList.add('hidden');
-    }
-}
-
-const populateActionButtonTable = (lang) => {
-    const trans = translations[lang] || translations.en;
-    const settings = loadActionSettings();
-    const actionKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
-
-    // Create a new table element structure for settings popup
-    const table = document.createElement('table');
-    table.className = "keybind-table action-settings-table";
-    table.innerHTML = `<thead>
-        <tr>
-            <th>${trans.actionBtn1} / ${trans.edit}</th>
-            <th>${trans.settings}</th>
-            <th>${trans.save}</th>
-        </tr>
-    </thead><tbody></tbody>`;
-    const tbody = table.querySelector('tbody');
-
-    settings.forEach((item, index) => {
-        const btnID = `actionBtn${index + 1}`;
-        const keyID = `action_btn${index + 1}`;
-        // Find default keybind from language list, use generic fallback if not found
-        const defaultKey = trans.keybindsList.find(k => k.id === keyID)?.default || `F${1 + index}`;
-        const rawKey = actionKeybinds[keyID] !== undefined ? actionKeybinds[keyID] : defaultKey;
-        const formattedKey = formatKey(rawKey);
-
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>
-                <input type="text" id="${btnID}-name-input" value="${item.name}" disabled>
-                <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted-color); width: 45px;">${trans.half}:</span>
-                    <input type="color" class="color-picker" id="${btnID}-color-input" value="${item.color}" disabled>
-                    <span style="font-size: 0.8rem; color: var(--text-muted-color); width: 45px;">H(px):</span>
-                    <input type="number" id="${btnID}-height-input" value="${item.height}" min="20" max="100" style="width: 50px; padding: 4px;" disabled>
-                </div>
-            </td>
-            <td>
-                <input type="text" id="${btnID}-key-input" value="${formattedKey}" disabled style="margin-bottom: 5px;">
-            </td>
-            <td>
-                <div class="action-buttons">
-                    <button id="${btnID}-edit-btn" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="${btnID}-save-btn" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
-                </div>
-            </td>
-        `;
-
-        // --- Attach Edit/Save Logic ---
-        const nameInput = $(`${btnID}-name-input`);
-        const colorInput = $(`${btnID}-color-input`);
-        const heightInput = $(`${btnID}-height-input`);
-        const keyInput = $(`${btnID}-key-input`);
-        const editBtn = $(`${btnID}-edit-btn`);
-        const saveBtn = $(`${btnID}-save-btn`);
-
-        // Enable Edit Mode
-        editBtn.onclick = () => {
-            nameInput.disabled = false;
-            colorInput.disabled = false;
-            heightInput.disabled = false;
-            keyInput.disabled = false;
-            editBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-flex';
-            nameInput.focus();
-
-            keyInput.onkeydown = (e) => captureKeyInput(e, keyInput, saveBtn);
-        };
-
-        // Save Changes
-        saveBtn.onclick = () => {
-            // 1. Save Button Settings (Name, Color, Height)
-            const newSettings = loadActionSettings().map(s => {
-                if (s.id === btnID) {
-                    return {
-                        id: btnID,
-                        name: nameInput.value.trim(),
-                        color: colorInput.value,
-                        height: parseInt(heightInput.value) || 35,
-                    };
-                }
-                return s;
-            });
-            saveActionSettings(newSettings);
-            updateActionButtonsUI(); // Update main UI
-
-            // 2. Save Keybind
-            const keyString = keyInput.value.trim().toUpperCase();
-            const rawKeyString = keyString.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT').replace(/SPACE/g, ' ');
-
-            const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
-            savedKeybinds[keyID] = rawKeyString;
-            localStorage.setItem(KEYBINDS_KEY, JSON.stringify(savedKeybinds));
-
-            showToast(`${trans.toastSaved} (${item.name})`, 'success');
-
-            // Disable Edit Mode
-            nameInput.disabled = true;
-            colorInput.disabled = true;
-            heightInput.disabled = true;
-            keyInput.disabled = true;
-            editBtn.style.display = 'inline-flex';
-            saveBtn.style.display = 'none';
-            keyInput.onkeydown = null;
-        };
-    });
-
-    const actionSettingsContainer = document.getElementById('action-settings-container');
-    if (actionSettingsContainer) {
-        actionSettingsContainer.innerHTML = '';
-        actionSettingsContainer.appendChild(table);
-    }
-}
-
-
-// --- Scoreboard Logic (Updated) ---
 const applyMatch = () => {
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
@@ -670,111 +647,94 @@ const applyMatch = () => {
 
     const get = key => match[header.indexOf(key)] || '';
 
-    // 1. Prepare Master Data for A
     let teamAName = get('TeamA') || translations[currentLang].teamA;
-    let teamAColor1 = get('ColorA') || '#ffffff';
-    let teamAColor2 = get('ColorA2') || '#000000';
-    const savedColorA = loadTeamColors(teamAName);
-    if (savedColorA) { teamAColor1 = savedColorA.color1; teamAColor2 = savedColorA.color2; }
-
-    masterTeamA = {
-        name: teamAName, score: 0, score2: 0,
-        logo: get('LogoA'), color1: teamAColor1, color2: teamAColor2
-    };
-
-    // 2. Prepare Master Data for B
     let teamBName = get('TeamB') || translations[currentLang].teamB;
-    let teamBColor1 = get('ColorB') || '#ffffff';
-    let teamBColor2 = get('ColorB2') || '#000000';
+    let colorA1 = get('ColorA') || '#ffffff';
+    let colorB1 = get('ColorB') || '#ffffff';
+    let colorA2 = get('ColorA2') || '#000000';
+    let colorB2 = get('ColorB2') || '#000000';
+    let logoAFile = get('LogoA');
+    let logoBFile = get('LogoB');
+
+    // Load saved colors
+    const savedColorA = loadTeamColors(teamAName);
+    if (savedColorA) {
+        colorA1 = savedColorA.color1;
+        colorA2 = savedColorA.color2;
+    }
     const savedColorB = loadTeamColors(teamBName);
-    if (savedColorB) { teamBColor1 = savedColorB.color1; teamBColor2 = savedColorB.color2; }
+    if (savedColorB) {
+        colorB1 = savedColorB.color1;
+        colorB2 = savedColorB.color2;
+    }
 
-    masterTeamB = {
-        name: teamBName, score: 0, score2: 0,
-        logo: get('LogoB'), color1: teamBColor1, color2: teamBColor2
-    };
+    // Update Master Data and UI for A
+    updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
+    // Update Master Data and UI for B
+    updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
 
-    // 3. Update UI/OBS
-    updateDisplayUI('A', masterTeamA);
-    updateDisplayUI('B', masterTeamB);
+    elements.label1.textContent = get('label1');
+    elements.label2.textContent = get('label2');
+    elements.label3.textContent = get('label3');
+    elements.label4.textContent = get('label4'); // NEW: Label 4
+    elements.label5.textContent = get('label5'); // NEW: Label 5
 
-    // 4. Update Labels 1-5 (These still write directly as they are not swapped)
-    const label1 = get('label1');
-    const label2 = get('label2');
-    const label3 = get('label3');
-    elements.label1.textContent = label1;
-    elements.label2.textContent = label2;
-    elements.label3.textContent = label3;
-    setText('label_1', label1);
-    setText('label_2', label2);
-    setText('label_3', label3);
-
-    const label4 = get('label4') || '';
-    const label5 = get('label5') || '';
-    elements.label4.textContent = label4;
-    elements.label5.textContent = label5;
-    setText('label_4', label4);
-    setText('label_5', label5);
+    setText('label_1', get('label1'));
+    setText('label_2', get('label2'));
+    setText('label_3', get('label3'));
+    setText('label_4', get('label4')); // NEW: Source 4
+    setText('label_5', get('label5')); // NEW: Source 5
 
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
 
 const swapTeams = () => {
-    // Swap Master Data (Swaps all properties including scores)
+    // NEW LOGIC: Swap the entire master objects
     [masterTeamA, masterTeamB] = [masterTeamB, masterTeamA];
 
-    // Update UI/OBS based on new master data arrangement
-    updateDisplayUI('A', masterTeamA);
-    updateDisplayUI('B', masterTeamB);
+    // Re-render UI and update OBS based on the swapped master objects
+    // Use an object destructuring trick to update all properties in one call
+    const tempA = { ...masterTeamA };
+    const tempB = { ...masterTeamB };
+
+    updateTeamUI('A', tempA.name, tempA.logoFile, tempA.color1, tempA.color2, tempA.score, tempA.score2);
+    updateTeamUI('B', tempB.name, tempB.logoFile, tempB.color1, tempB.color2, tempB.score, tempB.score2);
 
     showToast(translations[currentLang].toastSwapped, 'info');
 };
 
 const changeScore = (team, delta) => {
-    const teamData = team === 'A' ? masterTeamA : masterTeamB;
-    const teamEl = team === 'A' ? elements.scoreA : elements.scoreB;
-    const obsSource = team === 'A' ? 'score_team_a' : 'score_team_b';
-
-    teamData.score = Math.max(0, teamData.score + delta);
-    teamEl.textContent = teamData.score;
-    setText(obsSource, teamData.score);
+    const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+    masterTeam.score = Math.max(0, masterTeam.score + delta);
+    updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
 };
 
 const changeScore2 = (team, delta) => {
-    const teamData = team === 'A' ? masterTeamA : masterTeamB;
-    const teamEl = team === 'A' ? elements.score2A : elements.score2B;
-    const obsSource = team === 'A' ? 'score2_team_a' : 'score2_team_b';
-
-    teamData.score2 = Math.max(0, teamData.score2 + delta);
-    teamEl.textContent = teamData.score2;
-    setText(obsSource, teamData.score2);
+    const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+    masterTeam.score2 = Math.max(0, masterTeam.score2 + delta);
+    updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
 };
 
 const resetScore = () => {
     masterTeamA.score = masterTeamB.score = 0;
-    elements.scoreA.textContent = '0';
-    elements.scoreB.textContent = '0';
-    setText('score_team_a', '0');
-    setText('score_team_b', '0');
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, masterTeamA.score2);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, masterTeamB.score2);
     showToast(translations[currentLang].toastScoreReset, 'info');
 };
 
 const resetScore2 = () => {
     masterTeamA.score2 = masterTeamB.score2 = 0;
-    elements.score2A.textContent = '0';
-    elements.score2B.textContent = '0';
-    setText('score2_team_a', '0');
-    setText('score2_team_b', '0');
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, masterTeamA.score, 0);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, masterTeamB.score, 0);
     showToast(translations[currentLang].toastScore2Reset, 'info');
 };
 
 const fullReset = () => {
-    // Reset Master Data Scores
+    // Reset Scores
     masterTeamA.score = masterTeamB.score = 0;
     masterTeamA.score2 = masterTeamB.score2 = 0;
-    // Update UI/OBS
-    updateDisplayUI('A', masterTeamA);
-    updateDisplayUI('B', masterTeamB);
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, 0);
 
     // Reset Timer & Half
     stopTimer();
@@ -928,6 +888,8 @@ const copyDetails = () => {
         .replace(/<label1>/gi, elements.label1.textContent)
         .replace(/<label2>/gi, elements.label2.textContent)
         .replace(/<label3>/gi, elements.label3.textContent)
+        .replace(/<label4>/gi, elements.label4.textContent) // NEW: Tag 4
+        .replace(/<label5>/gi, elements.label5.textContent) // NEW: Tag 5
         .replace(/<score_team_a>/gi, masterTeamA.score)
         .replace(/<score_team_b>/gi, masterTeamB.score)
         .replace(/<score2_team_a>/gi, masterTeamA.score2)
@@ -938,41 +900,38 @@ const copyDetails = () => {
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
 
+// NEW LOGIC: Use Master Data
 const enterEditMode = (team) => {
     const isA = team === 'A';
-    const teamData = isA ? masterTeamA : masterTeamB;
+    const masterTeam = isA ? masterTeamA : masterTeamB;
     const nameDiv = isA ? elements.nameA : elements.nameB;
     const nameInput = isA ? elements.nameAInput : elements.nameBInput;
     const editBtn = isA ? elements.editBtnA : elements.editBtnB;
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
-
     nameDiv.style.display = 'none';
     editBtn.style.display = 'none';
-    nameInput.value = teamData.name.replace(/\//g, '/'); // Use master data name
+    nameInput.value = masterTeam.name.replace(/\//g, '/'); // Use current master name
     nameInput.style.display = 'block';
     okBtn.style.display = 'inline-flex';
     nameInput.focus();
 };
 
+// NEW LOGIC: Use Master Data
 const exitEditMode = (team, applyChanges) => {
     const isA = team === 'A';
-    const teamData = isA ? masterTeamA : masterTeamB; // Reference master data
+    const masterTeam = isA ? masterTeamA : masterTeamB;
     const nameDiv = isA ? elements.nameA : elements.nameB;
     const nameInput = isA ? elements.nameAInput : elements.nameBInput;
     const editBtn = isA ? elements.editBtnA : elements.editBtnB;
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
 
     if (applyChanges) {
-        const newName = nameInput.value;
+        const newName = nameInput.value.trim() || masterTeam.name;
 
-        // Update Master Data
-        teamData.name = newName;
+        // Update Master Data and then the UI/OBS
+        updateTeamUI(team, newName, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
 
-        // Update UI/OBS (uses the existing colors and logo from master data)
-        updateDisplayUI(team, teamData);
-
-        // Save colors to memory (done inside updateDisplayUI but good to re-call)
-        saveTeamColors(newName, teamData.color1, teamData.color2);
+        // Color saving is already handled in updateTeamUI
     }
 
     nameDiv.style.display = 'block';
@@ -982,14 +941,18 @@ const exitEditMode = (team, applyChanges) => {
 };
 
 const setupEventListeners = () => {
+    // Bind Save buttons to the same logic
     const saveHandler = () => {
         localStorage.setItem('detailsText', elements.detailsText.value);
+        saveActionSettings(); // NEW: Save Action Settings
         closeAllPopups();
         showToast(translations[currentLang].toastSaved, 'success');
     };
     elements.saveDetailsBtnTop.addEventListener('click', saveHandler);
 
+    // Bind Close buttons
     const closeHandler = () => {
+        // Ensure all keybind inputs are disabled before closing
         const keybindsList = translations[currentLang].keybindsList || [];
         keybindsList.forEach(item => toggleKeybindEditMode(item.id, false));
         closeAllPopups();
@@ -998,37 +961,35 @@ const setupEventListeners = () => {
     elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
     elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
 
-    // Main Controls
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
     elements.excelBtn.addEventListener('click', handleExcel);
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', fullReset);
     elements.swapBtn.addEventListener('click', swapTeams);
-
-    // Score 1 Controls
     elements.scoreAPlusBtn.addEventListener('click', () => changeScore('A', 1));
     elements.scoreAMinusBtn.addEventListener('click', () => changeScore('A', -1));
     elements.scoreBPlusBtn.addEventListener('click', () => changeScore('B', 1));
     elements.scoreBMinusBtn.addEventListener('click', () => changeScore('B', -1));
     elements.resetScoreBtn.addEventListener('click', resetScore);
 
-    // Score 2 Controls
     elements.score2APlusBtn.addEventListener('click', () => changeScore2('A', 1));
     elements.score2AMinusBtn.addEventListener('click', () => changeScore2('A', -1));
     elements.score2BPlusBtn.addEventListener('click', () => changeScore2('B', 1));
     elements.score2BMinusBtn.addEventListener('click', () => changeScore2('B', -1));
     elements.resetScore2Btn.addEventListener('click', resetScore2);
 
-    // V2.7 Visibility Toggles (in Settings)
-    elements.toggleScore2Visible.addEventListener('change', () => toggleCardVisibility(elements.toggleScore2Visible, SCORE2_VISIBILITY_KEY));
-    elements.toggleSwapVisible.addEventListener('change', () => toggleCardVisibility(elements.toggleSwapVisible, SWAP_VISIBILITY_KEY));
-    elements.toggleActionVisible.addEventListener('change', () => toggleCardVisibility(elements.toggleActionVisible, ACTION_VISIBILITY_KEY));
+    // NEW: Visibility Checkboxes
+    elements.score2VisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('score2', e.target.checked));
+    elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
+    elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
 
-    // Keybinds Control & Color Reset
+
+    // Keybinds Control
     elements.resetKeybindsBtn.addEventListener('click', resetKeybinds);
+
+    // Team Color Reset
     elements.resetColorsBtn.addEventListener('click', resetTeamColors);
 
-    // Timer Controls
     elements.halfBtn.addEventListener('click', toggleHalf);
     elements.playBtn.addEventListener('click', startTimer);
     elements.pauseBtn.addEventListener('click', stopTimer);
@@ -1038,46 +999,19 @@ const setupEventListeners = () => {
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
-
+        // Re-populate all dynamic tables on open to load latest saved/default values
+        populateActionSettingsTable(currentLang); // NEW
         populateKeybindsTable(currentLang);
-        populateActionButtonTable(currentLang); // NEW: Populate action settings
-
-        // V2.7: Update Visibility Checkboxes on open
-        updateVisibilityToggleUI(elements.toggleScore2Visible, SCORE2_VISIBILITY_KEY, true);
-        updateVisibilityToggleUI(elements.toggleSwapVisible, SWAP_VISIBILITY_KEY, true);
-        updateVisibilityToggleUI(elements.toggleActionVisible, ACTION_VISIBILITY_KEY, false);
-
+        applyVisibilitySettings(); // Load visibility settings to checkboxes
         openPopup(elements.detailsPopup);
     });
-
-    // Action Button Clicks (V2.7 - Sends Hotkey Trigger)
-    for (let i = 1; i <= ACTION_BUTTON_COUNT; i++) {
-        const btnElement = elements[`actionBtn${i}`];
-        const keyID = `action_btn${i}`;
-        if (btnElement) {
-            btnElement.addEventListener('click', () => {
-                const keybinds = getStoredKeybinds();
-                const hotkeyCombination = keybinds[keyID];
-                if (hotkeyCombination) {
-                    obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyCombination }).catch(err => {
-                        showToast(`OBS Hotkey Failed: ${hotkeyCombination}`, 'error');
-                    });
-                    showToast(`OBS Hotkey Triggered: ${hotkeyCombination}`, 'info');
-                } else {
-                    showToast(`Keybind for ${btnElement.textContent} not set.`, 'warning');
-                }
-            });
-        }
-    }
-
-    // Info/Help Popups
     elements.copyBtn.addEventListener('click', copyDetails);
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
     elements.popupOverlay.addEventListener('click', closeAllPopups);
 
-    // Popups Close Buttons
+    // Other Popups Close Buttons
     elements.closeHelpBtn.addEventListener('click', closeAllPopups);
     elements.closeDonateBtn.addEventListener('click', closeAllPopups);
     elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
@@ -1085,8 +1019,10 @@ const setupEventListeners = () => {
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
     elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup);
 
+    // Copy Link Buttons for Welcome Popup
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+
 
     // Time Settings
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
@@ -1098,26 +1034,18 @@ const setupEventListeners = () => {
     elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
     elements.okBtnB.addEventListener('click', () => exitEditMode('B', true));
 
-    // Colors
+    // Colors (Added Team Color Memory Save on change)
     elements.colorA.addEventListener('input', (e) => {
-        masterTeamA.color1 = e.target.value;
-        setSourceColor('Color_Team_A', e.target.value);
-        saveTeamColors(masterTeamA.name, masterTeamA.color1, masterTeamA.color2);
+        updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, e.target.value, masterTeamA.color2);
     });
     elements.colorA2.addEventListener('input', (e) => {
-        masterTeamA.color2 = e.target.value;
-        setSourceColor('Color_Team_A_2', e.target.value);
-        saveTeamColors(masterTeamA.name, masterTeamA.color1, masterTeamA.color2);
+        updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, e.target.value);
     });
     elements.colorB.addEventListener('input', (e) => {
-        masterTeamB.color1 = e.target.value;
-        setSourceColor('Color_Team_B', e.target.value);
-        saveTeamColors(masterTeamB.name, masterTeamB.color1, masterTeamB.color2);
+        updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, e.target.value, masterTeamB.color2);
     });
     elements.colorB2.addEventListener('input', (e) => {
-        masterTeamB.color2 = e.target.value;
-        setSourceColor('Color_Team_B_2', e.target.value);
-        saveTeamColors(masterTeamB.name, masterTeamB.color1, masterTeamB.color2);
+        updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, e.target.value);
     });
 
     // Injury Time
@@ -1147,16 +1075,19 @@ const setupEventListeners = () => {
 
     // Global Key Listener for OBS Pass-through
     document.addEventListener('keydown', (e) => {
+        // Only trigger keybinds if user is not typing in a general input field
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input')) return;
 
         const keybinds = getStoredKeybinds();
 
+        // Build combination string (e.g., CONTROL+ALT+F1)
         const modifiers = [];
         if (e.ctrlKey) modifiers.push('CONTROL');
         if (e.altKey) modifiers.push('ALT');
         if (e.shiftKey) modifiers.push('SHIFT');
 
         let key = e.key.toUpperCase();
+        // Exclude modifier key itself from the key part if it was the only one pressed
         if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
             key = '';
         } else if (key.length > 1 && !key.startsWith('F') && key !== 'SPACE') {
@@ -1188,17 +1119,13 @@ const setupEventListeners = () => {
                 case 'timer_resetstart': resetToStartTime(); break;
                 case 'timer_togglehalf': toggleHalf(); break;
                 case 'full_reset': fullReset(); break;
-                case 'action_btn1':
-                case 'action_btn2':
-                case 'action_btn3':
-                case 'action_btn4':
-                case 'action_btn5':
-                case 'action_btn6':
-                    obs.call('TriggerHotkeyByName', { hotkeyName: keyCombination }).catch(err => {
-                        showToast(`OBS Hotkey Failed: ${keyCombination}`, 'error');
-                    });
-                    showToast(`OBS Hotkey Triggered: ${keyCombination}`, 'info');
-                    break;
+                // NEW: Action Hotkeys
+                case 'actionBtn1_hotkey': triggerObsHotkey(loadActionSettings()[0].hotkeyName); break;
+                case 'actionBtn2_hotkey': triggerObsHotkey(loadActionSettings()[1].hotkeyName); break;
+                case 'actionBtn3_hotkey': triggerObsHotkey(loadActionSettings()[2].hotkeyName); break;
+                case 'actionBtn4_hotkey': triggerObsHotkey(loadActionSettings()[3].hotkeyName); break;
+                case 'actionBtn5_hotkey': triggerObsHotkey(loadActionSettings()[4].hotkeyName); break;
+                case 'actionBtn6_hotkey': triggerObsHotkey(loadActionSettings()[5].hotkeyName); break;
                 default: return;
             }
         }
@@ -1219,33 +1146,22 @@ document.addEventListener('DOMContentLoaded', () => {
         logoFolderPath = savedPath;
     }
 
+    // Initialize Master Data before setting language (to use default values)
+    masterTeamA = createDefaultTeam('A');
+    masterTeamB = createDefaultTeam('B');
+
     elements.logoPathInput.value = logoFolderPath;
     elements.currentLogoPath.textContent = logoFolderPath;
 
-    // 1. Setup Event Listeners
     setupEventListeners();
+    setLanguage(savedLang); // This will update the UI with masterTeam data
 
-    // 2. Set Language
-    setLanguage(savedLang);
+    applyVisibilitySettings(); // Apply initial visibility state
+    renderActionButtons(); // Render action buttons with saved/default settings
 
-    // 3. Initialize Master Data with correct language defaults
-    masterTeamA.name = translations[currentLang].teamA;
-    masterTeamB.name = translations[currentLang].teamB;
+    resetToZero(); // Set timer to 00:00, update OBS
 
-    // 4. Load and apply visibility states
-    // Note: The visibility status is applied inside updateVisibilityToggleUI
-    updateVisibilityToggleUI(elements.toggleScore2Visible, SCORE2_VISIBILITY_KEY, true);
-    updateVisibilityToggleUI(elements.toggleSwapVisible, SWAP_VISIBILITY_KEY, true);
-    updateVisibilityToggleUI(elements.toggleActionVisible, ACTION_VISIBILITY_KEY, false);
-
-    // 5. Apply initial state to UI/OBS
-    updateDisplayUI('A', masterTeamA);
-    updateDisplayUI('B', masterTeamB);
-
-    // 6. Apply initial Action Button settings
-    updateActionButtonsUI();
-
-    resetToZero();
+    // No need to set score 2 here as it's done in resetToZero->updateTeamUI
 
     obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
 
@@ -1259,4 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure the default tab button is styled correctly after DOM load
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
+
+    // REMOVED: showWelcomePopup() to fix the initialization crash
+    // showWelcomePopup(); // Removed as per request to fix crash
 });
