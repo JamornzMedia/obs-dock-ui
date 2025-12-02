@@ -168,51 +168,7 @@
             .btn-success:hover {
                 background: var(--success-hover-color);
             }
-        /* NEW: Button Colors for Action Panel */
-        .btn-action-1 {
-            background: #eab308;
-            color: #1f2937;
-        }
-            /* Amber */
-            .btn-action-1:hover {
-                background: #facc15;
-            }
-
-        .btn-action-2 {
-            background: #06b6d4;
-            color: #1f2937;
-        }
-            /* Cyan */
-            .btn-action-2:hover {
-                background: #22d3ee;
-            }
-
-        .btn-action-3 {
-            background: #84cc16;
-            color: #1f2937;
-        }
-            /* Lime */
-            .btn-action-3:hover {
-                background: #a3e635;
-            }
-
-        .btn-action-4 {
-            background: #a855f7;
-            color: #fff;
-        }
-            /* Purple */
-            .btn-action-4:hover {
-                background: #c084fc;
-            }
-
-        .btn-action-5 {
-            background: #fb923c;
-            color: #1f2937;
-        }
-            /* Orange */
-            .btn-action-5:hover {
-                background: #fdba74;
-            }
+        /* NEW: Button Colors for Action Panel - Simplified to use custom BG */
 
         .team-row {
             display: flex;
@@ -695,12 +651,16 @@
             }
         /* End Keybind Table Styles */
 
-        /* NEW: Action Button Settings Table Styles */
+        /* NEW: Action Button Settings Table Styles (Simplified) */
         .action-config-table {
             font-size: 0.85rem;
         }
 
-            .action-config-table input[type="text"], .action-config-table select, .action-config-table input[type="color"] {
+            .action-config-table th {
+                background: #4a4a4a;
+            }
+
+            .action-config-table input[type="text"], .action-config-table input[type="color"] {
                 font-size: 0.8rem;
                 padding: 4px;
                 height: 30px;
@@ -708,13 +668,13 @@
             }
 
             .action-config-table td:nth-child(1) {
-                width: 40px;
+                width: 30px;
                 text-align: center;
                 font-weight: bold;
             }
             /* ID */
             .action-config-table td:nth-child(2) {
-                width: 110px;
+                width: 100px;
             }
             /* Label */
             .action-config-table td:nth-child(3) {
@@ -722,13 +682,14 @@
             }
             /* Color */
             .action-config-table td:nth-child(4) {
-                width: 70px;
-            }
-            /* Mode */
-            .action-config-table td:nth-child(5) {
                 width: 110px;
             }
             /* Keybind */
+            .action-config-table td:nth-child(5) {
+                width: 70px;
+                text-align: right;
+            }
+            /* Controls */
             .action-config-table .keybind-input {
                 width: 100%;
             }
@@ -736,21 +697,6 @@
             .action-config-table .action-name-input {
                 width: 100%;
             }
-
-            .action-config-table .target-source-input {
-                width: 100%;
-                font-size: 0.75rem;
-            }
-
-            .action-config-table .toggle-input-group {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-
-                .action-config-table .toggle-input-group input {
-                    margin-bottom: 0;
-                }
 
             .action-config-table .color-picker {
                 width: 20px;
@@ -761,8 +707,31 @@
             .action-config-table .key-action-buttons {
                 display: flex;
                 gap: 5px;
+                justify-content: flex-end;
             }
         /* End Action Button Settings Table Styles */
+
+        /* NEW: Visibility Table Styles */
+        .visibility-table {
+            width: 100%;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+            .visibility-table th {
+                background: #4a4a4a;
+            }
+
+            .visibility-table td {
+                padding: 8px 4px;
+            }
+
+                .visibility-table td:nth-child(2) {
+                    width: 80px;
+                    text-align: center;
+                }
+        /* End Visibility Table Styles */
+
 
         .changelog-list {
             list-style: none;
@@ -976,6 +945,7 @@
             flex-direction: column;
             height: 50px;
             font-weight: 600;
+            color: #1f2937;
         }
     </style>
 </head>
@@ -1034,6 +1004,17 @@
                 <div id="label3" data-lang="label3"></div>
                 <div id="label4" data-lang="label4"></div>
                 <div id="label5" data-lang="label5"></div>
+            </div>
+        </div>
+
+        <div class="card" id="actionButtonsCard">
+            <div class="row">
+                <button id="actionBtn1" class="btn-secondary" style="background-color: #eab308;">Action 1</button>
+                <button id="actionBtn2" class="btn-secondary" style="background-color: #06b6d4;">Action 2</button>
+                <button id="actionBtn3" class="btn-secondary" style="background-color: #84cc16;">Action 3</button>
+                <button id="actionBtn4" class="btn-secondary" style="background-color: #a855f7;">Action 4</button>
+                <button id="actionBtn5" class="btn-secondary" style="background-color: #fb923c;">Action 5</button>
+                <button id="actionBtn6" class="btn-secondary" style="background-color: #f472b6;">Action 6</button>
             </div>
         </div>
         <div class="card" style="padding: 8px;" id="swapCard">
@@ -1113,15 +1094,6 @@
                 </div>
             </div>
         </div>
-        <div class="card" id="actionButtonsCard">
-            <div class="row">
-                <button id="actionBtn1" class="btn-action-1">Action 1</button>
-                <button id="actionBtn2" class="btn-action-2">Action 2</button>
-                <button id="actionBtn3" class="btn-action-3">Action 3</button>
-                <button id="actionBtn4" class="btn-action-4">Action 4</button>
-                <button id="actionBtn5" class="btn-action-5">Action 5</button>
-            </div>
-        </div>
         <div class="card">
             <div class="row center" style="gap: 10px;">
                 <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i class="fas fa-cog"></i></button>
@@ -1147,7 +1119,7 @@
     </div>
     <div id="popupOverlay" class="popup-overlay"></div>
 
-    <div id="detailsPopup" class="popup-modal">
+    <div id="detailsPopup" class="popup-modal" style="max-width: 500px;">
         <h3><i class="fas fa-pencil-alt"></i> <span data-lang="detailsTitle"></span></h3>
         <p data-lang="detailsDesc"></p>
 
@@ -1162,6 +1134,23 @@
         </div>
 
         <div class="popup-divider"></div>
+
+        <h4 style="margin: 0; margin-bottom: 10px;"><i class="fas fa-clock"></i> <span data-lang="periodsSettingTitle"></span></h4>
+        <div class="row center" style="gap: 15px; margin-bottom: 15px;">
+            <label for="maxPeriods" data-lang="maxPeriodsLabel"></label>
+            <input type="number" id="maxPeriods" min="1" max="9" value="2" style="width: 50px; font-size: 1rem; padding: 5px;">
+        </div>
+
+        <div class="popup-divider"></div>
+
+        <h4 style="margin: 0; margin-bottom: 10px;"><i class="fas fa-bolt"></i> <span data-lang="actionButtonsTitle"></span></h4>
+        <table class="action-config-table" id="actionConfigTable"></table>
+        <div class="row center" style="margin-top: 10px;">
+            <button id="resetActionKeybindsBtn" class="btn-warning"><i class="fas fa-sync-alt"></i> <span data-lang="resetActionKeybinds"></span></button>
+        </div>
+
+        <div class="popup-divider"></div>
+
         <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
         <table class="keybind-table" id="keybindsTable"></table>
         <div class="row center" style="margin-top: 10px;">
@@ -1169,33 +1158,30 @@
         </div>
 
         <div class="popup-divider"></div>
-        <h4 style="margin: 0; margin-bottom: 10px;"><i class="fas fa-bolt"></i> <span data-lang="actionButtonsTitle"></span></h4>
-        <table class="action-config-table" id="actionConfigTable"></table>
-        <div class="popup-divider"></div>
-        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
-            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="score2VisibilityGroup"></span></h4>
-            <div class="row center" style="margin-bottom: 0;">
-                <button id="showScore2Btn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
-                <button id="hideScore2Btn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
-            </div>
-        </div>
 
-        <div class="popup-divider"></div>
-        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
-            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-exchange-alt"></i> <span data-lang="swapVisibilityGroup"></span></h4>
-            <div class="row center" style="margin-bottom: 0;">
-                <button id="showSwapBtn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
-                <button id="hideSwapBtn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
-            </div>
-        </div>
-        <div class="popup-divider"></div>
-        <div class="row space-between" style="flex-wrap: nowrap; margin-bottom: 0; align-items: center;">
-            <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-bolt"></i> <span data-lang="actionGroupVisibility"></span></h4>
-            <div class="row center" style="margin-bottom: 0;">
-                <button id="showActionBtnsBtn" class="btn-success"><i class="fas fa-eye"></i> <span data-lang="show"></span></button>
-                <button id="hideActionBtnsBtn" class="btn-danger"><i class="fas fa-eye-slash"></i> <span data-lang="hide"></span></button>
-            </div>
-        </div>
+        <h4 style="margin: 0; white-space: nowrap;"><i class="fas fa-eye"></i> <span data-lang="visibilityTitle"></span></h4>
+        <table class="visibility-table">
+            <thead>
+                <tr>
+                    <th data-lang="featureName"></th>
+                    <th data-lang="visibilityToggle"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-lang="score2VisibilityGroup"></td>
+                    <td><input type="checkbox" id="toggleScore2Visible"></td>
+                </tr>
+                <tr>
+                    <td data-lang="swapVisibilityGroup"></td>
+                    <td><input type="checkbox" id="toggleSwapVisible"></td>
+                </tr>
+                <tr>
+                    <td data-lang="actionGroupVisibility"></td>
+                    <td><input type="checkbox" id="toggleActionVisible"></td>
+                </tr>
+            </tbody>
+        </table>
         <div class="popup-divider"></div>
         <div class="row center" style="margin-bottom: 0;">
             <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span data-lang="resetColors"></span></button>
