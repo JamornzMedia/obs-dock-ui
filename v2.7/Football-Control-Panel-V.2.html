@@ -713,7 +713,7 @@
             }
             /* # */
             .action-settings-table td:nth-child(2) {
-                width: 80px; /* ลดจาก 90px */
+                width: 70px; /* ลดความกว้างของ Name Input */
             }
             /* Name Input */
             .action-settings-table td:nth-child(3) {
@@ -721,11 +721,11 @@
             }
             /* Color */
             .action-settings-table td:nth-child(4) {
-                width: 50px; /* ลดจาก 60px */
+                width: 40px; /* ลดความกว้างของ Height */
             }
             /* Height */
             .action-settings-table td:nth-child(5) {
-                width: 80px; /* ลดจาก 100px */
+                width: 70px; /* ลดความกว้างของ Keybind Input */
             }
             /* Keybind Input */
             .action-settings-table td:nth-child(6) {
@@ -733,18 +733,24 @@
                 text-align: right;
             }
             /* Edit/Save */
+            /* แก้ไขความสูงของช่อง Input ให้สูงเท่าตัวหนังสือ */
             .action-settings-table input[type="text"], .action-settings-table input[type="number"] {
                 padding: 4px;
                 height: 30px;
                 font-size: 0.8rem;
             }
 
-            /* แยก Name Input และ Keybind Input ลงครึ่งบรรทัดเพื่อให้ใช้พื้นที่แคบได้ */
+            /* ลบความสูงพิเศษของ Name Input และ Keybind Input */
             .action-settings-table td:nth-child(2) input[type="text"] {
-                height: 60px;
-                white-space: normal;
-                word-break: break-all;
+                height: 30px; /* ตั้งความสูงให้เท่ากับปกติ */
+                white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
             }
+
+            .action-settings-table td:nth-child(5) input[type="text"] {
+                height: 30px;
+                white-space: nowrap;
+            }
+            /* *************************************************************** */
 
             .action-settings-table input[type="color"] {
                 width: 28px;

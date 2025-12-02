@@ -121,8 +121,8 @@ export const translations = {
         timeSettingsTitle: "Set Start Time",
         timeSettingsMinutes: "Minutes",
         timeSettingsSeconds: "Seconds",
-        logoPathTitle: "Logo Folder Path & Cache",
-        logoPathDesc: "The current OBS Logo Folder Path is:",
+        logoPathTitle: "Logo Folder Path & Cache", // UPDATED
+        logoPathDesc: "The current OBS Logo Folder Path is:", // UPDATED
         logoPathHint: "Set logo folder path",
         changelogTitle: "Update History",
         changelogContent: `
@@ -303,8 +303,8 @@ export const translations = {
         timeSettingsTitle: "ตั้งเวลาเริ่มต้น",
         timeSettingsMinutes: "นาที",
         timeSettingsSeconds: "วินาที",
-        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้ & Cache",
-        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ OBS ปัจจุบันคือ:",
+        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้ & Cache", // UPDATED
+        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ OBS ปัจจุบันคือ:", // UPDATED
         logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
@@ -316,7 +316,7 @@ export const translations = {
                         <li>**แก้ไขการสลับทีม:** แก้ไขฟังก์ชัน \`swapTeams()\` ให้ทำการสลับ Object Master Data ทั้งหมด เพื่อการสลับข้อมูลทีม (ชื่อ, คะแนน, สี, โลโก้) ที่สมบูรณ์ 100%.</li>
                         <li>**Action Buttons (ปรับปรุง):** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่ม. การตั้งค่าใช้ระบบ **Keybind Input** (แก้ไข/จับ/บันทึก) เพื่อตั้งค่า Hotkey Combination ซึ่งจะใช้เรียก \`TriggerHotkeyByName\` ใน OBS-WebSocket.</li>
                         <li>**ปรับปรุง UI/UX:** ปรับ Layout การตั้งค่า Action Button (ความกว้างช่อง, สถานะ Disabled ของ Input, และปุ่มแก้ไข/บันทึกแยกรายแถว) และย้าย Card Action Buttons ไปอยู่ใต้ Card สลับฝั่ง. **(ใหม่: ปรับความกว้างและลบเส้นคั่น)**.</li>
-                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์</li>
+                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์.</li>
                         <li>**ควบคุมการแสดงผล:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card.</li>
                         <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5 พร้อม Source ที่ต้องใช้ใน OBS และ Tags สำหรับข้อความประกาศ.</li>
                         <li>**แก้ไขการคัดลอก:** ยืนยันว่าการคลิกที่ชื่อ OBS Source ในหน้าวิธีใช้จะสามารถคัดลอกชื่อได้.</li>
@@ -357,7 +357,7 @@ export const translations = {
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
         // NEW Logo Cache Translations
         logoCacheTitle: "Logo Cache (การแสดงผล Dock UI)",
-        logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงโดยไม่ติดข้อจำกัดด้านความปลอดภัยของเบราว์เซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
+        logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
         logoDropZoneText: "ลากและวางไฟล์โลโก้ที่นี่",
         logoCacheListTitle: "โลโก้ที่ถูก Cache ไว้:",
         logoCacheEmpty: "ไม่มีโลโก้ถูก Cache ไว้",

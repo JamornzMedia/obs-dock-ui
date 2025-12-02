@@ -107,6 +107,7 @@ const setSourceColor = (sourceName, hexColor) => {
 // NEW: OBS Hotkey Trigger (Pass Key Combination as Hotkey Name)
 const triggerObsHotkey = (hotkeyCombination) => {
     // IMPORTANT: Hotkey Combination is used as the Hotkey Name for OBS.
+    // This is the correct API call for OBS-WebSocket.
     obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyCombination }).catch(err => {
         showToast(`${translations[currentLang].toastHotkeyFailed} ${hotkeyCombination}`, 'error');
     });
@@ -691,7 +692,7 @@ const saveLogoCache = () => {
         showToast(translations[currentLang].toastSaved, 'success');
     } catch (e) {
         showToast(translations[currentLang].toastCacheSaveFailed, 'error');
-        console.error("Failed to save logo cache:", e);
+        console.error("Failed to save logo to cache:", e);
     }
 }
 
@@ -730,7 +731,45 @@ const populateLogoCacheList = () => {
         elements.logoCacheList.appendChild(li);
     });
 }
+
+// NEW: Logo Drop Zone Handlers
+const handleFileDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileName = file.name.replace(/\.(png|jpe?g|gif|webp)$/i, '');
+            const logoKey = fileName.replace(/\s/g, '').toLowerCase();
+
+            logoCache[logoKey] = event.target.result;
+            saveLogoCache(); // Save cache to localStorage
+            showToast(`${translations[currentLang].logoCacheSaved} ${fileName}`, 'success');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = '#4a4a4a';
+}
+
+const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
+}
 // --- END LOGO CACHE LOGIC ---
+
 
 // --- Scoreboard Logic ---
 const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : '';
@@ -776,7 +815,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
     // Show/Hide logo based on file
     if (masterTeam.logoFile) {
-        const logoKey = masterTeam.logoFile.replace(/\s/g, '').toLowerCase();
+        const logoKey = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
 
         if (logoCache[logoKey]) {
             // NEW: Show Logo from Cache (Base64 Data URL) on Dock UI
@@ -1109,44 +1148,6 @@ const exitEditMode = (team, applyChanges) => {
     nameInput.style.display = 'none';
     okBtn.style.display = 'none';
 };
-
-// NEW: Logo Drop Zone Handlers
-const handleFileDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
-
-    const files = e.dataTransfer.files;
-    if (files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-        if (!file.type.startsWith('image/')) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const fileName = file.name.replace(/\.(png|jpe?g|gif|webp)$/i, '');
-            const logoKey = fileName.replace(/\s/g, '').toLowerCase();
-
-            logoCache[logoKey] = event.target.result;
-            saveLogoCache(); // Save cache to localStorage
-            showToast(`${translations[currentLang].logoCacheSaved} ${fileName}`, 'success');
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    elements.logoDropZone.style.backgroundColor = '#4a4a4a';
-}
-
-const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    elements.logoDropZone.style.backgroundColor = 'var(--card-bg-color)';
-}
-// END Logo Drop Zone Handlers
 
 const setupEventListeners = () => {
     // Bind Save buttons to the same logic
