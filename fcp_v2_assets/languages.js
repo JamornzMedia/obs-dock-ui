@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.6",
+        appTitle: "Football Scoreboard Controller - V2.7",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -16,6 +16,8 @@ export const translations = {
         label1: "Label 1",
         label2: "Label 2",
         label3: "Label 3",
+        label4: "Label 4",
+        label5: "Label 5",
         swap: "Swap Teams",
         reset: "Reset",
         fullReset: "Full Reset",
@@ -23,6 +25,9 @@ export const translations = {
         hide: "Hide",
         show: "Show",
         score2VisibilityGroup: "Score 2 Visibility Control",
+        swapCardVisibility: "Swap Card Visibility",
+        actionCardVisibility: "Action Buttons Visibility",
+        visibilityTitle: "Card Visibility Control",
         resetKeybinds: "Reset Keybinds",
         resetColors: "Clear Team Color Memory",
         half: "Half",
@@ -32,15 +37,26 @@ export const translations = {
         resetToZeroHint: "Reset timer to 00:00",
         resetToStartHint: "Reset timer to configured start time",
         settings: "Settings",
-        copy: "Copy",
+        copy: "Announcement Text",
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.6",
+        changelog: "Update Version 2.7",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
-        keybindsTitle: "Custom Keyboard Shortcuts",
+        keybindsTitle: "Keyboard Shortcuts",
+        keybindsListLabel: "Item",
+        // START: CHANGED FOR SOURCE CONTROL
+        actionSettingsTitle: "Action Button Settings (Source Visibility)",
+        actionSettingsDesc: "Set button names, colors, height, and the Target OBS Source/Action to control visibility directly. The Source/Group must be in the active Scene.",
+        actionSettingsName: "Name",
+        actionSettingsColor: "Color",
+        actionSettingsHeight: "Height (px)",
+        actionSettingsSource: "Source/Group Name", // CHANGED
+        actionSettingsAction: "Action",     // NEW
+        actionSettingsEditSave: "Edit/Save",
+        // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -67,6 +83,8 @@ export const translations = {
             { code: '&lt;label1&gt;', desc: 'Label 1 Text' },
             { code: '&lt;label2&gt;', desc: 'Label 2 Text' },
             { code: '&lt;label3&gt;', desc: 'Label 3 Text' },
+            { code: '&lt;label4&gt;', desc: 'Label 4 Text' },
+            { code: '&lt;label5&gt;', desc: 'Label 5 Text' },
         ],
         save: "Save",
         close: "Close",
@@ -75,7 +93,7 @@ export const translations = {
         helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. The default is <code>C:/OBSAssets/logos</code>. **You need to click the Edit button inside the popup to change and save the path.**",
         helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
         helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
-        sourcesTitle: "Required OBS Sources",
+        sourcesTitle: "Required OBS Sources (Click to Copy)",
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'Team A (Primary Color)' },
@@ -93,6 +111,8 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'Label 1 Text' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'Label 2 Text' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'Label 3 Text' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' },
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' },
             { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
@@ -104,21 +124,31 @@ export const translations = {
         timeSettingsTitle: "Set Start Time",
         timeSettingsMinutes: "Minutes",
         timeSettingsSeconds: "Seconds",
-        logoPathTitle: "Logo Folder Path",
-        logoPathDesc: "The current logo folder path is:",
+        logoPathTitle: "Logo Folder Path & Cache",
+        logoPathDesc: "The current OBS Logo Folder Path is:",
         logoPathHint: "Set logo folder path",
         changelogTitle: "Update History",
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.6 (Latest)</h5>
+                    <h5>Version 2.7 (Latest) - Source Control Update</h5>
+                    <ul>
+                        <li>**Action Buttons:** Replaced the unreliable Hotkey system with direct **Source Visibility Control** via OBS-WebSocket API (\`SetSceneItemEnabled\`).</li>
+                        <li>**Dynamic Scene:** Action Button now automatically detects the **currently active Scene** to control Source/Group Visibility.</li>
+                        <li>**New Settings:** Action Button settings now use **Source/Group Name** and **Action Type** (Toggle/Show/Hide).</li>
+                        <li>**Core Update:** Refactored Team A/B data into a unified Master Data Object. Fixed \`swapTeams()\` for complete data exchange.</li>
+                        <li>**Logo Cache (New):** Added Logo Cache system using a Drop Zone for Dock UI logo display.</li>
+                        <li>**UI Control:** Added visibility controls for Score 2 Card, Swap Card, and Action Button Card.</li>
+                        <li>**New Features:** Added Label 4 and Label 5.</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>Version 2.6</h5>
                     <ul>
                         <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
                         <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
                         <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
-                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel supporting modifier keys (Ctrl/Alt/Shift).</li>
-                        <li>**OBS Integration:** Improved key binding to pass through the Dock UI to OBS for instant control.</li>
-                        <li>**Setup:** Updated OBS Source list and streamlined announcement loading from local TXT file.</li>
+                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel for global control.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -136,14 +166,25 @@ export const translations = {
         toastCopiedSourceName: "Copied source name:",
         toastSaved: "Saved",
         toastKeybindsSaved: "Keybind saved!",
+        toastActionSaved: "Action button settings saved! (Source Control)",
         toastColorsCleared: "Team color memory cleared!",
         toastObsError: "Failed to connect to OBS",
+        toastActionControlFailed: "Failed to control source:",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
         toastTimeSet: "Start time has been set and updated.",
+        logoCacheTitle: "Logo Cache (Dock UI Display)",
+        logoCacheDesc: "Drop image files here (PNG/JPG) to enable them to display on the Dock UI without OBS file restrictions. File name (without extension) is the Logo Key.",
+        logoDropZoneText: "Drag and Drop Logo Files here",
+        logoCacheListTitle: "Cached Logos:",
+        logoCacheEmpty: "No logos are currently cached.",
+        logoCacheSaved: "Logo cached:",
+        toastCacheSaveFailed: "Failed to save logo to cache!",
+        clearCache: "Clear Logo Cache",
+        toastCacheCleared: "Logo Cache cleared!",
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.6",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.7",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -155,6 +196,8 @@ export const translations = {
         label1: "ป้าย 1",
         label2: "ป้าย 2",
         label3: "ป้าย 3",
+        label4: "ป้าย 4",
+        label5: "ป้าย 5",
         swap: "สลับฝั่ง",
         reset: "รีเซ็ต",
         fullReset: "รีเซ็ตทั้งหมด",
@@ -162,6 +205,9 @@ export const translations = {
         hide: "ซ่อน",
         show: "แสดง",
         score2VisibilityGroup: "ควบคุมการแสดงผลคะแนน 2",
+        swapCardVisibility: "ควบคุมการแสดงผล Card สลับฝั่ง",
+        actionCardVisibility: "ควบคุมการแสดงผล Action Buttons",
+        visibilityTitle: "ควบคุมการแสดงผล Card",
         resetKeybinds: "รีเซ็ตคีย์ลัด",
         resetColors: "ล้างหน่วยความจำสีทีม",
         half: "ครึ่ง",
@@ -171,15 +217,26 @@ export const translations = {
         resetToZeroHint: "รีเซ็ตเวลาเป็น 00:00",
         resetToStartHint: "รีเซ็ตตามเวลาที่ตั้งค่า",
         settings: "ตั้งค่า",
-        copy: "คัดลอก",
+        copy: "ข้อความประกาศ",
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.6",
+        changelog: "อัปเดตเวอร์ชัน 2.7",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
+        keybindsListLabel: "รายการ",
+        // START: CHANGED FOR SOURCE CONTROL
+        actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
+        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Source/Group/Action ที่ต้องการควบคุมการแสดงผลโดยตรง โปรแกรมจะใช้ Scene ที่กำลัง Live อยู่ปัจจุบัน",
+        actionSettingsName: "ชื่อปุ่ม",
+        actionSettingsColor: "สี",
+        actionSettingsHeight: "ความสูง (px)",
+        actionSettingsSource: "ชื่อ Source/Group", // CHANGED
+        actionSettingsAction: "Action",     // NEW
+        actionSettingsEditSave: "แก้ไข/บันทึก",
+        // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -206,6 +263,8 @@ export const translations = {
             { code: '&lt;label1&gt;', desc: 'ข้อความ Label 1' },
             { code: '&lt;label2&gt;', desc: 'ข้อความ Label 2' },
             { code: '&lt;label3&gt;', desc: 'ข้อความ Label 3' },
+            { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4' },
+            { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' },
         ],
         save: "บันทึก",
         close: "ปิด",
@@ -214,7 +273,7 @@ export const translations = {
         helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>) **คุณต้องกดปุ่ม แก้ไข ใน Popup เพื่อเปลี่ยนและบันทึกที่อยู่**",
         helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
         helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
-        sourcesTitle: "OBS Sources ที่ต้องมี",
+        sourcesTitle: "OBS Sources ที่ต้องมี (คลิกเพื่อคัดลอก)",
         sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"],
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'สีทีม A (สีหลัก)' },
@@ -232,6 +291,8 @@ export const translations = {
             { code: 'label_1', type: 'Text (GDI+)', desc: 'ข้อความ Label 1' },
             { code: 'label_2', type: 'Text (GDI+)', desc: 'ข้อความ Label 2' },
             { code: 'label_3', type: 'Text (GDI+)', desc: 'ข้อความ Label 3' },
+            { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' },
+            { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' },
             { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'ตัวนับเวลา' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ทดเวลาบาดเจ็บ (+1)' },
@@ -243,21 +304,31 @@ export const translations = {
         timeSettingsTitle: "ตั้งเวลาเริ่มต้น",
         timeSettingsMinutes: "นาที",
         timeSettingsSeconds: "วินาที",
-        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้",
-        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ปัจจุบันคือ:",
+        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้ & Cache",
+        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ OBS ปัจจุบันคือ:",
         logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.6 (ล่าสุด)</h5>
+                    <h5>เวอร์ชัน 2.7 (ล่าสุด) - อัปเดต Source Control</h5>
                     <ul>
-                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง).</li>
-                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้.</li>
-                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้.</li>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
-                        <li>**การเชื่อมต่อ OBS:** ปรับปรุงการทำงานของคีย์ลัดเพื่อให้ส่งคำสั่งผ่าน Dock UI ไปยัง OBS ได้โดยตรง.</li>
-                        <li>**การตั้งค่า:** ปรับปรุงรายการ OBS Source ที่ต้องมีและย้ายการโหลดข้อความประกาศไปใช้ไฟล์ TXT ภายใน.</li>
+                        <li>**ปุ่ม Action:** เปลี่ยนจากระบบ Hotkey (ซึ่งมีปัญหา) มาเป็นการ **ควบคุมการแสดงผล Source (Visibility Control)** โดยตรงผ่าน OBS-WebSocket API (\`SetSceneItemEnabled\`) เพื่อความน่าเชื่อถือ</li>
+                        <li>**Dynamic Scene:** Action Button จะตรวจสอบ **Scene ที่กำลัง Live อยู่ปัจจุบัน** โดยอัตโนมัติเพื่อสั่งควบคุม Group/Source</li>
+                        <li>**การตั้งค่าใหม่:** ตั้งค่าปุ่ม Action ได้แก่ **ชื่อ Source/Group** และ **Action Type** (Toggle/Show/Hide)</li>
+                        <li>**อัปเดตแกนหลัก:** ปรับโครงสร้างข้อมูลทีม A/B เป็น Master Data Object ที่สมบูรณ์ แก้ไขฟังก์ชัน \`swapTeams()\` ให้สมบูรณ์ 100%</li>
+                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรง</li>
+                        <li>**ควบคุม UI:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card</li>
+                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>เวอร์ชัน 2.6</h5>
+                    <ul>
+                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง)</li>
+                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้</li>
+                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้</li>
+                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้สำหรับการควบคุมทั่วไป</li>
                     </ul>
                 </li>
             </ul>`,
@@ -275,9 +346,20 @@ export const translations = {
         toastCopiedSourceName: "คัดลอกชื่อ Source แล้ว:",
         toastSaved: "บันทึกแล้ว",
         toastKeybindsSaved: "บันทึกคีย์ลัดแล้ว!",
+        toastActionSaved: "บันทึกการตั้งค่า Action Button แล้ว! (ควบคุม Source)",
         toastColorsCleared: "ล้างหน่วยความจำสีทีมแล้ว!",
         toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
+        toastActionControlFailed: "ส่งคำสั่งควบคุม Source ไม่สำเร็จ:",
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
+        logoCacheTitle: "Logo Cache (การแสดงผล Dock UI)",
+        logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
+        logoDropZoneText: "ลากและวางไฟล์โลโก้ที่นี่",
+        logoCacheListTitle: "โลโก้ที่ถูก Cache ไว้:",
+        logoCacheEmpty: "ไม่มีโลโก้ถูก Cache ไว้",
+        logoCacheSaved: "บันทึกโลโก้ลง Cache แล้ว:",
+        toastCacheSaveFailed: "บันทึกโลโก้ลง Cache ล้มเหลว!",
+        clearCache: "ล้าง Logo Cache",
+        toastCacheCleared: "ล้าง Logo Cache แล้ว!",
     },
 };
