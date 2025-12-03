@@ -37,7 +37,7 @@ export const translations = {
         resetToZeroHint: "Reset timer to 00:00",
         resetToStartHint: "Reset timer to configured start time",
         settings: "Settings",
-        copy: "Announcement Text", // CHANGED: For the button label
+        copy: "Announcement Text",
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
@@ -47,13 +47,16 @@ export const translations = {
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Keyboard Shortcuts",
         keybindsListLabel: "Item",
-        actionSettingsTitle: "Action Button Settings",
-        actionSettingsDesc: "Set button names, colors, height, and the key combination used to trigger the OBS Hotkey. The Hotkey Name in OBS must match the Key Combination set here (e.g., CONTROL+F1).",
+        // START: CHANGED FOR SOURCE CONTROL
+        actionSettingsTitle: "Action Button Settings (Source Visibility)",
+        actionSettingsDesc: "Set button names, colors, height, and the Target OBS Source/Action to control visibility directly. The Source/Group must be in the active Scene.",
         actionSettingsName: "Name",
         actionSettingsColor: "Color",
         actionSettingsHeight: "Height (px)",
-        actionSettingsHotkey: "Hotkey",
+        actionSettingsSource: "Source/Group Name", // CHANGED
+        actionSettingsAction: "Action",     // NEW
         actionSettingsEditSave: "Edit/Save",
+        // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
             { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
             { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
@@ -121,24 +124,22 @@ export const translations = {
         timeSettingsTitle: "Set Start Time",
         timeSettingsMinutes: "Minutes",
         timeSettingsSeconds: "Seconds",
-        logoPathTitle: "Logo Folder Path & Cache", // UPDATED
-        logoPathDesc: "The current OBS Logo Folder Path is:", // UPDATED
+        logoPathTitle: "Logo Folder Path & Cache",
+        logoPathDesc: "The current OBS Logo Folder Path is:",
         logoPathHint: "Set logo folder path",
         changelogTitle: "Update History",
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.7 (Latest)</h5>
+                    <h5>Version 2.7 (Latest) - Source Control Update</h5>
                     <ul>
-                        <li>**Core Update:** Refactored Team A/B data into a unified Master Data Object.</li>
-                        <li>**Swap Fix:** Fixed \`swapTeams()\` to ensure a complete and reliable swap of all team data (name, score, colors, logo).</li>
-                        <li>**Action Buttons:** Added 6 customizable action buttons. The settings now use a **Keybind Input** system (Edit/Capture/Save) to set the Hotkey Combination, which triggers \`TriggerHotkeyByName\` in OBS-WebSocket.</li>
-                        <li>**UI/UX:** Improved layout of Action Button settings (field widths, disabled state for inputs, and separate Edit/Save buttons for each row). **(New: Adjusted width and removed dividers)**.</li>
-                        <li>**Logo Cache (New):** Added Logo Cache system using a Drop Zone to display logos directly on the Dock UI, bypassing browser security limitations for local files.</li>
-                        <li>**Visibility Controls:** Added checkboxes in settings to control the visibility of the Score 2 Card, Swap Card, and Action Button Card.</li>
-                        <li>**New Features:** Added Label 4 and Label 5 with corresponding OBS Sources and Announcement Tags.</li>
-                        <li>**Copy Fix:** Confirmed clicking on OBS Source Names in the Help popup copies the name to the clipboard.</li>
-                        <li>**Cleanup:** Removed immediate call to \`showWelcomePopup()\` to prevent potential crash on initialization.</li>
+                        <li>**Action Buttons:** Replaced the unreliable Hotkey system with direct **Source Visibility Control** via OBS-WebSocket API (\`SetSceneItemEnabled\`).</li>
+                        <li>**Dynamic Scene:** Action Button now automatically detects the **currently active Scene** to control Source/Group Visibility.</li>
+                        <li>**New Settings:** Action Button settings now use **Source/Group Name** and **Action Type** (Toggle/Show/Hide).</li>
+                        <li>**Core Update:** Refactored Team A/B data into a unified Master Data Object. Fixed \`swapTeams()\` for complete data exchange.</li>
+                        <li>**Logo Cache (New):** Added Logo Cache system using a Drop Zone for Dock UI logo display.</li>
+                        <li>**UI Control:** Added visibility controls for Score 2 Card, Swap Card, and Action Button Card.</li>
+                        <li>**New Features:** Added Label 4 and Label 5.</li>
                     </ul>
                 </li>
                 <li>
@@ -147,9 +148,7 @@ export const translations = {
                         <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
                         <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
                         <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
-                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel supporting modifier keys (Ctrl/Alt/Shift).</li>
-                        <li>**OBS Integration:** Improved key binding to pass through the Dock UI to OBS for instant control.</li>
-                        <li>**Setup:** Updated OBS Source list and streamlined announcement loading from local TXT file.</li>
+                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel for global control.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -167,13 +166,12 @@ export const translations = {
         toastCopiedSourceName: "Copied source name:",
         toastSaved: "Saved",
         toastKeybindsSaved: "Keybind saved!",
-        toastActionSaved: "Action button settings saved!",
+        toastActionSaved: "Action button settings saved! (Source Control)",
         toastColorsCleared: "Team color memory cleared!",
         toastObsError: "Failed to connect to OBS",
-        toastHotkeyFailed: "Failed to trigger OBS Hotkey:",
+        toastActionControlFailed: "Failed to control source:",
         toastInvalidTime: "Invalid time format. Please check minutes and seconds (0-59).",
         toastTimeSet: "Start time has been set and updated.",
-        // NEW Logo Cache Translations
         logoCacheTitle: "Logo Cache (Dock UI Display)",
         logoCacheDesc: "Drop image files here (PNG/JPG) to enable them to display on the Dock UI without OBS file restrictions. File name (without extension) is the Logo Key.",
         logoDropZoneText: "Drag and Drop Logo Files here",
@@ -219,7 +217,7 @@ export const translations = {
         resetToZeroHint: "รีเซ็ตเวลาเป็น 00:00",
         resetToStartHint: "รีเซ็ตตามเวลาที่ตั้งค่า",
         settings: "ตั้งค่า",
-        copy: "ข้อความประกาศ", // CHANGED: For the button label
+        copy: "ข้อความประกาศ",
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
@@ -229,13 +227,16 @@ export const translations = {
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
         keybindsListLabel: "รายการ",
-        actionSettingsTitle: "ตั้งค่า Action Button",
-        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และคีย์ลัด Hotkey ใน OBS สำหรับ Action Button สูงสุด 6 ปุ่ม คีย์ลัดต้องตรงกับ Hotkey Name ที่ตั้งค่าไว้ใน OBS.",
+        // START: CHANGED FOR SOURCE CONTROL
+        actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
+        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Source/Group/Action ที่ต้องการควบคุมการแสดงผลโดยตรง โปรแกรมจะใช้ Scene ที่กำลัง Live อยู่ปัจจุบัน",
         actionSettingsName: "ชื่อปุ่ม",
         actionSettingsColor: "สี",
         actionSettingsHeight: "ความสูง (px)",
-        actionSettingsHotkey: "คีย์ลัด",
+        actionSettingsSource: "ชื่อ Source/Group", // CHANGED
+        actionSettingsAction: "Action",     // NEW
         actionSettingsEditSave: "แก้ไข/บันทึก",
+        // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
             { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
             { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
@@ -303,35 +304,31 @@ export const translations = {
         timeSettingsTitle: "ตั้งเวลาเริ่มต้น",
         timeSettingsMinutes: "นาที",
         timeSettingsSeconds: "วินาที",
-        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้ & Cache", // UPDATED
-        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ OBS ปัจจุบันคือ:", // UPDATED
+        logoPathTitle: "ที่อยู่โฟลเดอร์โลโก้ & Cache",
+        logoPathDesc: "ที่อยู่โฟลเดอร์โลโก้ OBS ปัจจุบันคือ:",
         logoPathHint: "ตั้งค่าที่อยู่โฟลเดอร์โลโก้",
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.7 (ล่าสุด)</h5>
+                    <h5>เวอร์ชัน 2.7 (ล่าสุด) - อัปเดต Source Control</h5>
                     <ul>
-                        <li>**อัปเดตแกนหลัก:** ปรับโครงสร้างข้อมูลทีม A/B ทั้งหมดให้เป็น Master Data Object ที่รวมศูนย์.</li>
-                        <li>**แก้ไขการสลับทีม:** แก้ไขฟังก์ชัน \`swapTeams()\` ให้ทำการสลับ Object Master Data ทั้งหมด เพื่อการสลับข้อมูลทีม (ชื่อ, คะแนน, สี, โลโก้) ที่สมบูรณ์ 100%.</li>
-                        <li>**Action Buttons (ปรับปรุง):** เพิ่มปุ่ม Action ที่ปรับแต่งได้ 6 ปุ่ม. การตั้งค่าใช้ระบบ **Keybind Input** (แก้ไข/จับ/บันทึก) เพื่อตั้งค่า Hotkey Combination ซึ่งจะใช้เรียก \`TriggerHotkeyByName\` ใน OBS-WebSocket.</li>
-                        <li>**ปรับปรุง UI/UX:** ปรับ Layout การตั้งค่า Action Button (ความกว้างช่อง, สถานะ Disabled ของ Input, และปุ่มแก้ไข/บันทึกแยกรายแถว) และย้าย Card Action Buttons ไปอยู่ใต้ Card สลับฝั่ง. **(ใหม่: ปรับความกว้างและลบเส้นคั่น)**.</li>
-                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์.</li>
-                        <li>**ควบคุมการแสดงผล:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card.</li>
-                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5 พร้อม Source ที่ต้องใช้ใน OBS และ Tags สำหรับข้อความประกาศ.</li>
-                        <li>**แก้ไขการคัดลอก:** ยืนยันว่าการคลิกที่ชื่อ OBS Source ในหน้าวิธีใช้จะสามารถคัดลอกชื่อได้.</li>
-                        <li>**การแก้ไข:** ลบโค้ดเรียก \`showWelcomePopup()\` ทันทีออกไปเพื่อแก้ไขปัญหาโปรแกรมหยุดทำงาน (Crash) ในช่วงเริ่มต้น.</li>
+                        <li>**ปุ่ม Action:** เปลี่ยนจากระบบ Hotkey (ซึ่งมีปัญหา) มาเป็นการ **ควบคุมการแสดงผล Source (Visibility Control)** โดยตรงผ่าน OBS-WebSocket API (\`SetSceneItemEnabled\`) เพื่อความน่าเชื่อถือ</li>
+                        <li>**Dynamic Scene:** Action Button จะตรวจสอบ **Scene ที่กำลัง Live อยู่ปัจจุบัน** โดยอัตโนมัติเพื่อสั่งควบคุม Group/Source</li>
+                        <li>**การตั้งค่าใหม่:** ตั้งค่าปุ่ม Action ได้แก่ **ชื่อ Source/Group** และ **Action Type** (Toggle/Show/Hide)</li>
+                        <li>**อัปเดตแกนหลัก:** ปรับโครงสร้างข้อมูลทีม A/B เป็น Master Data Object ที่สมบูรณ์ แก้ไขฟังก์ชัน \`swapTeams()\` ให้สมบูรณ์ 100%</li>
+                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรง</li>
+                        <li>**ควบคุม UI:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card</li>
+                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5</li>
                     </ul>
                 </li>
                 <li>
                     <h5>เวอร์ชัน 2.6</h5>
                     <ul>
-                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง).</li>
-                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้.</li>
-                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้.</li>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้ รองรับปุ่ม Modifier Keys (Ctrl/Alt/Shift).</li>
-                        <li>**การเชื่อมต่อ OBS:** ปรับปรุงการทำงานของคีย์ลัดเพื่อให้ส่งคำสั่งผ่าน Dock UI ไปยัง OBS ได้โดยตรง.</li>
-                        <li>**การตั้งค่า:** ปรับปรุงรายการ OBS Source ที่ต้องมีและย้ายการโหลดข้อความประกาศไปใช้ไฟล์ TXT ภายใน.</li>
+                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง)</li>
+                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้</li>
+                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้</li>
+                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้สำหรับการควบคุมทั่วไป</li>
                     </ul>
                 </li>
             </ul>`,
@@ -349,13 +346,12 @@ export const translations = {
         toastCopiedSourceName: "คัดลอกชื่อ Source แล้ว:",
         toastSaved: "บันทึกแล้ว",
         toastKeybindsSaved: "บันทึกคีย์ลัดแล้ว!",
-        toastActionSaved: "บันทึกการตั้งค่า Action Button แล้ว!",
+        toastActionSaved: "บันทึกการตั้งค่า Action Button แล้ว! (ควบคุม Source)",
         toastColorsCleared: "ล้างหน่วยความจำสีทีมแล้ว!",
         toastObsError: "เชื่อมต่อ OBS ไม่สำเร็จ",
-        toastHotkeyFailed: "ส่ง Hotkey ไป OBS ไม่สำเร็จ:",
+        toastActionControlFailed: "ส่งคำสั่งควบคุม Source ไม่สำเร็จ:",
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
-        // NEW Logo Cache Translations
         logoCacheTitle: "Logo Cache (การแสดงผล Dock UI)",
         logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
         logoDropZoneText: "ลากและวางไฟล์โลโก้ที่นี่",

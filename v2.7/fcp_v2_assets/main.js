@@ -49,6 +49,8 @@ let countdownStartTime = 2700; // 45 minutes default
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 let logoCache = {}; // NEW: Store Logo Data URLs here
+// NOTE: OBS_ACTIVE_SCENE ถูกลบออกเพื่อให้ใช้ Scene ปัจจุบันแทน
+// const OBS_ACTIVE_SCENE = ''; 
 
 // NEW: Master Data Objects for Team A and B
 let masterTeamA = createDefaultTeam('A');
@@ -72,13 +74,16 @@ function createDefaultTeam(teamId) {
     };
 }
 
-// NEW: Default Action Button Settings (Using Key Combination for hotkey and display)
+// NEW: Default Action Button Settings (***MODIFIED FOR SOURCE CONTROL***)
 const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i) => ({
     id: `actionBtn${i + 1}`,
     name: `Action ${i + 1}`,
     backgroundColor: (i % 3 === 0) ? '#22c55e' : (i % 3 === 1 ? '#f97316' : '#3b82f6'),
     height: 35, // default height in pixels
-    hotkey: `CONTROL+F${i + 1}` // Hotkey Combination
+    targetSource: '', // Source Name in OBS (e.g., 'Scorebar')
+    actionType: 'Toggle', // 'Toggle', 'Show', 'Hide'
+    // internalState is for Dock UI only to manage Toggle state if needed
+    internalState: false,
 }));
 
 
@@ -104,14 +109,35 @@ const setSourceColor = (sourceName, hexColor) => {
     };
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => { });
 };
-// NEW: OBS Hotkey Trigger (Pass Key Combination as Hotkey Name)
-const triggerObsHotkey = (hotkeyCombination) => {
-    // IMPORTANT: Hotkey Combination is used as the Hotkey Name for OBS.
-    // This is the correct API call for OBS-WebSocket.
-    obs.call('TriggerHotkeyByName', { hotkeyName: hotkeyCombination }).catch(err => {
-        showToast(`${translations[currentLang].toastHotkeyFailed} ${hotkeyCombination}`, 'error');
-    });
-}
+
+// **NEW OBS CONTROL FUNCTION: Set Source Visibility (Dynamically using Active Scene)**
+const setSourceVisibility = (sourceName, visible) => {
+    // 1. ดึงชื่อ Scene ที่กำลังใช้งานอยู่ (Active Scene)
+    return obs.call('GetCurrentProgramScene')
+        .then(data => {
+            const activeSceneName = data.currentProgramSceneName; // ชื่อ Scene ที่กำลัง Live
+
+            // 2. ค้นหา Item ID ภายใน Scene ที่ Active นั้น
+            return obs.call('GetSceneItemId', {
+                sceneName: activeSceneName,
+                sourceName: sourceName
+            })
+                // 3. สั่งซ่อน/แสดง Scene Item นั้น
+                .then(itemData => {
+                    return obs.call('SetSceneItemEnabled', {
+                        sceneName: activeSceneName,
+                        sceneItemId: itemData.sceneItemId,
+                        sceneItemEnabled: visible
+                    });
+                });
+        })
+        .catch(err => {
+            // Error code 600 (SceneItemNotFound) จะเกิดขึ้นที่ขั้นตอนนี้
+            showToast(`${translations[currentLang].toastActionControlFailed} ${sourceName} (${err.code || err.error})`, 'error');
+            throw new Error(err.code || err.error); // Throw error to stop chained promises
+        });
+};
+
 
 // --- UI & Language ---
 const showToast = (message, type = 'info') => {
@@ -306,53 +332,41 @@ const toggleKeybindEditMode = (id, enable) => {
     }
 }
 
-// NEW: Action Button Specific Edit Toggle
+// NEW: Action Button Specific Edit Toggle (***MODIFIED***)
 const toggleActionEditMode = (index, enable) => {
     const trans = translations[currentLang];
     const id = `actionBtn${index}`;
     const nameInput = $(`action-name-${index}`);
     const heightInput = $(`action-height-${index}`);
-    const keybindInput = $(`action-keybind-input-${index}`);
-    const editButton = $(`action-keybind-edit-${index}`);
-    const saveButton = $(`action-keybind-save-${index}`);
+    const sourceInput = $(`action-source-input-${index}`); // MODIFIED
+    const actionSelect = $(`action-type-${index}`);        // MODIFIED
+    const editButton = $(`action-edit-${index}`);
+    const saveButton = $(`action-save-${index}`);
 
     if (enable) {
         // Enable inputs
         nameInput.disabled = false;
         heightInput.disabled = false;
-        keybindInput.disabled = false;
+        sourceInput.disabled = false; // MODIFIED
+        actionSelect.disabled = false; // MODIFIED
 
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
         nameInput.focus();
 
-        // Clear existing listener and set new one for key capture
-        keybindInput.onkeydown = null;
-        keybindInput.onkeydown = (e) => captureKeyInput(e, keybindInput, saveButton);
-
-        // Blur handler for keybind input
-        keybindInput.onblur = () => {
-            setTimeout(() => {
-                // If focus moves away from keybind input and save button, revert to disabled state
-                if (document.activeElement !== saveButton && document.activeElement !== keybindInput) {
-                    toggleActionEditMode(index, false);
-                }
-            }, 50);
-        };
-
     } else {
         // Disable inputs
         nameInput.disabled = true;
         heightInput.disabled = true;
-        keybindInput.disabled = true;
+        sourceInput.disabled = true; // MODIFIED
+        actionSelect.disabled = true; // MODIFIED
 
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
-        keybindInput.onkeydown = null;
     }
 }
 
-// NEW: Action Button Specific Save Function
+// NEW: Action Button Specific Save Function (***MODIFIED***)
 const saveActionSettingsRow = (index) => {
     // 1. Save all settings globally
     const settings = loadActionSettings().map((setting, i) => {
@@ -360,22 +374,16 @@ const saveActionSettingsRow = (index) => {
         const nameInput = $(`action-name-${idx}`);
         const colorInput = $(`action-color-${idx}`);
         const heightInput = $(`action-height-${idx}`);
-        const keybindInput = $(`action-keybind-input-${idx}`);
-
-        // Convert formatted key (Ctrl+F1) back to raw key (CONTROL+F1)
-        const rawKeybind = keybindInput.value
-            .trim().toUpperCase()
-            .replace(/CTRL/g, 'CONTROL')
-            .replace(/ALT/g, 'ALT')
-            .replace(/SHIFT/g, 'SHIFT')
-            .replace(/SPACE/g, ' ');
+        const sourceInput = $(`action-source-input-${idx}`); // MODIFIED
+        const actionSelect = $(`action-type-${idx}`);      // MODIFIED
 
         return {
             ...setting,
             name: nameInput.value,
             backgroundColor: colorInput.value,
             height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
-            hotkey: rawKeybind
+            targetSource: sourceInput.value.trim(), // MODIFIED
+            actionType: actionSelect.value,         // MODIFIED
         };
     });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
@@ -406,6 +414,7 @@ const saveKeybind = (id) => {
 const populateKeybindsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     // Filter out action button keybinds
+    // NOTE: Action buttons no longer use keybinds, so filtering is optional but kept for safety.
     const filteredKeybindsList = trans.keybindsList.filter(item => !item.id.startsWith('actionBtn'));
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
 
@@ -439,15 +448,16 @@ const populateKeybindsTable = (lang) => {
     });
 }
 
-// NEW: Action Buttons Setup and Logic
+// NEW: Action Buttons Setup and Logic (***MODIFIED***)
 const loadActionSettings = () => {
     const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
     if (savedSettings && savedSettings.length === ACTION_BUTTON_COUNT) {
-        // Ensure new properties (like keybind input value) are handled on first load after update
+        // Ensure new properties are handled on first load after update
         return savedSettings.map((setting, i) => ({
             ...defaultActionSettings[i], // default structure
             ...setting, // override with saved values
-            hotkey: setting.hotkey || defaultActionSettings[i].hotkey // Ensure hotkey is present
+            targetSource: setting.targetSource || '',
+            actionType: setting.actionType || 'Toggle'
         }));
     }
     return defaultActionSettings;
@@ -464,13 +474,40 @@ const renderActionButtons = () => {
         button.style.backgroundColor = setting.backgroundColor;
         button.style.height = `${setting.height}px`;
 
-        // Use the saved hotkey combination to trigger OBS (TriggerHotkeyByName)
-        const hotkeyCombination = setting.hotkey;
+        const targetSource = setting.targetSource;
+        const actionType = setting.actionType;
 
         button.onclick = () => {
-            if (hotkeyCombination) {
-                // IMPORTANT: The hotkey combination itself is used as the Hotkey Name for OBS
-                triggerObsHotkey(hotkeyCombination);
+            if (!targetSource) {
+                return showToast('Source Name is missing.', 'error');
+            }
+
+            let newState = null;
+
+            if (actionType === 'Show') {
+                newState = true;
+            } else if (actionType === 'Hide') {
+                newState = false;
+            } else if (actionType === 'Toggle') {
+                // Toggle Logic: In Dock UI, we rely on the internal state for simplicity
+                const currentState = settings[i].internalState;
+                newState = !currentState;
+            }
+
+            if (newState !== null) {
+                // Call the new OBS function
+                setSourceVisibility(targetSource, newState)
+                    .then(() => {
+                        // Update internal state only on success for 'Toggle'
+                        if (actionType === 'Toggle') {
+                            settings[i].internalState = newState;
+                            // Optionally update button style/icon to show state
+                        }
+                        showToast(`Source '${targetSource}' set to ${newState ? 'Show' : 'Hide'}`, 'success');
+                    })
+                    .catch(() => {
+                        // Error is already shown in setSourceVisibility
+                    });
             }
         };
         elements.actionButtonsGrid.appendChild(button);
@@ -485,7 +522,6 @@ const populateActionSettingsTable = (lang) => {
     actionTableBody.innerHTML = '';
     settings.forEach((setting, i) => {
         const index = i + 1;
-        const formattedKey = formatKey(setting.hotkey);
 
         const row = actionTableBody.insertRow();
         row.innerHTML = `
@@ -494,21 +530,32 @@ const populateActionSettingsTable = (lang) => {
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
             <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td>
-                <input type="text" id="action-keybind-input-${index}" value="${formattedKey}" disabled>
+                <input type="text" id="action-source-input-${index}" value="${setting.targetSource}" disabled>
+            </td>
+            <td>
+                <select id="action-type-${index}" disabled>
+                    <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
+                    <option value="Show" ${setting.actionType === 'Show' ? 'selected' : ''}>Show</option>
+                    <option value="Hide" ${setting.actionType === 'Hide' ? 'selected' : ''}>Hide</option>
+                </select>
             </td>
             <td>
                 <div class="action-buttons">
-                    <button id="action-keybind-edit-${index}" class="btn-secondary" title="${trans.edit}" onclick="toggleActionEditMode(${index}, true)"><i class="fas fa-pencil-alt"></i></button>
-                    <button id="action-keybind-save-${index}" class="btn-success" title="${trans.save}" style="display: none;" onclick="saveActionSettingsRow(${index})"><i class="fas fa-save"></i></button>
+                    <button id="action-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="action-save-${index}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
                 </div>
             </td>
         `;
 
         // Set colors to inputs that are not the primary focus of edit toggle
-        $(`action-color-${index}`).onchange = () => {
+        $(`action-color-${index}`).onchange = (e) => {
             // Update color in button preview and then rely on Save button
-            $(`actionBtn${index}`).style.backgroundColor = $(`action-color-${index}`).value;
+            $(`actionBtn${index}`).style.backgroundColor = e.target.value;
         };
+
+        // Ensure buttons are correctly bound (moved to global scope later)
+        $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
+        $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
     });
 
     // Make utility functions available globally for onclick from the table rows
@@ -610,6 +657,7 @@ const getStoredKeybinds = () => {
     const activeKeybinds = {};
 
     // Filter to only include non-action button keybinds for global use
+    // NOTE: Action buttons no longer use keybinds
     const filteredKeybindsList = keybindsList.filter(item => !item.id.startsWith('actionBtn'));
 
     filteredKeybindsList.forEach(item => {
@@ -621,7 +669,7 @@ const getStoredKeybinds = () => {
 }
 
 const resetKeybinds = () => {
-    // Note: Action buttons now save their keybinds in ACTION_SETTINGS_KEY
+    // Note: Action buttons now save their settings in ACTION_SETTINGS_KEY
     localStorage.removeItem(KEYBINDS_KEY);
     populateKeybindsTable(currentLang);
     showToast(translations[currentLang].resetKeybinds, 'info');
@@ -1153,8 +1201,28 @@ const setupEventListeners = () => {
     // Bind Save buttons to the same logic
     const saveHandler = () => {
         localStorage.setItem('detailsText', elements.detailsText.value);
-        // We only save action settings here, not keybinds (they are saved individually)
-        // Note: Global save is disabled since action settings save independently by row
+
+        // Ensure action settings are saved
+        const actionSettings = loadActionSettings().map((setting, i) => {
+            const idx = i + 1;
+            const nameInput = $(`action-name-${idx}`);
+            const colorInput = $(`action-color-${idx}`);
+            const heightInput = $(`action-height-${idx}`);
+            const sourceInput = $(`action-source-input-${idx}`);
+            const actionSelect = $(`action-type-${idx}`);
+
+            return {
+                ...setting,
+                name: nameInput.value,
+                backgroundColor: colorInput.value,
+                height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
+                targetSource: sourceInput.value.trim(),
+                actionType: actionSelect.value,
+            };
+        });
+        localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(actionSettings));
+        renderActionButtons();
+
         closeAllPopups();
         showToast(translations[currentLang].toastSaved, 'success');
     };
@@ -1298,13 +1366,12 @@ const setupEventListeners = () => {
     elements.logoDropZone.addEventListener('drop', handleFileDrop);
 
 
-    // Global Key Listener for OBS Pass-through
+    // Global Key Listener for OBS Pass-through (***MODIFIED - REMOVED ACTION BUTTON HOTKEY CHECK***)
     document.addEventListener('keydown', (e) => {
         // Only trigger keybinds if user is not typing in a general input field
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-keybind-input')) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-source-input')) return;
 
         const keybinds = getStoredKeybinds();
-        const actionSettings = loadActionSettings(); // Load action hotkeys
 
         // Build combination string (e.g., CONTROL+ALT+F1)
         const modifiers = [];
@@ -1346,15 +1413,6 @@ const setupEventListeners = () => {
                 case 'timer_togglehalf': toggleHalf(); break;
                 case 'full_reset': fullReset(); break;
                 default: return;
-            }
-        }
-
-        // NEW: Check for Action Button hotkeys separately
-        for (let i = 0; i < actionSettings.length; i++) {
-            if (actionSettings[i].hotkey === keyCombination) {
-                e.preventDefault();
-                triggerObsHotkey(actionSettings[i].hotkey);
-                return;
             }
         }
     });
