@@ -674,7 +674,8 @@
         }
 
         .keybind-table td:nth-child(3) {
-            width: 30px;
+            width: 70px;
+            /* เพิ่มพื้นที่สำหรับปุ่ม Clear */
             text-align: right;
         }
 
@@ -1448,7 +1449,10 @@
         <div id="logoDropZone" data-lang="logoDropZoneText"></div>
 
         <div class="item-list">
-            <h4 data-lang="logoCacheListTitle"></h4>
+            <h4 style="display: flex; justify-content: space-between; align-items: center;">
+                <span data-lang="logoCacheListTitle"></span>
+                <span id="logoCacheCountLabel" style="font-size: 0.8rem; color: var(--accent-color);"></span>
+            </h4>
             <ul id="logoCacheList" style="list-style: none; padding: 0;"></ul>
             <div class="row center" style="margin-top: 10px;">
                 <button id="clearLogoCacheBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> <span

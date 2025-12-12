@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.7",
+        appTitle: "Football Scoreboard Controller - V2.7.1", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -41,12 +41,13 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.7",
+        changelog: "Update Version 2.7.1", // Update
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Keyboard Shortcuts",
         keybindsListLabel: "Item",
+        clear: "Clear", // NEW
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "Action Button Settings (Source Visibility)",
         actionSettingsDesc: "Set button names, colors, height, and the Target OBS Source/Action to control visibility directly. The Source/Group must be in the active Scene.",
@@ -131,24 +132,19 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.7 (Latest) - Source Control Update</h5>
+                    <h5>Version 2.7.1 (Patch)</h5>
                     <ul>
-                        <li>**Action Buttons:** Replaced the unreliable Hotkey system with direct **Source Visibility Control** via OBS-WebSocket API (\`SetSceneItemEnabled\`).</li>
-                        <li>**Dynamic Scene:** Action Button now automatically detects the **currently active Scene** to control Source/Group Visibility.</li>
-                        <li>**New Settings:** Action Button settings now use **Source/Group Name** and **Action Type** (Toggle/Show/Hide).</li>
-                        <li>**Core Update:** Refactored Team A/B data into a unified Master Data Object. Fixed \`swapTeams()\` for complete data exchange.</li>
-                        <li>**Logo Cache (New):** Added Logo Cache system using a Drop Zone for Dock UI logo display.</li>
-                        <li>**UI Control:** Added visibility controls for Score 2 Card, Swap Card, and Action Button Card.</li>
-                        <li>**New Features:** Added Label 4 and Label 5.</li>
+                        <li>**Logo Cache Update:** Improved drag-and-drop system. Now shows a summary notification instead of individual alerts. Added total logo count display.</li>
+                        <li>**Keybinds:** Added a "Trash/Clear" button to remove specific keybinds.</li>
+                        <li>**Performance:** Optimized Keyboard Shortcut listener priority for better compatibility with laptops and macro pads.</li>
                     </ul>
                 </li>
                 <li>
-                    <h5>Version 2.6</h5>
+                    <h5>Version 2.7 (Major)</h5>
                     <ul>
-                        <li>**Full Reset Button:** Added button to reset time, half, and scores (main/sub).</li>
-                        <li>**Team Color Memory:** Implemented system to remember team colors based on team name.</li>
-                        <li>**Score 2 Controls:** Added dedicated buttons for the secondary score (foul/count), with options to hide/show.</li>
-                        <li>**Custom Key Bindings:** Added customizable keyboard shortcuts panel for global control.</li>
+                        <li>**Source Control:** Replaced Hotkeys with direct Source Visibility Control via OBS-WebSocket.</li>
+                        <li>**Logo Cache:** Added Logo Cache system for Dock UI.</li>
+                        <li>**New Features:** Added Labels 4 & 5, Visibility Controls.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -181,10 +177,14 @@ export const translations = {
         toastCacheSaveFailed: "Failed to save logo to cache!",
         clearCache: "Clear Logo Cache",
         toastCacheCleared: "Logo Cache cleared!",
+        logoCacheSummary: "Import Summary:", // NEW
+        logoCacheSuccess: "Success:", // NEW
+        logoCacheFailed: "Failed:", // NEW
+        logoCacheTotal: "Total Cached:", // NEW
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.7",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.7.1", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -221,12 +221,13 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.7",
+        changelog: "อัปเดตเวอร์ชัน 2.7.1", // Update
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
         keybindsListLabel: "รายการ",
+        clear: "ล้างค่า", // NEW
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
         actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Source/Group/Action ที่ต้องการควบคุมการแสดงผลโดยตรง โปรแกรมจะใช้ Scene ที่กำลัง Live อยู่ปัจจุบัน",
@@ -311,24 +312,19 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.7 (ล่าสุด) - อัปเดต Source Control</h5>
+                    <h5>เวอร์ชัน 2.7.1 (Patch)</h5>
                     <ul>
-                        <li>**ปุ่ม Action:** เปลี่ยนจากระบบ Hotkey (ซึ่งมีปัญหา) มาเป็นการ **ควบคุมการแสดงผล Source (Visibility Control)** โดยตรงผ่าน OBS-WebSocket API (\`SetSceneItemEnabled\`) เพื่อความน่าเชื่อถือ</li>
-                        <li>**Dynamic Scene:** Action Button จะตรวจสอบ **Scene ที่กำลัง Live อยู่ปัจจุบัน** โดยอัตโนมัติเพื่อสั่งควบคุม Group/Source</li>
-                        <li>**การตั้งค่าใหม่:** ตั้งค่าปุ่ม Action ได้แก่ **ชื่อ Source/Group** และ **Action Type** (Toggle/Show/Hide)</li>
-                        <li>**อัปเดตแกนหลัก:** ปรับโครงสร้างข้อมูลทีม A/B เป็น Master Data Object ที่สมบูรณ์ แก้ไขฟังก์ชัน \`swapTeams()\` ให้สมบูรณ์ 100%</li>
-                        <li>**Logo Cache (ใหม่):** เพิ่มระบบ Logo Cache ผ่าน Drop Zone เพื่อแสดงโลโก้บน Dock UI โดยตรง</li>
-                        <li>**ควบคุม UI:** เพิ่ม Checkboxes ในหน้า Settings เพื่อควบคุมการแสดงผลของ Card คะแนนรอง, Card สลับฝั่ง, และ Action Button Card</li>
-                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4 และ Label 5</li>
+                        <li>**Logo Cache:** ปรับปรุงระบบลากวางไฟล์ แจ้งเตือนแบบสรุปผล (Success/Fail) แทนการแจ้งเตือนทีละไฟล์ และเพิ่มการแสดงจำนวนโลโก้ทั้งหมด</li>
+                        <li>**คีย์ลัด:** เพิ่มปุ่ม "ถังขยะ" ในหน้าตั้งค่าคีย์ลัด เพื่อลบค่าปุ่มที่ไม่ต้องการออกได้</li>
+                        <li>**ประสิทธิภาพ:** ย้ายลำดับการทำงานของตัวจับคีย์บอร์ด (Keyboard Listener) ให้ทำงานเป็นอันดับแรก แก้ปัญหา Macro Pad/Laptop กดไม่ติด</li>
                     </ul>
                 </li>
                 <li>
-                    <h5>เวอร์ชัน 2.6</h5>
+                    <h5>เวอร์ชัน 2.7 (Major)</h5>
                     <ul>
-                        <li>**ปุ่มรีเซ็ตทั้งหมด:** เพิ่มปุ่มสำหรับรีเซ็ตเวลา, ครึ่งเวลา, และคะแนน (หลัก/รอง)</li>
-                        <li>**การจดจำสีทีม:** นำระบบบันทึกค่าสีของแต่ละทีมตามชื่อมาใช้</li>
-                        <li>**ควบคุมคะแนนรอง:** เพิ่มปุ่มควบคุมเฉพาะสำหรับคะแนนรอง (ฟาวล์/แต้ม) และสามารถซ่อน/แสดงได้</li>
-                        <li>**คีย์ลัดกำหนดเอง:** เพิ่มแผงตั้งค่าคีย์ลัดที่ผู้ใช้ปรับเปลี่ยนได้สำหรับการควบคุมทั่วไป</li>
+                        <li>**Source Control:** เปลี่ยนระบบ Action Button เป็นการคุม Source โดยตรงผ่าน WebSocket</li>
+                        <li>**Logo Cache:** เพิ่มระบบ Cache โลโก้เพื่อแสดงผลบน Dock UI</li>
+                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4-5, และตัวเลือกซ่อน/แสดง Card</li>
                     </ul>
                 </li>
             </ul>`,
@@ -361,5 +357,9 @@ export const translations = {
         toastCacheSaveFailed: "บันทึกโลโก้ลง Cache ล้มเหลว!",
         clearCache: "ล้าง Logo Cache",
         toastCacheCleared: "ล้าง Logo Cache แล้ว!",
+        logoCacheSummary: "สรุปการนำเข้า:", // NEW
+        logoCacheSuccess: "สำเร็จ:", // NEW
+        logoCacheFailed: "ล้มเหลว:", // NEW
+        logoCacheTotal: "จำนวนโลโก้ใน Cache:", // NEW
     },
 };
