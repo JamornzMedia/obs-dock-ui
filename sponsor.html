@@ -44,11 +44,9 @@
         }
         .rotator-inner { 
             position: relative; display: flex; justify-content: center; align-items: center;
-            /* กรอบภายในจะยืดหยุ่นตามพื้นที่ที่เหลือ */
         }
         .rotator-inner img { 
             position: absolute; opacity: 0; transition: opacity 0.5s; 
-            /* บังคับไม่ให้เกินกรอบ */
             max-width: 100%; max-height: 100%; object-fit: contain;
         }
         .rotator-inner img.active { opacity: 1; position: relative; }
@@ -63,7 +61,7 @@
         /* --- MODE: TICKER --- */
         .mode-ticker { position: absolute; left: 0; width: 100%; white-space: nowrap; overflow: hidden; }
         .ticker-track { display: inline-flex; animation: ticker-anim linear infinite; }
-        .ticker-track img { margin-right: 40px; }
+        /* Margin handled by JS now */
         @keyframes ticker-anim { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         /* --- MODE: 3D --- */
@@ -230,6 +228,9 @@
             <div id="sets-ticker" class="mode-sets hidden">
                 <label data-t="lbl_speed">Speed</label>
                 <input type="range" id="inp-speed" min="5" max="200" oninput="updateConfig('speed', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-ticker-gap" min="0" max="200" oninput="updateConfig('gap', this.value)">
+                
                 <label data-t="lbl_pos_y">Position Y</label>
                 <input type="range" id="inp-ticker-y" min="0" max="1000" oninput="updateConfig('tickerY', this.value)">
             </div>
@@ -348,7 +349,8 @@
             mode: 'grid', lang: 'th',
             grid: { size: 150, radius: 0, shadow: 0.5, gap: 20 },
             rotator: { size: 300, radius: 0, shadow: 0.5, posX: 'right', posY: 'bottom', margin: 50, stayTime: 3, effect: 'fade' },
-            ticker: { size: 100, radius: 0, shadow: 0.5, speed: 30, tickerY: 0 },
+            // ADDED GAP TO TICKER
+            ticker: { size: 100, radius: 0, shadow: 0.5, speed: 30, gap: 50, tickerY: 0 },
             bounce: { size: 150, radius: 50, shadow: 0.5, bounceSpeed: 5 },
             rain: { size: 80, radius: 0, shadow: 0.2, rainSpeed: 5, rainDensity: 3 },
             '3d': { size: 200, radius: 10, shadow: 0.8, speed3d: 2000 }
@@ -446,7 +448,8 @@
                 setVal('inp-size', cfg.size); setVal('inp-radius', cfg.radius); setVal('inp-shadow', cfg.shadow);
                 if(mode === 'grid') setVal('inp-gap', cfg.gap);
                 if(mode === 'rotator') { setVal('inp-pos-x', cfg.posX); setVal('inp-pos-y', cfg.posY); setVal('inp-margin', cfg.margin); setVal('inp-stay', cfg.stayTime); setVal('inp-effect', cfg.effect); }
-                if(mode === 'ticker') { setVal('inp-speed', cfg.speed); setVal('inp-ticker-y', cfg.tickerY); }
+                // TICKER SETVAL
+                if(mode === 'ticker') { setVal('inp-speed', cfg.speed); setVal('inp-ticker-gap', cfg.gap); setVal('inp-ticker-y', cfg.tickerY); }
                 if(mode === 'bounce') { setVal('inp-bounce-speed', cfg.bounceSpeed); }
                 if(mode === 'rain') { setVal('inp-rain-speed', cfg.rainSpeed); setVal('inp-rain-density', cfg.rainDensity); }
                 if(mode === '3d') { setVal('inp-3d-speed', cfg.speed3d); }
@@ -505,7 +508,13 @@
             else if(mode === 'ticker') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-ticker'; wrap.style.top = `${cfg.tickerY}px`;
                 const track = document.createElement('div'); track.className = 'ticker-track';
-                [...images, ...images, ...images, ...images].forEach(src => { const img = document.createElement('img'); img.src = src; img.style = getStyle(); img.style.marginRight = '40px'; track.appendChild(img); });
+                [...images, ...images, ...images, ...images].forEach(src => { 
+                    const img = document.createElement('img'); 
+                    img.src = src; img.style = getStyle(); 
+                    // USE GAP FROM CONFIG
+                    img.style.marginRight = `${cfg.gap}px`; 
+                    track.appendChild(img); 
+                });
                 track.style.animationDuration = `${2000 / cfg.speed}s`; wrap.appendChild(track); container.appendChild(wrap);
             }
             else if(mode === 'bounce') {
@@ -585,7 +594,9 @@
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(e, id) { if(e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
         function generateUrlList() {
-            const list = document.getElementById('url-list'); const baseUrl = window.location.href.split('?')[0]; 
+            const list = document.getElementById('url-list'); 
+            // UPDATED TO GITHUB URL
+            const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui/sponsor.html"; 
             const modes = [ {id:'grid',n:'Grid Mode'}, {id:'rotator',n:'Rotator Mode'}, {id:'ticker',n:'Ticker Mode'}, {id:'bounce',n:'Bounce Mode'}, {id:'rain',n:'Rain Mode'}, {id:'display',n:'Auto (Panel)'} ];
             list.innerHTML = modes.map(m => {
                 let params = m.id === 'display' ? '?mode=display' : `?mode=display&force=${m.id}`;
