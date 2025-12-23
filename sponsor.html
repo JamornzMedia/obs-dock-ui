@@ -61,7 +61,6 @@
         /* --- MODE: TICKER --- */
         .mode-ticker { position: absolute; left: 0; width: 100%; white-space: nowrap; overflow: hidden; }
         .ticker-track { display: inline-flex; animation: ticker-anim linear infinite; }
-        /* Margin handled by JS now */
         @keyframes ticker-anim { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         /* --- MODE: 3D --- */
@@ -80,7 +79,7 @@
         /* ================== CONTROL PANEL UI ================== */
         #control-panel {
             background: var(--bg-color); color: var(--text-main); height: 100vh; 
-            padding: 15px; overflow-y: auto; display: none;
+            padding: 15px; overflow-y: auto; display: none; position: relative;
         }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -147,12 +146,24 @@
         .qr-box img { display: block; width: 120px; height: 120px; }
         .sponsor-link { display: block; color: var(--accent); text-decoration: none; font-size: 12px; margin-top: 5px; word-break: break-all; }
         
+        /* Toast Notification */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 170, 255, 0.95); color: white; padding: 10px 20px;
+            border-radius: 20px; font-size: 14px; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 2000;
+        }
+        #toast.show { opacity: 1; bottom: 40px; }
+
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:#111; color:var(--accent); z-index:9999; display:flex; justify-content:center; align-items:center; font-size:1.2rem; }
     </style>
 </head>
 <body>
 
     <div id="loading">Loading...</div>
+
+    <div id="toast">Copied!</div>
 
     <div id="display-container"></div>
 
@@ -230,7 +241,6 @@
                 <input type="range" id="inp-speed" min="5" max="200" oninput="updateConfig('speed', this.value)">
                 <label data-t="lbl_gap">Gap (Spacing)</label>
                 <input type="range" id="inp-ticker-gap" min="0" max="200" oninput="updateConfig('gap', this.value)">
-                
                 <label data-t="lbl_pos_y">Position Y</label>
                 <input type="range" id="inp-ticker-y" min="0" max="1000" oninput="updateConfig('tickerY', this.value)">
             </div>
@@ -349,7 +359,7 @@
             mode: 'grid', lang: 'th',
             grid: { size: 150, radius: 0, shadow: 0.5, gap: 20 },
             rotator: { size: 300, radius: 0, shadow: 0.5, posX: 'right', posY: 'bottom', margin: 50, stayTime: 3, effect: 'fade' },
-            // ADDED GAP TO TICKER
+            // TICKER with GAP
             ticker: { size: 100, radius: 0, shadow: 0.5, speed: 30, gap: 50, tickerY: 0 },
             bounce: { size: 150, radius: 50, shadow: 0.5, bounceSpeed: 5 },
             rain: { size: 80, radius: 0, shadow: 0.2, rainSpeed: 5, rainDensity: 3 },
@@ -511,7 +521,7 @@
                 [...images, ...images, ...images, ...images].forEach(src => { 
                     const img = document.createElement('img'); 
                     img.src = src; img.style = getStyle(); 
-                    // USE GAP FROM CONFIG
+                    // GAP CONFIG
                     img.style.marginRight = `${cfg.gap}px`; 
                     track.appendChild(img); 
                 });
@@ -591,19 +601,43 @@
             }
         }
 
+        // TOAST LOGIC
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(e, id) { if(e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
+        
         function generateUrlList() {
             const list = document.getElementById('url-list'); 
-            // UPDATED TO GITHUB URL
             const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui/sponsor.html"; 
-            const modes = [ {id:'grid',n:'Grid Mode'}, {id:'rotator',n:'Rotator Mode'}, {id:'ticker',n:'Ticker Mode'}, {id:'bounce',n:'Bounce Mode'}, {id:'rain',n:'Rain Mode'}, {id:'display',n:'Auto (Panel)'} ];
+            const modes = [ 
+                {id:'grid',n:'Grid Mode'}, 
+                {id:'rotator',n:'Rotator Mode'}, 
+                {id:'ticker',n:'Ticker Mode'}, 
+                {id:'bounce',n:'Bounce Mode'}, 
+                {id:'rain',n:'Rain Mode'}, 
+                {id:'3d',n:'3D Cover Flow'}, // ADDED
+                {id:'display',n:'Auto (Panel)'} 
+            ];
             list.innerHTML = modes.map(m => {
                 let params = m.id === 'display' ? '?mode=display' : `?mode=display&force=${m.id}`;
                 return `<div class="url-gen-item"><div><strong style="color:#fff;">${m.n}</strong><br><span class="url-code">${params}</span></div><button class="btn btn-primary" style="width:auto; padding:5px 10px;" onclick="copyToClip('${baseUrl}${params}')">Copy</button></div>`;
             }).join('');
         }
-        function copyToClip(str) { navigator.clipboard.writeText(str).then(() => alert('Copied!')); }
+        
+        function copyToClip(str) { 
+            navigator.clipboard.writeText(str).then(() => {
+                // Show Toast instead of Alert
+                const msg = currentLang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!';
+                showToast(msg);
+            }); 
+        }
+        
         init();
     </script>
 </body>
