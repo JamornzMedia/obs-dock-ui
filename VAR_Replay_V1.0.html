@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>OBS VAR Replay V1.0 - JamornzMedia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* ================= CORE STYLES ================= */
+        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; height: 100vh; }
+        
+        /* --- Screen Mode (หน้าจอแสดงผล) --- */
+        .screen-mode body { background: transparent; }
+        .screen-mode #controls-ui { display: none !important; }
+        .screen-mode #video-wrapper { 
+            width: 100%; height: 100%; 
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .screen-mode video { 
+            width: 100%; height: 100%; object-fit: contain; 
+            transform-origin: center center; transition: transform 0.1s ease-out;
+        }
+
+        /* --- Control Mode (รีโมท) --- */
+        .control-mode { background: #1e1e1e; padding: 10px; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .control-mode #video-wrapper { display: none; } 
+        
+        /* Drop Zone */
+        #drop-zone {
+            border: 2px dashed #555; background: #2b2b2b; padding: 15px;
+            text-align: center; border-radius: 8px; margin-bottom: 10px;
+            cursor: pointer; color: #aaa; font-size: 12px; transition: 0.2s;
+        }
+        #drop-zone.hover { border-color: #00aaff; background: #333; color: #fff; }
+
+        /* Timeline & Markers */
+        .timeline-container { position: relative; height: 35px; margin: 10px 0; user-select: none; }
+        
+        /* Main Seek Bar */
+        input[type=range].time-slider { 
+            width: 100%; margin: 0; position: absolute; z-index: 2; top: 10px; opacity: 0; /* ซ่อนตัวสไลด์จริง แต่ยังกดได้ */
+            height: 20px; cursor: pointer;
+        }
+        
+        /* Custom Track Visual */
+        .track-bg {
+            position: absolute; top: 18px; left: 0; width: 100%; height: 4px; 
+            background: #444; border-radius: 2px; z-index: 1; pointer-events: none;
+        }
+        .track-fill {
+            position: absolute; top: 18px; left: 0; height: 4px; 
+            background: #00aaff; border-radius: 2px; z-index: 1; pointer-events: none; width: 0%;
+        }
+
+        /* Draggable Markers */
+        .marker {
+            position: absolute; top: 5px; bottom: 0; width: 16px; /* พื้นที่กดกว้างขึ้น */
+            transform: translateX(-50%); z-index: 10; cursor: e-resize;
+            display: none; touch-action: none;
+        }
+        /* เส้นสีแดงตรงกลาง */
+        .marker::after {
+            content: ''; position: absolute; left: 50%; top: 10px; bottom: 0; width: 2px;
+            background: #ff3333; transform: translateX(-50%);
+            box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+        }
+        /* หัวหมุดด้านบน */
+        .marker-head {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            background: #ff3333; color: #000; font-size: 9px; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; pointer-events: none; white-space: nowrap;
+        }
+        .marker:hover::after, .marker.dragging::after { background: #ffaaaa; width: 3px; }
+        .marker:hover .marker-head, .marker.dragging .marker-head { background: #ffaaaa; }
+
+        /* Sliders & Buttons */
+        .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 11px; color: #aaa; }
+        .slider-row input { flex: 1; accent-color: #00aaff; }
+        
+        datalist { display: flex; justify-content: space-between; width: 100%; font-size: 10px; color: #666; }
+        option { padding: 0; }
+
+        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+        button {
+            padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
+            background: #444; color: white; font-size: 11px; transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.2); }
+        .btn-var { grid-column: span 4; background: #ffca28; color: black; font-size: 14px; padding: 12px; border: 1px solid #c79a00; }
+        .btn-play { background: #2e7d32; }
+        .btn-pause { background: #c62828; }
+        .active-btn { background: #00aaff; color: white; }
+        
+        /* Zoom Controls */
+        .zoom-controls { background: #2b2b2b; padding: 10px; border-radius: 5px; margin-top: 5px; border: 1px solid #333; }
+        #loop-status { color: #cc3333; font-weight: bold; font-size: 11px; display: none; text-align: center; margin-bottom: 5px; text-shadow: 0 0 5px rgba(204,51,51,0.5);}
+
+        /* ================== MODALS CSS ================== */
+        .menu-bar { margin-top: auto; padding-top: 10px; border-top: 1px solid #333; display: flex; gap: 5px;}
+        .btn-outline { background: transparent; border: 1px solid #555; color: #ccc; }
+        .btn-outline:hover { background: #333; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: #252525; width: 90%; max-width: 400px;
+            border-radius: 10px; padding: 20px; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #444; color: #ddd;
+            transform: translateY(20px); transition: 0.3s; text-align: center;
+        }
+        .modal-overlay.open .modal { transform: translateY(0); }
+        .modal-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
+        
+        .sponsor-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+        .sponsor-item { background: #333; padding: 10px; border-radius: 8px; font-size: 12px; }
+        .qr-box img { width: 100px; height: 100px; border-radius: 4px; display: block; margin: 5px auto; }
+        .sponsor-link { display: block; color: #00aaff; text-decoration: none; margin-top: 5px; font-size: 11px; }
+        .url-box { background: #111; padding: 10px; border: 1px solid #00aaff; color: #00aaff; font-family: monospace; word-break: break-all; margin: 10px 0; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .url-box:hover { background: #002233; }
+
+    </style>
+</head>
+<body>
+
+    <div id="video-wrapper">
+        <video id="mainVideo" muted playsinline></video>
+    </div>
+
+    <div id="controls-ui">
+        <div id="drop-zone">
+            <div style="font-size:20px;">📂</div>
+            ลากไฟล์วิดีโอมาวางที่นี่ (Auto Loop)<br>
+            <span style="font-size:10px; color:#666;">รองรับ MP4, MKV, MOV (H.264/HEVC)</span>
+        </div>
+        
+        <button class="btn-var" onclick="varAction()">⚽ VAR REPLAY (ย้อน 5 วิ + สโลว์)</button>
+        
+        <div id="loop-status">⚡ LOOP ACTIVE ⚡</div>
+
+        <div class="timeline-container" id="timelineBox">
+            <div class="track-bg"></div>
+            <div class="track-fill" id="trackFill"></div>
+
+            <div id="markA" class="marker" onmousedown="startDrag('A', event)">
+                <div class="marker-head">A</div>
+            </div>
+            <div id="markB" class="marker" onmousedown="startDrag('B', event)">
+                <div class="marker-head">B</div>
+            </div>
+            
+            <input type="range" class="time-slider" id="seekBar" value="0" step="0.1" oninput="userScrub()" onchange="scrubEnd()">
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:-5px; margin-bottom:10px;">
+            <span id="currTime">0:00</span>
+            <span id="totalTime">0:00</span>
+        </div>
+
+        <div class="btn-grid">
+            <button class="btn-play" onclick="sendCmd('play')">▶ PLAY</button>
+            <button class="btn-pause" onclick="sendCmd('pause')">⏸ PAUSE</button>
+            <button id="btnSetA" onclick="sendCmd('setA')">SET A</button>
+            <button id="btnSetB" onclick="sendCmd('setB')">SET B</button>
+        </div>
+        <button onclick="sendCmd('clearLoop')" style="width:100%; background:#422; margin-bottom:10px; color:#ffaaaa;">❌ CLEAR LOOP</button>
+
+        <div class="slider-row" style="flex-wrap:wrap;">
+            <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span>SPEED: <span id="speedVal" style="color:#00aaff; font-weight:bold;">1.0x</span></span>
+            </div>
+            <input type="range" id="speedRange" min="0.025" max="2.0" step="0.025" value="1.0" list="speed-markers" oninput="updateSpeed(this.value)">
+            <datalist id="speed-markers">
+                <option value="0.025" label="0.025"></option>
+                <option value="0.5" label="0.5"></option>
+                <option value="1.0" label="1.0"></option>
+                <option value="1.5" label="1.5"></option>
+                <option value="2.0" label="2.0"></option>
+            </datalist>
+        </div>
+
+        <div class="zoom-controls">
+            <div style="font-size:11px; color:#00aaff; margin-bottom:5px; font-weight:bold;">🔍 ZOOM & POSITION</div>
+            <div class="slider-row">
+                <span>ZOOM:</span>
+                <input type="range" id="zoomRange" min="1.0" max="5.0" step="0.1" value="1.0" oninput="updateTransform()">
+                <span id="zoomVal" style="width:30px; text-align:right;">1.0x</span>
+            </div>
+            <div class="slider-row">
+                <span>X (↔):</span> <input type="range" id="panX" min="-50" max="50" step="1" value="0" oninput="updateTransform()">
+            </div>
+            <div class="slider-row">
+                <span>Y (↕):</span> <input type="range" id="panY" min="-50" max="50" step="1" value="0" oninput="updateTransform()">
+            </div>
+            <button onclick="resetZoom()" style="width:100%; background:#333; margin-top:5px;">RESET ZOOM</button>
+        </div>
+
+        <div class="menu-bar">
+            <button class="btn btn-outline" style="flex:1;" onclick="openModal('modal-help')">❓ Get Link</button>
+            <button class="btn btn-outline" style="flex:1; color:#ffca28; border-color:#ffca28;" onclick="openModal('modal-sponsor')">🎁 Sponsor</button>
+        </div>
+    </div>
+
+    <div id="modal-help" class="modal-overlay" onclick="closeModal(event, 'modal-help')">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal(null, 'modal-help')">&times;</button>
+            <h2 style="color:#00aaff;">Graphic Link (Screen)</h2>
+            <p style="font-size:12px; color:#ccc;">Copy ลิ้งค์ด้านล่างไปใส่ใน OBS Browser Source</p>
+            
+            <div class="url-box" onclick="copyLink(this)">
+                https://jamornzmedia.github.io/obs-dock-ui/VAR_Replay_V1.0.html?mode=screen
+            </div>
+            <div id="copy-msg" style="font-size:11px; color:#44aa44; opacity:0; transition:0.3s;">Copied!</div>
+
+            <p style="font-size:11px; color:#666; margin-top:20px;">
+                *สำหรับหน้าควบคุม (Dock UI) ให้ใช้ลิ้งค์นี้แทนใน Custom Dock:<br>
+                <code>.../VAR_Replay_V1.0.html?mode=control</code>
+            </p>
+        </div>
+    </div>
+
+    <div id="modal-sponsor" class="modal-overlay" onclick="closeModal(event, 'modal-sponsor')">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal(null, 'modal-sponsor')">&times;</button>
+            <h2 style="color:#ffca28;">Support Developer</h2>
+            <p style="font-size:12px; color:#aaa;">ร่วมสนับสนุน JamornzMedia เพื่อพัฒนาเครื่องมือฟรีต่อไป</p>
+            
+            <div class="sponsor-grid">
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">Thai Bank / PromptPay</span>
+                    <div class="qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz" alt="QR"></div>
+                    <a href="https://easydonate.app/Jamornz" target="_blank" class="sponsor-link">easydonate.app/Jamornz</a>
+                </div>
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">Shopee Affiliate</span>
+                    <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank" class="sponsor-link" style="font-size:14px; margin-top:10px;">🛒 Shopee Link Support</a>
+                </div>
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">International (Ko-fi)</span>
+                    <a href="https://ko-fi.com/jamornz" target="_blank" class="sponsor-link" style="font-size:14px; margin-top:10px;">☕ ko-fi.com/jamornz</a>
+                </div>
+            </div>
+            
+            <div style="margin-top:20px; font-size:10px; color:#666;">
+                Developed by <b>JamornzMedia</b><br>VAR Replay Tool V1.0
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var sc_project = 13147874; 
+        var sc_invisible = 1; 
+        var sc_security = "550e33c0"; 
+        var scJsHost = "https://";
+        document.write("<sc"+"ript src='" + scJsHost + "statcounter.com/counter/counter.js'></"+"script>");
+    </script>
+
+    <script>
+        const channel = new BroadcastChannel('jamorn_var_v1');
+        const video = document.getElementById('mainVideo');
+        const dropZone = document.getElementById('drop-zone');
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode'); 
+
+        let isScrubbing = false;
+        let loopA = null, loopB = null;
+
+        // Init Mode
+        if (mode === 'screen') {
+            document.body.classList.add('screen-mode');
+            initScreen();
+        } else {
+            document.body.classList.add('control-mode');
+            initControl();
+        }
+
+        // --- Modal Logic ---
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(e, id) { if(e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
+        function copyLink(el) {
+            navigator.clipboard.writeText(el.innerText.trim());
+            document.getElementById('copy-msg').style.opacity = '1';
+            setTimeout(() => document.getElementById('copy-msg').style.opacity = '0', 2000);
+        }
+
+        // ==========================================
+        // 🎮 CONTROL LOGIC (DOCK)
+        // ==========================================
+        let isDragging = false;
+        let dragTarget = null; // 'A' or 'B'
+
+        function initControl() {
+            // Drag Drop
+            dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('hover'); };
+            dropZone.ondragleave = e => { e.preventDefault(); dropZone.classList.remove('hover'); };
+            dropZone.ondrop = e => {
+                e.preventDefault(); dropZone.classList.remove('hover');
+                if(e.dataTransfer.files[0]) {
+                    const f = e.dataTransfer.files[0];
+                    dropZone.innerHTML = `<span style="color:#00aaff">Loading: ${f.name}</span>`;
+                    const r = new FileReader();
+                    r.onload = evt => {
+                        let mime = f.type || 'video/mp4';
+                        if(f.name.toLowerCase().endsWith('.mkv')) mime = 'video/webm';
+                        channel.postMessage({ type: 'file', data: evt.target.result, mime: mime });
+                        dropZone.innerHTML = `<span style="color:#44aa44">Playing Loop: ${f.name}</span>`;
+                        resetZoomUI();
+                        // Reset Speed
+                        document.getElementById('speedRange').value = 1.0;
+                        document.getElementById('speedVal').innerText = "1.0x";
+                    };
+                    r.readAsArrayBuffer(f);
+                }
+            };
+
+            // Status Update
+            channel.onmessage = e => {
+                const msg = e.data;
+                if(msg.type === 'status' && !isScrubbing) {
+                    if(!isDragging) { // ไม่ update ถ้าลาก marker อยู่
+                        document.getElementById('seekBar').value = msg.pct;
+                        updateMarker('markA', msg.posA);
+                        updateMarker('markB', msg.posB);
+                    }
+                    // Update Fill Line
+                    document.getElementById('trackFill').style.width = msg.pct + "%";
+
+                    document.getElementById('currTime').innerText = msg.curr;
+                    document.getElementById('totalTime').innerText = msg.total;
+                    document.getElementById('btnSetA').className = msg.hasA ? 'active-btn' : '';
+                    document.getElementById('btnSetB').className = msg.hasB ? 'active-btn' : '';
+                    document.getElementById('loop-status').style.display = (msg.hasA && msg.hasB) ? 'block' : 'none';
+                }
+            };
+
+            // Global Mouse Events for Dragging Markers
+            window.addEventListener('mousemove', onDragMove);
+            window.addEventListener('mouseup', onDragEnd);
+        }
+
+        // --- Draggable Marker Logic ---
+        function startDrag(target, e) {
+            e.preventDefault();
+            isDragging = true;
+            dragTarget = target;
+            document.getElementById('mark' + target).classList.add('dragging');
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            const box = document.getElementById('timelineBox').getBoundingClientRect();
+            let x = e.clientX - box.left;
+            let pct = (x / box.width) * 100;
+            // Clamp
+            if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+
+            // Move visual only
+            updateMarker('mark' + dragTarget, pct);
+            
+            // Send CMD realtime? or wait? -> Let's update setA/B realtime
+            // But we need total duration to calculate time?
+            // Simplified: Just send % to act 'dragA' or 'dragB'
+            sendCmd(dragTarget === 'A' ? 'dragA' : 'dragB', pct);
+        }
+
+        function onDragEnd(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            document.getElementById('mark' + dragTarget).classList.remove('dragging');
+            dragTarget = null;
+        }
+
+        function sendCmd(act, val=null) { channel.postMessage({ type: 'cmd', act, val }); }
+        
+        function varAction() {
+            sendCmd('var');
+            document.getElementById('speedRange').value = 0.5;
+            document.getElementById('speedVal').innerText = "0.5x";
+        }
+
+        function updateSpeed(val) {
+            document.getElementById('speedVal').innerText = val + "x";
+            sendCmd('speed', val);
+        }
+
+        function userScrub() { isScrubbing = true; }
+        function scrubEnd() {
+            const pct = document.getElementById('seekBar').value;
+            sendCmd('seekPct', pct);
+            setTimeout(() => isScrubbing = false, 200);
+        }
+
+        function updateMarker(id, percent) {
+            const el = document.getElementById(id);
+            if(percent !== null) {
+                el.style.display = 'block';
+                el.style.left = percent + '%';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        function updateTransform() {
+            const z = document.getElementById('zoomRange').value;
+            const x = document.getElementById('panX').value;
+            const y = document.getElementById('panY').value;
+            document.getElementById('zoomVal').innerText = z + "x";
+            sendCmd('transform', { z, x, y });
+        }
+        function resetZoom() { resetZoomUI(); sendCmd('transform', { z:1, x:0, y:0 }); }
+        function resetZoomUI() {
+            document.getElementById('zoomRange').value = 1.0;
+            document.getElementById('panX').value = 0;
+            document.getElementById('panY').value = 0;
+            document.getElementById('zoomVal').innerText = "1.0x";
+        }
+
+        // ==========================================
+        // 📺 SCREEN LOGIC (OBS)
+        // ==========================================
+        function initScreen() {
+            video.muted = true;
+            channel.onmessage = e => {
+                const msg = e.data;
+                if(msg.type === 'file') {
+                    const blob = new Blob([msg.data], { type: msg.mime });
+                    video.src = URL.createObjectURL(blob);
+                    loopA = null; loopB = null; resetVideoTransform();
+                    video.loop = true; // Auto Loop Default
+                    video.playbackRate = 1.0; video.play();
+                }
+                if(msg.type === 'cmd') {
+                    switch(msg.act) {
+                        case 'play': video.play(); break;
+                        case 'pause': video.pause(); break;
+                        case 'speed': video.playbackRate = msg.val; break;
+                        case 'seekPct': if(video.duration) video.currentTime = (msg.val/100)*video.duration; break;
+                        case 'setA': loopA = video.currentTime; break;
+                        case 'setB': loopB = video.currentTime; if(loopB<loopA){let t=loopA;loopA=loopB;loopB=t;} if(loopA) video.currentTime=loopA; break;
+                        
+                        // Drag Logic
+                        case 'dragA': if(video.duration) loopA = (msg.val/100)*video.duration; break;
+                        case 'dragB': if(video.duration) loopB = (msg.val/100)*video.duration; break;
+
+                        case 'clearLoop': loopA = null; loopB = null; break;
+                        case 'var': if(video.duration){ video.currentTime=Math.max(0, video.currentTime-5); video.playbackRate=0.5; video.play(); } break;
+                        case 'transform': applyTransform(msg.val); break;
+                    }
+                }
+            };
+
+            video.ontimeupdate = () => {
+                if(!video.duration) return;
+                // A-B Loop Logic
+                if(loopA!=null && loopB!=null) {
+                    // Logic fix: ถ้า B < A ให้สลับ (กันเหนียว)
+                    let start = Math.min(loopA, loopB);
+                    let end = Math.max(loopA, loopB);
+                    if(video.currentTime >= end || video.currentTime < start) { 
+                         video.currentTime = start; 
+                         if(video.paused) video.play(); 
+                    }
+                }
+                
+                const pct = (video.currentTime / video.duration) * 100;
+                channel.postMessage({
+                    type: 'status', pct: pct,
+                    curr: fmt(video.currentTime), total: fmt(video.duration),
+                    hasA: loopA !== null, hasB: loopB !== null,
+                    posA: loopA ? (loopA/video.duration)*100 : null, 
+                    posB: loopB ? (loopB/video.duration)*100 : null
+                });
+            };
+        }
+
+        function applyTransform(t) { video.style.transform = `scale(${t.z}) translate(${t.x}%, ${t.y}%)`; }
+        function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
+        function fmt(s) { let m=Math.floor(s/60), sc=Math.floor(s%60); return m+":"+(sc<10?"0":"")+sc; }
+
+    </script>
+</body>
+</html>
