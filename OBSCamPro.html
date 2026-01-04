@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OBS Cam Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #000;
+            color: white;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        /* Focus Ring Animation */
+        .focus-ring {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #00ff00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .focus-ring.active {
+            opacity: 1;
+            animation: pulse-ring 0.5s ease-out;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        /* Slider Custom */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 5px black;
+        }
+
+        /* UI Layers */
+        .layer-video {
+            z-index: 0;
+        }
+
+        .layer-ui {
+            z-index: 10;
+        }
+
+        .layer-modal {
+            z-index: 20;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Setup Screen (ก่อนเริ่ม) -->
+    <div id="setup-screen" class="absolute inset-0 bg-gray-900 flex flex-col p-6 layer-modal overflow-y-auto">
+        <h1 class="text-2xl font-bold text-center mb-6 text-blue-400"><i class="fas fa-video"></i> OBS Cam Pro</h1>
+
+        <div class="space-y-4">
+            <!-- Room ID -->
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <label class="text-xs text-gray-400">TARGET ROOM ID</label>
+                <input type="tel" id="room-input"
+                    class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-center text-2xl font-mono tracking-widest mt-1 focus:border-blue-500 outline-none"
+                    placeholder="######" maxlength="6">
+            </div>
+
+            <!-- Settings -->
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 space-y-3">
+                <label class="text-xs text-gray-400 font-bold uppercase">Stream Settings</label>
+
+                <div class="flex justify-between items-center">
+                    <span>Resolution</span>
+                    <select id="setting-res" class="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm">
+                        <option value="720">HD (720p)</option>
+                        <option value="1080">FHD (1080p)</option>
+                        <option value="480">SD (480p)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span>Framerate</span>
+                    <select id="setting-fps" class="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm">
+                        <option value="30">30 FPS</option>
+                        <option value="60">60 FPS (High Bandwidth)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span>Stabilization</span>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-stab" class="sr-only peer" checked>
+                        <div
+                            class="relative w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600">
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span>Camera</span>
+                    <select id="setting-cam" class="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm">
+                        <option value="environment">Back (Main)</option>
+                        <option value="user">Front (Selfie)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="startApp()"
+                class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform mt-4">
+                CONNECT & START
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Camera UI -->
+    <div id="camera-ui" class="hidden absolute inset-0 bg-black">
+        <!-- Video Preview -->
+        <video id="local-video" class="absolute inset-0 w-full h-full object-cover layer-video" autoplay playsinline
+            muted></video>
+
+        <!-- Touch Area for Focus -->
+        <div id="touch-layer" class="absolute inset-0 z-0" onclick="handleTapToFocus(event)"></div>
+        <div id="focus-indicator" class="focus-ring"></div>
+
+        <!-- Top Bar: Stats -->
+        <div
+            class="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-start layer-ui">
+            <div class="text-xs font-mono space-y-1">
+                <div class="flex items-center text-green-400">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div> <span
+                        id="stat-kbps">0</span> kbps
+                </div>
+                <div class="text-gray-400"><span id="stat-res">--x--</span> @ <span id="stat-fps">--</span>fps</div>
+            </div>
+            <button onclick="stopApp()"
+                class="bg-red-600/80 px-3 py-1 rounded text-xs font-bold border border-red-500">STOP</button>
+        </div>
+
+        <!-- Controls (Bottom) -->
+        <div
+            class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent layer-ui space-y-4">
+
+            <!-- Exposure Slider (ถ้ามีรองรับ) -->
+            <div id="exposure-control" class="hidden">
+                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                    <i class="fas fa-sun"></i> <span>Exposure</span> <i class="fas fa-lightbulb"></i>
+                </div>
+                <input type="range" id="exposure-slider" min="-2" max="2" step="0.5" value="0" class="w-full"
+                    oninput="adjustExposure(this.value)">
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <!-- Toggle Torch -->
+                <button onclick="toggleTorch()" id="btn-torch"
+                    class="bg-gray-800/60 p-3 rounded-full border border-gray-600 active:bg-yellow-500/50">
+                    <i class="fas fa-bolt text-gray-300"></i>
+                </button>
+
+                <!-- Re-Focus -->
+                <button onclick="triggerAutoFocus()"
+                    class="bg-gray-800/60 p-3 rounded-full border border-gray-600 active:bg-blue-500/50">
+                    <i class="fas fa-crosshairs text-gray-300"></i>
+                </button>
+
+                <!-- Info Toggle -->
+                <button onclick="toggleInfo()"
+                    class="bg-gray-800/60 p-3 rounded-full border border-gray-600 active:bg-gray-500/50">
+                    <i class="fas fa-info text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast Msg -->
+        <div id="toast"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 px-4 py-2 rounded text-sm hidden">
+            Msg</div>
+    </div>
+
+    <script>
+        // --- Core Variables ---
+        let peer;
+        let myStream;
+        let videoTrack;
+        let statsInterval;
+        let lastBytesSent = 0;
+        let lastTimestamp = 0;
+
+        // --- Setup & Connection ---
+        async function startApp() {
+            const roomId = document.getElementById('room-input').value;
+            if (roomId.length !== 6) return showToast('Invalid Room ID');
+
+            // Get Settings
+            const res = parseInt(document.getElementById('setting-res').value);
+            const fps = parseInt(document.getElementById('setting-fps').value);
+            const stabilization = document.getElementById('setting-stab').checked;
+            const facingMode = document.getElementById('setting-cam').value;
+
+            // Constraints
+            const constraints = {
+                audio: true,
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: res },
+                    height: { ideal: (res * 9 / 16) }, // 16:9 aspect
+                    frameRate: { ideal: fps },
+                    advanced: stabilization ? [{ imageStabilization: true }] : []
+                }
+            };
+
+            try {
+                showToast('Starting Camera...');
+                myStream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoTrack = myStream.getVideoTracks()[0];
+
+                // Check Capabilities for UI
+                checkCapabilities(videoTrack);
+
+                // UI Switch
+                document.getElementById('local-video').srcObject = myStream;
+                document.getElementById('setup-screen').classList.add('hidden');
+                document.getElementById('camera-ui').classList.remove('hidden');
+
+                // Start Peer P2P
+                initPeerConnection(roomId);
+
+            } catch (err) {
+                console.error(err);
+                alert("Camera Error: " + err.message);
+            }
+        }
+
+        function initPeerConnection(roomId) {
+            peer = new Peer(); // Sender ID Auto
+
+            peer.on('open', (id) => {
+                showToast('Connecting to PC...');
+                const targetId = 'obs-receiver-' + roomId;
+                const call = peer.call(targetId, myStream);
+
+                call.on('open', () => {
+                    showToast('Connected!');
+                });
+
+                // Start monitoring upload stats
+                startStats(call.peerConnection);
+
+                call.on('close', stopApp);
+                call.on('error', (e) => {
+                    showToast('Connection Error');
+                    stopApp();
+                });
+            });
+
+            peer.on('error', (err) => {
+                alert('Connection Failed: ' + err.type);
+                stopApp();
+            });
+        }
+
+        function stopApp() {
+            if (myStream) myStream.getTracks().forEach(t => t.stop());
+            if (peer) peer.destroy();
+            clearInterval(statsInterval);
+
+            document.getElementById('camera-ui').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            location.reload(); // Force refresh to clear states
+        }
+
+        // --- Camera Controls Logic ---
+        function checkCapabilities(track) {
+            const caps = track.getCapabilities();
+
+            // Exposure Slider
+            if (caps.exposureCompensation) {
+                const slider = document.getElementById('exposure-slider');
+                const div = document.getElementById('exposure-control');
+                slider.min = caps.exposureCompensation.min;
+                slider.max = caps.exposureCompensation.max;
+                slider.step = caps.exposureCompensation.step;
+                div.classList.remove('hidden');
+            }
+
+            // Torch Support
+            if (!caps.torch) {
+                document.getElementById('btn-torch').classList.add('opacity-30', 'pointer-events-none');
+            }
+        }
+
+        async function adjustExposure(value) {
+            if (!videoTrack) return;
+            try {
+                await videoTrack.applyConstraints({
+                    advanced: [{ exposureMode: 'continuous', exposureCompensation: parseFloat(value) }]
+                });
+            } catch (e) { console.log('Exposure fail', e); }
+        }
+
+        async function toggleTorch() {
+            if (!videoTrack) return;
+            const current = videoTrack.getSettings().torch || false;
+            try {
+                await videoTrack.applyConstraints({
+                    advanced: [{ torch: !current }]
+                });
+                document.getElementById('btn-torch').classList.toggle('text-yellow-400');
+            } catch (e) { showToast('Torch not supported'); }
+        }
+
+        async function handleTapToFocus(e) {
+            // Only works if focusMode is supported manually
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Show UI Ring
+            const ring = document.getElementById('focus-indicator');
+            ring.style.left = x + 'px';
+            ring.style.top = y + 'px';
+            ring.classList.add('active');
+            setTimeout(() => ring.classList.remove('active'), 1000);
+
+            // Trigger Focus (Android Chrome mostly)
+            if (!videoTrack) return;
+
+            try {
+                // Not standard yet, implies 'focusMode: manual' logic or similar
+                // Many browsers handle tap-to-focus natively if focusMode is continuous
+                // Here we force continuous trigger
+                await videoTrack.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                });
+            } catch (e) { }
+        }
+
+        function triggerAutoFocus() {
+            if (!videoTrack) return;
+            videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] })
+                .then(() => showToast('Auto Focus Triggered'))
+                .catch(() => showToast('Focus not supported'));
+        }
+
+        // --- Stats ---
+        function startStats(pc) {
+            statsInterval = setInterval(async () => {
+                if (!pc) return;
+                const stats = await pc.getStats();
+                let bitrate = 0;
+
+                stats.forEach(report => {
+                    if (report.type === 'outbound-rtp' && report.kind === 'video') {
+                        const now = report.timestamp;
+                        const bytes = report.bytesSent;
+                        if (lastTimestamp) {
+                            bitrate = Math.round(((bytes - lastBytesSent) * 8) / (now - lastTimestamp));
+                        }
+                        lastBytesSent = bytes;
+                        lastTimestamp = now;
+                    }
+                    if (report.type === 'track' && report.kind === 'video') {
+                        document.getElementById('stat-res').innerText = `${report.frameWidth}x${report.frameHeight}`;
+                    }
+                });
+
+                document.getElementById('stat-kbps').innerText = bitrate;
+                // Get FPS from local track settings for display
+                const set = videoTrack.getSettings();
+                document.getElementById('stat-fps').innerText = set.frameRate ? Math.round(set.frameRate) : '--';
+
+            }, 1000);
+        }
+
+        // --- Utils ---
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2000);
+        }
+
+        function toggleInfo() {
+            // Optional: Hide/Show overlays
+        }
+
+    </script>
+</body>
+
+</html>
