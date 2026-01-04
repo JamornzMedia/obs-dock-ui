@@ -60,7 +60,6 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
-        /* Video Container Styling */
         #mode-screen {
             display: flex;
             align-items: center;
@@ -76,7 +75,6 @@
             transition: transform 0.3s;
         }
 
-        /* Orientation Classes */
         .force-landscape {
             transform: rotate(0deg);
             width: 100% !important;
@@ -218,7 +216,18 @@
         const isControlMode = mode === 'control';
         const bus = new BroadcastChannel('obs_wireless_channel');
 
-        const peerConfig = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
+        // 🔥 UPDATE: เพิ่ม STUN Server ให้ครบ 5 ตัว
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ]
+            }
+        };
 
         let roomId;
         if (isControlMode) {
@@ -252,7 +261,6 @@
                     video.play().catch(e => console.log("Autoplay blocked"));
                     bus.postMessage({ type: 'status', connected: true });
 
-                    // Stats Loop
                     setInterval(async () => {
                         if (call.peerConnection) {
                             try {
@@ -278,12 +286,11 @@
                 call.on('close', () => { bus.postMessage({ type: 'status', connected: false }); location.reload(); });
             });
 
-            // Listen for Control commands
             bus.onmessage = (event) => {
                 const data = event.data;
                 const v = document.getElementById('remote-video');
                 if (data.type === 'orient') {
-                    v.className = ''; // reset
+                    v.className = '';
                     if (data.val === 'landscape') v.classList.add('force-landscape');
                     if (data.val === 'portrait') v.classList.add('force-portrait');
                 }

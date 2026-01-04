@@ -10,7 +10,6 @@
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22black%22/><text x=%2250%25%22 y=%2240%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%22100%22>OBSCam</text><rect x=%22100%22 y=%22280%22 width=%22312%22 height=%22120%22 fill=%22%23cc0000%22 rx=%2220%22/><text x=%2250%25%22 y=%2267%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2280%22>Phone</text></svg>">
     <link rel="apple-touch-icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22black%22/><text x=%2250%25%22 y=%2240%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%22100%22>OBSCam</text><rect x=%22100%22 y=%22280%22 width=%22312%22 height=%22120%22 fill=%22%23cc0000%22 rx=%2220%22/><text x=%2250%25%22 y=%2267%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2280%22>Phone</text></svg>">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -66,7 +65,6 @@
             border-right: none;
         }
 
-        /* Right Control Bar */
         .right-bar {
             position: absolute;
             top: 0;
@@ -209,7 +207,19 @@
 
     <script>
         let peer, myStream, videoTrack, qrStream, activeCall, customBitrateVal = 2500;
-        const peerConfig = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
+
+        // 🔥 UPDATE: STUN Server ครบ 5 ตัว
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ]
+            }
+        };
 
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -261,7 +271,6 @@
             localStorage.setItem('obs_last_room', rid);
             saveSettings();
 
-            // Sync live dropdown
             document.getElementById('live-bitrate').value = (bitrateLimit / 1000).toString();
 
             const constraints = {
