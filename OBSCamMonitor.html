@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Wireless System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: transparent;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .control-panel {
+            background: #111;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        #remote-video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="mode-screen" class="hidden">
+        <video id="remote-video" autoplay playsinline muted></video>
+    </div>
+
+    <div id="mode-control" class="hidden control-panel p-4">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+            <h1 class="text-blue-400 font-bold text-sm uppercase tracking-tighter">
+                <i class="fas fa-tower-broadcast"></i> System Control
+            </h1>
+            <div id="connection-dot" class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+        </div>
+
+        <div class="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3 text-center mb-4">
+            <span class="text-[10px] text-blue-300 block uppercase tracking-widest mb-1">Room ID สำหรับมือถือ</span>
+            <div id="display-room-id" class="text-3xl font-mono font-bold text-white tracking-widest">------</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-4">
+            <div class="stat-card">
+                <span class="text-[9px] text-gray-400 uppercase">Bitrate</span>
+                <div id="val-bitrate" class="text-base font-bold text-green-400">0 kbps</div>
+            </div>
+            <div class="stat-card">
+                <span class="text-[9px] text-gray-400 uppercase">Resolution</span>
+                <div id="val-res" class="text-base font-bold">--x--</div>
+            </div>
+            <div class="stat-card">
+                <span class="text-[9px] text-gray-400 uppercase">FPS</span>
+                <div id="val-fps" class="text-base font-bold">--</div>
+            </div>
+            <div class="stat-card">
+                <span class="text-[9px] text-gray-400 uppercase">Packet Loss</span>
+                <div id="val-loss" class="text-base font-bold">0%</div>
+            </div>
+        </div>
+
+        <div class="mt-auto space-y-2">
+            <button onclick="copyScreenLink()"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30">
+                <i class="fas fa-link mr-2"></i> GET SCREEN LINK (FOR OBS)
+            </button>
+            <button onclick="location.reload()"
+                class="w-full bg-red-600/10 hover:bg-red-600 border border-red-600/50 text-red-500 hover:text-white py-2 rounded-lg text-[10px] font-bold transition">
+                <i class="fas fa-sync mr-1"></i> RESTART SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const isControlMode = params.get('mode') === 'control';
+        const isScreenMode = params.get('mode') === 'screen';
+
+        // จัดการ Room ID
+        let roomId = window.location.hash.substring(1);
+        if (!roomId) {
+            roomId = Math.floor(100000 + Math.random() * 900000).toString();
+            window.location.hash = roomId;
+        }
+
+        if (isControlMode) {
+            document.getElementById('mode-control').classList.remove('hidden');
+            document.getElementById('display-room-id').innerText = roomId;
+        } else if (isScreenMode) {
+            document.getElementById('mode-screen').classList.remove('hidden');
+        }
+
+        // เริ่มต้น Peer Connection
+        let peer = new Peer('obs-receiver-' + roomId);
+        let lastBytes = 0, lastTime = 0;
+
+        peer.on('call', (call) => {
+            call.answer();
+            call.on('stream', (stream) => {
+                if (isScreenMode) {
+                    const video = document.getElementById('remote-video');
+                    video.srcObject = stream;
+                    video.play();
+                }
+                if (isControlMode) {
+                    document.getElementById('connection-dot').classList.replace('bg-red-500', 'bg-green-500');
+                    startStats(call.peerConnection);
+                }
+            });
+            call.on('close', () => {
+                if (isControlMode) location.reload();
+            });
+        });
+
+        function startStats(pc) {
+            setInterval(async () => {
+                const stats = await pc.getStats();
+                stats.forEach(report => {
+                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                        const now = report.timestamp;
+                        const bytes = report.bytesReceived;
+                        if (lastTime) {
+                            const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
+                            document.getElementById('val-bitrate').innerText = bitrate + " kbps";
+                        }
+                        lastBytes = bytes; lastTime = now;
+                        if (report.packetsLost !== undefined) {
+                            const total = report.packetsLost + report.packetsReceived;
+                            document.getElementById('val-loss').innerText = ((report.packetsLost / total) * 100 || 0).toFixed(1) + "%";
+                        }
+                    }
+                    if (report.type === 'track' && report.kind === 'video' && report.frameWidth) {
+                        document.getElementById('val-res').innerText = `${report.frameWidth}x${report.frameHeight}`;
+                        document.getElementById('val-fps').innerText = Math.round(report.framesPerSecond || 0);
+                    }
+                });
+            }, 1000);
+        }
+
+        function copyScreenLink() {
+            const currentPath = window.location.origin + window.location.pathname;
+            const screenUrl = `${currentPath}?mode=screen#${roomId}`;
+            navigator.clipboard.writeText(screenUrl);
+            alert("คัดลอกลิ้งค์ Screen (Browser Source) เรียบร้อยแล้ว!");
+        }
+    </script>
+</body>
+
+</html>
