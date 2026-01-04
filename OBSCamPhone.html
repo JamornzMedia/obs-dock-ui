@@ -66,7 +66,7 @@
             border-right: none;
         }
 
-        /* New Right Control Bar */
+        /* Right Control Bar */
         .right-bar {
             position: absolute;
             top: 0;
@@ -125,6 +125,7 @@
                         class="w-full h-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
                         onchange="checkCustomBitrate(this)">
                         <option value="2500">2.5 Mbps (Std)</option>
+                        <option value="3500">3.5 Mbps</option>
                         <option value="4000">4.0 Mbps (High)</option>
                         <option value="5000">5.0 Mbps</option>
                         <option value="6000">6.0 Mbps</option>
@@ -172,10 +173,11 @@
                 <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
             </div>
 
-            <div class="absolute top-4 right-20 pointer-events-auto">
+            <div class="absolute top-4 right-4 pointer-events-auto">
                 <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
                     class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none">
                     <option value="2500">2.5M</option>
+                    <option value="3500">3.5M</option>
                     <option value="4000">4.0M</option>
                     <option value="5000">5.0M</option>
                     <option value="6000">6.0M</option>
@@ -184,8 +186,9 @@
             </div>
 
             <button onclick="location.reload()"
-                class="absolute top-4 right-4 bg-red-600/80 w-8 h-8 rounded-full flex items-center justify-center shadow pointer-events-auto"><i
-                    class="fas fa-times text-xs"></i></button>
+                class="absolute bottom-6 left-6 bg-red-600/80 w-12 h-12 rounded-full flex items-center justify-center shadow pointer-events-auto active:scale-90 transition-transform">
+                <i class="fas fa-stop text-lg"></i>
+            </button>
 
             <div class="right-bar">
                 <button onclick="toggleTorch()" id="torch-btn"
