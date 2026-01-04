@@ -17,7 +17,7 @@
             margin: 0;
         }
 
-        /* Control Mode Styles */
+        /* Control Panel Styles */
         .control-panel {
             background: #111;
             height: 100vh;
@@ -37,7 +37,7 @@
         .modal-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -79,63 +79,64 @@
 
     <div id="mode-screen" class="hidden">
         <video id="remote-video" autoplay playsinline muted></video>
-        <div id="click-to-play" onclick="this.style.display='none'; document.getElementById('remote-video').play()"
-            class="absolute inset-0 flex items-center justify-center bg-black/80 cursor-pointer hidden">
-            <div class="text-center">
-                <i class="fas fa-play-circle text-6xl text-blue-500 mb-2"></i>
-                <p>Click to Start Video</p>
-            </div>
-        </div>
     </div>
 
     <div id="mode-control" class="hidden control-panel p-4">
-        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
-            <h1 class="text-blue-400 font-bold text-sm uppercase"><i class="fas fa-tower-broadcast"></i> System Control
-            </h1>
-            <div class="flex gap-2">
-                <button onclick="openModal('sponsor-modal')"
-                    class="text-yellow-500 text-xs border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10 transition">
-                    <i class="fas fa-heart"></i> Sponsor
+        <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> CONTROL</h1>
+
+            <div class="flex items-center gap-2">
+                <button onclick="window.location.reload()"
+                    class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"
+                    title="Refresh Dock">
+                    <i class="fas fa-sync"></i>
                 </button>
-                <div id="connection-dot" class="w-3 h-3 rounded-full bg-red-500 animate-pulse mt-1"></div>
+
+                <button onclick="openModal('sponsor-modal')"
+                    class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10 transition">
+                    <i class="fas fa-heart"></i>
+                </button>
+
+                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1"></div>
             </div>
         </div>
 
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-4 relative group">
-            <span class="text-[10px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
+            <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
             <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
+
             <button onclick="openModal('phone-link-modal')"
-                class="absolute top-2 right-2 text-gray-400 hover:text-white">
+                class="absolute top-2 right-2 text-gray-500 hover:text-white">
                 <i class="fas fa-qrcode"></i>
             </button>
         </div>
 
         <div class="grid grid-cols-2 gap-2 mb-4">
             <div class="stat-card">
-                <span class="text-[9px] text-gray-400 uppercase">Bitrate</span>
-                <div id="val-bitrate" class="text-base font-bold text-green-400">0 kbps</div>
+                <span class="text-[9px] text-gray-500 uppercase">Bitrate</span>
+                <div id="val-bitrate" class="text-sm font-bold text-green-400">0 kbps</div>
             </div>
             <div class="stat-card">
-                <span class="text-[9px] text-gray-400 uppercase">Res</span>
-                <div id="val-res" class="text-base font-bold">--x--</div>
+                <span class="text-[9px] text-gray-500 uppercase">Res</span>
+                <div id="val-res" class="text-sm font-bold text-gray-300">--x--</div>
             </div>
         </div>
 
-        <div class="mt-auto space-y-2">
+        <div class="mt-auto space-y-3">
             <button onclick="openModal('obs-link-modal')"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30">
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30 text-white">
                 <i class="fas fa-link mr-2"></i> GET LINK (OBS SOURCE)
             </button>
 
-            <button onclick="window.location.reload()"
-                class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-[10px] font-bold border border-gray-600">
-                <i class="fas fa-sync mr-1"></i> REFRESH DOCK
+            <button onclick="resetRoomId()"
+                class="w-full bg-red-900/30 hover:bg-red-600 border border-red-800 text-red-500 hover:text-white py-3 rounded-lg text-[10px] font-bold transition uppercase">
+                <i class="fas fa-random mr-1"></i> Generate New Room ID
             </button>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-blue-400 font-bold mb-2"><i class="fas fa-link"></i> OBS Browser Source</h3>
+                <h3 class="text-blue-400 font-bold mb-2 text-sm"><i class="fas fa-link"></i> OBS Browser Source</h3>
                 <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
                     id="link-text-preview">
                     ...
@@ -151,11 +152,10 @@
 
         <div id="phone-link-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-white font-bold mb-2"><i class="fas fa-mobile-alt"></i> Connect Phone</h3>
+                <h3 class="text-white font-bold mb-2 text-sm"><i class="fas fa-mobile-alt"></i> Connect Phone</h3>
                 <div class="bg-white p-2 rounded mb-3 inline-block">
                     <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
                 </div>
-                <div class="text-[10px] text-gray-400 mb-2">Scan or Copy Link sent to phone</div>
                 <button onclick="copyPhoneLink()" id="btn-copy-phone"
                     class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold mb-2">
                     Copy Phone Link
@@ -167,7 +167,7 @@
 
         <div id="sponsor-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-yellow-500 font-bold mb-3"><i class="fas fa-heart"></i> Support Dev</h3>
+                <h3 class="text-yellow-500 font-bold mb-3 text-sm"><i class="fas fa-heart"></i> Support Dev</h3>
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
                     class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600">
                 <a href="https://easydonate.app/Jamornz" target="_blank"
@@ -183,14 +183,11 @@
         const mode = params.get('mode');
         const isScreenMode = mode === 'screen';
         const isControlMode = mode === 'control';
-
-        // Channel สำหรับคุยกันระหว่าง Tab (Control <-> Screen)
         const bus = new BroadcastChannel('obs_wireless_channel');
 
-        // Logic จัดการ Room ID
+        // Logic Room ID
         let roomId;
         if (isControlMode) {
-            // Control เป็นคนสร้างและบันทึก ID
             roomId = localStorage.getItem('obs_fixed_room_id');
             if (!roomId) {
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
@@ -199,20 +196,19 @@
             document.getElementById('display-room-id').innerText = roomId;
             document.getElementById('mode-control').classList.remove('hidden');
 
-            // เตรียม QR Code
+            // Setup Links
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html');
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${phoneUrl}`;
             document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
 
         } else if (isScreenMode) {
-            // Screen โหลด ID จาก Memory
+            // Screen Mode โหลด ID เอง
             roomId = localStorage.getItem('obs_fixed_room_id');
             document.getElementById('mode-screen').classList.remove('hidden');
         }
 
-        // --- Logic: Screen Mode (Receiver ตัวจริง) ---
+        // --- Receiver Logic (Screen) ---
         if (isScreenMode && roomId) {
-            console.log("Receiver Started ID:", roomId);
             const peer = new Peer('obs-receiver-' + roomId);
             let lastBytes = 0, lastTime = 0;
 
@@ -221,14 +217,10 @@
                 call.on('stream', (stream) => {
                     const video = document.getElementById('remote-video');
                     video.srcObject = stream;
-                    video.play().catch(() => {
-                        document.getElementById('click-to-play').classList.remove('hidden');
-                    });
+                    video.play().catch(e => console.log("Autoplay blocked, check OBS settings"));
 
-                    // ส่งสถานะกลับไปบอก Dock ว่า "เชื่อมต่อแล้วนะ"
                     bus.postMessage({ type: 'status', connected: true });
 
-                    // คำนวณ Stats และส่งผ่าน BroadcastChannel
                     setInterval(async () => {
                         if (call.peerConnection) {
                             const stats = await call.peerConnection.getStats();
@@ -238,7 +230,6 @@
                                     const bytes = report.bytesReceived;
                                     if (lastTime) {
                                         const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
-                                        // ส่งข้อมูลไปหน้า Control
                                         bus.postMessage({ type: 'stats', bitrate: bitrate });
                                     }
                                     lastBytes = bytes; lastTime = now;
@@ -250,7 +241,6 @@
                         }
                     }, 1000);
                 });
-
                 call.on('close', () => {
                     bus.postMessage({ type: 'status', connected: false });
                     location.reload();
@@ -258,17 +248,12 @@
             });
         }
 
-        // --- Logic: Control Mode (UI & Monitoring) ---
+        // --- Control Logic ---
         if (isControlMode) {
-            // รอรับข้อมูลจากหน้า Screen
             bus.onmessage = (event) => {
                 const data = event.data;
-                if (data.type === 'stats') {
-                    document.getElementById('val-bitrate').innerText = data.bitrate + " kbps";
-                }
-                if (data.type === 'res') {
-                    document.getElementById('val-res').innerText = `${data.width}x${data.height}`;
-                }
+                if (data.type === 'stats') document.getElementById('val-bitrate').innerText = data.bitrate + " kbps";
+                if (data.type === 'res') document.getElementById('val-res').innerText = `${data.width}x${data.height}`;
                 if (data.type === 'status') {
                     const dot = document.getElementById('connection-dot');
                     if (data.connected) dot.classList.replace('bg-red-500', 'bg-green-500');
@@ -277,7 +262,7 @@
             };
         }
 
-        // === UI Functions ===
+        // Functions
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -285,14 +270,8 @@
             const url = window.location.origin + window.location.pathname + "?mode=screen";
             navigator.clipboard.writeText(url);
             const btn = document.getElementById('btn-copy-obs');
-            const originalText = btn.innerText;
-            btn.innerText = "Copied!";
-            btn.classList.add('bg-green-600');
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.remove('bg-green-600');
-                closeModal('obs-link-modal');
-            }, 1000);
+            btn.innerText = "Copied!"; btn.classList.add('bg-green-600');
+            setTimeout(() => { btn.innerText = "Copy Link"; btn.classList.remove('bg-green-600'); closeModal('obs-link-modal'); }, 1000);
         }
 
         function copyPhoneLink() {
@@ -301,6 +280,13 @@
             const btn = document.getElementById('btn-copy-phone');
             btn.innerText = "Copied!";
             setTimeout(() => { btn.innerText = "Copy Phone Link"; }, 1500);
+        }
+
+        function resetRoomId() {
+            if (confirm('ต้องการสร้าง Room ID ใหม่หรือไม่? มือถือที่เชื่อมต่ออยู่จะหลุดทันที')) {
+                localStorage.removeItem('obs_fixed_room_id');
+                location.reload();
+            }
         }
     </script>
 </body>

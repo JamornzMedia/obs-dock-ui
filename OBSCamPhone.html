@@ -7,6 +7,7 @@
     <title>OBS Cam Sender</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -25,10 +26,40 @@
             object-fit: cover;
         }
 
-        /* Dropdown Custom */
         select {
             -webkit-appearance: none;
             appearance: none;
+        }
+
+        /* Grid Lines Style */
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+        }
+
+        .grid-cell {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* ลบเส้นขอบนอกสุดออก ให้เหลือแต่เส้นใน */
+        .grid-cell:nth-child(-n+3) {
+            border-top: none;
+        }
+
+        .grid-cell:nth-child(n+7) {
+            border-bottom: none;
+        }
+
+        .grid-cell:nth-child(3n+1) {
+            border-left: none;
+        }
+
+        .grid-cell:nth-child(3n) {
+            border-right: none;
         }
     </style>
 </head>
@@ -43,8 +74,14 @@
         <div class="space-y-4">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
-                <input type="tel" id="room-id" placeholder="######" maxlength="6"
-                    class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white focus:border-blue-500 outline-none">
+                <div class="flex gap-2">
+                    <input type="tel" id="room-id" placeholder="######" maxlength="6"
+                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white focus:border-blue-500 outline-none">
+                    <button onclick="startQRScanner()"
+                        class="bg-gray-800 hover:bg-gray-700 border border-gray-700 w-16 rounded-lg flex items-center justify-center text-blue-400">
+                        <i class="fas fa-qrcode text-2xl"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="flex gap-2">
@@ -59,11 +96,13 @@
                 </div>
 
                 <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Orientation</label>
-                    <select id="orient"
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Max Bitrate</label>
+                    <select id="bitrate"
                         class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none">
-                        <option value="landscape" selected>แนวนอน (16:9)</option>
-                        <option value="portrait">แนวตั้ง (9:16)</option>
+                        <option value="1500">1.5 Mbps</option>
+                        <option value="2500" selected>2.5 Mbps</option>
+                        <option value="4000">4.0 Mbps</option>
+                        <option value="8000">8.0 Mbps</option>
                     </select>
                 </div>
             </div>
@@ -75,12 +114,49 @@
         </div>
     </div>
 
+    <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
+        <div class="relative w-full h-full flex flex-col">
+            <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative">
+                    <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1"></div>
+                    <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-blue-500 -mt-1 -mr-1"></div>
+                    <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-blue-500 -mb-1 -ml-1">
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-blue-500 -mb-1 -mr-1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">
+                Scan QR from OBS Dock
+            </div>
+
+            <button onclick="stopQRScanner()"
+                class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">
+                CLOSE SCANNER
+            </button>
+            <canvas id="qr-canvas" hidden></canvas>
+        </div>
+    </div>
+
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
+        <div id="grid-layer" class="grid-lines hidden">
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+        </div>
+
         <div id="overlay-controls"
             class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 transition-opacity duration-300">
-
             <div class="flex justify-between items-start pointer-events-auto">
                 <div
                     class="flex items-center gap-2 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
@@ -88,12 +164,12 @@
                     <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
                 </div>
                 <button onclick="location.reload()"
-                    class="bg-red-600/80 w-8 h-8 rounded-full flex items-center justify-center shadow">
-                    <i class="fas fa-times text-xs"></i>
+                    class="bg-red-600/80 px-3 py-1 rounded-full shadow text-xs font-bold border border-red-500">
+                    STOP
                 </button>
             </div>
 
-            <div class="flex justify-center gap-6 pointer-events-auto pb-6">
+            <div class="flex justify-center gap-4 pointer-events-auto pb-6">
                 <button onclick="toggleTorch()" id="torch-btn"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500">
                     <i class="fas fa-bolt text-white"></i>
@@ -102,6 +178,11 @@
                 <button onclick="triggerAutoFocus()"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500">
                     <i class="fas fa-crosshairs text-white"></i>
+                </button>
+
+                <button onclick="toggleGrid()" id="grid-btn"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500">
+                    <i class="fas fa-border-all text-white"></i>
                 </button>
 
                 <button onclick="toggleFullScreen()"
@@ -114,54 +195,54 @@
 
     <script>
         let peer, myStream, videoTrack;
+        let qrStream, qrAnimation;
 
         window.onload = () => {
             const savedRoom = localStorage.getItem('obs_last_room');
             if (savedRoom) document.getElementById('room-id').value = savedRoom;
         };
 
+        // --- Streaming Logic ---
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
             const quality = parseInt(document.getElementById('res').value);
-            const orientation = document.getElementById('orient').value;
+            const bitrateLimit = parseInt(document.getElementById('bitrate').value) * 1000;
 
             if (rid.length < 6) return alert('กรุณาใส่ Room ID 6 หลัก');
             localStorage.setItem('obs_last_room', rid);
 
-            // คำนวณ Width/Height ตามแนวตั้ง/แนวนอน
-            let constraints = { video: {}, audio: true };
-            if (orientation === 'landscape') {
-                constraints.video = {
+            const constraints = {
+                audio: true,
+                video: {
                     facingMode: 'environment',
                     width: { ideal: quality * 1.777 },
                     height: { ideal: quality }
-                };
-            } else {
-                constraints.video = {
-                    facingMode: 'environment',
-                    width: { ideal: quality },
-                    height: { ideal: quality * 1.777 } // สลับด้าน
-                };
-            }
+                }
+            };
 
             try {
                 myStream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoTrack = myStream.getVideoTracks()[0];
-
-                const vid = document.getElementById('preview');
-                vid.srcObject = myStream;
-
+                document.getElementById('preview').srcObject = myStream;
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                // เริ่มเชื่อมต่อ
                 peer = new Peer();
                 peer.on('open', () => {
                     const call = peer.call('obs-receiver-' + rid, myStream);
+
+                    const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) {
+                        const params = sender.getParameters();
+                        if (!params.encodings) params.encodings = [{}];
+                        params.encodings[0].maxBitrate = bitrateLimit;
+                        sender.setParameters(params).catch(e => { });
+                    }
+
                     monitorBitrate(call.peerConnection);
                 });
 
-                // แตะหน้าจอเพื่อซ่อน/แสดงปุ่ม
+                // Toggle UI Click
                 document.getElementById('live-ui').addEventListener('click', (e) => {
                     if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
                         const overlay = document.getElementById('overlay-controls');
@@ -174,14 +255,88 @@
             }
         }
 
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
+        // --- QR Code Scanner Logic ---
+        async function startQRScanner() {
+            document.getElementById('qr-overlay').classList.remove('hidden');
+            const video = document.getElementById('qr-video');
+            const canvas = document.getElementById('qr-canvas');
+            const ctx = canvas.getContext('2d');
+
+            try {
+                qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = qrStream;
+                video.setAttribute("playsinline", true);
+                video.play();
+                requestAnimationFrame(tick);
+            } catch (err) {
+                alert("ไม่สามารถเปิดกล้องได้");
+                stopQRScanner();
             }
+
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+
+                    if (code) {
+                        // พบ QR Code
+                        console.log("Found QR:", code.data);
+                        // ถ้า QR เป็น URL ให้ดึง Room ID จาก URL (เช่น ...html?mode=screen#123456)
+                        // หรือถ้าเป็นตัวเลขเฉยๆ ก็ใส่เลย
+                        let foundId = code.data;
+                        if (code.data.includes('#')) {
+                            foundId = code.data.split('#')[1];
+                        } else if (code.data.includes('room=')) {
+                            // เผื่อรูปแบบอื่นๆ
+                        }
+
+                        // กรองเอาเฉพาะตัวเลข
+                        foundId = foundId.replace(/\D/g, '');
+
+                        if (foundId.length >= 6) {
+                            document.getElementById('room-id').value = foundId.substring(0, 6);
+                            stopQRScanner();
+                            return; // หยุด Loop
+                        }
+                    }
+                }
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) {
+                    qrAnimation = requestAnimationFrame(tick);
+                }
+            }
+        }
+
+        function stopQRScanner() {
+            document.getElementById('qr-overlay').classList.add('hidden');
+            if (qrStream) {
+                qrStream.getTracks().forEach(track => track.stop());
+                qrStream = null;
+            }
+            cancelAnimationFrame(qrAnimation);
+        }
+
+        // --- Tools Logic ---
+        function toggleGrid() {
+            const grid = document.getElementById('grid-layer');
+            const btn = document.getElementById('grid-btn');
+            grid.classList.toggle('hidden');
+
+            if (!grid.classList.contains('hidden')) {
+                btn.classList.add('bg-purple-500', 'border-purple-300');
+                btn.classList.remove('bg-black/40', 'border-white/30');
+            } else {
+                btn.classList.remove('bg-purple-500', 'border-purple-300');
+                btn.classList.add('bg-black/40', 'border-white/30');
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { });
+            else if (document.exitFullscreen) document.exitFullscreen();
         }
 
         function monitorBitrate(pc) {
@@ -205,6 +360,10 @@
             try {
                 const current = videoTrack.getSettings().torch || false;
                 await videoTrack.applyConstraints({ advanced: [{ torch: !current }] });
+                // Toggle Button Style
+                const btn = document.getElementById('torch-btn');
+                btn.classList.toggle('bg-yellow-500');
+                btn.classList.toggle('text-black');
             } catch (e) { }
         }
 
