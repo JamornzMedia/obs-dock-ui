@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Phone</title>
-
+    <title>OBSCam Phone V1.0</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22black%22/><text x=%2250%25%22 y=%2240%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%22100%22>OBSCam</text><rect x=%22100%22 y=%22280%22 width=%22312%22 height=%22120%22 fill=%22%23cc0000%22 rx=%2220%22/><text x=%2250%25%22 y=%2267%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2280%22>Phone</text></svg>">
     <link rel="apple-touch-icon"
@@ -67,16 +65,32 @@
         .grid-cell:nth-child(3n) {
             border-right: none;
         }
+
+        /* New Right Control Bar */
+        .right-bar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            pointer-events: auto;
+            padding-right: 10px;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-6"><i
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4"><i
                 class="fas fa-video"></i> OBSCam Sender</h1>
 
-        <div class="space-y-4">
+        <div class="space-y-3">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
                 <div class="flex gap-2">
@@ -90,49 +104,48 @@
 
             <div class="flex gap-2">
                 <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Quality</label>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res & FPS</label>
                     <select id="res"
-                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
+                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 mb-2"
                         onchange="saveSettings()">
                         <option value="1080">FHD 1080p</option>
                         <option value="720" selected>HD 720p</option>
                         <option value="480">SD 480p</option>
                     </select>
+                    <select id="fps" class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700"
+                        onchange="saveSettings()">
+                        <option value="24">24 FPS</option>
+                        <option value="30" selected>30 FPS</option>
+                        <option value="60">60 FPS</option>
+                    </select>
                 </div>
                 <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Max Bitrate</label>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
                     <select id="bitrate"
-                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
+                        class="w-full h-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
                         onchange="checkCustomBitrate(this)">
-                        <option value="1500">1.5 Mbps</option>
-                        <option value="2500" selected>2.5 Mbps</option>
-                        <option value="3000">3.0 Mbps</option>
-                        <option value="3500">3.5 Mbps</option>
-                        <option value="4000">4.0 Mbps</option>
+                        <option value="2500">2.5 Mbps (Std)</option>
+                        <option value="4000">4.0 Mbps (High)</option>
+                        <option value="5000">5.0 Mbps</option>
+                        <option value="6000">6.0 Mbps</option>
+                        <option value="7000">7.0 Mbps</option>
                         <option value="8000">8.0 Mbps</option>
                         <option value="custom">Custom...</option>
                     </select>
                 </div>
             </div>
-
             <button onclick="startStreaming()"
                 class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all mt-2">START
                 STREAMING</button>
         </div>
-        <div class="text-center mt-6 text-[10px] text-gray-600">OBSCam V1.1 by JamornzMedia</div>
+        <div class="text-center mt-6 text-[10px] text-gray-600">OBSCam V1.0 by JamornzMedia</div>
     </div>
 
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
         <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative">
-                <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1"></div>
-                <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-blue-500 -mt-1 -mr-1"></div>
-                <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-blue-500 -mb-1 -ml-1"></div>
-                <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-blue-500 -mb-1 -mr-1"></div>
-            </div>
+            <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative"></div>
         </div>
-        <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">Scan QR from OBS Dock</div>
         <button onclick="stopQRScanner()"
             class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">CANCEL</button>
         <canvas id="qr-canvas" hidden></canvas>
@@ -151,18 +164,30 @@
             <div class="grid-cell"></div>
             <div class="grid-cell"></div>
         </div>
-        <div id="overlay-controls"
-            class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 transition-opacity duration-300">
-            <div class="flex justify-between items-start pointer-events-auto">
-                <div
-                    class="flex items-center gap-2 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
-                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div><span id="bitrate-display"
-                        class="font-mono text-xs">0 kbps</span>
-                </div>
-                <button onclick="location.reload()"
-                    class="bg-red-600/80 px-3 py-1 rounded-full shadow text-xs font-bold border border-red-500">STOP</button>
+
+        <div id="overlay-controls" class="absolute inset-0 pointer-events-none transition-opacity duration-300">
+            <div
+                class="absolute top-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10 pointer-events-auto">
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
             </div>
-            <div class="flex justify-center gap-4 pointer-events-auto pb-6">
+
+            <div class="absolute top-4 right-20 pointer-events-auto">
+                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                    class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none">
+                    <option value="2500">2.5M</option>
+                    <option value="4000">4.0M</option>
+                    <option value="5000">5.0M</option>
+                    <option value="6000">6.0M</option>
+                    <option value="8000">8.0M</option>
+                </select>
+            </div>
+
+            <button onclick="location.reload()"
+                class="absolute top-4 right-4 bg-red-600/80 w-8 h-8 rounded-full flex items-center justify-center shadow pointer-events-auto"><i
+                    class="fas fa-times text-xs"></i></button>
+
+            <div class="right-bar">
                 <button onclick="toggleTorch()" id="torch-btn"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500"><i
                         class="fas fa-bolt text-white"></i></button>
@@ -180,54 +205,43 @@
     </div>
 
     <script>
-        let peer, myStream, videoTrack, qrStream, qrAnimation, customBitrateVal = 2500;
+        let peer, myStream, videoTrack, qrStream, activeCall, customBitrateVal = 2500;
         const peerConfig = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
 
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const roomFromUrl = urlParams.get('room');
-            if (roomFromUrl) {
-                document.getElementById('room-id').value = roomFromUrl;
-            } else {
+            if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
+            else {
                 const savedRoom = localStorage.getItem('obs_last_room');
                 if (savedRoom) document.getElementById('room-id').value = savedRoom;
             }
 
-            // Load Settings
             const savedRes = localStorage.getItem('obs_last_res');
+            const savedFps = localStorage.getItem('obs_last_fps');
             const savedBitrate = localStorage.getItem('obs_last_bitrate');
-            if (savedRes) document.getElementById('res').value = savedRes;
 
+            if (savedRes) document.getElementById('res').value = savedRes;
+            if (savedFps) document.getElementById('fps').value = savedFps;
             if (savedBitrate) {
                 const select = document.getElementById('bitrate');
-                // Check if value exists in standard options
-                if ([...select.options].some(o => o.value == savedBitrate)) {
-                    select.value = savedBitrate;
-                } else {
-                    // It was custom
-                    select.value = 'custom';
-                    customBitrateVal = parseInt(savedBitrate);
-                    select.options[select.options.length - 1].text = `Custom (${customBitrateVal})`;
-                }
+                if ([...select.options].some(o => o.value == savedBitrate)) select.value = savedBitrate;
+                else { select.value = 'custom'; customBitrateVal = parseInt(savedBitrate); select.options[select.options.length - 1].text = `Custom (${customBitrateVal})`; }
             }
         };
 
         function saveSettings() {
             localStorage.setItem('obs_last_res', document.getElementById('res').value);
+            localStorage.setItem('obs_last_fps', document.getElementById('fps').value);
             const bitVal = document.getElementById('bitrate').value;
-            if (bitVal !== 'custom') localStorage.setItem('obs_last_bitrate', bitVal);
-            else localStorage.setItem('obs_last_bitrate', customBitrateVal);
+            localStorage.setItem('obs_last_bitrate', bitVal !== 'custom' ? bitVal : customBitrateVal);
         }
 
         function checkCustomBitrate(el) {
             if (el.value === 'custom') {
                 const val = prompt("Enter Max Bitrate (kbps):", customBitrateVal);
-                if (val && !isNaN(val)) {
-                    customBitrateVal = parseInt(val);
-                    el.options[el.selectedIndex].text = `Custom (${customBitrateVal})`;
-                } else {
-                    el.value = "2500"; // Fallback
-                }
+                if (val && !isNaN(val)) { customBitrateVal = parseInt(val); el.options[el.selectedIndex].text = `Custom (${customBitrateVal})`; }
+                else el.value = "2500";
             }
             saveSettings();
         }
@@ -235,6 +249,7 @@
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
             const quality = parseInt(document.getElementById('res').value);
+            const fpsVal = parseInt(document.getElementById('fps').value);
             let bitrateLimit = document.getElementById('bitrate').value;
             if (bitrateLimit === 'custom') bitrateLimit = customBitrateVal;
             bitrateLimit = parseInt(bitrateLimit) * 1000;
@@ -243,9 +258,12 @@
             localStorage.setItem('obs_last_room', rid);
             saveSettings();
 
+            // Sync live dropdown
+            document.getElementById('live-bitrate').value = (bitrateLimit / 1000).toString();
+
             const constraints = {
                 audio: true,
-                video: { facingMode: 'environment', width: { ideal: quality * 1.777 }, height: { ideal: quality } }
+                video: { facingMode: 'environment', width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
             };
 
             try {
@@ -256,29 +274,36 @@
                 document.getElementById('live-ui').classList.remove('hidden');
 
                 peer = new Peer(peerConfig);
-                peer.on('error', (err) => { alert("Error: " + err.type + "\n(ลองต่อใหม่ หรือเช็คเน็ต)"); location.reload(); });
-
+                peer.on('error', (err) => { alert("Error: " + err.type); location.reload(); });
                 peer.on('open', () => {
-                    const call = peer.call('obs-receiver-' + rid, myStream);
-                    const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    if (sender) {
-                        const params = sender.getParameters();
-                        if (!params.encodings) params.encodings = [{}];
-                        params.encodings[0].maxBitrate = bitrateLimit;
-                        sender.setParameters(params).catch(e => { });
-                    }
-                    monitorBitrate(call.peerConnection);
-                    call.on('close', () => { alert("Disconnected"); location.reload(); });
+                    activeCall = peer.call('obs-receiver-' + rid, myStream);
+                    setSenderBitrate(activeCall, bitrateLimit);
+                    monitorBitrate(activeCall.peerConnection);
+                    activeCall.on('close', () => { alert("Disconnected"); location.reload(); });
                 });
 
                 document.getElementById('live-ui').addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I' && e.target.tagName !== 'SELECT') {
                         const overlay = document.getElementById('overlay-controls');
                         overlay.style.opacity = overlay.style.opacity === '0' ? '1' : '0';
                     }
                 });
-
             } catch (e) { alert('Camera Error: ' + e.message); }
+        }
+
+        function updateLiveBitrate(val) {
+            if (!activeCall) return;
+            setSenderBitrate(activeCall, parseInt(val) * 1000);
+        }
+
+        function setSenderBitrate(call, bitrate) {
+            const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if (sender) {
+                const params = sender.getParameters();
+                if (!params.encodings) params.encodings = [{}];
+                params.encodings[0].maxBitrate = bitrate;
+                sender.setParameters(params).catch(e => { });
+            }
         }
 
         async function startQRScanner() {
@@ -286,50 +311,28 @@
             const video = document.getElementById('qr-video');
             const canvas = document.getElementById('qr-canvas');
             const ctx = canvas.getContext('2d');
-
             try {
                 qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = qrStream; video.setAttribute("playsinline", true);
-                await video.play();
-                requestAnimationFrame(tick);
-            } catch (err) { alert("Camera not accessible"); stopQRScanner(); }
+                video.srcObject = qrStream; video.setAttribute("playsinline", true); await video.play(); requestAnimationFrame(tick);
+            } catch (err) { alert("Camera Error"); stopQRScanner(); }
 
             function tick() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
                     canvas.height = video.videoHeight; canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
                     if (code) {
-                        // Logic: Scan URL -> Auto Fill -> Auto Start (Optional, now just Fill)
                         let foundId = "";
-                        if (code.data.includes('room=')) {
-                            // URL Format
-                            const u = new URL(code.data);
-                            foundId = u.searchParams.get('room');
-                        } else if (code.data.includes('#')) {
-                            foundId = code.data.split('#')[1];
-                        } else {
-                            foundId = code.data.replace(/\D/g, ''); // Raw numbers
-                        }
-
-                        if (foundId && foundId.length >= 6) {
-                            document.getElementById('room-id').value = foundId.substring(0, 6);
-                            stopQRScanner();
-                            // Optional: startStreaming(); // Uncomment if want instant start
-                            return;
-                        }
+                        if (code.data.includes('room=')) foundId = new URL(code.data).searchParams.get('room');
+                        else if (code.data.includes('#')) foundId = code.data.split('#')[1];
+                        else foundId = code.data.replace(/\D/g, '');
+                        if (foundId && foundId.length >= 6) { document.getElementById('room-id').value = foundId.substring(0, 6); stopQRScanner(); return; }
                     }
                 }
                 if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
             }
         }
-        function stopQRScanner() {
-            document.getElementById('qr-overlay').classList.add('hidden');
-            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
-        }
-
+        function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; } }
         function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
         function monitorBitrate(pc) { let lastB = 0, lastT = 0; setInterval(async () => { if (!pc) return; const s = await pc.getStats(); s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') { const now = r.timestamp; const b = Math.round(((r.bytesSent - lastB) * 8) / (now - lastT)); document.getElementById('bitrate-display').innerText = b + " kbps"; lastB = r.bytesSent; lastT = now; } }); }, 1000); }

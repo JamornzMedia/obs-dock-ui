@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V1.1</title>
+    <title>OBSCam Monitor V1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -60,10 +60,34 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
-        #remote-video {
+        /* Video Container Styling */
+        #mode-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100vw;
             height: 100vh;
-            object-fit: contain;
+            background: transparent;
+        }
+
+        #remote-video {
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.3s;
+        }
+
+        /* Orientation Classes */
+        .force-landscape {
+            transform: rotate(0deg);
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .force-portrait {
+            transform: rotate(-90deg);
+            width: 100vh !important;
+            height: 100vw !important;
+            object-fit: cover;
         }
 
         .hidden {
@@ -89,10 +113,13 @@
 
 <body>
     <div id="error-log"></div>
-    <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline muted></video></div>
+
+    <div id="mode-screen" class="hidden">
+        <video id="remote-video" autoplay playsinline muted></video>
+    </div>
 
     <div id="mode-control" class="hidden control-panel p-4">
-        <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+        <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
             </h1>
             <div class="flex items-center gap-2">
@@ -106,14 +133,14 @@
             </div>
         </div>
 
-        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-4 relative group">
+        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative group">
             <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
             <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
             <button onclick="openModal('phone-link-modal')"
                 class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 mb-4">
+        <div class="grid grid-cols-2 gap-2 mb-3">
             <div class="stat-card"><span class="text-[9px] text-gray-500 uppercase">Bitrate</span>
                 <div id="val-bitrate" class="text-sm font-bold text-green-400">0 kbps</div>
             </div>
@@ -122,7 +149,19 @@
             </div>
         </div>
 
-        <div class="mt-auto space-y-3">
+        <div class="bg-gray-900 p-2 rounded mb-3 border border-gray-800">
+            <span class="text-[9px] text-gray-500 uppercase block mb-1">Screen Orientation</span>
+            <div class="flex gap-1">
+                <button onclick="setOrientation('auto')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Auto</button>
+                <button onclick="setOrientation('landscape')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Horiz</button>
+                <button onclick="setOrientation('portrait')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Vert</button>
+            </div>
+        </div>
+
+        <div class="mt-auto space-y-2">
             <button onclick="openModal('obs-link-modal')"
                 class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30 text-white"><i
                     class="fas fa-link mr-2"></i> GET LINK (OBS SOURCE)</button>
@@ -131,10 +170,10 @@
                     class="fas fa-random mr-1"></i> New Room ID</button>
         </div>
 
-        <div class="text-center mt-4 pt-2 border-t border-gray-800">
+        <div class="text-center mt-3 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.1 (STUN Enabled)</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.0</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -179,10 +218,7 @@
         const isControlMode = mode === 'control';
         const bus = new BroadcastChannel('obs_wireless_channel');
 
-        // Config PeerJS with Google STUN
-        const peerConfig = {
-            config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-        };
+        const peerConfig = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
 
         let roomId;
         if (isControlMode) {
@@ -194,7 +230,6 @@
             document.getElementById('display-room-id').innerText = roomId;
             document.getElementById('mode-control').classList.remove('hidden');
 
-            // Generate QR with Room Param
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
@@ -216,6 +251,8 @@
                     video.srcObject = stream;
                     video.play().catch(e => console.log("Autoplay blocked"));
                     bus.postMessage({ type: 'status', connected: true });
+
+                    // Stats Loop
                     setInterval(async () => {
                         if (call.peerConnection) {
                             try {
@@ -230,7 +267,9 @@
                                         }
                                         lastBytes = bytes; lastTime = now;
                                     }
-                                    if (r.type === 'track' && r.kind === 'video') bus.postMessage({ type: 'res', width: r.frameWidth, height: r.frameHeight });
+                                    if (r.type === 'track' && r.kind === 'video') {
+                                        bus.postMessage({ type: 'res', width: r.frameWidth, height: r.frameHeight });
+                                    }
                                 });
                             } catch (e) { }
                         }
@@ -238,6 +277,17 @@
                 });
                 call.on('close', () => { bus.postMessage({ type: 'status', connected: false }); location.reload(); });
             });
+
+            // Listen for Control commands
+            bus.onmessage = (event) => {
+                const data = event.data;
+                const v = document.getElementById('remote-video');
+                if (data.type === 'orient') {
+                    v.className = ''; // reset
+                    if (data.val === 'landscape') v.classList.add('force-landscape');
+                    if (data.val === 'portrait') v.classList.add('force-portrait');
+                }
+            };
         }
 
         if (isControlMode) {
@@ -252,6 +302,7 @@
             };
         }
 
+        function setOrientation(val) { bus.postMessage({ type: 'orient', val: val }); }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function showError(msg) { const el = document.getElementById('error-log'); el.innerText = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
