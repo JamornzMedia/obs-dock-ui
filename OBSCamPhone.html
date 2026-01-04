@@ -24,121 +24,163 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* Dropdown Custom */
+        select {
+            -webkit-appearance: none;
+            appearance: none;
+        }
     </style>
 </head>
 
 <body>
 
-    <div id="setup" class="p-8 flex flex-col h-screen justify-center bg-slate-950">
-        <div class="text-center mb-10">
-            <div class="inline-block p-4 bg-blue-600/20 rounded-full mb-4">
-                <i class="fas fa-camera text-4xl text-blue-500"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-white uppercase tracking-widest">Sender Unit</h1>
-            <p class="text-gray-500 text-xs mt-1">ส่งภาพไร้สายไปยัง OBS</p>
-        </div>
+    <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10">
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-6">
+            <i class="fas fa-video"></i> OBS Sender
+        </h1>
 
-        <div class="space-y-5">
-            <div>
-                <label class="text-[10px] text-blue-400 font-bold uppercase ml-1 mb-1 block">Target Room ID</label>
+        <div class="space-y-4">
+            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
                 <input type="tel" id="room-id" placeholder="######" maxlength="6"
-                    class="w-full bg-black border border-slate-800 p-4 rounded-2xl text-center text-4xl font-mono text-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all">
+                    class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white focus:border-blue-500 outline-none">
             </div>
 
-            <div>
-                <label class="text-[10px] text-gray-400 font-bold uppercase ml-1 mb-1 block">Resolution</label>
-                <select id="res"
-                    class="w-full bg-slate-900 border border-slate-800 p-4 rounded-2xl text-white outline-none">
-                    <option value="1080">Full HD (1080p)</option>
-                    <option value="720">HD (720p)</option>
-                    <option value="480">SD (480p)</option>
-                </select>
+            <div class="flex gap-2">
+                <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Quality</label>
+                    <select id="res"
+                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none">
+                        <option value="1080">FHD 1080p</option>
+                        <option value="720" selected>HD 720p</option>
+                        <option value="480">SD 480p</option>
+                    </select>
+                </div>
+
+                <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Orientation</label>
+                    <select id="orient"
+                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none">
+                        <option value="landscape" selected>แนวนอน (16:9)</option>
+                        <option value="portrait">แนวตั้ง (9:16)</option>
+                    </select>
+                </div>
             </div>
 
             <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-bold text-xl shadow-xl active:scale-95 transition-all">
+                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all mt-2">
                 START STREAMING
             </button>
         </div>
     </div>
 
-    <div id="live-ui" class="hidden absolute inset-0 bg-black">
+    <div id="live-ui" class="hidden absolute inset-0 bg-black z-0">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
-        <div
-            class="absolute top-6 left-6 flex items-center gap-3 bg-black/60 backdrop-blur-md p-2 px-4 rounded-full border border-white/10">
-            <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-            <span id="bitrate-display" class="font-mono text-xs font-bold uppercase">0 kbps</span>
-        </div>
+        <div id="overlay-controls"
+            class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 transition-opacity duration-300">
 
-        <button onclick="location.reload()"
-            class="absolute top-6 right-6 bg-red-600/90 w-10 h-10 rounded-full flex items-center justify-center shadow-lg">
-            <i class="fas fa-times"></i>
-        </button>
+            <div class="flex justify-between items-start pointer-events-auto">
+                <div
+                    class="flex items-center gap-2 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
+                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
+                </div>
+                <button onclick="location.reload()"
+                    class="bg-red-600/80 w-8 h-8 rounded-full flex items-center justify-center shadow">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
 
-        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-10">
-            <button onclick="toggleTorch()" id="torch-btn"
-                class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transition-all">
-                <i class="fas fa-bolt text-2xl text-white"></i>
-            </button>
-            <button onclick="triggerAutoFocus()"
-                class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transition-all">
-                <i class="fas fa-crosshairs text-2xl text-white"></i>
-            </button>
+            <div class="flex justify-center gap-6 pointer-events-auto pb-6">
+                <button onclick="toggleTorch()" id="torch-btn"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500">
+                    <i class="fas fa-bolt text-white"></i>
+                </button>
+
+                <button onclick="triggerAutoFocus()"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500">
+                    <i class="fas fa-crosshairs text-white"></i>
+                </button>
+
+                <button onclick="toggleFullScreen()"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500">
+                    <i class="fas fa-expand text-white"></i>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         let peer, myStream, videoTrack;
 
-        // จดจำค่าล่าสุดจาก localStorage
         window.onload = () => {
             const savedRoom = localStorage.getItem('obs_last_room');
-            const savedRes = localStorage.getItem('obs_last_res');
             if (savedRoom) document.getElementById('room-id').value = savedRoom;
-            if (savedRes) document.getElementById('res').value = savedRes;
         };
 
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
-            const resHeight = parseInt(document.getElementById('res').value);
+            const quality = parseInt(document.getElementById('res').value);
+            const orientation = document.getElementById('orient').value;
 
             if (rid.length < 6) return alert('กรุณาใส่ Room ID 6 หลัก');
-
-            // บันทึกค่าลงเครื่อง
             localStorage.setItem('obs_last_room', rid);
-            localStorage.setItem('obs_last_res', resHeight);
+
+            // คำนวณ Width/Height ตามแนวตั้ง/แนวนอน
+            let constraints = { video: {}, audio: true };
+            if (orientation === 'landscape') {
+                constraints.video = {
+                    facingMode: 'environment',
+                    width: { ideal: quality * 1.777 },
+                    height: { ideal: quality }
+                };
+            } else {
+                constraints.video = {
+                    facingMode: 'environment',
+                    width: { ideal: quality },
+                    height: { ideal: quality * 1.777 } // สลับด้าน
+                };
+            }
 
             try {
-                myStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: resHeight * 1.777 }, // 16:9
-                        height: { ideal: resHeight },
-                        frameRate: { ideal: 30 }
-                    },
-                    audio: true
-                });
-
+                myStream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoTrack = myStream.getVideoTracks()[0];
-                document.getElementById('preview').srcObject = myStream;
+
+                const vid = document.getElementById('preview');
+                vid.srcObject = myStream;
+
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                peer = new Peer(); // สุ่มไอดีฝั่งส่ง
+                // เริ่มเชื่อมต่อ
+                peer = new Peer();
                 peer.on('open', () => {
                     const call = peer.call('obs-receiver-' + rid, myStream);
                     monitorBitrate(call.peerConnection);
                 });
 
-                peer.on('error', (err) => {
-                    console.error(err);
-                    alert('Connection Error. Please check Room ID.');
-                    location.reload();
+                // แตะหน้าจอเพื่อซ่อน/แสดงปุ่ม
+                document.getElementById('live-ui').addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
+                        const overlay = document.getElementById('overlay-controls');
+                        overlay.style.opacity = overlay.style.opacity === '0' ? '1' : '0';
+                    }
                 });
 
             } catch (e) {
                 alert('Camera Error: ' + e.message);
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
 
@@ -160,21 +202,15 @@
 
         async function toggleTorch() {
             if (!videoTrack) return;
-            const caps = videoTrack.getCapabilities();
-            if (!caps.torch) return;
-
-            const current = videoTrack.getSettings().torch;
             try {
+                const current = videoTrack.getSettings().torch || false;
                 await videoTrack.applyConstraints({ advanced: [{ torch: !current }] });
-                document.getElementById('torch-btn').classList.toggle('bg-yellow-500/50');
-            } catch (e) { console.error(e); }
+            } catch (e) { }
         }
 
         async function triggerAutoFocus() {
             if (!videoTrack) return;
-            try {
-                await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-            } catch (e) { }
+            try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { }
         }
     </script>
 </body>

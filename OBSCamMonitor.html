@@ -17,18 +17,50 @@
             margin: 0;
         }
 
+        /* Control Mode Styles */
         .control-panel {
             background: #111;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .stat-card {
             background: #1a1a1a;
             border: 1px solid #333;
             border-radius: 8px;
-            padding: 10px;
+            padding: 8px;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
         #remote-video {
@@ -47,19 +79,35 @@
 
     <div id="mode-screen" class="hidden">
         <video id="remote-video" autoplay playsinline muted></video>
+        <div id="click-to-play" onclick="this.style.display='none'; document.getElementById('remote-video').play()"
+            class="absolute inset-0 flex items-center justify-center bg-black/80 cursor-pointer hidden">
+            <div class="text-center">
+                <i class="fas fa-play-circle text-6xl text-blue-500 mb-2"></i>
+                <p>Click to Start Video</p>
+            </div>
+        </div>
     </div>
 
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
-            <h1 class="text-blue-400 font-bold text-sm uppercase tracking-tighter">
-                <i class="fas fa-tower-broadcast"></i> System Control
+            <h1 class="text-blue-400 font-bold text-sm uppercase"><i class="fas fa-tower-broadcast"></i> System Control
             </h1>
-            <div id="connection-dot" class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+            <div class="flex gap-2">
+                <button onclick="openModal('sponsor-modal')"
+                    class="text-yellow-500 text-xs border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10 transition">
+                    <i class="fas fa-heart"></i> Sponsor
+                </button>
+                <div id="connection-dot" class="w-3 h-3 rounded-full bg-red-500 animate-pulse mt-1"></div>
+            </div>
         </div>
 
-        <div class="bg-blue-900/20 border border-blue-500/50 rounded-lg p-3 text-center mb-4">
-            <span class="text-[10px] text-blue-300 block uppercase tracking-widest mb-1">Room ID สำหรับมือถือ</span>
-            <div id="display-room-id" class="text-3xl font-mono font-bold text-white tracking-widest">------</div>
+        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-4 relative group">
+            <span class="text-[10px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
+            <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
+            <button onclick="openModal('phone-link-modal')"
+                class="absolute top-2 right-2 text-gray-400 hover:text-white">
+                <i class="fas fa-qrcode"></i>
+            </button>
         </div>
 
         <div class="grid grid-cols-2 gap-2 mb-4">
@@ -68,102 +116,191 @@
                 <div id="val-bitrate" class="text-base font-bold text-green-400">0 kbps</div>
             </div>
             <div class="stat-card">
-                <span class="text-[9px] text-gray-400 uppercase">Resolution</span>
+                <span class="text-[9px] text-gray-400 uppercase">Res</span>
                 <div id="val-res" class="text-base font-bold">--x--</div>
-            </div>
-            <div class="stat-card">
-                <span class="text-[9px] text-gray-400 uppercase">FPS</span>
-                <div id="val-fps" class="text-base font-bold">--</div>
-            </div>
-            <div class="stat-card">
-                <span class="text-[9px] text-gray-400 uppercase">Packet Loss</span>
-                <div id="val-loss" class="text-base font-bold">0%</div>
             </div>
         </div>
 
         <div class="mt-auto space-y-2">
-            <button onclick="copyScreenLink()"
+            <button onclick="openModal('obs-link-modal')"
                 class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30">
-                <i class="fas fa-link mr-2"></i> GET SCREEN LINK (FOR OBS)
+                <i class="fas fa-link mr-2"></i> GET LINK (OBS SOURCE)
             </button>
-            <button onclick="location.reload()"
-                class="w-full bg-red-600/10 hover:bg-red-600 border border-red-600/50 text-red-500 hover:text-white py-2 rounded-lg text-[10px] font-bold transition">
-                <i class="fas fa-sync mr-1"></i> RESTART SYSTEM
+
+            <button onclick="window.location.reload()"
+                class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-[10px] font-bold border border-gray-600">
+                <i class="fas fa-sync mr-1"></i> REFRESH DOCK
             </button>
+        </div>
+
+        <div id="obs-link-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-blue-400 font-bold mb-2"><i class="fas fa-link"></i> OBS Browser Source</h3>
+                <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
+                    id="link-text-preview">
+                    ...
+                </div>
+                <button onclick="copyLinkOnly()" id="btn-copy-obs"
+                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-xs font-bold mb-2">
+                    Copy Link
+                </button>
+                <button onclick="closeModal('obs-link-modal')"
+                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
+            </div>
+        </div>
+
+        <div id="phone-link-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-white font-bold mb-2"><i class="fas fa-mobile-alt"></i> Connect Phone</h3>
+                <div class="bg-white p-2 rounded mb-3 inline-block">
+                    <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
+                </div>
+                <div class="text-[10px] text-gray-400 mb-2">Scan or Copy Link sent to phone</div>
+                <button onclick="copyPhoneLink()" id="btn-copy-phone"
+                    class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold mb-2">
+                    Copy Phone Link
+                </button>
+                <button onclick="closeModal('phone-link-modal')"
+                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
+            </div>
+        </div>
+
+        <div id="sponsor-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-yellow-500 font-bold mb-3"><i class="fas fa-heart"></i> Support Dev</h3>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600">
+                <a href="https://easydonate.app/Jamornz" target="_blank"
+                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a>
+                <button onclick="closeModal('sponsor-modal')"
+                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
+            </div>
         </div>
     </div>
 
     <script>
         const params = new URLSearchParams(window.location.search);
-        const isControlMode = params.get('mode') === 'control';
-        const isScreenMode = params.get('mode') === 'screen';
+        const mode = params.get('mode');
+        const isScreenMode = mode === 'screen';
+        const isControlMode = mode === 'control';
 
-        // จัดการ Room ID
-        let roomId = window.location.hash.substring(1);
-        if (!roomId) {
-            roomId = Math.floor(100000 + Math.random() * 900000).toString();
-            window.location.hash = roomId;
-        }
+        // Channel สำหรับคุยกันระหว่าง Tab (Control <-> Screen)
+        const bus = new BroadcastChannel('obs_wireless_channel');
 
+        // Logic จัดการ Room ID
+        let roomId;
         if (isControlMode) {
-            document.getElementById('mode-control').classList.remove('hidden');
+            // Control เป็นคนสร้างและบันทึก ID
+            roomId = localStorage.getItem('obs_fixed_room_id');
+            if (!roomId) {
+                roomId = Math.floor(100000 + Math.random() * 900000).toString();
+                localStorage.setItem('obs_fixed_room_id', roomId);
+            }
             document.getElementById('display-room-id').innerText = roomId;
+            document.getElementById('mode-control').classList.remove('hidden');
+
+            // เตรียม QR Code
+            const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html');
+            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${phoneUrl}`;
+            document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
+
         } else if (isScreenMode) {
+            // Screen โหลด ID จาก Memory
+            roomId = localStorage.getItem('obs_fixed_room_id');
             document.getElementById('mode-screen').classList.remove('hidden');
         }
 
-        // เริ่มต้น Peer Connection
-        let peer = new Peer('obs-receiver-' + roomId);
-        let lastBytes = 0, lastTime = 0;
+        // --- Logic: Screen Mode (Receiver ตัวจริง) ---
+        if (isScreenMode && roomId) {
+            console.log("Receiver Started ID:", roomId);
+            const peer = new Peer('obs-receiver-' + roomId);
+            let lastBytes = 0, lastTime = 0;
 
-        peer.on('call', (call) => {
-            call.answer();
-            call.on('stream', (stream) => {
-                if (isScreenMode) {
+            peer.on('call', (call) => {
+                call.answer();
+                call.on('stream', (stream) => {
                     const video = document.getElementById('remote-video');
                     video.srcObject = stream;
-                    video.play();
-                }
-                if (isControlMode) {
-                    document.getElementById('connection-dot').classList.replace('bg-red-500', 'bg-green-500');
-                    startStats(call.peerConnection);
-                }
-            });
-            call.on('close', () => {
-                if (isControlMode) location.reload();
-            });
-        });
+                    video.play().catch(() => {
+                        document.getElementById('click-to-play').classList.remove('hidden');
+                    });
 
-        function startStats(pc) {
-            setInterval(async () => {
-                const stats = await pc.getStats();
-                stats.forEach(report => {
-                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                        const now = report.timestamp;
-                        const bytes = report.bytesReceived;
-                        if (lastTime) {
-                            const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
-                            document.getElementById('val-bitrate').innerText = bitrate + " kbps";
+                    // ส่งสถานะกลับไปบอก Dock ว่า "เชื่อมต่อแล้วนะ"
+                    bus.postMessage({ type: 'status', connected: true });
+
+                    // คำนวณ Stats และส่งผ่าน BroadcastChannel
+                    setInterval(async () => {
+                        if (call.peerConnection) {
+                            const stats = await call.peerConnection.getStats();
+                            stats.forEach(report => {
+                                if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                                    const now = report.timestamp;
+                                    const bytes = report.bytesReceived;
+                                    if (lastTime) {
+                                        const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
+                                        // ส่งข้อมูลไปหน้า Control
+                                        bus.postMessage({ type: 'stats', bitrate: bitrate });
+                                    }
+                                    lastBytes = bytes; lastTime = now;
+                                }
+                                if (report.type === 'track' && report.kind === 'video') {
+                                    bus.postMessage({ type: 'res', width: report.frameWidth, height: report.frameHeight });
+                                }
+                            });
                         }
-                        lastBytes = bytes; lastTime = now;
-                        if (report.packetsLost !== undefined) {
-                            const total = report.packetsLost + report.packetsReceived;
-                            document.getElementById('val-loss').innerText = ((report.packetsLost / total) * 100 || 0).toFixed(1) + "%";
-                        }
-                    }
-                    if (report.type === 'track' && report.kind === 'video' && report.frameWidth) {
-                        document.getElementById('val-res').innerText = `${report.frameWidth}x${report.frameHeight}`;
-                        document.getElementById('val-fps').innerText = Math.round(report.framesPerSecond || 0);
-                    }
+                    }, 1000);
                 });
+
+                call.on('close', () => {
+                    bus.postMessage({ type: 'status', connected: false });
+                    location.reload();
+                });
+            });
+        }
+
+        // --- Logic: Control Mode (UI & Monitoring) ---
+        if (isControlMode) {
+            // รอรับข้อมูลจากหน้า Screen
+            bus.onmessage = (event) => {
+                const data = event.data;
+                if (data.type === 'stats') {
+                    document.getElementById('val-bitrate').innerText = data.bitrate + " kbps";
+                }
+                if (data.type === 'res') {
+                    document.getElementById('val-res').innerText = `${data.width}x${data.height}`;
+                }
+                if (data.type === 'status') {
+                    const dot = document.getElementById('connection-dot');
+                    if (data.connected) dot.classList.replace('bg-red-500', 'bg-green-500');
+                    else dot.classList.replace('bg-green-500', 'bg-red-500');
+                }
+            };
+        }
+
+        // === UI Functions ===
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function copyLinkOnly() {
+            const url = window.location.origin + window.location.pathname + "?mode=screen";
+            navigator.clipboard.writeText(url);
+            const btn = document.getElementById('btn-copy-obs');
+            const originalText = btn.innerText;
+            btn.innerText = "Copied!";
+            btn.classList.add('bg-green-600');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('bg-green-600');
+                closeModal('obs-link-modal');
             }, 1000);
         }
 
-        function copyScreenLink() {
-            const currentPath = window.location.origin + window.location.pathname;
-            const screenUrl = `${currentPath}?mode=screen#${roomId}`;
-            navigator.clipboard.writeText(screenUrl);
-            alert("คัดลอกลิ้งค์ Screen (Browser Source) เรียบร้อยแล้ว!");
+        function copyPhoneLink() {
+            const url = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html');
+            navigator.clipboard.writeText(url);
+            const btn = document.getElementById('btn-copy-phone');
+            btn.innerText = "Copied!";
+            setTimeout(() => { btn.innerText = "Copy Phone Link"; }, 1500);
         }
     </script>
 </body>
