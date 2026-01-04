@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Wireless System</title>
+    <title>OBSCam Monitor V1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,7 @@
         body {
             background: transparent;
             color: white;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             margin: 0;
         }
@@ -72,10 +72,28 @@
         .hidden {
             display: none !important;
         }
+
+        /* Error Log Box */
+        #error-log {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 10px;
+            z-index: 9999;
+            display: none;
+            pointer-events: none;
+        }
     </style>
 </head>
 
 <body>
+
+    <div id="error-log"></div>
 
     <div id="mode-screen" class="hidden">
         <video id="remote-video" autoplay playsinline muted></video>
@@ -83,7 +101,8 @@
 
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> CONTROL</h1>
+            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
+            </h1>
 
             <div class="flex items-center gap-2">
                 <button onclick="window.location.reload()"
@@ -91,12 +110,10 @@
                     title="Refresh Dock">
                     <i class="fas fa-sync"></i>
                 </button>
-
                 <button onclick="openModal('sponsor-modal')"
                     class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10 transition">
                     <i class="fas fa-heart"></i>
                 </button>
-
                 <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1"></div>
             </div>
         </div>
@@ -104,7 +121,6 @@
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-4 relative group">
             <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
             <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
-
             <button onclick="openModal('phone-link-modal')"
                 class="absolute top-2 right-2 text-gray-500 hover:text-white">
                 <i class="fas fa-qrcode"></i>
@@ -134,17 +150,19 @@
             </button>
         </div>
 
+        <div class="text-center mt-4 pt-2 border-t border-gray-800">
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
+            </p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.0</p>
+        </div>
+
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-blue-400 font-bold mb-2 text-sm"><i class="fas fa-link"></i> OBS Browser Source</h3>
                 <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
-                    id="link-text-preview">
-                    ...
-                </div>
+                    id="link-text-preview">...</div>
                 <button onclick="copyLinkOnly()" id="btn-copy-obs"
-                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-xs font-bold mb-2">
-                    Copy Link
-                </button>
+                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-xs font-bold mb-2">Copy Link</button>
                 <button onclick="closeModal('obs-link-modal')"
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
@@ -157,9 +175,8 @@
                     <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
                 </div>
                 <button onclick="copyPhoneLink()" id="btn-copy-phone"
-                    class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold mb-2">
-                    Copy Phone Link
-                </button>
+                    class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold mb-2">Copy Phone
+                    Link</button>
                 <button onclick="closeModal('phone-link-modal')"
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
@@ -202,7 +219,7 @@
             document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
 
         } else if (isScreenMode) {
-            // Screen Mode โหลด ID เอง
+            // Screen Mode Load ID
             roomId = localStorage.getItem('obs_fixed_room_id');
             document.getElementById('mode-screen').classList.remove('hidden');
         }
@@ -212,32 +229,39 @@
             const peer = new Peer('obs-receiver-' + roomId);
             let lastBytes = 0, lastTime = 0;
 
+            peer.on('error', (err) => {
+                console.error("Peer Error:", err);
+                showError("Connection Error: " + err.type);
+            });
+
             peer.on('call', (call) => {
                 call.answer();
                 call.on('stream', (stream) => {
                     const video = document.getElementById('remote-video');
                     video.srcObject = stream;
-                    video.play().catch(e => console.log("Autoplay blocked, check OBS settings"));
+                    video.play().catch(e => console.log("Autoplay blocked"));
 
                     bus.postMessage({ type: 'status', connected: true });
 
                     setInterval(async () => {
                         if (call.peerConnection) {
-                            const stats = await call.peerConnection.getStats();
-                            stats.forEach(report => {
-                                if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                                    const now = report.timestamp;
-                                    const bytes = report.bytesReceived;
-                                    if (lastTime) {
-                                        const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
-                                        bus.postMessage({ type: 'stats', bitrate: bitrate });
+                            try {
+                                const stats = await call.peerConnection.getStats();
+                                stats.forEach(report => {
+                                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                                        const now = report.timestamp;
+                                        const bytes = report.bytesReceived;
+                                        if (lastTime) {
+                                            const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
+                                            bus.postMessage({ type: 'stats', bitrate: bitrate });
+                                        }
+                                        lastBytes = bytes; lastTime = now;
                                     }
-                                    lastBytes = bytes; lastTime = now;
-                                }
-                                if (report.type === 'track' && report.kind === 'video') {
-                                    bus.postMessage({ type: 'res', width: report.frameWidth, height: report.frameHeight });
-                                }
-                            });
+                                    if (report.type === 'track' && report.kind === 'video') {
+                                        bus.postMessage({ type: 'res', width: report.frameWidth, height: report.frameHeight });
+                                    }
+                                });
+                            } catch (e) { }
                         }
                     }, 1000);
                 });
@@ -266,6 +290,13 @@
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+        function showError(msg) {
+            const el = document.getElementById('error-log');
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
         function copyLinkOnly() {
             const url = window.location.origin + window.location.pathname + "?mode=screen";
             navigator.clipboard.writeText(url);
@@ -283,11 +314,19 @@
         }
 
         function resetRoomId() {
-            if (confirm('ต้องการสร้าง Room ID ใหม่หรือไม่? มือถือที่เชื่อมต่ออยู่จะหลุดทันที')) {
+            if (confirm('สร้าง Room ID ใหม่? (มือถือที่เชื่อมต่ออยู่จะหลุดทันที)')) {
                 localStorage.removeItem('obs_fixed_room_id');
                 location.reload();
             }
         }
+    </script>
+
+    <script type="text/javascript">
+        var sc_project = 13147874;
+        var sc_invisible = 1;
+        var sc_security = "550e33c0";
+        var scJsHost = "https://";
+        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
     </script>
 </body>
 

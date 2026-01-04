@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBS Cam Sender</title>
+    <title>OBSCam Sender V1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -15,7 +15,7 @@
             color: white;
             overflow: hidden;
             touch-action: none;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         .video-full {
@@ -31,7 +31,6 @@
             appearance: none;
         }
 
-        /* Grid Lines Style */
         .grid-lines {
             position: absolute;
             inset: 0;
@@ -45,7 +44,6 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        /* ลบเส้นขอบนอกสุดออก ให้เหลือแต่เส้นใน */
         .grid-cell:nth-child(-n+3) {
             border-top: none;
         }
@@ -68,7 +66,7 @@
 
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10">
         <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-6">
-            <i class="fas fa-video"></i> OBS Sender
+            <i class="fas fa-video"></i> OBSCam Sender
         </h1>
 
         <div class="space-y-4">
@@ -112,6 +110,10 @@
                 START STREAMING
             </button>
         </div>
+
+        <div class="text-center mt-6 text-[10px] text-gray-600">
+            OBSCam V1.0 by JamornzMedia
+        </div>
     </div>
 
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
@@ -127,15 +129,9 @@
                     </div>
                 </div>
             </div>
-
-            <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">
-                Scan QR from OBS Dock
-            </div>
-
+            <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">Scan QR from OBS Dock</div>
             <button onclick="stopQRScanner()"
-                class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">
-                CLOSE SCANNER
-            </button>
+                class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">CANCEL</button>
             <canvas id="qr-canvas" hidden></canvas>
         </div>
     </div>
@@ -164,9 +160,7 @@
                     <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
                 </div>
                 <button onclick="location.reload()"
-                    class="bg-red-600/80 px-3 py-1 rounded-full shadow text-xs font-bold border border-red-500">
-                    STOP
-                </button>
+                    class="bg-red-600/80 px-3 py-1 rounded-full shadow text-xs font-bold border border-red-500">STOP</button>
             </div>
 
             <div class="flex justify-center gap-4 pointer-events-auto pb-6">
@@ -174,17 +168,14 @@
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500">
                     <i class="fas fa-bolt text-white"></i>
                 </button>
-
                 <button onclick="triggerAutoFocus()"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500">
                     <i class="fas fa-crosshairs text-white"></i>
                 </button>
-
                 <button onclick="toggleGrid()" id="grid-btn"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500">
                     <i class="fas fa-border-all text-white"></i>
                 </button>
-
                 <button onclick="toggleFullScreen()"
                     class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500">
                     <i class="fas fa-expand text-white"></i>
@@ -202,7 +193,6 @@
             if (savedRoom) document.getElementById('room-id').value = savedRoom;
         };
 
-        // --- Streaming Logic ---
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
             const quality = parseInt(document.getElementById('res').value);
@@ -211,13 +201,10 @@
             if (rid.length < 6) return alert('กรุณาใส่ Room ID 6 หลัก');
             localStorage.setItem('obs_last_room', rid);
 
+            // Force Landscape 16:9
             const constraints = {
                 audio: true,
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: quality * 1.777 },
-                    height: { ideal: quality }
-                }
+                video: { facingMode: 'environment', width: { ideal: quality * 1.777 }, height: { ideal: quality } }
             };
 
             try {
@@ -228,9 +215,19 @@
                 document.getElementById('live-ui').classList.remove('hidden');
 
                 peer = new Peer();
+
+                peer.on('error', (err) => {
+                    console.error(err);
+                    let msg = "Error: " + err.type;
+                    if (err.type === 'peer-unavailable') msg += "\nไม่พบ Room ID นี้ (คอมพิวเตอร์อาจยังไม่เปิด)";
+                    if (err.type === 'network') msg += "\nเชื่อมต่อ Server ไม่ได้ (เน็ตมีปัญหา)";
+                    alert(msg);
+                    location.reload();
+                });
+
                 peer.on('open', () => {
                     const call = peer.call('obs-receiver-' + rid, myStream);
-
+                    // Bitrate Config
                     const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
                     if (sender) {
                         const params = sender.getParameters();
@@ -238,11 +235,12 @@
                         params.encodings[0].maxBitrate = bitrateLimit;
                         sender.setParameters(params).catch(e => { });
                     }
-
                     monitorBitrate(call.peerConnection);
+
+                    call.on('close', () => { alert("การเชื่อมต่อหลุด"); location.reload(); });
                 });
 
-                // Toggle UI Click
+                // Toggle UI
                 document.getElementById('live-ui').addEventListener('click', (e) => {
                     if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
                         const overlay = document.getElementById('overlay-controls');
@@ -251,126 +249,93 @@
                 });
 
             } catch (e) {
-                alert('Camera Error: ' + e.message);
+                alert('เปิดกล้องไม่สำเร็จ: ' + e.message + "\nโปรดตรวจสอบสิทธิ์การเข้าถึงกล้อง");
             }
         }
 
-        // --- QR Code Scanner Logic ---
+        // QR Logic
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
             const video = document.getElementById('qr-video');
             const canvas = document.getElementById('qr-canvas');
             const ctx = canvas.getContext('2d');
-
             try {
                 qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = qrStream;
-                video.setAttribute("playsinline", true);
-                video.play();
+                video.srcObject = qrStream; video.setAttribute("playsinline", true); video.play();
                 requestAnimationFrame(tick);
-            } catch (err) {
-                alert("ไม่สามารถเปิดกล้องได้");
-                stopQRScanner();
-            }
+            } catch (err) { alert("เปิดกล้องสแกนไม่ได้"); stopQRScanner(); }
 
             function tick() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight;
-                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight; canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
                     if (code) {
-                        // พบ QR Code
-                        console.log("Found QR:", code.data);
-                        // ถ้า QR เป็น URL ให้ดึง Room ID จาก URL (เช่น ...html?mode=screen#123456)
-                        // หรือถ้าเป็นตัวเลขเฉยๆ ก็ใส่เลย
-                        let foundId = code.data;
-                        if (code.data.includes('#')) {
-                            foundId = code.data.split('#')[1];
-                        } else if (code.data.includes('room=')) {
-                            // เผื่อรูปแบบอื่นๆ
-                        }
-
-                        // กรองเอาเฉพาะตัวเลข
+                        let foundId = code.data.includes('#') ? code.data.split('#')[1] : code.data;
                         foundId = foundId.replace(/\D/g, '');
-
                         if (foundId.length >= 6) {
                             document.getElementById('room-id').value = foundId.substring(0, 6);
                             stopQRScanner();
-                            return; // หยุด Loop
+                            return;
                         }
                     }
                 }
-                if (!document.getElementById('qr-overlay').classList.contains('hidden')) {
-                    qrAnimation = requestAnimationFrame(tick);
-                }
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
             }
         }
-
         function stopQRScanner() {
             document.getElementById('qr-overlay').classList.add('hidden');
-            if (qrStream) {
-                qrStream.getTracks().forEach(track => track.stop());
-                qrStream = null;
-            }
-            cancelAnimationFrame(qrAnimation);
+            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
         }
 
-        // --- Tools Logic ---
+        // Tools
         function toggleGrid() {
             const grid = document.getElementById('grid-layer');
             const btn = document.getElementById('grid-btn');
             grid.classList.toggle('hidden');
-
-            if (!grid.classList.contains('hidden')) {
-                btn.classList.add('bg-purple-500', 'border-purple-300');
-                btn.classList.remove('bg-black/40', 'border-white/30');
-            } else {
-                btn.classList.remove('bg-purple-500', 'border-purple-300');
-                btn.classList.add('bg-black/40', 'border-white/30');
-            }
+            if (!grid.classList.contains('hidden')) { btn.classList.add('bg-purple-500', 'border-purple-300'); btn.classList.remove('bg-black/40', 'border-white/30'); }
+            else { btn.classList.remove('bg-purple-500', 'border-purple-300'); btn.classList.add('bg-black/40', 'border-white/30'); }
         }
-
         function toggleFullScreen() {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { });
             else if (document.exitFullscreen) document.exitFullscreen();
         }
-
         function monitorBitrate(pc) {
             let lastB = 0, lastT = 0;
             setInterval(async () => {
                 if (!pc) return;
                 const stats = await pc.getStats();
-                stats.forEach(report => {
-                    if (report.type === 'outbound-rtp' && report.kind === 'video') {
-                        const now = report.timestamp;
-                        const bitrate = Math.round(((report.bytesSent - lastB) * 8) / (now - lastT));
+                stats.forEach(r => {
+                    if (r.type === 'outbound-rtp' && r.kind === 'video') {
+                        const now = r.timestamp;
+                        const bitrate = Math.round(((r.bytesSent - lastB) * 8) / (now - lastT));
                         document.getElementById('bitrate-display').innerText = bitrate + " kbps";
-                        lastB = report.bytesSent; lastT = now;
+                        lastB = r.bytesSent; lastT = now;
                     }
                 });
             }, 1000);
         }
-
         async function toggleTorch() {
             if (!videoTrack) return;
             try {
                 const current = videoTrack.getSettings().torch || false;
                 await videoTrack.applyConstraints({ advanced: [{ torch: !current }] });
-                // Toggle Button Style
                 const btn = document.getElementById('torch-btn');
-                btn.classList.toggle('bg-yellow-500');
-                btn.classList.toggle('text-black');
+                btn.classList.toggle('bg-yellow-500'); btn.classList.toggle('text-black');
             } catch (e) { }
         }
-
         async function triggerAutoFocus() {
             if (!videoTrack) return;
             try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { }
         }
+    </script>
+
+    <script type="text/javascript">
+        var sc_project = 13147874;
+        var sc_invisible = 1;
+        var sc_security = "550e33c0";
+        var scJsHost = "https://";
+        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
     </script>
 </body>
 
