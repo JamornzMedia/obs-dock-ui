@@ -4,7 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V1.0</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>OBSCam Phone</title>
+
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22black%22/><text x=%2250%25%22 y=%2240%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%22100%22>OBSCam</text><rect x=%22100%22 y=%22280%22 width=%22312%22 height=%22120%22 fill=%22%23cc0000%22 rx=%2220%22/><text x=%2250%25%22 y=%2267%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2280%22>Phone</text></svg>">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22black%22/><text x=%2250%25%22 y=%2240%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%22100%22>OBSCam</text><rect x=%22100%22 y=%22280%22 width=%22312%22 height=%22120%22 fill=%22%23cc0000%22 rx=%2220%22/><text x=%2250%25%22 y=%2267%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22 font-size=%2280%22>Phone</text></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -65,9 +73,8 @@
 <body>
 
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-6">
-            <i class="fas fa-video"></i> OBSCam Sender
-        </h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-6"><i
+                class="fas fa-video"></i> OBSCam Sender</h1>
 
         <div class="space-y-4">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -76,9 +83,8 @@
                     <input type="tel" id="room-id" placeholder="######" maxlength="6"
                         class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white focus:border-blue-500 outline-none">
                     <button onclick="startQRScanner()"
-                        class="bg-gray-800 hover:bg-gray-700 border border-gray-700 w-16 rounded-lg flex items-center justify-center text-blue-400">
-                        <i class="fas fa-qrcode text-2xl"></i>
-                    </button>
+                        class="bg-gray-800 hover:bg-gray-700 border border-gray-700 w-16 rounded-lg flex items-center justify-center text-blue-400"><i
+                            class="fas fa-qrcode text-2xl"></i></button>
                 </div>
             </div>
 
@@ -86,59 +92,54 @@
                 <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Quality</label>
                     <select id="res"
-                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none">
+                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
+                        onchange="saveSettings()">
                         <option value="1080">FHD 1080p</option>
                         <option value="720" selected>HD 720p</option>
                         <option value="480">SD 480p</option>
                     </select>
                 </div>
-
                 <div class="w-1/2 bg-gray-900 p-3 rounded-xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Max Bitrate</label>
                     <select id="bitrate"
-                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none">
+                        class="w-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
+                        onchange="checkCustomBitrate(this)">
                         <option value="1500">1.5 Mbps</option>
                         <option value="2500" selected>2.5 Mbps</option>
+                        <option value="3000">3.0 Mbps</option>
+                        <option value="3500">3.5 Mbps</option>
                         <option value="4000">4.0 Mbps</option>
                         <option value="8000">8.0 Mbps</option>
+                        <option value="custom">Custom...</option>
                     </select>
                 </div>
             </div>
 
             <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all mt-2">
-                START STREAMING
-            </button>
+                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all mt-2">START
+                STREAMING</button>
         </div>
-
-        <div class="text-center mt-6 text-[10px] text-gray-600">
-            OBSCam V1.0 by JamornzMedia
-        </div>
+        <div class="text-center mt-6 text-[10px] text-gray-600">OBSCam V1.1 by JamornzMedia</div>
     </div>
 
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
-        <div class="relative w-full h-full flex flex-col">
-            <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative">
-                    <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1"></div>
-                    <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-blue-500 -mt-1 -mr-1"></div>
-                    <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-blue-500 -mb-1 -ml-1">
-                    </div>
-                    <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-blue-500 -mb-1 -mr-1">
-                    </div>
-                </div>
+        <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative">
+                <div class="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1"></div>
+                <div class="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-blue-500 -mt-1 -mr-1"></div>
+                <div class="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-blue-500 -mb-1 -ml-1"></div>
+                <div class="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-blue-500 -mb-1 -mr-1"></div>
             </div>
-            <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">Scan QR from OBS Dock</div>
-            <button onclick="stopQRScanner()"
-                class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">CANCEL</button>
-            <canvas id="qr-canvas" hidden></canvas>
         </div>
+        <div class="absolute top-10 w-full text-center text-white bg-black/50 py-2">Scan QR from OBS Dock</div>
+        <button onclick="stopQRScanner()"
+            class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20">CANCEL</button>
+        <canvas id="qr-canvas" hidden></canvas>
     </div>
 
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
-
         <div id="grid-layer" class="grid-lines hidden">
             <div class="grid-cell"></div>
             <div class="grid-cell"></div>
@@ -150,58 +151,98 @@
             <div class="grid-cell"></div>
             <div class="grid-cell"></div>
         </div>
-
         <div id="overlay-controls"
             class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 transition-opacity duration-300">
             <div class="flex justify-between items-start pointer-events-auto">
                 <div
                     class="flex items-center gap-2 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
-                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <span id="bitrate-display" class="font-mono text-xs">0 kbps</span>
+                    <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div><span id="bitrate-display"
+                        class="font-mono text-xs">0 kbps</span>
                 </div>
                 <button onclick="location.reload()"
                     class="bg-red-600/80 px-3 py-1 rounded-full shadow text-xs font-bold border border-red-500">STOP</button>
             </div>
-
             <div class="flex justify-center gap-4 pointer-events-auto pb-6">
                 <button onclick="toggleTorch()" id="torch-btn"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500">
-                    <i class="fas fa-bolt text-white"></i>
-                </button>
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500"><i
+                        class="fas fa-bolt text-white"></i></button>
                 <button onclick="triggerAutoFocus()"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500">
-                    <i class="fas fa-crosshairs text-white"></i>
-                </button>
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
+                        class="fas fa-crosshairs text-white"></i></button>
                 <button onclick="toggleGrid()" id="grid-btn"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500">
-                    <i class="fas fa-border-all text-white"></i>
-                </button>
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500"><i
+                        class="fas fa-border-all text-white"></i></button>
                 <button onclick="toggleFullScreen()"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500">
-                    <i class="fas fa-expand text-white"></i>
-                </button>
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500"><i
+                        class="fas fa-expand text-white"></i></button>
             </div>
         </div>
     </div>
 
     <script>
-        let peer, myStream, videoTrack;
-        let qrStream, qrAnimation;
+        let peer, myStream, videoTrack, qrStream, qrAnimation, customBitrateVal = 2500;
+        const peerConfig = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
 
         window.onload = () => {
-            const savedRoom = localStorage.getItem('obs_last_room');
-            if (savedRoom) document.getElementById('room-id').value = savedRoom;
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomFromUrl = urlParams.get('room');
+            if (roomFromUrl) {
+                document.getElementById('room-id').value = roomFromUrl;
+            } else {
+                const savedRoom = localStorage.getItem('obs_last_room');
+                if (savedRoom) document.getElementById('room-id').value = savedRoom;
+            }
+
+            // Load Settings
+            const savedRes = localStorage.getItem('obs_last_res');
+            const savedBitrate = localStorage.getItem('obs_last_bitrate');
+            if (savedRes) document.getElementById('res').value = savedRes;
+
+            if (savedBitrate) {
+                const select = document.getElementById('bitrate');
+                // Check if value exists in standard options
+                if ([...select.options].some(o => o.value == savedBitrate)) {
+                    select.value = savedBitrate;
+                } else {
+                    // It was custom
+                    select.value = 'custom';
+                    customBitrateVal = parseInt(savedBitrate);
+                    select.options[select.options.length - 1].text = `Custom (${customBitrateVal})`;
+                }
+            }
         };
+
+        function saveSettings() {
+            localStorage.setItem('obs_last_res', document.getElementById('res').value);
+            const bitVal = document.getElementById('bitrate').value;
+            if (bitVal !== 'custom') localStorage.setItem('obs_last_bitrate', bitVal);
+            else localStorage.setItem('obs_last_bitrate', customBitrateVal);
+        }
+
+        function checkCustomBitrate(el) {
+            if (el.value === 'custom') {
+                const val = prompt("Enter Max Bitrate (kbps):", customBitrateVal);
+                if (val && !isNaN(val)) {
+                    customBitrateVal = parseInt(val);
+                    el.options[el.selectedIndex].text = `Custom (${customBitrateVal})`;
+                } else {
+                    el.value = "2500"; // Fallback
+                }
+            }
+            saveSettings();
+        }
 
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
             const quality = parseInt(document.getElementById('res').value);
-            const bitrateLimit = parseInt(document.getElementById('bitrate').value) * 1000;
+            let bitrateLimit = document.getElementById('bitrate').value;
+            if (bitrateLimit === 'custom') bitrateLimit = customBitrateVal;
+            bitrateLimit = parseInt(bitrateLimit) * 1000;
 
             if (rid.length < 6) return alert('กรุณาใส่ Room ID 6 หลัก');
             localStorage.setItem('obs_last_room', rid);
+            saveSettings();
 
-            // Force Landscape 16:9
             const constraints = {
                 audio: true,
                 video: { facingMode: 'environment', width: { ideal: quality * 1.777 }, height: { ideal: quality } }
@@ -214,20 +255,11 @@
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                peer = new Peer();
-
-                peer.on('error', (err) => {
-                    console.error(err);
-                    let msg = "Error: " + err.type;
-                    if (err.type === 'peer-unavailable') msg += "\nไม่พบ Room ID นี้ (คอมพิวเตอร์อาจยังไม่เปิด)";
-                    if (err.type === 'network') msg += "\nเชื่อมต่อ Server ไม่ได้ (เน็ตมีปัญหา)";
-                    alert(msg);
-                    location.reload();
-                });
+                peer = new Peer(peerConfig);
+                peer.on('error', (err) => { alert("Error: " + err.type + "\n(ลองต่อใหม่ หรือเช็คเน็ต)"); location.reload(); });
 
                 peer.on('open', () => {
                     const call = peer.call('obs-receiver-' + rid, myStream);
-                    // Bitrate Config
                     const sender = call.peerConnection.getSenders().find(s => s.track.kind === 'video');
                     if (sender) {
                         const params = sender.getParameters();
@@ -236,11 +268,9 @@
                         sender.setParameters(params).catch(e => { });
                     }
                     monitorBitrate(call.peerConnection);
-
-                    call.on('close', () => { alert("การเชื่อมต่อหลุด"); location.reload(); });
+                    call.on('close', () => { alert("Disconnected"); location.reload(); });
                 });
 
-                // Toggle UI
                 document.getElementById('live-ui').addEventListener('click', (e) => {
                     if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
                         const overlay = document.getElementById('overlay-controls');
@@ -248,34 +278,46 @@
                     }
                 });
 
-            } catch (e) {
-                alert('เปิดกล้องไม่สำเร็จ: ' + e.message + "\nโปรดตรวจสอบสิทธิ์การเข้าถึงกล้อง");
-            }
+            } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
-        // QR Logic
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
             const video = document.getElementById('qr-video');
             const canvas = document.getElementById('qr-canvas');
             const ctx = canvas.getContext('2d');
+
             try {
                 qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = qrStream; video.setAttribute("playsinline", true); video.play();
+                video.srcObject = qrStream; video.setAttribute("playsinline", true);
+                await video.play();
                 requestAnimationFrame(tick);
-            } catch (err) { alert("เปิดกล้องสแกนไม่ได้"); stopQRScanner(); }
+            } catch (err) { alert("Camera not accessible"); stopQRScanner(); }
 
             function tick() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
                     canvas.height = video.videoHeight; canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+
                     if (code) {
-                        let foundId = code.data.includes('#') ? code.data.split('#')[1] : code.data;
-                        foundId = foundId.replace(/\D/g, '');
-                        if (foundId.length >= 6) {
+                        // Logic: Scan URL -> Auto Fill -> Auto Start (Optional, now just Fill)
+                        let foundId = "";
+                        if (code.data.includes('room=')) {
+                            // URL Format
+                            const u = new URL(code.data);
+                            foundId = u.searchParams.get('room');
+                        } else if (code.data.includes('#')) {
+                            foundId = code.data.split('#')[1];
+                        } else {
+                            foundId = code.data.replace(/\D/g, ''); // Raw numbers
+                        }
+
+                        if (foundId && foundId.length >= 6) {
                             document.getElementById('room-id').value = foundId.substring(0, 6);
                             stopQRScanner();
+                            // Optional: startStreaming(); // Uncomment if want instant start
                             return;
                         }
                     }
@@ -288,55 +330,14 @@
             if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
         }
 
-        // Tools
-        function toggleGrid() {
-            const grid = document.getElementById('grid-layer');
-            const btn = document.getElementById('grid-btn');
-            grid.classList.toggle('hidden');
-            if (!grid.classList.contains('hidden')) { btn.classList.add('bg-purple-500', 'border-purple-300'); btn.classList.remove('bg-black/40', 'border-white/30'); }
-            else { btn.classList.remove('bg-purple-500', 'border-purple-300'); btn.classList.add('bg-black/40', 'border-white/30'); }
-        }
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { });
-            else if (document.exitFullscreen) document.exitFullscreen();
-        }
-        function monitorBitrate(pc) {
-            let lastB = 0, lastT = 0;
-            setInterval(async () => {
-                if (!pc) return;
-                const stats = await pc.getStats();
-                stats.forEach(r => {
-                    if (r.type === 'outbound-rtp' && r.kind === 'video') {
-                        const now = r.timestamp;
-                        const bitrate = Math.round(((r.bytesSent - lastB) * 8) / (now - lastT));
-                        document.getElementById('bitrate-display').innerText = bitrate + " kbps";
-                        lastB = r.bytesSent; lastT = now;
-                    }
-                });
-            }, 1000);
-        }
-        async function toggleTorch() {
-            if (!videoTrack) return;
-            try {
-                const current = videoTrack.getSettings().torch || false;
-                await videoTrack.applyConstraints({ advanced: [{ torch: !current }] });
-                const btn = document.getElementById('torch-btn');
-                btn.classList.toggle('bg-yellow-500'); btn.classList.toggle('text-black');
-            } catch (e) { }
-        }
-        async function triggerAutoFocus() {
-            if (!videoTrack) return;
-            try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { }
-        }
+        function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
+        function monitorBitrate(pc) { let lastB = 0, lastT = 0; setInterval(async () => { if (!pc) return; const s = await pc.getStats(); s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') { const now = r.timestamp; const b = Math.round(((r.bytesSent - lastB) * 8) / (now - lastT)); document.getElementById('bitrate-display').innerText = b + " kbps"; lastB = r.bytesSent; lastT = now; } }); }, 1000); }
+        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
+        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
     </script>
-
-    <script type="text/javascript">
-        var sc_project = 13147874;
-        var sc_invisible = 1;
-        var sc_security = "550e33c0";
-        var scJsHost = "https://";
-        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
-    </script>
+    <script
+        type="text/javascript"> var sc_project = 13147874; var sc_invisible = 1; var sc_security = "550e33c0"; var scJsHost = "https://"; document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>"); </script>
 </body>
 
 </html>

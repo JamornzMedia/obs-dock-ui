@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V1.0</title>
+    <title>OBSCam Monitor V1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,13 +17,11 @@
             margin: 0;
         }
 
-        /* Control Panel Styles */
         .control-panel {
             background: #111;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative;
         }
 
         .stat-card {
@@ -33,7 +31,6 @@
             padding: 8px;
         }
 
-        /* Modal Styles */
         .modal-overlay {
             position: absolute;
             inset: 0;
@@ -73,7 +70,6 @@
             display: none !important;
         }
 
-        /* Error Log Box */
         #error-log {
             position: fixed;
             bottom: 10px;
@@ -92,28 +88,20 @@
 </head>
 
 <body>
-
     <div id="error-log"></div>
-
-    <div id="mode-screen" class="hidden">
-        <video id="remote-video" autoplay playsinline muted></video>
-    </div>
+    <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline muted></video></div>
 
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
             <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
             </h1>
-
             <div class="flex items-center gap-2">
                 <button onclick="window.location.reload()"
-                    class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"
-                    title="Refresh Dock">
-                    <i class="fas fa-sync"></i>
-                </button>
+                    class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
+                        class="fas fa-sync"></i></button>
                 <button onclick="openModal('sponsor-modal')"
-                    class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10 transition">
-                    <i class="fas fa-heart"></i>
-                </button>
+                    class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10"><i
+                        class="fas fa-heart"></i></button>
                 <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1"></div>
             </div>
         </div>
@@ -122,74 +110,63 @@
             <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
             <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
             <button onclick="openModal('phone-link-modal')"
-                class="absolute top-2 right-2 text-gray-500 hover:text-white">
-                <i class="fas fa-qrcode"></i>
-            </button>
+                class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
         </div>
 
         <div class="grid grid-cols-2 gap-2 mb-4">
-            <div class="stat-card">
-                <span class="text-[9px] text-gray-500 uppercase">Bitrate</span>
+            <div class="stat-card"><span class="text-[9px] text-gray-500 uppercase">Bitrate</span>
                 <div id="val-bitrate" class="text-sm font-bold text-green-400">0 kbps</div>
             </div>
-            <div class="stat-card">
-                <span class="text-[9px] text-gray-500 uppercase">Res</span>
+            <div class="stat-card"><span class="text-[9px] text-gray-500 uppercase">Res</span>
                 <div id="val-res" class="text-sm font-bold text-gray-300">--x--</div>
             </div>
         </div>
 
         <div class="mt-auto space-y-3">
             <button onclick="openModal('obs-link-modal')"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30 text-white">
-                <i class="fas fa-link mr-2"></i> GET LINK (OBS SOURCE)
-            </button>
-
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition shadow-lg border border-blue-400/30 text-white"><i
+                    class="fas fa-link mr-2"></i> GET LINK (OBS SOURCE)</button>
             <button onclick="resetRoomId()"
-                class="w-full bg-red-900/30 hover:bg-red-600 border border-red-800 text-red-500 hover:text-white py-3 rounded-lg text-[10px] font-bold transition uppercase">
-                <i class="fas fa-random mr-1"></i> Generate New Room ID
-            </button>
+                class="w-full bg-red-900/30 hover:bg-red-600 border border-red-800 text-red-500 hover:text-white py-3 rounded-lg text-[10px] font-bold transition uppercase"><i
+                    class="fas fa-random mr-1"></i> New Room ID</button>
         </div>
 
         <div class="text-center mt-4 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.0</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1 (STUN Enabled)</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-blue-400 font-bold mb-2 text-sm"><i class="fas fa-link"></i> OBS Browser Source</h3>
+                <h3 class="text-blue-400 font-bold mb-2 text-sm">OBS Browser Source</h3>
                 <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
-                    id="link-text-preview">...</div>
-                <button onclick="copyLinkOnly()" id="btn-copy-obs"
-                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-xs font-bold mb-2">Copy Link</button>
-                <button onclick="closeModal('obs-link-modal')"
+                    id="link-text-preview">...</div><button onclick="copyLinkOnly()" id="btn-copy-obs"
+                    class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-xs font-bold mb-2">Copy
+                    Link</button><button onclick="closeModal('obs-link-modal')"
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
         </div>
-
         <div id="phone-link-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-white font-bold mb-2 text-sm"><i class="fas fa-mobile-alt"></i> Connect Phone</h3>
-                <div class="bg-white p-2 rounded mb-3 inline-block">
-                    <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
-                </div>
-                <button onclick="copyPhoneLink()" id="btn-copy-phone"
+                <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
+                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
+                        class="w-32 h-32"></div>
+                <p class="text-[9px] text-gray-400 mb-2">สแกนเพื่อเปิดแอปพร้อมใส่รหัสห้องอัตโนมัติ</p><button
+                    onclick="copyPhoneLink()" id="btn-copy-phone"
                     class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold mb-2">Copy Phone
-                    Link</button>
-                <button onclick="closeModal('phone-link-modal')"
+                    Link</button><button onclick="closeModal('phone-link-modal')"
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
         </div>
-
         <div id="sponsor-modal" class="modal-overlay">
             <div class="modal-box">
-                <h3 class="text-yellow-500 font-bold mb-3 text-sm"><i class="fas fa-heart"></i> Support Dev</h3>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
-                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600">
-                <a href="https://easydonate.app/Jamornz" target="_blank"
-                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a>
-                <button onclick="closeModal('sponsor-modal')"
+                <h3 class="text-yellow-500 font-bold mb-3 text-sm">Support Dev</h3><img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600"><a
+                    href="https://easydonate.app/Jamornz" target="_blank"
+                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a><button
+                    onclick="closeModal('sponsor-modal')"
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
         </div>
@@ -202,7 +179,11 @@
         const isControlMode = mode === 'control';
         const bus = new BroadcastChannel('obs_wireless_channel');
 
-        // Logic Room ID
+        // Config PeerJS with Google STUN
+        const peerConfig = {
+            config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+        };
+
         let roomId;
         if (isControlMode) {
             roomId = localStorage.getItem('obs_fixed_room_id');
@@ -213,66 +194,52 @@
             document.getElementById('display-room-id').innerText = roomId;
             document.getElementById('mode-control').classList.remove('hidden');
 
-            // Setup Links
-            const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html');
-            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${phoneUrl}`;
+            // Generate QR with Room Param
+            const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
+            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
 
         } else if (isScreenMode) {
-            // Screen Mode Load ID
             roomId = localStorage.getItem('obs_fixed_room_id');
             document.getElementById('mode-screen').classList.remove('hidden');
         }
 
-        // --- Receiver Logic (Screen) ---
         if (isScreenMode && roomId) {
-            const peer = new Peer('obs-receiver-' + roomId);
+            const peer = new Peer('obs-receiver-' + roomId, peerConfig);
             let lastBytes = 0, lastTime = 0;
 
-            peer.on('error', (err) => {
-                console.error("Peer Error:", err);
-                showError("Connection Error: " + err.type);
-            });
-
+            peer.on('error', (err) => showError("Connection Error: " + err.type));
             peer.on('call', (call) => {
                 call.answer();
                 call.on('stream', (stream) => {
                     const video = document.getElementById('remote-video');
                     video.srcObject = stream;
                     video.play().catch(e => console.log("Autoplay blocked"));
-
                     bus.postMessage({ type: 'status', connected: true });
-
                     setInterval(async () => {
                         if (call.peerConnection) {
                             try {
                                 const stats = await call.peerConnection.getStats();
-                                stats.forEach(report => {
-                                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                                        const now = report.timestamp;
-                                        const bytes = report.bytesReceived;
+                                stats.forEach(r => {
+                                    if (r.type === 'inbound-rtp' && r.kind === 'video') {
+                                        const now = r.timestamp;
+                                        const bytes = r.bytesReceived;
                                         if (lastTime) {
                                             const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
                                             bus.postMessage({ type: 'stats', bitrate: bitrate });
                                         }
                                         lastBytes = bytes; lastTime = now;
                                     }
-                                    if (report.type === 'track' && report.kind === 'video') {
-                                        bus.postMessage({ type: 'res', width: report.frameWidth, height: report.frameHeight });
-                                    }
+                                    if (r.type === 'track' && r.kind === 'video') bus.postMessage({ type: 'res', width: r.frameWidth, height: r.frameHeight });
                                 });
                             } catch (e) { }
                         }
                     }, 1000);
                 });
-                call.on('close', () => {
-                    bus.postMessage({ type: 'status', connected: false });
-                    location.reload();
-                });
+                call.on('close', () => { bus.postMessage({ type: 'status', connected: false }); location.reload(); });
             });
         }
 
-        // --- Control Logic ---
         if (isControlMode) {
             bus.onmessage = (event) => {
                 const data = event.data;
@@ -280,54 +247,20 @@
                 if (data.type === 'res') document.getElementById('val-res').innerText = `${data.width}x${data.height}`;
                 if (data.type === 'status') {
                     const dot = document.getElementById('connection-dot');
-                    if (data.connected) dot.classList.replace('bg-red-500', 'bg-green-500');
-                    else dot.classList.replace('bg-green-500', 'bg-red-500');
+                    if (data.connected) dot.classList.replace('bg-red-500', 'bg-green-500'); else dot.classList.replace('bg-green-500', 'bg-red-500');
                 }
             };
         }
 
-        // Functions
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        function showError(msg) {
-            const el = document.getElementById('error-log');
-            el.innerText = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 5000);
-        }
-
-        function copyLinkOnly() {
-            const url = window.location.origin + window.location.pathname + "?mode=screen";
-            navigator.clipboard.writeText(url);
-            const btn = document.getElementById('btn-copy-obs');
-            btn.innerText = "Copied!"; btn.classList.add('bg-green-600');
-            setTimeout(() => { btn.innerText = "Copy Link"; btn.classList.remove('bg-green-600'); closeModal('obs-link-modal'); }, 1000);
-        }
-
-        function copyPhoneLink() {
-            const url = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html');
-            navigator.clipboard.writeText(url);
-            const btn = document.getElementById('btn-copy-phone');
-            btn.innerText = "Copied!";
-            setTimeout(() => { btn.innerText = "Copy Phone Link"; }, 1500);
-        }
-
-        function resetRoomId() {
-            if (confirm('สร้าง Room ID ใหม่? (มือถือที่เชื่อมต่ออยู่จะหลุดทันที)')) {
-                localStorage.removeItem('obs_fixed_room_id');
-                location.reload();
-            }
-        }
+        function showError(msg) { const el = document.getElementById('error-log'); el.innerText = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
+        function copyLinkOnly() { const url = window.location.origin + window.location.pathname + "?mode=screen"; navigator.clipboard.writeText(url); closeModal('obs-link-modal'); }
+        function copyPhoneLink() { const url = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId; navigator.clipboard.writeText(url); closeModal('phone-link-modal'); }
+        function resetRoomId() { if (confirm('สร้าง Room ID ใหม่?')) { localStorage.removeItem('obs_fixed_room_id'); location.reload(); } }
     </script>
-
-    <script type="text/javascript">
-        var sc_project = 13147874;
-        var sc_invisible = 1;
-        var sc_security = "550e33c0";
-        var scJsHost = "https://";
-        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
-    </script>
+    <script
+        type="text/javascript"> var sc_project = 13147874; var sc_invisible = 1; var sc_security = "550e33c0"; var scJsHost = "https://"; document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>"); </script>
 </body>
 
 </html>
