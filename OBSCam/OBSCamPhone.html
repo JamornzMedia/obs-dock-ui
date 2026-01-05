@@ -204,12 +204,15 @@
                 </select>
             </div>
 
-            <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto">
+            <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto items-center">
                 <button onclick="stopStreaming()"
                     class="bg-red-600/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"><i
                         class="fas fa-stop"></i></button>
+                <button onclick="reconnectSignaling()"
+                    class="bg-yellow-500/80 w-8 h-8 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"
+                    title="Reconnect Signal"><i class="fas fa-sync text-xs"></i></button>
                 <select id="live-cam-select" onchange="switchCamera(this.value)"
-                    class="bg-black/50 text-white text-[10px] h-10 px-2 rounded-full border border-white/20 outline-none max-w-[100px] truncate">
+                    class="bg-black/50 text-white text-[10px] h-10 px-2 rounded-full border border-white/20 outline-none max-w-[80px] truncate">
                     <option value="">Switch Cam...</option>
                 </select>
             </div>
@@ -410,6 +413,15 @@
             document.getElementById('setup').classList.remove('hidden');
         }
 
+        function reconnectSignaling() {
+            const rid = document.getElementById('room-id').value;
+            if (rid && targetCamIndex) {
+                if (pc) pc.close();
+                // แค่เชื่อมต่อใหม่ ไม่ต้องขอสิทธิ์กล้องใหม่
+                connectToRoom(rid, targetCamIndex);
+            }
+        }
+
         async function switchCamera(deviceId) {
             if (!deviceId || !myStream) return;
             try {
@@ -436,7 +448,7 @@
         async function connectToRoom(rid, cIdx) {
             const statusTxt = document.getElementById('status-txt');
             statusTxt.innerText = "Negotiating...";
-            statusTxt.className = "text-xs text-yellow-400";
+            statusTxt.className = "text-xs text-yellow-400 font-bold";
 
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
             pc = new RTCPeerConnection(rtcConfig);
