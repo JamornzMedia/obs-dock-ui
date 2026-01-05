@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V1.1</title>
+    <title>OBSCam Phone V1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -34,17 +34,61 @@
             appearance: none;
         }
 
-        /* ซ่อน Scrollbar */
         ::-webkit-scrollbar {
             width: 0px;
             background: transparent;
+        }
+
+        /* Grid Layer */
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+        }
+
+        .grid-cell {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .grid-cell:nth-child(-n+3) {
+            border-top: none;
+        }
+
+        .grid-cell:nth-child(n+7) {
+            border-bottom: none;
+        }
+
+        .grid-cell:nth-child(3n+1) {
+            border-left: none;
+        }
+
+        .grid-cell:nth-child(3n) {
+            border-right: none;
+        }
+
+        .right-bar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            pointer-events: auto;
+            padding-right: 10px;
         }
     </style>
 </head>
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.1</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.2</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -88,10 +132,10 @@
                     <select id="bitrate"
                         class="w-full h-full bg-black text-white p-2 rounded-lg text-sm border border-gray-700 outline-none"
                         onchange="checkCustomBitrate(this)">
-                        <option value="2500">2.5 M (Std)</option>
+                        <option value="2500">2.5 M</option>
                         <option value="3000">3.0 M</option>
                         <option value="3500">3.5 M</option>
-                        <option value="4000">4.0 M (High)</option>
+                        <option value="4000">4.0 M</option>
                         <option value="6000">6.0 M</option>
                         <option value="custom">Custom...</option>
                     </select>
@@ -102,11 +146,10 @@
                 class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-2 active:scale-95 transition-transform text-white">START
                 STREAMING</button>
         </div>
-
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.2</p>
         </div>
     </div>
 
@@ -121,12 +164,49 @@
 
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
-        <div id="overlay-controls" class="absolute inset-0 pointer-events-none">
-            <div class="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-full"><span id="status-txt"
-                    class="text-xs text-yellow-400">Connecting...</span></div>
+        <div id="grid-layer" class="grid-lines hidden">
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+            <div class="grid-cell"></div>
+        </div>
+
+        <div id="overlay-controls" class="absolute inset-0 pointer-events-none transition-opacity duration-300">
+            <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
+                <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10"><span id="status-txt"
+                        class="text-xs text-yellow-400">Connecting...</span></div>
+                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                    class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none">
+                    <option value="2500">2.5M</option>
+                    <option value="3500">3.5M</option>
+                    <option value="4000">4.0M</option>
+                    <option value="6000">6.0M</option>
+                </select>
+            </div>
+
             <button onclick="location.reload()"
-                class="absolute bottom-6 left-6 bg-red-600 w-12 h-12 rounded-full flex items-center justify-center shadow pointer-events-auto text-white"><i
-                    class="fas fa-stop"></i></button>
+                class="absolute bottom-6 left-6 bg-red-600/80 w-12 h-12 rounded-full flex items-center justify-center shadow pointer-events-auto active:scale-90 transition-transform text-white"><i
+                    class="fas fa-stop text-lg"></i></button>
+
+            <div class="right-bar">
+                <button onclick="toggleTorch()" id="torch-btn"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500"><i
+                        class="fas fa-bolt text-white"></i></button>
+                <button onclick="triggerAutoFocus()"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
+                        class="fas fa-crosshairs text-white"></i></button>
+                <button onclick="toggleGrid()" id="grid-btn"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500"><i
+                        class="fas fa-border-all text-white"></i></button>
+                <button onclick="toggleFullScreen()"
+                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500"><i
+                        class="fas fa-expand text-white"></i></button>
+            </div>
         </div>
     </div>
 
@@ -147,28 +227,20 @@
         const db = firebase.database();
 
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
-
         let pc, myStream, videoTrack, qrStream, customBitrateVal = 2500;
 
-        // Init
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
         if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
 
-        // ขอ Permission และโหลดรายชื่อกล้อง
         initCameraSelection();
 
         async function initCameraSelection() {
             try {
-                // ขออนุญาตใช้กล้องครั้งแรกเพื่อดึงชื่ออุปกรณ์
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoSelect = document.getElementById('camera-select');
-
-                // ล้าง option เก่า (เหลือ default)
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
-
                 let count = 1;
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
@@ -178,100 +250,76 @@
                         videoSelect.appendChild(option);
                     }
                 });
-            } catch (e) {
-                console.log("Permission not granted yet or no camera found");
-            }
+            } catch (e) { console.log("Permission Error"); }
         }
 
         function checkCustomBitrate(el) {
             if (el.value === 'custom') {
                 const val = prompt("กรอก Bitrate (kbps) เช่น 3000:", customBitrateVal);
-                if (val && !isNaN(val)) {
-                    customBitrateVal = parseInt(val);
-                    // สร้าง option ชั่วคราวมาแสดง
-                    el.options[el.options.length - 1].text = `Custom (${val})`;
-                } else {
-                    el.value = "2500"; // กลับไปค่าเดิม
-                }
+                if (val && !isNaN(val)) { customBitrateVal = parseInt(val); el.options[el.options.length - 1].text = `Custom (${val})`; }
+                else { el.value = "2500"; }
             }
         }
 
         async function startStreaming() {
             const rid = document.getElementById('room-id').value;
             if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
-
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
             const selectedCamId = document.getElementById('camera-select').value;
 
-            // ตั้งค่ากล้อง
-            let videoConstraints = {
-                width: { ideal: quality * 1.777 },
-                height: { ideal: quality },
-                frameRate: { ideal: fpsVal }
-            };
-
-            // ถ้าเลือกกล้องเจาะจง ให้ใช้ deviceId ถ้าไม่เลือก ให้ลองใช้ environment (กล้องหลัง)
-            if (selectedCamId) {
-                videoConstraints.deviceId = { exact: selectedCamId };
-            } else {
-                videoConstraints.facingMode = 'environment';
-            }
+            let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
+            if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
 
             try {
-                try {
-                    // รอบแรก: ลองเปิดตามที่ขอ
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints });
-                } catch (err) {
-                    console.warn("First attempt failed, trying fallback...", err);
-                    // รอบสอง: ถ้าเปิดไม่ได้ (เช่น environment ในคอม) ให้เปิดแบบไม่ระบุสเปค
-                    delete videoConstraints.facingMode;
-                    delete videoConstraints.deviceId;
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints });
-                }
+                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); }
+                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); }
 
+                videoTrack = myStream.getVideoTracks()[0]; // เก็บ Track ไว้ใช้กับแฟลช/โฟกัส
                 document.getElementById('preview').srcObject = myStream;
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
+                // Hide controls on tap
+                document.getElementById('live-ui').addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I' && e.target.tagName !== 'SELECT') {
+                        const overlay = document.getElementById('overlay-controls');
+                        overlay.style.opacity = overlay.style.opacity === '0' ? '1' : '0';
+                    }
+                });
+
                 connectToRoom(rid);
-            } catch (e) {
-                alert('Camera Error: ' + e.message + '\n(เช็คว่ามีแอปอื่นใช้กล้องอยู่ไหม)');
-            }
+            } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
         async function connectToRoom(rid) {
             const roomRef = db.ref(`rooms/${rid}`);
             pc = new RTCPeerConnection(rtcConfig);
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
-
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('callerCandidates').push(event.candidate.toJSON()); };
-
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
             roomRef.child('answer').on('value', async snapshot => {
                 const data = snapshot.val();
                 if (!data) return;
-
                 if (!pc.currentRemoteDescription) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data));
                     document.getElementById('status-txt').innerText = "CONNECTED (LIVE)";
                     document.getElementById('status-txt').className = "text-xs text-green-400 font-bold";
                 }
             });
-
             roomRef.child('calleeCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
 
-            // คำนวณ Bitrate
             let bitrateVal = document.getElementById('bitrate').value;
             if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
             else bitrateVal = parseInt(bitrateVal);
-
-            // แปลงเป็น bps (x1000)
             setBitrate(pc, bitrateVal * 1000);
+
+            // Sync initial bitrate to live dropdown
+            const liveDrop = document.getElementById('live-bitrate');
+            if ([...liveDrop.options].some(o => o.value == bitrateVal)) liveDrop.value = bitrateVal;
         }
 
         function setBitrate(pc, bitrate) {
@@ -284,6 +332,15 @@
             }
         }
 
+        function updateLiveBitrate(val) { if (pc) setBitrate(pc, parseInt(val) * 1000); }
+
+        // --- Helper Functions from V1.0 ---
+        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
+        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
+        function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
+
+        // QR Logic
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
             const video = document.getElementById('qr-video');
