@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V1.5</title>
+    <title>OBSCam Phone V2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,7 +92,7 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.5</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V2.0</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -107,11 +107,13 @@
             </div>
 
             <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
-                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To</label>
+                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Target)</label>
                 <select id="cam-index"
                     class="w-full bg-black text-white p-3 rounded-lg text-sm border border-blue-500/50 outline-none font-bold">
                     <option value="1">CAMERA 1</option>
                     <option value="2">CAMERA 2</option>
+                    <option value="3">CAMERA 3</option>
+                    <option value="4">CAMERA 4</option>
                 </select>
             </div>
 
@@ -156,11 +158,10 @@
                 class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-2 active:scale-95 transition-transform text-white">START
                 STREAMING</button>
         </div>
-
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.5</p>
+            <p class="text-[9px] text-gray-600">OBSCam V2.0</p>
         </div>
     </div>
 
@@ -234,7 +235,7 @@
     </div>
 
     <script>
-        // --- CONFIG ของคุณ ---
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
             authDomain: "obscam-p2p.firebaseapp.com",
@@ -255,9 +256,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
 
-        initCameraSelection().then(() => {
-            loadSettings();
-        });
+        initCameraSelection().then(() => { loadSettings(); });
 
         async function initCameraSelection() {
             try {
@@ -283,7 +282,6 @@
             } catch (e) { console.log("Permission Error"); }
         }
 
-        // --- แก้ BUG Cache & Load ---
         function loadSettings() {
             if (roomFromUrl) {
                 document.getElementById('room-id').value = roomFromUrl;
@@ -293,12 +291,9 @@
             }
 
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
-
             const savedCam = localStorage.getItem('obs_cam_select');
             const camSel = document.getElementById('camera-select');
-            if (savedCam && [...camSel.options].some(o => o.value === savedCam)) {
-                camSel.value = savedCam;
-            }
+            if (savedCam && [...camSel.options].some(o => o.value === savedCam)) camSel.value = savedCam;
 
             if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
             if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
@@ -321,9 +316,7 @@
             localStorage.setItem('obs_res', document.getElementById('res').value);
             localStorage.setItem('obs_fps', document.getElementById('fps').value);
             localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
-            if (document.getElementById('bitrate').value === 'custom') {
-                localStorage.setItem('obs_custom_bitrate', customBitrateVal);
-            }
+            if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
         }
 
         function checkCustomBitrate(el) {
@@ -353,7 +346,6 @@
             const rid = document.getElementById('room-id').value;
             if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
 
-            // SHOW ROOM ID ON LIVE SCREEN
             document.getElementById('live-room-display').innerText = "Room: " + rid;
 
             const statusTxt = document.getElementById('status-txt');
@@ -395,20 +387,19 @@
                     }
                 });
 
-                // CLEANUP: ฝากคำสั่งลบข้อมูลกล้องตัวเองเมื่อหลุด
+                // CLEANUP on Disconnect
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().remove();
 
                 connectToRoom(rid, targetCamIndex);
             } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
-        // --- NEW: Stop without Reloading (แก้ปัญหาเลขห้องเด้งกลับ) ---
+        // STOP STREAMING (NO RELOAD)
         function stopStreaming() {
             if (myStream) myStream.getTracks().forEach(track => track.stop());
             if (pc) pc.close();
             pc = null;
 
-            // ลบข้อมูลกล้องตัวเองออกจาก Firebase
             const rid = document.getElementById('room-id').value;
             if (rid && targetCamIndex) {
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).remove();
