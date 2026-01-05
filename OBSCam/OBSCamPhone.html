@@ -252,7 +252,6 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
-        if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
 
         initCameraSelection().then(() => {
             loadSettings();
@@ -287,7 +286,8 @@
             // Priority: URL Param > Cache
             if (roomFromUrl) {
                 document.getElementById('room-id').value = roomFromUrl;
-                localStorage.setItem('obs_room_id', roomFromUrl); // Update Cache immediately
+                // Force Update Cache ทันที เพื่อไม่ให้เลขเก่ากลับมาหลอน
+                localStorage.setItem('obs_room_id', roomFromUrl);
             } else if (localStorage.getItem('obs_room_id')) {
                 document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
             }
@@ -356,6 +356,7 @@
             const statusTxt = document.getElementById('status-txt');
             statusTxt.innerText = "Checking Room...";
 
+            // เช็คว่ามีห้องจริงไหม (ต้องเปิด Monitor ก่อน)
             const roomSnap = await db.ref(`rooms/${rid}/active`).get();
             if (!roomSnap.exists()) {
                 alert(`ไม่พบห้อง ${rid}!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) ให้ขึ้นเลขห้องก่อนครับ`);
