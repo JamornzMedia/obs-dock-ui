@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V1.4</title>
+    <title>OBSCam Phone V1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,7 +92,7 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.4</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.1</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -160,7 +160,7 @@
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.4</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
         </div>
     </div>
 
@@ -255,7 +255,7 @@
         if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
 
         initCameraSelection().then(() => {
-            loadSettings(); // โหลดค่าหลังกล้องพร้อมแล้ว
+            loadSettings();
         });
 
         async function initCameraSelection() {
@@ -282,23 +282,18 @@
             } catch (e) { console.log("Permission Error"); }
         }
 
-        function saveSettings() {
-            localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
-            localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
-            localStorage.setItem('obs_cam_select', document.getElementById('camera-select').value);
-            localStorage.setItem('obs_res', document.getElementById('res').value);
-            localStorage.setItem('obs_fps', document.getElementById('fps').value);
-            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
-            if (document.getElementById('bitrate').value === 'custom') {
-                localStorage.setItem('obs_custom_bitrate', customBitrateVal);
-            }
-        }
-
+        // --- แก้ BUG Cache ---
         function loadSettings() {
-            if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+            // Priority: URL Param > Cache
+            if (roomFromUrl) {
+                document.getElementById('room-id').value = roomFromUrl;
+                localStorage.setItem('obs_room_id', roomFromUrl); // Update Cache immediately
+            } else if (localStorage.getItem('obs_room_id')) {
+                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+            }
+
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
 
-            // Check if saved camera still exists
             const savedCam = localStorage.getItem('obs_cam_select');
             const camSel = document.getElementById('camera-select');
             if (savedCam && [...camSel.options].some(o => o.value === savedCam)) {
@@ -311,14 +306,23 @@
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
-
                 if (b === 'custom' && localStorage.getItem('obs_custom_bitrate')) {
                     customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
                     sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
                     sel.value = 'custom';
-                } else {
-                    sel.value = b;
-                }
+                } else { sel.value = b; }
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
+            localStorage.setItem('obs_cam_select', document.getElementById('camera-select').value);
+            localStorage.setItem('obs_res', document.getElementById('res').value);
+            localStorage.setItem('obs_fps', document.getElementById('fps').value);
+            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
+            if (document.getElementById('bitrate').value === 'custom') {
+                localStorage.setItem('obs_custom_bitrate', customBitrateVal);
             }
         }
 
@@ -349,7 +353,6 @@
             const rid = document.getElementById('room-id').value;
             if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
 
-            // --- Step 1: Check Room Existence ---
             const statusTxt = document.getElementById('status-txt');
             statusTxt.innerText = "Checking Room...";
 
@@ -360,8 +363,6 @@
             }
 
             targetCamIndex = document.getElementById('cam-index').value;
-
-            // --- Step 2: Check Camera Availability ---
             const camSnap = await db.ref(`rooms/${rid}/cam${targetCamIndex}/offer`).get();
             if (camSnap.exists()) {
                 const confirmOverride = confirm(`Camera ${targetCamIndex} มีการใช้งานอยู่\nต้องการเชื่อมต่อทับหรือไม่?`);

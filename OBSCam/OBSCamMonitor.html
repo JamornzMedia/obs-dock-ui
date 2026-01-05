@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V1.4</title>
+    <title>OBSCam Monitor V1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -82,7 +82,6 @@
             display: none !important;
         }
 
-        /* Preview Mini Windows */
         .cam-preview {
             width: 80px;
             height: 45px;
@@ -98,6 +97,17 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* Interactive Footer Text */
+        .dev-link {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .dev-link:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -109,12 +119,12 @@
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
-                V1.4</h1>
+                V1.1</h1>
             <div class="flex items-center gap-2">
                 <div class="flex items-center gap-2 bg-gray-800 px-2 py-1 rounded border border-gray-700">
                     <span class="text-[9px] text-gray-400">Preview:</span>
                     <button id="btn-preview-toggle" onclick="toggleDashboardReceiver()"
-                        class="text-[9px] font-bold text-green-400">ON</button>
+                        class="text-[9px] font-bold text-gray-500">OFF</button>
                 </div>
                 <button onclick="window.location.reload()"
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
@@ -139,7 +149,7 @@
                             <span class="w-2 h-2 rounded-full bg-red-500" id="dot-cam1"></span>
                             <span class="text-xs font-bold text-gray-300">CAM 1</span>
                         </div>
-                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam1">Waiting...</div>
+                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam1">Ready</div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -155,7 +165,7 @@
                             <span class="w-2 h-2 rounded-full bg-red-500" id="dot-cam2"></span>
                             <span class="text-xs font-bold text-gray-300">CAM 2</span>
                         </div>
-                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam2">Waiting...</div>
+                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam2">Ready</div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -187,19 +197,18 @@
                 Room ID</button>
         </div>
 
-        <p class="text-[9px] text-gray-600 text-center mt-2">Note: ปิด Preview ด้านบนก่อนนำไปใช้จริงใน OBS</p>
+        <p class="text-[9px] text-gray-600 text-center mt-2">Note: กด Preview: ON เพื่อทดสอบสัญญาณ (ปิดก่อนใช้ใน OBS)
+        </p>
 
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
-            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
-            </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.4</p>
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold dev-link"
+                    onclick="openModal('sponsor-modal')">JamornzMedia</span></p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box text-left">
                 <h3 class="text-blue-400 font-bold mb-3 text-sm text-center">OBS Browser Sources</h3>
-                <p class="text-[9px] text-red-400 mb-2 text-center">*เมื่อใส่ใน OBS แล้ว ให้กดปุ่ม Preview: OFF
-                    ที่หน้าควบคุมด้วย*</p>
                 <label class="text-[9px] text-gray-500 uppercase">Camera 1</label>
                 <div class="flex gap-1 mb-3">
                     <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700"
@@ -229,6 +238,19 @@
                     class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
         </div>
+
+        <div id="sponsor-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-yellow-500 font-bold mb-3 text-sm">Support Dev</h3><img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600"><a
+                    href="https://easydonate.app/Jamornz" target="_blank"
+                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a><button
+                    onclick="closeModal('sponsor-modal')"
+                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
+            </div>
+        </div>
+
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
@@ -242,7 +264,7 @@
     </div>
 
     <script>
-        // --- CONFIG ของคุณ ---
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
             authDomain: "obscam-p2p.firebaseapp.com",
@@ -259,24 +281,23 @@
         const mode = params.get('mode');
         const camIndex = params.get('cam') || '1';
         const isScreenMode = mode === 'screen';
-        const bus = new BroadcastChannel('obs_v1_4_channel');
+        const bus = new BroadcastChannel('obs_v1_5_channel');
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         let roomId, pc;
         let statsState = { cam1: 0, cam2: 0 };
         let totalBytesConsumed = 0;
-        let isDashboardReceiverActive = true; // Default ON เพื่อให้เทสได้เลย
-        let dashboardPCs = { '1': null, '2': null }; // เก็บ Connection ของหน้า Dashboard
+        let isDashboardReceiverActive = false; // Default OFF
+        let dashboardPCs = { '1': null, '2': null };
 
         if (!isScreenMode) {
             // == Control Mode ==
-            roomId = localStorage.getItem('obs_v1_4_room_id');
+            roomId = localStorage.getItem('obs_v1_5_room_id');
             if (!roomId) {
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
-                localStorage.setItem('obs_v1_4_room_id', roomId);
+                localStorage.setItem('obs_v1_5_room_id', roomId);
             }
 
-            // สร้างห้อง (Active Flag)
             db.ref(`rooms/${roomId}/active`).set(true);
             db.ref(`rooms/${roomId}/active`).onDisconnect().remove();
 
@@ -285,27 +306,23 @@
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
 
-            // **เริ่มรับสัญญาณทันทีในโหมด Preview**
-            initDashboardReceiver('1');
-            initDashboardReceiver('2');
+            // Init Receiver if needed (Default is OFF)
+            if (isDashboardReceiverActive) { initDashboardReceiver('1'); initDashboardReceiver('2'); }
 
-            // รับ Stats จาก Screen Mode (กรณี OBS ทำงาน)
             bus.onmessage = (e) => {
                 const d = e.data;
-                // ถ้ามีข้อมูลจาก OBS เข้ามา ให้ถือว่า OBS ทำงานแล้ว (แต่เราจะไม่ปิด Preview อัตโนมัติ กันงง ให้ user กดปิดเอง)
                 updateUIStats(d);
             };
         }
         else {
-            // == Screen Mode (OBS) ==
-            roomId = localStorage.getItem('obs_v1_4_room_id');
+            // == Screen Mode ==
+            roomId = localStorage.getItem('obs_v1_5_room_id');
             if (roomId) {
                 document.getElementById('mode-screen').classList.remove('hidden');
                 startReceiver(roomId, camIndex);
             }
         }
 
-        // --- Logic สำหรับ Dashboard Receiver (Preview) ---
         function toggleDashboardReceiver() {
             isDashboardReceiverActive = !isDashboardReceiverActive;
             const btn = document.getElementById('btn-preview-toggle');
@@ -322,7 +339,6 @@
             if (!isDashboardReceiverActive) return;
             const roomRef = db.ref(`rooms/${roomId}/cam${cIdx}`);
 
-            // Clean up old
             if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); dashboardPCs[cIdx] = null; }
 
             const dPC = new RTCPeerConnection(rtcConfig);
@@ -335,7 +351,6 @@
                 video.srcObject = event.streams[0];
                 updateConnectionStatus(cIdx, true);
 
-                // Dashboard Stats Loop
                 let lastBytes = 0, lastTime = 0;
                 setInterval(async () => {
                     if (dPC && dPC.connectionState === 'connected') {
@@ -347,7 +362,6 @@
                                 if (lastTime) {
                                     const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
                                     const diffBytes = bytes - lastBytes;
-                                    // Update UI directly
                                     updateUIStats({ type: 'stats', bitrate: bitrate, cam: cIdx, bytes: diffBytes });
                                 }
                                 lastBytes = bytes; lastTime = now;
@@ -360,15 +374,11 @@
                 }, 1000);
             };
 
-            // Listen for Offer (Only if we are active)
             roomRef.child('offer').on('value', async snapshot => {
                 if (!isDashboardReceiverActive) return;
                 const data = snapshot.val();
                 if (!data) return;
-
-                // ถ้า OBS แย่งรับไปแล้ว (Offer หาย) เราจะไม่ทำอะไร
-                // แต่ถ้า Offer ยังอยู่ เราจะตอบ
-                if (dPC.signalingState === "stable") return; // Already connected
+                if (dPC.signalingState === "stable") return;
 
                 await dPC.setRemoteDescription(new RTCSessionDescription(data));
                 const answer = await dPC.createAnswer();
@@ -390,7 +400,7 @@
 
         function stopDashboardReceiver(cIdx) {
             if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); dashboardPCs[cIdx] = null; }
-            db.ref(`rooms/${roomId}/cam${cIdx}/offer`).off(); // Stop listening
+            db.ref(`rooms/${roomId}/cam${cIdx}/offer`).off();
             updateConnectionStatus(cIdx, false);
         }
 
@@ -399,11 +409,10 @@
             const status = document.getElementById(`status-cam${cIdx}`);
             if (connected) {
                 dot.className = "w-2 h-2 rounded-full bg-green-500";
-                status.innerText = "Connected (Preview)";
-                status.className = "text-[9px] text-green-500 mt-1";
+                status.innerText = "Previewing"; status.className = "text-[9px] text-green-500 mt-1";
             } else {
                 dot.className = "w-2 h-2 rounded-full bg-red-500";
-                status.innerText = isDashboardReceiverActive ? "Waiting..." : "Preview OFF";
+                status.innerText = isDashboardReceiverActive ? "Waiting..." : "OFF";
                 status.className = "text-[9px] text-gray-500 mt-1";
             }
         }
@@ -413,11 +422,9 @@
             if (d.type === 'stats') {
                 const el = document.getElementById(`bit-cam${camId}`);
                 if (el) el.innerText = d.bitrate + " kbps";
-
                 if (camId == '1') statsState.cam1 = d.bitrate;
                 if (camId == '2') statsState.cam2 = d.bitrate;
                 document.getElementById('val-total-bitrate').innerText = (statsState.cam1 + statsState.cam2) + " kbps";
-
                 if (d.bytes) {
                     totalBytesConsumed += d.bytes;
                     updateDataDisplay();
@@ -429,12 +436,9 @@
             }
         }
 
-        // --- Logic สำหรับ OBS (Screen Mode) ---
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
-            // Force reset when OBS connects
             await roomRef.remove();
-
             pc = new RTCPeerConnection(rtcConfig);
 
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
@@ -483,7 +487,6 @@
             };
         }
 
-        // --- Helper ---
         function updateDataDisplay() {
             let s = "";
             if (totalBytesConsumed < 1024 * 1024) s = (totalBytesConsumed / 1024).toFixed(1) + " KB";
@@ -503,7 +506,7 @@
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId); closeModal('phone-link-modal'); }
         function openNewRoomModal() { openModal('new-room-modal'); }
-        function confirmNewRoom() { localStorage.removeItem('obs_v1_4_room_id'); location.reload(); }
+        function confirmNewRoom() { localStorage.removeItem('obs_v1_5_room_id'); location.reload(); }
     </script>
 </body>
 
