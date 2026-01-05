@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V1.1</title>
+    <title>OBSCam Phone V1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,7 +92,7 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.1</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.5</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -160,7 +160,7 @@
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.5</p>
         </div>
     </div>
 
@@ -189,8 +189,10 @@
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none transition-opacity duration-300">
             <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
-                <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10 w-fit"><span id="status-txt"
-                        class="text-xs text-yellow-400">Connecting...</span></div>
+                <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10 w-fit">
+                    <span id="status-txt" class="text-xs text-yellow-400 font-bold">Connecting...</span>
+                    <div id="live-room-display" class="text-[8px] text-gray-400 font-mono mt-[-2px]">Room: -----</div>
+                </div>
                 <select id="live-bitrate" onchange="updateLiveBitrate(this)"
                     class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none w-24">
                     <option value="2500">2.5M</option>
@@ -202,7 +204,7 @@
             </div>
 
             <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto">
-                <button onclick="location.reload()"
+                <button onclick="stopStreaming()"
                     class="bg-red-600/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"><i
                         class="fas fa-stop"></i></button>
                 <select id="live-cam-select" onchange="switchCamera(this.value)"
@@ -281,12 +283,10 @@
             } catch (e) { console.log("Permission Error"); }
         }
 
-        // --- แก้ BUG Cache ---
+        // --- แก้ BUG Cache & Load ---
         function loadSettings() {
-            // Priority: URL Param > Cache
             if (roomFromUrl) {
                 document.getElementById('room-id').value = roomFromUrl;
-                // Force Update Cache ทันที เพื่อไม่ให้เลขเก่ากลับมาหลอน
                 localStorage.setItem('obs_room_id', roomFromUrl);
             } else if (localStorage.getItem('obs_room_id')) {
                 document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
@@ -353,10 +353,12 @@
             const rid = document.getElementById('room-id').value;
             if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
 
+            // SHOW ROOM ID ON LIVE SCREEN
+            document.getElementById('live-room-display').innerText = "Room: " + rid;
+
             const statusTxt = document.getElementById('status-txt');
             statusTxt.innerText = "Checking Room...";
 
-            // เช็คว่ามีห้องจริงไหม (ต้องเปิด Monitor ก่อน)
             const roomSnap = await db.ref(`rooms/${rid}/active`).get();
             if (!roomSnap.exists()) {
                 alert(`ไม่พบห้อง ${rid}!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) ให้ขึ้นเลขห้องก่อนครับ`);
@@ -393,8 +395,28 @@
                     }
                 });
 
+                // CLEANUP: ฝากคำสั่งลบข้อมูลกล้องตัวเองเมื่อหลุด
+                db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().remove();
+
                 connectToRoom(rid, targetCamIndex);
             } catch (e) { alert('Camera Error: ' + e.message); }
+        }
+
+        // --- NEW: Stop without Reloading (แก้ปัญหาเลขห้องเด้งกลับ) ---
+        function stopStreaming() {
+            if (myStream) myStream.getTracks().forEach(track => track.stop());
+            if (pc) pc.close();
+            pc = null;
+
+            // ลบข้อมูลกล้องตัวเองออกจาก Firebase
+            const rid = document.getElementById('room-id').value;
+            if (rid && targetCamIndex) {
+                db.ref(`rooms/${rid}/cam${targetCamIndex}`).remove();
+                db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().cancel();
+            }
+
+            document.getElementById('live-ui').classList.add('hidden');
+            document.getElementById('setup').classList.remove('hidden');
         }
 
         async function switchCamera(deviceId) {

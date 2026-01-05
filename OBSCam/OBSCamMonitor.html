@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V1.1</title>
+    <title>OBSCam Monitor V1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -82,7 +82,6 @@
             display: none !important;
         }
 
-        /* Preview Windows */
         .cam-preview {
             width: 80px;
             height: 45px;
@@ -107,7 +106,6 @@
             color: #555;
         }
 
-        /* Link Style */
         .dev-link {
             cursor: pointer;
             transition: color 0.2s;
@@ -116,7 +114,6 @@
         .dev-link:hover {
             color: #60a5fa;
             text-decoration: underline;
-            text-shadow: 0 0 5px rgba(96, 165, 250, 0.5);
         }
     </style>
 </head>
@@ -139,8 +136,7 @@
                 <button onclick="window.location.reload()"
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
                         class="fas fa-sync"></i></button>
-                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 transition-colors duration-300"
-                    title="Main Status"></div>
+                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 transition-colors duration-300"></div>
             </div>
         </div>
 
@@ -154,16 +150,13 @@
         <div class="space-y-2 mb-3">
             <div class="bg-gray-900 p-2 rounded border border-gray-800 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="cam-preview">
-                        <video id="preview-video-1" autoplay playsinline muted></video>
+                    <div class="cam-preview"><video id="preview-video-1" autoplay playsinline muted></video>
                         <div class="cam-placeholder absolute" id="placeholder-1">WAITING</div>
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-red-500" id="dot-cam1"></span>
-                            <span class="text-xs font-bold text-gray-300">CAM 1</span>
-                        </div>
-                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam1">Waiting Signal...</div>
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"
+                                id="dot-cam1"></span><span class="text-xs font-bold text-gray-300">CAM 1</span></div>
+                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam1">Waiting...</div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -173,16 +166,13 @@
             </div>
             <div class="bg-gray-900 p-2 rounded border border-gray-800 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="cam-preview">
-                        <video id="preview-video-2" autoplay playsinline muted></video>
+                    <div class="cam-preview"><video id="preview-video-2" autoplay playsinline muted></video>
                         <div class="cam-placeholder absolute" id="placeholder-2">WAITING</div>
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-red-500" id="dot-cam2"></span>
-                            <span class="text-xs font-bold text-gray-300">CAM 2</span>
-                        </div>
-                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam2">Waiting Signal...</div>
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"
+                                id="dot-cam2"></span><span class="text-xs font-bold text-gray-300">CAM 2</span></div>
+                        <div class="text-[9px] text-gray-500 mt-1" id="status-cam2">Waiting...</div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -214,13 +204,13 @@
                 Room ID</button>
         </div>
 
-        <p class="text-[9px] text-gray-600 text-center mt-2">คำแนะนำ: กดปุ่ม Preview: OFF เมื่อใช้งานจริงใน OBS
-            เพื่อลดภาระเครื่อง</p>
+        <p class="text-[9px] text-gray-600 text-center mt-2">Note: ปิด Preview หากต้องการลดภาระเครื่องเมื่อใช้กับ OBS
+        </p>
 
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold dev-link"
                     onclick="openModal('sponsor-modal')">JamornzMedia</span></p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.5</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -229,15 +219,13 @@
                 <label class="text-[9px] text-gray-500 uppercase">Camera 1</label>
                 <div class="flex gap-1 mb-3">
                     <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700"
-                        id="link-text-cam1">...</div>
-                    <button onclick="copyToClip('link-text-cam1')"
+                        id="link-text-cam1">...</div><button onclick="copyToClip('link-text-cam1')"
                         class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button>
                 </div>
                 <label class="text-[9px] text-gray-500 uppercase">Camera 2</label>
                 <div class="flex gap-1 mb-4">
                     <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700"
-                        id="link-text-cam2">...</div>
-                    <button onclick="copyToClip('link-text-cam2')"
+                        id="link-text-cam2">...</div><button onclick="copyToClip('link-text-cam2')"
                         class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button>
                 </div>
                 <button onclick="closeModal('obs-link-modal')"
@@ -267,7 +255,6 @@
                     class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
         </div>
-
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
@@ -298,49 +285,48 @@
         const mode = params.get('mode');
         const camIndex = params.get('cam') || '1';
         const isScreenMode = mode === 'screen';
-        const bus = new BroadcastChannel('obs_v1_6_channel');
+        const bus = new BroadcastChannel('obs_v1_5_channel');
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         let roomId, pc;
         let statsState = { cam1: 0, cam2: 0 };
         let totalBytesConsumed = 0;
-        let isDashboardReceiverActive = true; // ✅ แก้แล้ว: เปิดรับภาพอัตโนมัติ
+        let isDashboardReceiverActive = true; // Auto ON
         let dashboardPCs = { '1': null, '2': null };
 
         if (!isScreenMode) {
             // == Control Mode ==
-            roomId = localStorage.getItem('obs_v1_6_room_id');
+            roomId = localStorage.getItem('obs_v1_5_room_id');
             if (!roomId) {
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
-                localStorage.setItem('obs_v1_6_room_id', roomId);
+                localStorage.setItem('obs_v1_5_room_id', roomId);
             }
 
-            // Mark room as active for Phone check
-            db.ref(`rooms/${roomId}/active`).set(true);
-            db.ref(`rooms/${roomId}/active`).onDisconnect().remove();
+            // CLEANUP: Host is Master
+            const roomRef = db.ref(`rooms/${roomId}`);
+            roomRef.onDisconnect().remove(); // Disconnect = Delete Room
+            roomRef.child('active').set(true); // I am here
+
+            window.addEventListener('beforeunload', () => { roomRef.remove(); }); // Close Tab = Delete Room
 
             document.getElementById('mode-control').classList.remove('hidden');
             document.getElementById('display-room-id').innerText = roomId;
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
 
-            // Start Receivers (Auto ON)
             if (isDashboardReceiverActive) { initDashboardReceiver('1'); initDashboardReceiver('2'); }
 
-            bus.onmessage = (e) => {
-                const d = e.data;
-                updateUIStats(d);
-            };
+            bus.onmessage = (e) => { updateUIStats(e.data); };
         }
         else {
-            // == Screen Mode ==
-            roomId = localStorage.getItem('obs_v1_6_room_id');
+            roomId = localStorage.getItem('obs_v1_5_room_id');
             if (roomId) {
                 document.getElementById('mode-screen').classList.remove('hidden');
                 startReceiver(roomId, camIndex);
             }
         }
 
+        // ... Preview Logic ...
         function toggleDashboardReceiver() {
             isDashboardReceiverActive = !isDashboardReceiverActive;
             const btn = document.getElementById('btn-preview-toggle');
@@ -356,19 +342,15 @@
         async function initDashboardReceiver(cIdx) {
             if (!isDashboardReceiverActive) return;
             const roomRef = db.ref(`rooms/${roomId}/cam${cIdx}`);
-
             if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); dashboardPCs[cIdx] = null; }
-
             const dPC = new RTCPeerConnection(rtcConfig);
             dashboardPCs[cIdx] = dPC;
-
             dPC.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
-
             dPC.ontrack = event => {
                 const video = document.getElementById(`preview-video-${cIdx}`);
                 const ph = document.getElementById(`placeholder-${cIdx}`);
                 video.srcObject = event.streams[0];
-                ph.style.display = 'none'; // Hide text when video comes
+                ph.style.display = 'none';
                 updateConnectionStatus(cIdx, true);
 
                 let lastBytes = 0, lastTime = 0;
@@ -377,8 +359,7 @@
                         const stats = await dPC.getStats();
                         stats.forEach(r => {
                             if (r.type === 'inbound-rtp' && r.kind === 'video') {
-                                const now = r.timestamp;
-                                const bytes = r.bytesReceived;
+                                const now = r.timestamp; const bytes = r.bytesReceived;
                                 if (lastTime) {
                                     const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
                                     const diffBytes = bytes - lastBytes;
@@ -386,37 +367,22 @@
                                 }
                                 lastBytes = bytes; lastTime = now;
                             }
-                            if (r.type === 'track' && r.kind === 'video') {
-                                updateUIStats({ type: 'res', w: r.frameWidth, h: r.frameHeight, cam: cIdx });
-                            }
+                            if (r.type === 'track' && r.kind === 'video') updateUIStats({ type: 'res', w: r.frameWidth, h: r.frameHeight, cam: cIdx });
                         });
                     }
                 }, 1000);
             };
-
-            // Answer Logic
             roomRef.child('offer').on('value', async snapshot => {
                 if (!isDashboardReceiverActive) return;
-                const data = snapshot.val();
-                if (!data) return;
+                const data = snapshot.val(); if (!data) return;
                 if (dPC.signalingState === "stable") return;
-
                 await dPC.setRemoteDescription(new RTCSessionDescription(data));
                 const answer = await dPC.createAnswer();
                 await dPC.setLocalDescription(answer);
                 await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
             });
-
-            roomRef.child('callerCandidates').on('child_added', snapshot => {
-                if (!isDashboardReceiverActive) return;
-                const candidate = snapshot.val();
-                if (candidate) dPC.addIceCandidate(new RTCIceCandidate(candidate));
-            });
-
-            dPC.onconnectionstatechange = () => {
-                if (dPC.connectionState === 'disconnected' || dPC.connectionState === 'failed')
-                    updateConnectionStatus(cIdx, false);
-            };
+            roomRef.child('callerCandidates').on('child_added', snapshot => { if (!isDashboardReceiverActive) return; const candidate = snapshot.val(); if (candidate) dPC.addIceCandidate(new RTCIceCandidate(candidate)); });
+            dPC.onconnectionstatechange = () => { if (dPC.connectionState === 'disconnected' || dPC.connectionState === 'failed') updateConnectionStatus(cIdx, false); };
         }
 
         function stopDashboardReceiver(cIdx) {
@@ -429,14 +395,8 @@
         function updateConnectionStatus(cIdx, connected) {
             const dot = document.getElementById(`dot-cam${cIdx}`);
             const status = document.getElementById(`status-cam${cIdx}`);
-            if (connected) {
-                dot.className = "w-2 h-2 rounded-full bg-green-500";
-                status.innerText = "Connected"; status.className = "text-[9px] text-green-500 mt-1";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-red-500";
-                status.innerText = isDashboardReceiverActive ? "Waiting Signal..." : "Preview OFF";
-                status.className = "text-[9px] text-gray-500 mt-1";
-            }
+            if (connected) { dot.className = "w-2 h-2 rounded-full bg-green-500"; status.innerText = "Connected"; status.className = "text-[9px] text-green-500 mt-1"; }
+            else { dot.className = "w-2 h-2 rounded-full bg-red-500"; status.innerText = isDashboardReceiverActive ? "Waiting Signal..." : "OFF"; status.className = "text-[9px] text-gray-500 mt-1"; }
         }
 
         function updateUIStats(d) {
@@ -449,32 +409,24 @@
                 document.getElementById('val-total-bitrate').innerText = (statsState.cam1 + statsState.cam2) + " kbps";
                 if (d.bytes) { totalBytesConsumed += d.bytes; updateDataDisplay(); }
             }
-            if (d.type === 'res') {
-                const el = document.getElementById(`res-cam${camId}`);
-                if (el) el.innerText = `${d.w}x${d.h}`;
-            }
+            if (d.type === 'res') { const el = document.getElementById(`res-cam${camId}`); if (el) el.innerText = `${d.w}x${d.h}`; }
         }
 
-        // --- Screen Mode Logic ---
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
             await roomRef.remove();
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
-
             pc.ontrack = event => {
-                const video = document.getElementById('remote-video');
-                video.srcObject = event.streams[0];
+                const video = document.getElementById('remote-video'); video.srcObject = event.streams[0];
                 bus.postMessage({ type: 'status', connected: true, cam: cIdx });
-
                 let lastBytes = 0, lastTime = 0;
                 setInterval(async () => {
                     if (pc && pc.connectionState === 'connected') {
                         const stats = await pc.getStats();
                         stats.forEach(r => {
                             if (r.type === 'inbound-rtp' && r.kind === 'video') {
-                                const now = r.timestamp;
-                                const bytes = r.bytesReceived;
+                                const now = r.timestamp; const bytes = r.bytesReceived;
                                 if (lastTime) {
                                     const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
                                     const diffBytes = bytes - lastBytes;
@@ -482,28 +434,20 @@
                                 }
                                 lastBytes = bytes; lastTime = now;
                             }
-                            if (r.type === 'track' && r.kind === 'video') {
-                                bus.postMessage({ type: 'res', w: r.frameWidth, h: r.frameHeight, cam: cIdx });
-                            }
+                            if (r.type === 'track' && r.kind === 'video') bus.postMessage({ type: 'res', w: r.frameWidth, h: r.frameHeight, cam: cIdx });
                         });
                     }
                 }, 1000);
             };
-
             roomRef.child('offer').on('value', async snapshot => {
-                const data = snapshot.val();
-                if (!data) return;
+                const data = snapshot.val(); if (!data) return;
                 await pc.setRemoteDescription(new RTCSessionDescription(data));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
             });
             roomRef.child('callerCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
-
-            pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed')
-                    bus.postMessage({ type: 'status', connected: false, cam: cIdx });
-            };
+            pc.onconnectionstatechange = () => { if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') bus.postMessage({ type: 'status', connected: false, cam: cIdx }); };
         }
 
         function updateDataDisplay() {
@@ -524,7 +468,7 @@
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId); closeModal('phone-link-modal'); }
         function openNewRoomModal() { openModal('new-room-modal'); }
-        function confirmNewRoom() { localStorage.removeItem('obs_v1_6_room_id'); location.reload(); }
+        function confirmNewRoom() { db.ref(`rooms/${roomId}`).remove(); localStorage.removeItem('obs_v1_5_room_id'); location.reload(); }
     </script>
 </body>
 
