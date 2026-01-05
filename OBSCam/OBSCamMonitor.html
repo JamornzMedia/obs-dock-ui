@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V2.0</title>
+    <title>OBSCam Monitor V1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -63,7 +63,7 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
-        /* Screen Mode */
+        /* Force Landscape 16:9 Always */
         #mode-screen {
             width: 100vw;
             height: 100vh;
@@ -72,55 +72,15 @@
             position: relative;
         }
 
-        /* แก้ให้ภาพเต็มจอเสมอ (Cover) */
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.3s;
-        }
-
-        /* Orientation Helper */
-        .force-portrait {
-            transform: rotate(-90deg);
-            width: 100vh !important;
-            height: 100vw !important;
-            max-width: none;
-            max-height: none;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            translate: -50% -50%;
+            transform: none !important;
         }
 
         .hidden {
             display: none !important;
-        }
-
-        /* Tooltip for Total Bitrate */
-        .tooltip {
-            visibility: hidden;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 5px 10px;
-            border-radius: 6px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 10px;
-            width: max-content;
-            pointer-events: none;
-            border: 1px solid #555;
-        }
-
-        .stat-card:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
         }
     </style>
 </head>
@@ -133,16 +93,12 @@
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
-                V2.0</h1>
+                V1.1</h1>
             <div class="flex items-center gap-2">
                 <button onclick="window.location.reload()"
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
                         class="fas fa-sync"></i></button>
-                <button onclick="openModal('sponsor-modal')"
-                    class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10"><i
-                        class="fas fa-heart"></i></button>
-                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1"
-                    title="System Status"></div>
+                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 transition-colors duration-300"></div>
             </div>
         </div>
 
@@ -176,21 +132,23 @@
             </div>
         </div>
 
-        <div class="stat-card text-center cursor-help">
-            <span class="text-[9px] text-gray-500 uppercase">Total Bandwidth (Est.)</span>
-            <div id="val-total-bitrate" class="text-sm font-bold text-blue-400">0 kbps</div>
-            <span class="tooltip">ผลรวม Bitrate ของทุกกล้อง</span>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="stat-card text-center">
+                <span class="text-[9px] text-gray-500 uppercase">Total Bandwidth</span>
+                <div id="val-total-bitrate" class="text-sm font-bold text-blue-400">0 kbps</div>
+            </div>
+            <div class="stat-card text-center relative group">
+                <span class="text-[9px] text-gray-500 uppercase">Data Used</span>
+                <div id="val-total-data" class="text-sm font-bold text-yellow-400">0 MB</div>
+                <button onclick="resetDataUsage()"
+                    class="absolute top-1 right-1 text-[8px] text-gray-500 hover:text-white bg-gray-800 px-1 rounded">RESET</button>
+            </div>
         </div>
 
         <div class="mt-auto space-y-2">
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="openLinkModal(1)"
-                    class="bg-gray-800 hover:bg-gray-700 py-2 rounded text-[10px] border border-gray-700">Link CAM
-                    1</button>
-                <button onclick="openLinkModal(2)"
-                    class="bg-gray-800 hover:bg-gray-700 py-2 rounded text-[10px] border border-gray-700">Link CAM
-                    2</button>
-            </div>
+            <button onclick="openLinkModal()"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition text-white">GET
+                OBS LINKS</button>
             <button onclick="openNewRoomModal()"
                 class="w-full bg-red-900/30 hover:bg-red-600 border border-red-800 text-red-500 hover:text-white py-3 rounded-lg text-[10px] font-bold uppercase">New
                 Room ID</button>
@@ -199,17 +157,31 @@
         <div class="text-center mt-3 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V2.0</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
-            <div class="modal-box">
-                <h3 class="text-blue-400 font-bold mb-2 text-sm">OBS Browser Source</h3>
-                <p class="text-[10px] text-gray-500 mb-1" id="link-title">CAM X</p>
-                <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
-                    id="link-text-preview">...</div><button onclick="copyLinkOnly()"
-                    class="w-full bg-blue-600 py-2 rounded text-xs font-bold mb-2">Copy Link</button><button
-                    onclick="closeModal('obs-link-modal')" class="text-xs text-gray-500">Close</button>
+            <div class="modal-box text-left">
+                <h3 class="text-blue-400 font-bold mb-3 text-sm text-center">OBS Browser Sources</h3>
+
+                <label class="text-[9px] text-gray-500 uppercase">Camera 1</label>
+                <div class="flex gap-1 mb-3">
+                    <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700"
+                        id="link-text-cam1">...</div>
+                    <button onclick="copyToClip('link-text-cam1')"
+                        class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button>
+                </div>
+
+                <label class="text-[9px] text-gray-500 uppercase">Camera 2</label>
+                <div class="flex gap-1 mb-4">
+                    <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700"
+                        id="link-text-cam2">...</div>
+                    <button onclick="copyToClip('link-text-cam2')"
+                        class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button>
+                </div>
+
+                <button onclick="closeModal('obs-link-modal')"
+                    class="w-full text-xs text-gray-500 hover:text-white text-center">Close</button>
             </div>
         </div>
 
@@ -223,27 +195,14 @@
                     class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
         </div>
-
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
-                <p class="text-xs text-gray-400 mb-4">การสร้างห้องใหม่จะตัดการเชื่อมต่อทุกกล้องทันที ยืนยัน?</p><button
+                <p class="text-xs text-gray-400 mb-4">สร้างห้องใหม่จะตัดการเชื่อมต่อทันที</p><button
                     onclick="confirmNewRoom()"
                     class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes,
                     Create New Room</button><button onclick="closeModal('new-room-modal')"
                     class="text-xs text-gray-500">Cancel</button>
-            </div>
-        </div>
-
-        <div id="sponsor-modal" class="modal-overlay">
-            <div class="modal-box">
-                <h3 class="text-yellow-500 font-bold mb-3 text-sm">Support Dev</h3><img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
-                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600"><a
-                    href="https://easydonate.app/Jamornz" target="_blank"
-                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a><button
-                    onclick="closeModal('sponsor-modal')"
-                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
             </div>
         </div>
     </div>
@@ -259,54 +218,59 @@
             messagingSenderId: "531335072084",
             appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
-        // -------------
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
-        const camIndex = params.get('cam') || '1'; // Default cam 1 if not specified
+        const camIndex = params.get('cam') || '1';
         const isScreenMode = mode === 'screen';
-
-        // BroadcastChannel สำหรับส่งข้อมูลระหว่าง Tab/Window (Stats)
-        const bus = new BroadcastChannel('obs_v2_channel');
-
+        const bus = new BroadcastChannel('obs_v1_1_channel');
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
-        let roomId, pc;
-        let statsState = { cam1: 0, cam2: 0 }; // เก็บ Bitrate แยกกล้อง
 
-        // --- Logic ---
+        let roomId, pc;
+        let statsState = { cam1: 0, cam2: 0 };
+        let totalBytesConsumed = 0;
+
         if (!isScreenMode) {
             // == Control Mode ==
-            roomId = localStorage.getItem('obs_v2_room_id');
+            roomId = localStorage.getItem('obs_v1_1_room_id');
             if (!roomId) {
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
-                localStorage.setItem('obs_v2_room_id', roomId);
+                localStorage.setItem('obs_v1_1_room_id', roomId);
             }
             document.getElementById('mode-control').classList.remove('hidden');
             document.getElementById('display-room-id').innerText = roomId;
-
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
 
-            // รับข้อมูล Stats จากหน้า Screen (ผ่าน Bus)
             bus.onmessage = (e) => {
                 const d = e.data;
-                const camId = d.cam; // '1' or '2'
+                const camId = d.cam;
 
+                // Status Update (Green Dot)
                 if (d.type === 'status') {
                     const dot = document.getElementById(`dot-cam${camId}`);
                     if (dot) dot.className = d.connected ? "w-2 h-2 rounded-full bg-green-500" : "w-2 h-2 rounded-full bg-red-500";
+                    // Update Main Status if any cam connected
+                    const mainDot = document.getElementById('connection-dot');
+                    if (d.connected) mainDot.className = "w-2 h-2 rounded-full bg-green-500";
                 }
+
+                // Bitrate & Data Update
                 if (d.type === 'stats') {
                     const el = document.getElementById(`bit-cam${camId}`);
                     if (el) el.innerText = d.bitrate + " kbps";
 
-                    // Update Total
                     if (camId == '1') statsState.cam1 = d.bitrate;
                     if (camId == '2') statsState.cam2 = d.bitrate;
                     document.getElementById('val-total-bitrate').innerText = (statsState.cam1 + statsState.cam2) + " kbps";
+
+                    // Accumulate Total Data
+                    if (d.bytes) {
+                        totalBytesConsumed += d.bytes;
+                        updateDataDisplay();
+                    }
                 }
                 if (d.type === 'res') {
                     const el = document.getElementById(`res-cam${camId}`);
@@ -316,7 +280,7 @@
         }
         else {
             // == Screen Mode ==
-            roomId = localStorage.getItem('obs_v2_room_id');
+            roomId = localStorage.getItem('obs_v1_1_room_id');
             if (roomId) {
                 document.getElementById('mode-screen').classList.remove('hidden');
                 startReceiver(roomId, camIndex);
@@ -324,11 +288,8 @@
         }
 
         async function startReceiver(rid, cIdx) {
-            // แยก Path ตาม Camera Index (rooms/123456/cam1 หรือ rooms/123456/cam2)
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
-
-            await roomRef.remove(); // Reset connection data
-
+            await roomRef.remove();
             pc = new RTCPeerConnection(rtcConfig);
 
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
@@ -338,7 +299,6 @@
                 video.srcObject = event.streams[0];
                 bus.postMessage({ type: 'status', connected: true, cam: cIdx });
 
-                // Monitor Stats (กู้คืนส่วนนี้ให้แน่นปึ้ก)
                 let lastBytes = 0, lastTime = 0;
                 setInterval(async () => {
                     if (pc && pc.connectionState === 'connected') {
@@ -349,11 +309,12 @@
                                 const bytes = r.bytesReceived;
                                 if (lastTime) {
                                     const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
-                                    bus.postMessage({ type: 'stats', bitrate: bitrate, cam: cIdx });
+                                    const diffBytes = bytes - lastBytes;
+                                    // Send Bytes diff for accumulator
+                                    bus.postMessage({ type: 'stats', bitrate: bitrate, cam: cIdx, bytes: diffBytes });
                                 }
                                 lastBytes = bytes; lastTime = now;
                             }
-                            // Resolution info
                             if (r.type === 'track' && r.kind === 'video') {
                                 bus.postMessage({ type: 'res', w: r.frameWidth, h: r.frameHeight, cam: cIdx });
                             }
@@ -362,7 +323,6 @@
                 }, 1000);
             };
 
-            // Signaling Logic
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -373,39 +333,34 @@
             });
             roomRef.child('callerCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
 
-            // Listen for orientation change (เฉพาะกล้องนี้)
-            roomRef.child('orient').on('value', snap => {
-                const val = snap.val();
-                const v = document.getElementById('remote-video');
-                v.className = '';
-                if (val === 'landscape') {/* Default cover handles it */ }
-                if (val === 'portrait') v.classList.add('force-portrait');
-            });
-
             pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'disconnected') bus.postMessage({ type: 'status', connected: false, cam: cIdx });
+                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed')
+                    bus.postMessage({ type: 'status', connected: false, cam: cIdx });
             };
         }
 
-        // --- UI Functions ---
+        // --- Helper ---
+        function updateDataDisplay() {
+            let s = "";
+            if (totalBytesConsumed < 1024 * 1024) s = (totalBytesConsumed / 1024).toFixed(1) + " KB";
+            else if (totalBytesConsumed < 1024 * 1024 * 1024) s = (totalBytesConsumed / (1024 * 1024)).toFixed(1) + " MB";
+            else s = (totalBytesConsumed / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+            const el = document.getElementById('val-total-data');
+            if (el) el.innerText = s;
+        }
+        function resetDataUsage() { totalBytesConsumed = 0; updateDataDisplay(); }
+
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-        function openLinkModal(idx) {
-            const url = window.location.origin + window.location.pathname + `?mode=screen&cam=${idx}`;
-            document.getElementById('link-title').innerText = `Camera ${idx} Source URL`;
-            document.getElementById('link-text-preview').innerText = url;
+        function openLinkModal() {
+            document.getElementById('link-text-cam1').innerText = window.location.origin + window.location.pathname + `?mode=screen&cam=1`;
+            document.getElementById('link-text-cam2').innerText = window.location.origin + window.location.pathname + `?mode=screen&cam=2`;
             openModal('obs-link-modal');
         }
-
-        function copyLinkOnly() {
-            navigator.clipboard.writeText(document.getElementById('link-text-preview').innerText);
-            closeModal('obs-link-modal');
-        }
+        function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId); closeModal('phone-link-modal'); }
-
         function openNewRoomModal() { openModal('new-room-modal'); }
-        function confirmNewRoom() { localStorage.removeItem('obs_v2_room_id'); location.reload(); }
+        function confirmNewRoom() { localStorage.removeItem('obs_v1_1_room_id'); location.reload(); }
     </script>
 </body>
 

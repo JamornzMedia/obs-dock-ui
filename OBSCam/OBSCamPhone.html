@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V2.0</title>
+    <title>OBSCam Phone V1.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -80,13 +80,20 @@
             gap: 20px;
             pointer-events: auto;
             padding-right: 10px;
+            z-index: 50;
+        }
+
+        /* UI Rotation Class */
+        .ui-rotate-90 {
+            transform: rotate(90deg);
+            transition: transform 0.3s;
         }
     </style>
 </head>
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V2.0</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.1</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -101,7 +108,7 @@
             </div>
 
             <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
-                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send As (Target)</label>
+                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To</label>
                 <select id="cam-index"
                     class="w-full bg-black text-white p-3 rounded-lg text-sm border border-blue-500/50 outline-none font-bold">
                     <option value="1">CAMERA 1</option>
@@ -110,7 +117,7 @@
             </div>
 
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Hardware Camera</label>
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Initial Camera</label>
                 <select id="camera-select"
                     class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
                     <option value="">Default (Rear/Auto)</option>
@@ -155,7 +162,7 @@
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V2.0</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
         </div>
     </div>
 
@@ -168,7 +175,7 @@
             id="qr-canvas" hidden></canvas>
     </div>
 
-    <div id="live-ui" class="hidden absolute inset-0 bg-black z-0">
+    <div id="live-ui" class="hidden absolute inset-0 bg-black z-0 transition-transform duration-300">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
         <div id="grid-layer" class="grid-lines hidden">
             <div class="grid-cell"></div>
@@ -184,14 +191,10 @@
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none transition-opacity duration-300">
             <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
-                <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10"><span id="status-txt"
+                <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10 w-fit"><span id="status-txt"
                         class="text-xs text-yellow-400">Connecting...</span></div>
-                <div class="flex items-center gap-1 bg-black/50 px-2 py-1 rounded border border-white/20">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span id="live-send-rate" class="text-[10px] font-mono">0 kbps</span>
-                </div>
                 <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
-                    class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none">
+                    class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none w-20">
                     <option value="2500">2.5M</option>
                     <option value="3500">3.5M</option>
                     <option value="4000">4.0M</option>
@@ -199,23 +202,32 @@
                 </select>
             </div>
 
-            <button onclick="location.reload()"
-                class="absolute bottom-6 left-6 bg-red-600/80 w-12 h-12 rounded-full flex items-center justify-center shadow pointer-events-auto active:scale-90 transition-transform text-white"><i
-                    class="fas fa-stop text-lg"></i></button>
+            <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto">
+                <button onclick="location.reload()"
+                    class="bg-red-600/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"><i
+                        class="fas fa-stop"></i></button>
+                <select id="live-cam-select" onchange="switchCamera(this.value)"
+                    class="bg-black/50 text-white text-[10px] h-10 px-2 rounded-full border border-white/20 outline-none max-w-[100px] truncate">
+                    <option value="">Switch Cam...</option>
+                </select>
+            </div>
 
             <div class="right-bar">
-                <button onclick="setOrientation('portrait')"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
-                        class="fas fa-mobile-alt text-white"></i></button>
+                <button onclick="rotateUI()"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
+                        class="fas fa-redo text-white"></i></button>
                 <button onclick="toggleTorch()" id="torch-btn"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500"><i
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500"><i
                         class="fas fa-bolt text-white"></i></button>
                 <button onclick="triggerAutoFocus()"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
                         class="fas fa-crosshairs text-white"></i></button>
                 <button onclick="toggleGrid()" id="grid-btn"
-                    class="w-12 h-12 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500"><i
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500"><i
                         class="fas fa-border-all text-white"></i></button>
+                <button onclick="toggleFullScreen()"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500"><i
+                        class="fas fa-expand text-white"></i></button>
             </div>
         </div>
     </div>
@@ -231,13 +243,13 @@
             messagingSenderId: "531335072084",
             appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
-        // -------------
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
         let pc, myStream, videoTrack, qrStream, customBitrateVal = 2500, targetCamIndex = "1";
+        let isUIRotated = false;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -249,15 +261,27 @@
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
+
+                // Populate Setup Select
                 const videoSelect = document.getElementById('camera-select');
+                // Populate Live Select
+                const liveSelect = document.getElementById('live-cam-select');
+
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
+                liveSelect.innerHTML = '<option value="">Switch Cam...</option>';
+
                 let count = 1;
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
                         const option = document.createElement('option');
                         option.value = device.deviceId;
-                        option.text = device.label || `Camera ${count++}`;
+                        option.text = device.label || `Camera ${count}`;
                         videoSelect.appendChild(option);
+
+                        // Add to live select too
+                        const liveOpt = option.cloneNode(true);
+                        liveSelect.appendChild(liveOpt);
+                        count++;
                     }
                 });
             } catch (e) { console.log("Permission Error"); }
@@ -291,9 +315,9 @@
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                // Hide controls on tap
+                // Tap to hide/show UI
                 document.getElementById('live-ui').addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I' && e.target.tagName !== 'SELECT') {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'OPTION') {
                         const overlay = document.getElementById('overlay-controls');
                         overlay.style.opacity = overlay.style.opacity === '0' ? '1' : '0';
                     }
@@ -303,8 +327,42 @@
             } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
+        async function switchCamera(deviceId) {
+            if (!deviceId || !myStream) return;
+            try {
+                // Stop old track
+                myStream.getVideoTracks().forEach(t => t.stop());
+
+                // Get new stream
+                const quality = parseInt(document.getElementById('res').value);
+                const fpsVal = parseInt(document.getElementById('fps').value);
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false, // Don't touch audio
+                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                });
+
+                const newVideoTrack = newStream.getVideoTracks()[0];
+
+                // Replace in PC
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(newVideoTrack);
+                }
+
+                // Replace in Local Preview
+                const audioTrack = myStream.getAudioTracks()[0];
+                myStream = new MediaStream([audioTrack, newVideoTrack]);
+                document.getElementById('preview').srcObject = myStream;
+                videoTrack = newVideoTrack;
+
+                // Reset select
+                document.getElementById('live-cam-select').value = "";
+
+            } catch (e) { alert("Switch failed: " + e.message); }
+        }
+
         async function connectToRoom(rid, cIdx) {
-            const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`); // แยกไป cam1 หรือ cam2
+            const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
             pc = new RTCPeerConnection(rtcConfig);
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
 
@@ -325,29 +383,25 @@
             });
             roomRef.child('calleeCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
 
+            // Sync Bitrate from Setup
             let bitrateVal = document.getElementById('bitrate').value;
             if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
             else bitrateVal = parseInt(bitrateVal);
+
+            // Set Initial Bitrate
             setBitrate(pc, bitrateVal * 1000);
 
-            // Stats Loop for Sender (Bitrate Out)
-            let lastBytes = 0, lastTime = 0;
-            setInterval(async () => {
-                if (pc) {
-                    const stats = await pc.getStats();
-                    stats.forEach(r => {
-                        if (r.type === 'outbound-rtp' && r.kind === 'video') {
-                            const now = r.timestamp;
-                            const bytes = r.bytesSent;
-                            if (lastTime) {
-                                const kbps = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
-                                document.getElementById('live-send-rate').innerText = kbps + " kbps";
-                            }
-                            lastBytes = bytes; lastTime = now;
-                        }
-                    });
-                }
-            }, 1000);
+            // Sync Dropdown
+            const liveDrop = document.getElementById('live-bitrate');
+            if ([...liveDrop.options].some(o => o.value == bitrateVal)) liveDrop.value = bitrateVal;
+            else {
+                // Add custom option to live dropdown
+                const opt = document.createElement("option");
+                opt.value = bitrateVal;
+                opt.text = (bitrateVal / 1000) + "M";
+                liveDrop.add(opt);
+                liveDrop.value = bitrateVal;
+            }
         }
 
         function setBitrate(pc, bitrate) {
@@ -361,17 +415,33 @@
         }
         function updateLiveBitrate(val) { if (pc) setBitrate(pc, parseInt(val) * 1000); }
 
-        // Command to Monitor
-        function setOrientation(val) {
-            const rid = document.getElementById('room-id').value;
-            const cIdx = targetCamIndex;
-            if (rid) db.ref(`rooms/${rid}/cam${cIdx}/orient`).set(val);
+        // --- Features ---
+        function rotateUI() {
+            isUIRotated = !isUIRotated;
+            const ui = document.getElementById('overlay-controls');
+            // Rotate only the controls container, keep video as is
+            if (isUIRotated) {
+                ui.classList.add('ui-rotate-90');
+                // Adjust size to fit screen when rotated (tricky but basic rotate is enough for buttons)
+                ui.style.width = "100vh";
+                ui.style.height = "100vw";
+                ui.style.top = "50%";
+                ui.style.left = "50%";
+                ui.style.translate = "-50% -50%";
+            } else {
+                ui.classList.remove('ui-rotate-90');
+                ui.style.width = "100%";
+                ui.style.height = "100%";
+                ui.style.top = "0";
+                ui.style.left = "0";
+                ui.style.translate = "0 0";
+            }
         }
 
-        // Feature Helpers
         async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
         async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
         function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
 
         // QR Logic
         async function startQRScanner() {
