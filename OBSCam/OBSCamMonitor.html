@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBSCam Monitor V1.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        body {
+            background: transparent;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .control-panel {
+            background: #111;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        #mode-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+
+        #remote-video {
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.3s;
+        }
+
+        .force-landscape {
+            transform: rotate(0deg);
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .force-portrait {
+            transform: rotate(-90deg);
+            width: 100vh !important;
+            height: 100vw !important;
+            object-fit: cover;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mode-screen" class="hidden">
+        <video id="remote-video" autoplay playsinline muted></video>
+    </div>
+
+    <div id="mode-control" class="hidden control-panel p-4">
+        <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
+            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam Control
+            </h1>
+            <div class="flex items-center gap-2">
+                <button onclick="window.location.reload()"
+                    class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
+                        class="fas fa-sync"></i></button>
+                <button onclick="openModal('sponsor-modal')"
+                    class="text-yellow-500 text-[10px] border border-yellow-500/30 px-2 py-1 rounded hover:bg-yellow-500/10"><i
+                        class="fas fa-heart"></i></button>
+                <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1"></div>
+            </div>
+        </div>
+
+        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative group">
+            <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
+            <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
+            <button onclick="openModal('phone-link-modal')"
+                class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="stat-card"><span class="text-[9px] text-gray-500 uppercase">Bitrate</span>
+                <div id="val-bitrate" class="text-sm font-bold text-green-400">0 kbps</div>
+            </div>
+            <div class="stat-card"><span class="text-[9px] text-gray-500 uppercase">Res</span>
+                <div id="val-res" class="text-sm font-bold text-gray-300">--x--</div>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 p-2 rounded mb-3 border border-gray-800">
+            <span class="text-[9px] text-gray-500 uppercase block mb-1">Orientation</span>
+            <div class="flex gap-1">
+                <button onclick="setOrientation('auto')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Auto</button>
+                <button onclick="setOrientation('landscape')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Horiz</button>
+                <button onclick="setOrientation('portrait')"
+                    class="flex-1 bg-gray-800 hover:bg-gray-700 text-[10px] py-1 rounded border border-gray-700">Vert</button>
+            </div>
+        </div>
+
+        <div class="mt-auto space-y-2">
+            <button onclick="openModal('obs-link-modal')"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg text-xs font-bold transition text-white">GET
+                LINK (OBS SOURCE)</button>
+            <button onclick="resetRoomId()"
+                class="w-full bg-red-900/30 hover:bg-red-600 border border-red-800 text-red-500 hover:text-white py-3 rounded-lg text-[10px] font-bold uppercase">New
+                Room ID</button>
+        </div>
+
+        <div class="text-center mt-3 pt-2 border-t border-gray-800">
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
+            </p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.1</p>
+        </div>
+
+        <div id="obs-link-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-blue-400 font-bold mb-2 text-sm">OBS Browser Source</h3>
+                <div class="bg-black p-2 rounded text-[10px] text-gray-400 font-mono break-all mb-3 border border-gray-700"
+                    id="link-text-preview">...</div><button onclick="copyLinkOnly()"
+                    class="w-full bg-blue-600 py-2 rounded text-xs font-bold mb-2">Copy</button><button
+                    onclick="closeModal('obs-link-modal')" class="text-xs text-gray-500">Close</button>
+            </div>
+        </div>
+        <div id="phone-link-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
+                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
+                        class="w-32 h-32"></div><button onclick="closeModal('phone-link-modal')"
+                    class="text-xs text-gray-500 block w-full mt-2">Close</button>
+            </div>
+        </div>
+        <div id="sponsor-modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3 class="text-yellow-500 font-bold mb-3 text-sm">Support Dev</h3><img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                    class="w-24 h-24 mx-auto rounded mb-3 border border-gray-600"><a
+                    href="https://easydonate.app/Jamornz" target="_blank"
+                    class="block text-blue-400 text-xs mb-4 hover:underline">easydonate.app/Jamornz</a><button
+                    onclick="closeModal('sponsor-modal')"
+                    class="text-xs text-gray-500 hover:text-white underline">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ของคุณ ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            storageBucket: "obscam-p2p.firebasestorage.app",
+            messagingSenderId: "531335072084",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
+        };
+        // -------------------
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode');
+        const isScreenMode = mode === 'screen';
+        const bus = new BroadcastChannel('obs_firebase_channel');
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        let roomId, pc;
+
+        if (!isScreenMode) {
+            roomId = localStorage.getItem('obs_fb_room_id');
+            if (!roomId) {
+                roomId = Math.floor(100000 + Math.random() * 900000).toString();
+                localStorage.setItem('obs_fb_room_id', roomId);
+            }
+            document.getElementById('mode-control').classList.remove('hidden');
+            document.getElementById('display-room-id').innerText = roomId;
+            const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
+            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
+            document.getElementById('link-text-preview').innerText = window.location.origin + window.location.pathname + "?mode=screen";
+
+            bus.onmessage = (e) => {
+                const d = e.data;
+                if (d.type === 'status') document.getElementById('connection-dot').className = d.connected ? "w-2 h-2 rounded-full bg-green-500 ml-1" : "w-2 h-2 rounded-full bg-red-500 animate-pulse ml-1";
+                if (d.type === 'stats') document.getElementById('val-bitrate').innerText = d.bitrate + " kbps";
+                if (d.type === 'res') document.getElementById('val-res').innerText = `${d.w}x${d.h}`;
+            };
+        }
+        else {
+            roomId = localStorage.getItem('obs_fb_room_id');
+            if (roomId) {
+                document.getElementById('mode-screen').classList.remove('hidden');
+                startReceiver(roomId);
+            }
+        }
+
+        async function startReceiver(rid) {
+            const roomRef = db.ref(`rooms/${rid}`);
+            await roomRef.remove();
+            pc = new RTCPeerConnection(rtcConfig);
+            pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
+            pc.ontrack = event => {
+                const video = document.getElementById('remote-video');
+                video.srcObject = event.streams[0];
+                bus.postMessage({ type: 'status', connected: true });
+                monitorStats(pc);
+            };
+            roomRef.child('offer').on('value', async snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
+            });
+            roomRef.child('callerCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
+            roomRef.child('orient').on('value', snap => { const val = snap.val(); if (val) applyOrientation(val); });
+        }
+
+        function setOrientation(val) { if (roomId) db.ref(`rooms/${roomId}/cmd_orient`).set(val); bus.postMessage({ type: 'orient', val: val }); }
+        function applyOrientation(val) { const v = document.getElementById('remote-video'); v.className = ''; if (val === 'landscape') v.classList.add('force-landscape'); if (val === 'portrait') v.classList.add('force-portrait'); }
+        function monitorStats(peerConn) {
+            let lastBytes = 0, lastTime = 0;
+            setInterval(async () => {
+                const stats = await peerConn.getStats();
+                stats.forEach(r => {
+                    if (r.type === 'inbound-rtp' && r.kind === 'video') {
+                        const now = r.timestamp;
+                        const bytes = r.bytesReceived;
+                        if (lastTime) {
+                            const bitrate = Math.round(((bytes - lastBytes) * 8) / (now - lastTime));
+                            bus.postMessage({ type: 'stats', bitrate: bitrate });
+                        }
+                        lastBytes = bytes; lastTime = now;
+                    }
+                    if (r.type === 'track' && r.kind === 'video') { bus.postMessage({ type: 'res', w: r.frameWidth, h: r.frameHeight }); }
+                });
+            }, 1000);
+        }
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function copyLinkOnly() { navigator.clipboard.writeText(window.location.origin + window.location.pathname + "?mode=screen"); closeModal('obs-link-modal'); }
+        function resetRoomId() { if (confirm('สร้างห้องใหม่?')) { localStorage.removeItem('obs_fb_room_id'); location.reload(); } }
+    </script>
+</body>
+
+</html>
