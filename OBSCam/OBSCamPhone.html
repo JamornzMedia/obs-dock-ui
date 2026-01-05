@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V1.2</title>
+    <title>OBSCam Phone V1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -92,7 +92,7 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.2</h1>
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V1.3</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -156,10 +156,11 @@
                 class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-2 active:scale-95 transition-transform text-white">START
                 STREAMING</button>
         </div>
+
         <div class="text-center mt-6 pt-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V1.2</p>
+            <p class="text-[9px] text-gray-600">OBSCam V1.3</p>
         </div>
     </div>
 
@@ -241,7 +242,6 @@
             messagingSenderId: "531335072084",
             appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
-        // -------------------
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -255,6 +255,7 @@
         if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
 
         initCameraSelection();
+        loadSettings(); // โหลดค่าเดิม
 
         async function initCameraSelection() {
             try {
@@ -277,10 +278,44 @@
                         count++;
                     }
                 });
+                // หลังจากโหลดกล้องเสร็จ ให้คืนค่ากล้องที่เคยเลือกไว้
+                const savedCam = localStorage.getItem('obs_cam_select');
+                if (savedCam && [...videoSelect.options].some(o => o.value === savedCam)) {
+                    videoSelect.value = savedCam;
+                }
             } catch (e) { console.log("Permission Error"); }
         }
 
-        // Logic สำหรับหน้า Setup
+        // --- Save/Load Settings ---
+        function saveSettings() {
+            localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
+            localStorage.setItem('obs_cam_select', document.getElementById('camera-select').value);
+            localStorage.setItem('obs_res', document.getElementById('res').value);
+            localStorage.setItem('obs_fps', document.getElementById('fps').value);
+            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
+            if (document.getElementById('bitrate').value === 'custom') {
+                localStorage.setItem('obs_custom_bitrate', customBitrateVal);
+            }
+        }
+
+        function loadSettings() {
+            if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+            if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+            if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
+            if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
+
+            if (localStorage.getItem('obs_bitrate')) {
+                const b = localStorage.getItem('obs_bitrate');
+                const sel = document.getElementById('bitrate');
+                sel.value = b;
+                if (b === 'custom' && localStorage.getItem('obs_custom_bitrate')) {
+                    customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
+                    sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
+                }
+            }
+        }
+
         function checkCustomBitrate(el) {
             if (el.value === 'custom') {
                 const val = prompt("กรอก Bitrate (kbps):", customBitrateVal);
@@ -289,7 +324,6 @@
             }
         }
 
-        // Logic สำหรับหน้า Live (Custom Bitrate)
         function updateLiveBitrate(el) {
             let val = el.value;
             if (val === 'custom') {
@@ -297,24 +331,41 @@
                 if (input && !isNaN(input)) {
                     val = parseInt(input);
                     customBitrateVal = val;
-                    // อัปเดต text ของ option custom ให้โชว์เลข
                     el.options[el.options.length - 1].text = `Custom (${val})`;
-                } else {
-                    // ถ้ากดยกเลิก ให้กลับไปค่าเดิม (หรือ 2500 ถ้าไม่มี)
-                    el.value = "2500";
-                    return;
-                }
+                } else { el.value = "2500"; return; }
             }
             if (pc) setBitrate(pc, parseInt(val) * 1000);
         }
 
         async function startStreaming() {
+            saveSettings(); // บันทึกค่าก่อนเริ่ม
+
             const rid = document.getElementById('room-id').value;
             if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
+
+            // --- Step 1: Check Room Existence ---
+            const statusTxt = document.getElementById('status-txt');
+            statusTxt.innerText = "Checking Room...";
+
+            const roomSnap = await db.ref(`rooms/${rid}`).get();
+            if (!roomSnap.exists()) {
+                alert(`ไม่พบห้อง ${rid} ในระบบ!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) ให้เรียบร้อยก่อนครับ`);
+                return; // หยุดทำงาน ไม่สร้างห้องมั่ว
+            }
+
+            targetCamIndex = document.getElementById('cam-index').value;
+
+            // --- Step 2: Check Camera Availability ---
+            const camSnap = await db.ref(`rooms/${rid}/cam${targetCamIndex}/offer`).get();
+            if (camSnap.exists()) {
+                const confirmOverride = confirm(`Camera ${targetCamIndex} เหมือนจะมีคนใช้อยู่แล้ว\nต้องการเชื่อมต่อทับเลยหรือไม่?`);
+                if (!confirmOverride) return;
+            }
+
+            // ... ถ้าผ่านหมด ให้เริ่มเปิดกล้อง ...
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
             const selectedCamId = document.getElementById('camera-select').value;
-            targetCamIndex = document.getElementById('cam-index').value;
 
             let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
             if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
@@ -328,7 +379,6 @@
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                // Tap to hide/show UI
                 document.getElementById('live-ui').addEventListener('click', (e) => {
                     if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'OPTION') {
                         const overlay = document.getElementById('overlay-controls');
@@ -364,6 +414,10 @@
         }
 
         async function connectToRoom(rid, cIdx) {
+            const statusTxt = document.getElementById('status-txt');
+            statusTxt.innerText = "Negotiating...";
+            statusTxt.className = "text-xs text-yellow-400";
+
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}`);
             pc = new RTCPeerConnection(rtcConfig);
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
@@ -374,29 +428,36 @@
             await pc.setLocalDescription(offer);
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
+            statusTxt.innerText = "Waiting Answer...";
+
             roomRef.child('answer').on('value', async snapshot => {
                 const data = snapshot.val();
                 if (!data) return;
                 if (!pc.currentRemoteDescription) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data));
-                    document.getElementById('status-txt').innerText = `LIVE (CAM ${cIdx})`;
-                    document.getElementById('status-txt').className = "text-xs text-green-400 font-bold";
+                    statusTxt.innerText = `LIVE (CAM ${cIdx})`;
+                    statusTxt.className = "text-xs text-green-400 font-bold";
                 }
             });
+
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'disconnected') {
+                    statusTxt.innerText = "Disconnected";
+                    statusTxt.className = "text-xs text-red-500 font-bold";
+                }
+            };
+
             roomRef.child('calleeCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)); });
 
-            // Sync Bitrate
             let bitrateVal = document.getElementById('bitrate').value;
             if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
             else bitrateVal = parseInt(bitrateVal);
             setBitrate(pc, bitrateVal * 1000);
 
-            // Sync Live Dropdown
             const liveDrop = document.getElementById('live-bitrate');
             if ([...liveDrop.options].some(o => o.value == bitrateVal)) {
                 liveDrop.value = bitrateVal;
             } else {
-                // ถ้าเป็น custom หรือค่าไม่มีใน list ให้แก้ option custom ให้ตรง
                 const customOpt = liveDrop.querySelector('option[value="custom"]');
                 if (customOpt) {
                     customOpt.text = `Custom (${bitrateVal})`;
@@ -433,7 +494,6 @@
         function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
 
-        // QR Logic
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
             const video = document.getElementById('qr-video');
