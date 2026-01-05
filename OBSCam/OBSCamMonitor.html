@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Monitor V2.1 (Fixed)</title>
+    <title>OBSCam Control V2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* CSS เดิมทั้งหมด */
         body {
             background: transparent;
             color: white;
@@ -162,12 +161,11 @@
 
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3 flex-shrink-0">
-            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-tower-broadcast"></i> OBSCam V2.1
-            </h1>
+            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-sliders-h"></i> OBSCam Control</h1>
             <div class="flex items-center gap-2">
                 <div class="flex items-center gap-2 bg-gray-800 px-2 py-1 rounded border border-gray-700">
                     <span class="text-[9px] text-gray-400">Preview:</span>
-                    <button id="btn-preview-toggle" onclick="toggleDashboardReceiver()"
+                    <button id="btn-preview-toggle" onclick="togglePreviewVisibility()"
                         class="text-[9px] font-bold text-green-400">ON</button>
                 </div>
                 <button onclick="window.location.reload()"
@@ -188,7 +186,7 @@
 
         <div class="grid grid-cols-2 gap-2 mb-3 mt-3 flex-shrink-0">
             <div class="stat-card text-center bg-gray-900 border border-gray-800 rounded p-2">
-                <span class="text-[9px] text-gray-500 uppercase block">Total BW</span>
+                <span class="text-[9px] text-gray-500 uppercase block">Total Upload</span>
                 <div id="val-total-bitrate" class="text-sm font-bold text-blue-400">0 kbps</div>
             </div>
             <div class="stat-card text-center bg-gray-900 border border-gray-800 rounded p-2 relative">
@@ -211,6 +209,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800 flex-shrink-0">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold dev-link"
                     onclick="openModal('sponsor-modal')">JamornzMedia</span></p>
+            <p class="text-[9px] text-gray-600">OBSCam V2.0</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -272,16 +271,15 @@
         const mode = params.get('mode');
         const camIndex = params.get('cam') || '1';
         const isScreenMode = mode === 'screen';
-        // const bus = new BroadcastChannel('obs_v2_channel'); // ยกเลิกใช้ Bus เพราะแยกท่อแล้ว
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         let roomId, pc;
         let statsState = { 1: 0, 2: 0, 3: 0, 4: 0 };
         let totalBytesConsumed = 0;
-        let isDashboardReceiverActive = true;
+        let isPreviewVisible = true; // ใช้ตัวแปรนี้แทนการ Disconnect
         let dashboardPCs = {};
 
-        // --- Render UI for 4 Cams ---
+        // --- Render UI ---
         if (!isScreenMode) {
             const list = document.getElementById('cam-list');
             for (let i = 1; i <= 4; i++) {
@@ -315,11 +313,8 @@
                 localStorage.setItem('obs_v2_room_id', roomId);
             }
 
-            // CLEANUP & ACTIVE FLAG
             const roomRef = db.ref(`rooms/${roomId}`);
             roomRef.child('active').set(true);
-
-            // ลบห้องทิ้งเมื่อปิดหน้าเว็บ
             window.addEventListener('beforeunload', () => { roomRef.remove(); });
             roomRef.onDisconnect().remove();
 
@@ -328,10 +323,10 @@
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
 
-            // Init Receivers for all 4 cams (Monitor Mode)
-            if (isDashboardReceiverActive) { for (let i = 1; i <= 4; i++) initDashboardReceiver(i.toString()); }
+            // Init Receivers (เชื่อมต่อตลอดเวลา!)
+            for (let i = 1; i <= 4; i++) initDashboardReceiver(i.toString());
 
-            // Listen for Stats only (ไม่ต้องรอ Offer ใน path หลักแล้ว เพราะไปรอใน monitor/offer)
+            // Listen for Stats
             for (let i = 1; i <= 4; i++) {
                 db.ref(`rooms/${roomId}/cam${i}/stats`).on('value', snap => {
                     const d = snap.val();
@@ -340,15 +335,32 @@
             }
         }
         else {
-            // == Screen Mode (OBS) ==
-            // แก้ไข: รับ room จาก URL ถ้ามี
+            // == Screen Mode ==
             const urlR = params.get('room');
             if (urlR) roomId = urlR;
             else roomId = localStorage.getItem('obs_v2_room_id');
 
             if (roomId) {
                 document.getElementById('mode-screen').classList.remove('hidden');
-                startReceiver(roomId, camIndex); // Start OBS Receiver
+                startReceiver(roomId, camIndex);
+            }
+        }
+
+        // --- PREVIEW TOGGLE (Show/Hide Only) ---
+        function togglePreviewVisibility() {
+            isPreviewVisible = !isPreviewVisible;
+            const btn = document.getElementById('btn-preview-toggle');
+
+            if (isPreviewVisible) {
+                btn.innerText = "ON"; btn.className = "text-[9px] font-bold text-green-400";
+            } else {
+                btn.innerText = "OFF"; btn.className = "text-[9px] font-bold text-gray-500";
+            }
+
+            // ซ่อน/แสดง Video Element โดยไม่ตัด Connection
+            for (let i = 1; i <= 4; i++) {
+                const vid = document.getElementById(`preview-video-${i}`);
+                if (vid) vid.style.display = isPreviewVisible ? 'block' : 'none';
             }
         }
 
@@ -356,29 +368,15 @@
             if (confirm(`รีเซ็ตสัญญาณกล้อง ${i}?\n(ผู้ส่งจะต้องกด Start ใหม่)`)) {
                 db.ref(`rooms/${roomId}/cam${i}`).remove();
                 if (dashboardPCs[i]) { dashboardPCs[i].close(); dashboardPCs[i] = null; }
-                if (isDashboardReceiverActive) initDashboardReceiver(i);
+                // Re-init (Waiting)
+                initDashboardReceiver(i);
                 document.getElementById(`badge-${i}`).className = "status-badge status-wait";
                 document.getElementById(`badge-${i}`).innerText = "RESET";
             }
         }
 
-        function toggleDashboardReceiver() {
-            isDashboardReceiverActive = !isDashboardReceiverActive;
-            const btn = document.getElementById('btn-preview-toggle');
-            if (isDashboardReceiverActive) {
-                btn.innerText = "ON"; btn.className = "text-[9px] font-bold text-green-400";
-                for (let i = 1; i <= 4; i++) initDashboardReceiver(i.toString());
-            } else {
-                btn.innerText = "OFF"; btn.className = "text-[9px] font-bold text-gray-500";
-                for (let i = 1; i <= 4; i++) stopDashboardReceiver(i.toString());
-            }
-        }
-
         async function initDashboardReceiver(cIdx) {
-            if (!isDashboardReceiverActive) return;
-            // ** แก้ไข: ชี้ไปที่ sub-path /monitor **
             const roomRef = db.ref(`rooms/${roomId}/cam${cIdx}/monitor`);
-
             if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); dashboardPCs[cIdx] = null; }
 
             const dPC = new RTCPeerConnection(rtcConfig);
@@ -394,20 +392,19 @@
                 const badge = document.getElementById(`badge-${cIdx}`);
                 badge.className = "status-badge status-live";
                 badge.innerText = "LIVE";
+
+                // จัดการ Visibility ตามสถานะปุ่ม
+                video.style.display = isPreviewVisible ? 'block' : 'none';
             };
 
-            // Wait for Offer at .../monitor/offer
             roomRef.child('offer').on('value', async snapshot => {
-                if (!isDashboardReceiverActive) return;
                 const data = snapshot.val();
                 if (!data) return;
-
                 try {
                     await dPC.setRemoteDescription(new RTCSessionDescription(data));
                     const answer = await dPC.createAnswer();
                     await dPC.setLocalDescription(answer);
                     await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
-
                     const badge = document.getElementById(`badge-${cIdx}`);
                     badge.className = "status-badge status-income";
                     badge.innerText = "LINKING...";
@@ -415,7 +412,6 @@
             });
 
             roomRef.child('callerCandidates').on('child_added', snapshot => {
-                if (!isDashboardReceiverActive) return;
                 const candidate = snapshot.val();
                 if (candidate) dPC.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => { });
             });
@@ -430,43 +426,29 @@
             };
         }
 
-        function stopDashboardReceiver(cIdx) {
-            if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); dashboardPCs[cIdx] = null; }
-            db.ref(`rooms/${roomId}/cam${cIdx}/monitor/offer`).off();
-            document.getElementById(`ph-${cIdx}`).style.display = 'block';
-            const badge = document.getElementById(`badge-${cIdx}`);
-            badge.className = "status-badge status-wait";
-            badge.innerText = "OFF";
-        }
-
         function updateUIStats(d) {
             const c = d.cam;
             if (d.type === 'stats-obj') {
-                // อัปเดตจาก Firebase Data โดยตรง
-                statsState[c] = parseInt(d.data.bitrate || 0);
+                // อ่านค่า Realtime Bitrate ที่ส่งมาจากมือถือ
+                const realBitrate = parseInt(d.data.realtimeBitrate || 0);
+                statsState[c] = realBitrate;
+
                 const total = Object.values(statsState).reduce((a, b) => a + b, 0);
                 document.getElementById('val-total-bitrate').innerText = total + " kbps";
 
                 const txt = document.getElementById(`stats-${c}`);
-                if (txt) txt.innerText = `${d.data.bitrate} kbps / ${d.data.res}`;
+                if (txt) txt.innerText = `${realBitrate} kbps / ${d.data.res}`;
             }
         }
 
         // --- Screen Mode (OBS) ---
         async function startReceiver(rid, cIdx) {
-            // ** แก้ไข: ชี้ไปที่ sub-path /obs **
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
-
-            // Clean old
             await roomRef.remove();
 
             pc = new RTCPeerConnection(rtcConfig);
-
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
-
-            pc.ontrack = event => {
-                const video = document.getElementById('remote-video'); video.srcObject = event.streams[0];
-            };
+            pc.ontrack = event => { const video = document.getElementById('remote-video'); video.srcObject = event.streams[0]; };
 
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
@@ -477,11 +459,11 @@
                     await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
                 } catch (e) { }
             });
-
             roomRef.child('callerCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => { }); });
         }
 
-        function updateDataDisplay() { /* เหมือนเดิม */
+        function updateDataDisplay() { /* Logic เดิมสำหรับ Data Usage (Local Calc) อาจจะไม่ตรงเป๊ะ แต่เอาไว้ดูคร่าวๆ ได้ */
+            // Note: ถ้าอยากให้ Data Usage ตรงเป๊ะต้องส่ง Total Bytes มาจากมือถือ แต่ตอนนี้เอา Bitrate ให้ตรงก่อน
             let s = "";
             if (totalBytesConsumed < 1024 * 1024) s = (totalBytesConsumed / 1024).toFixed(1) + " KB";
             else if (totalBytesConsumed < 1024 * 1024 * 1024) s = (totalBytesConsumed / (1024 * 1024)).toFixed(1) + " MB";
@@ -495,16 +477,8 @@
             const container = document.getElementById('links-container');
             container.innerHTML = '';
             for (let i = 1; i <= 4; i++) {
-                // ** เพิ่ม room id เข้าไปใน link ด้วย เพื่อความชัวร์ใน obs **
                 const url = window.location.origin + window.location.pathname + `?mode=screen&cam=${i}&room=${roomId}`;
-                container.innerHTML += `
-                <div class="mb-2">
-                    <label class="text-[9px] text-gray-500 uppercase">Camera ${i}</label>
-                    <div class="flex gap-1">
-                        <div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700" id="link-cam${i}">${url}</div>
-                        <button onclick="copyToClip('link-cam${i}')" class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button>
-                    </div>
-                </div>`;
+                container.innerHTML += `<div class="mb-2"><label class="text-[9px] text-gray-500 uppercase">Camera ${i}</label><div class="flex gap-1"><div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700" id="link-cam${i}">${url}</div><button onclick="copyToClip('link-cam${i}')" class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button></div></div>`;
             }
             openModal('obs-link-modal');
         }
