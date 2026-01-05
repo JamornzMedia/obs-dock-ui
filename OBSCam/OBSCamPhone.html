@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Phone V2.1</title>
+    <title>OBSCam Phone V2.1 (Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,8 +15,8 @@
         body {
             background: #000;
             color: white;
-            overflow: hidden;
-            touch-action: none;
+            /* เอา overflow: hidden ออกเพื่อให้ setup เลื่อนได้ถ้าจอเตี้ย */
+            touch-action: manipulation;
             font-family: 'Segoe UI', sans-serif;
         }
 
@@ -26,6 +26,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* --- UI Fixes for Landscape --- */
+        #setup {
+            /* ใช้ min-h แทน h-screen เพื่อให้ยืดได้เมื่อเนื้อหาล้นในแนวนอน */
+            min-height: 100vh;
+            height: auto;
         }
 
         select {
@@ -91,8 +98,10 @@
 </head>
 
 <body>
-    <div id="setup" class="p-6 flex flex-col h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
+    <div id="setup"
+        class="p-6 py-10 flex flex-col min-h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
         <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V2.1</h1>
+
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
@@ -104,6 +113,7 @@
                             class="fas fa-qrcode text-2xl"></i></button>
                 </div>
             </div>
+
             <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
                 <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Target)</label>
                 <select id="cam-index"
@@ -114,6 +124,7 @@
                     <option value="4">CAMERA 4</option>
                 </select>
             </div>
+
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Initial Camera</label>
                 <select id="camera-select"
@@ -121,6 +132,7 @@
                     <option value="">Default (Rear/Auto)</option>
                 </select>
             </div>
+
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res / FPS</label>
                 <div class="flex gap-2">
@@ -136,6 +148,7 @@
                     </select>
                 </div>
             </div>
+
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate (Mbps)</label>
                 <select id="bitrate"
@@ -148,11 +161,12 @@
                     <option value="custom">Custom...</option>
                 </select>
             </div>
+
             <button onclick="startStreaming()"
                 class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-2 active:scale-95 transition-transform text-white">START
                 STREAMING</button>
         </div>
-        <div class="text-center mt-6 pt-4">
+        <div class="text-center mt-6 pt-4 pb-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
             <p class="text-[9px] text-gray-600">OBSCam V2.1</p>
@@ -186,10 +200,7 @@
             <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
                 <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10 w-fit">
                     <span id="status-txt" class="text-xs text-yellow-400 font-bold">Connecting...</span>
-                    <div class="flex flex-col mt-[-2px]">
-                        <span id="live-room-display" class="text-[8px] text-gray-400 font-mono">Room: -----</span>
-                        <span id="live-upload-stats" class="text-[9px] text-green-400 font-mono">Up: 0 kbps</span>
-                    </div>
+                    <div id="live-room-display" class="text-[8px] text-gray-400 font-mono mt-[-2px]">Room: -----</div>
                 </div>
                 <select id="live-bitrate" onchange="updateLiveBitrate(this)"
                     class="bg-black/50 text-white text-[10px] px-2 py-1 rounded border border-white/20 outline-none w-24">
@@ -200,18 +211,20 @@
                     <option value="custom">Custom...</option>
                 </select>
             </div>
+
             <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto items-center">
                 <button onclick="stopStreaming()"
                     class="bg-red-600/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"><i
                         class="fas fa-stop"></i></button>
                 <button onclick="reconnectSignaling()"
                     class="bg-yellow-500/80 w-8 h-8 rounded-full flex items-center justify-center shadow active:scale-90 transition-transform text-white"
-                    title="Reconnect"><i class="fas fa-sync text-xs"></i></button>
+                    title="Reconnect Signal"><i class="fas fa-sync text-xs"></i></button>
                 <select id="live-cam-select" onchange="switchCamera(this.value)"
                     class="bg-black/50 text-white text-[10px] h-10 px-2 rounded-full border border-white/20 outline-none max-w-[80px] truncate">
                     <option value="">Switch Cam...</option>
                 </select>
             </div>
+
             <div class="right-bar">
                 <button onclick="rotateUI()"
                     class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500"><i
@@ -233,6 +246,7 @@
     </div>
 
     <script>
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
             authDomain: "obscam-p2p.firebaseapp.com",
@@ -245,11 +259,12 @@
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
-        let myStream, videoTrack, qrStream;
-        let pcObs = null, pcMonitor = null; // ** Dual Connections **
-        let customBitrateVal = 2500, targetCamIndex = "1";
+        // ** แก้ไข: ใช้ Object เก็บ 2 connection (monitor, obs) **
+        let pcs = { monitor: null, obs: null };
+        let myStream, videoTrack, qrStream, customBitrateVal = 2500, targetCamIndex = "1";
         let isUIRotated = false;
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -257,16 +272,14 @@
 
         initCameraSelection().then(() => { loadSettings(); });
 
-        async function initCameraSelection() {
+        async function initCameraSelection() { /* โค้ดเดิม ไม่เปลี่ยนแปลง */
             try {
                 await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoSelect = document.getElementById('camera-select');
                 const liveSelect = document.getElementById('live-cam-select');
-
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
                 liveSelect.innerHTML = '<option value="">Switch Cam...</option>';
-
                 let count = 1;
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
@@ -281,37 +294,86 @@
             } catch (e) { console.log("Permission Error"); }
         }
 
-        function loadSettings() {
-            if (roomFromUrl) {
-                document.getElementById('room-id').value = roomFromUrl;
-                localStorage.setItem('obs_room_id', roomFromUrl);
-            } else if (localStorage.getItem('obs_room_id')) {
-                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
-            }
+        function loadSettings() { /* โค้ดเดิม */
+            if (roomFromUrl) { document.getElementById('room-id').value = roomFromUrl; localStorage.setItem('obs_room_id', roomFromUrl); }
+            else if (localStorage.getItem('obs_room_id')) { document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); }
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
-            // ... (Other loads same as before) ...
+            const savedCam = localStorage.getItem('obs_cam_select');
+            const camSel = document.getElementById('camera-select');
+            if (savedCam && [...camSel.options].some(o => o.value === savedCam)) camSel.value = savedCam;
+            if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
+            if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
+            if (localStorage.getItem('obs_bitrate')) {
+                const b = localStorage.getItem('obs_bitrate');
+                const sel = document.getElementById('bitrate');
+                if (b === 'custom' && localStorage.getItem('obs_custom_bitrate')) {
+                    customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
+                    sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
+                    sel.value = 'custom';
+                } else { sel.value = b; }
+            }
         }
 
-        // ... (SaveSettings, checkCustomBitrate, updateLiveBitrate same as before) ...
-        function checkCustomBitrate(el) { if (el.value === 'custom') { const val = prompt("Bitrate (kbps):", customBitrateVal); if (val) customBitrateVal = parseInt(val); } }
-        function updateLiveBitrate(el) { if (el.value === 'custom') checkCustomBitrate(el); if (pcObs) setBitrate(pcObs, parseInt(el.value) * 1000); if (pcMonitor) setBitrate(pcMonitor, parseInt(el.value) * 1000); }
-        function saveSettings() { /* Save logic here */ }
+        function saveSettings() { /* โค้ดเดิม */
+            localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
+            localStorage.setItem('obs_cam_select', document.getElementById('camera-select').value);
+            localStorage.setItem('obs_res', document.getElementById('res').value);
+            localStorage.setItem('obs_fps', document.getElementById('fps').value);
+            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
+            if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
+        }
+
+        function checkCustomBitrate(el) { /* โค้ดเดิม */
+            if (el.value === 'custom') {
+                const val = prompt("กรอก Bitrate (kbps):", customBitrateVal);
+                if (val && !isNaN(val)) { customBitrateVal = parseInt(val); el.options[el.options.length - 1].text = `Custom (${val})`; }
+                else { el.value = "2500"; }
+            }
+        }
+
+        function updateLiveBitrate(el) { /* โค้ดเดิม แต่แก้ให้วนลูป update ทั้ง 2 PC */
+            let val = el.value;
+            if (val === 'custom') {
+                const input = prompt("Live Bitrate (kbps):", customBitrateVal);
+                if (input && !isNaN(input)) { val = parseInt(input); customBitrateVal = val; el.options[el.options.length - 1].text = `Custom (${val})`; }
+                else { el.value = "2500"; return; }
+            }
+            // Update ทั้ง 2 ท่อ
+            if (pcs.monitor) setBitrate(pcs.monitor, parseInt(val) * 1000);
+            if (pcs.obs) setBitrate(pcs.obs, parseInt(val) * 1000);
+        }
 
         async function startStreaming() {
-            const rid = document.getElementById('room-id').value;
-            if (rid.length < 6) return alert('Room ID 6 digits required');
-            document.getElementById('live-room-display').innerText = "Room: " + rid;
+            saveSettings();
 
-            // Check Room
+            const rid = document.getElementById('room-id').value;
+            if (rid.length < 6) return alert('Room ID ต้องมี 6 หลัก');
+
+            document.getElementById('live-room-display').innerText = "Room: " + rid;
+            const statusTxt = document.getElementById('status-txt');
+            statusTxt.innerText = "Checking Room...";
+
+            // Check room active
             const roomSnap = await db.ref(`rooms/${rid}/active`).get();
-            if (!roomSnap.exists()) return alert(`Room ${rid} not found on Monitor!`);
+            if (!roomSnap.exists()) {
+                alert(`ไม่พบห้อง ${rid}!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) ให้ขึ้นเลขห้องก่อนครับ`);
+                return;
+            }
 
             targetCamIndex = document.getElementById('cam-index').value;
 
-            // Init Camera
+            // Override Check (Optional) - Code เดิม
+            const camSnap = await db.ref(`rooms/${rid}/cam${targetCamIndex}/monitor/offer`).get();
+            if (camSnap.exists()) {
+                const confirmOverride = confirm(`Camera ${targetCamIndex} มีการใช้งานอยู่\nต้องการเชื่อมต่อทับหรือไม่?`);
+                if (!confirmOverride) return;
+            }
+
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
             const selectedCamId = document.getElementById('camera-select').value;
+
             let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
             if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
 
@@ -324,53 +386,85 @@
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                // Cleanup on Disconnect
+                // CLEANUP on Disconnect
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().remove();
 
-                connectToRoom(rid, targetCamIndex);
+                // ** เรียกเชื่อมต่อ 2 ท่อแยกกัน **
+                connectToPath(rid, targetCamIndex, 'monitor');
+                connectToPath(rid, targetCamIndex, 'obs');
 
-                // Start Stats Loop
-                startStatsLoop(rid, targetCamIndex);
+                // เริ่มส่ง Stats
+                startUpdatingStats(rid, targetCamIndex);
 
             } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
         function stopStreaming() {
             if (myStream) myStream.getTracks().forEach(track => track.stop());
-            if (pcObs) pcObs.close();
-            if (pcMonitor) pcMonitor.close();
+
+            // Close Both PCs
+            if (pcs.monitor) pcs.monitor.close();
+            if (pcs.obs) pcs.obs.close();
+            pcs = { monitor: null, obs: null };
+
             const rid = document.getElementById('room-id').value;
             if (rid && targetCamIndex) {
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).remove();
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().cancel();
             }
+
             document.getElementById('live-ui').classList.add('hidden');
             document.getElementById('setup').classList.remove('hidden');
         }
 
         function reconnectSignaling() {
             const rid = document.getElementById('room-id').value;
-            if (rid && targetCamIndex) connectToRoom(rid, targetCamIndex);
+            if (rid && targetCamIndex) {
+                if (pcs.monitor) pcs.monitor.close();
+                if (pcs.obs) pcs.obs.close();
+                // Reconnect Both
+                connectToPath(rid, targetCamIndex, 'monitor');
+                connectToPath(rid, targetCamIndex, 'obs');
+            }
         }
 
-        async function switchCamera(deviceId) {
-            // ... (Switch Logic same as before, apply to BOTH pcObs and pcMonitor) ...
+        async function switchCamera(deviceId) { /* โค้ดเดิม แก้ให้เปลี่ยน Track ทั้ง 2 PC */
+            if (!deviceId || !myStream) return;
+            try {
+                myStream.getVideoTracks().forEach(t => t.stop());
+                const quality = parseInt(document.getElementById('res').value);
+                const fpsVal = parseInt(document.getElementById('fps').value);
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                });
+                const newVideoTrack = newStream.getVideoTracks()[0];
+
+                // Replace in Both PCs
+                ['monitor', 'obs'].forEach(key => {
+                    if (pcs[key]) {
+                        const sender = pcs[key].getSenders().find(s => s.track.kind === 'video');
+                        if (sender) sender.replaceTrack(newVideoTrack);
+                    }
+                });
+
+                const audioTrack = myStream.getAudioTracks()[0];
+                myStream = new MediaStream([audioTrack, newVideoTrack]);
+                document.getElementById('preview').srcObject = myStream;
+                videoTrack = newVideoTrack;
+                document.getElementById('live-cam-select').value = "";
+            } catch (e) { alert("Switch failed: " + e.message); }
         }
 
-        // ** DUAL CONNECTION LOGIC **
-        function connectToRoom(rid, cIdx) {
-            setupConnection(rid, cIdx, 'obs');
-            setupConnection(rid, cIdx, 'monitor');
-            document.getElementById('status-txt').innerText = "Live (Dual)";
-            document.getElementById('status-txt').className = "text-xs text-green-400 font-bold";
-        }
+        // ** ฟังก์ชันใหม่: เชื่อมต่อแยก Path (Dual Stream) **
+        async function connectToPath(rid, cIdx, type) {
+            const statusTxt = document.getElementById('status-txt');
+            // แยก Path เป็น cam1/monitor และ cam1/obs
+            const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/${type}`);
 
-        async function setupConnection(rid, cIdx, type) {
-            const path = `rooms/${rid}/cam${cIdx}/${type}`;
-            const roomRef = db.ref(path);
-
+            // สร้าง PC แยกสำหรับ type นั้นๆ
             const pc = new RTCPeerConnection(rtcConfig);
-            if (type === 'obs') pcObs = pc; else pcMonitor = pc;
+            pcs[type] = pc; // เก็บลงตัวแปร pcs.monitor หรือ pcs.obs
 
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
 
@@ -380,60 +474,73 @@
             await pc.setLocalDescription(offer);
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
+            if (type === 'monitor') statusTxt.innerText = "Wait Monitor...";
+
             roomRef.child('answer').on('value', async snapshot => {
                 const data = snapshot.val();
                 if (!data) return;
-                if (pc.signalingState !== "stable") {
+                if (!pc.currentRemoteDescription) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data));
+                    if (type === 'monitor') {
+                        statusTxt.innerText = `LIVE (CAM ${cIdx})`;
+                        statusTxt.className = "text-xs text-green-400 font-bold";
+                    }
                 }
             });
 
-            roomRef.child('calleeCandidates').on('child_added', snapshot => { const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => { }); });
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'disconnected') {
+                    if (type === 'monitor') {
+                        statusTxt.innerText = "Disconnected";
+                        statusTxt.className = "text-xs text-red-500 font-bold";
+                    }
+                }
+            };
 
-            // Set Initial Bitrate
-            let bitrateVal = parseInt(document.getElementById('bitrate').value) || 2500;
-            if (document.getElementById('bitrate').value == 'custom') bitrateVal = customBitrateVal;
+            roomRef.child('calleeCandidates').on('child_added', snapshot => {
+                const candidate = snapshot.val();
+                if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate));
+            });
+
+            // Set Bitrate
+            let bitrateVal = document.getElementById('bitrate').value;
+            if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
+            else bitrateVal = parseInt(bitrateVal);
             setBitrate(pc, bitrateVal * 1000);
         }
 
-        function setBitrate(pc, bitrate) {
+        function setBitrate(pc, bitrate) { /* โค้ดเดิม */
             const sender = pc.getSenders().find(s => s.track.kind === 'video');
             if (sender) {
                 const params = sender.getParameters();
                 if (!params.encodings) params.encodings = [{}];
                 params.encodings[0].maxBitrate = bitrate;
-                sender.setParameters(params).catch(e => { });
+                sender.setParameters(params).catch(e => console.log(e));
             }
         }
 
-        // ** STATS LOOP (Writes to Firebase) **
-        function startStatsLoop(rid, cIdx) {
-            setInterval(async () => {
-                if (!pcObs) return;
-                const stats = await pcObs.getStats();
-                let uploadRate = 0;
-                stats.forEach(r => {
-                    if (r.type === 'outbound-rtp' && r.kind === 'video') {
-                        // Calculate Bitrate (simplified for display)
-                        // ... (Real calculation needs lastBytes tracking) ...
-                    }
-                });
+        function startUpdatingStats(rid, cIdx) {
+            setInterval(() => {
+                let bitrateVal = document.getElementById('bitrate').value;
+                if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
 
-                // Update Firebase for Monitor to see
-                const res = document.getElementById('res').value;
-                // Note: Real implementation needs real bitrate calc here, using simulated for UI update now
-                const simulatedBitrate = parseInt(document.getElementById('live-bitrate').value) || 2500;
-
-                document.getElementById('live-upload-stats').innerText = `Up: ${simulatedBitrate} kbps`;
+                // Get Res
+                let w = 0, h = 0;
+                if (videoTrack && videoTrack.getSettings) {
+                    w = videoTrack.getSettings().width || 0;
+                    h = videoTrack.getSettings().height || 0;
+                }
 
                 db.ref(`rooms/${rid}/cam${cIdx}/stats`).set({
-                    bitrate: simulatedBitrate,
-                    res: (res == '1080' ? '1920x1080' : (res == '720' ? '1280x720' : '854x480'))
+                    online: true,
+                    bitrate: bitrateVal,
+                    res: `${w}x${h}`,
+                    ts: Date.now()
                 });
-            }, 2000);
+            }, 3000);
         }
 
-        // ... (Rotate UI, Toggle Torch, QR Scanner - Same as previous) ...
+        // --- Helper Functions เหมือนเดิม ---
         function rotateUI() {
             isUIRotated = !isUIRotated;
             const ui = document.getElementById('overlay-controls');
@@ -445,7 +552,26 @@
                 ui.style.width = "100%"; ui.style.height = "100%"; ui.style.top = "0"; ui.style.left = "0"; ui.style.translate = "0 0";
             }
         }
-        async function startQRScanner() { /* ... same ... */ }
+        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
+        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
+        function toggleGrid() { const g = document.getElementById('grid-layer'); const b = document.getElementById('grid-btn'); g.classList.toggle('hidden'); if (g.classList.contains('hidden')) { b.classList.remove('bg-purple-500'); b.classList.add('bg-black/40'); } else { b.classList.add('bg-purple-500'); b.classList.remove('bg-black/40'); } }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
+        async function startQRScanner() { /* QR Code logic เดิม */
+            document.getElementById('qr-overlay').classList.remove('hidden');
+            const video = document.getElementById('qr-video'); const canvas = document.getElementById('qr-canvas'); const ctx = canvas.getContext('2d');
+            qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = qrStream; video.play(); requestAnimationFrame(tick);
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight; canvas.width = video.videoWidth;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+                    if (code && code.data.includes('room=')) { document.getElementById('room-id').value = new URL(code.data).searchParams.get('room'); stopQRScanner(); }
+                    else if (code && code.data.length >= 6) { document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6); stopQRScanner(); }
+                }
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
+            }
+        }
         function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) qrStream.getTracks().forEach(t => t.stop()); }
     </script>
 </body>
