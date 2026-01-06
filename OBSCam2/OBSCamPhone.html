@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.4</title>
+    <title>OBSCam Sender V2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -218,7 +218,7 @@
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.4</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.1</p>
             </div>
         </div>
     </div>
@@ -341,7 +341,7 @@
         let lastBytes = { obs: 0, monitor: 0 };
         let lastTime = 0;
         let sessionTotalBytes = 0;
-        let monitorBitrateTarget = 300;
+        let monitorBitrateTarget = 50; // DEFAULT 50k
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -372,6 +372,10 @@
             if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
             else if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+
+            // LOAD LENS SELECTION
+            if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
+
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
@@ -387,6 +391,7 @@
             localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
             localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
             localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
+            localStorage.setItem('obs_camera_id', document.getElementById('camera-select').value); // SAVE LENS
             if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
         }
 
@@ -471,14 +476,14 @@
 
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
-            // Default: Enabled=false (Video Off, Stats On)
-            controlRef.update({ enabled: false, bitratePercent: 300 });
+            // Default: Enabled=false (Video Off, Stats On), Bitrate=50k
+            controlRef.update({ enabled: false, bitratePercent: 50 });
 
             controlRef.on('value', snap => {
                 const val = snap.val();
                 if (val) {
                     const shouldEnableVideo = val.enabled;
-                    monitorBitrateTarget = val.bitratePercent || 300;
+                    monitorBitrateTarget = val.bitratePercent || 50;
 
                     // Logic: Connection always exists (created in startStreaming),
                     // we just toggle the VIDEO TRACK enabled state.
@@ -488,6 +493,7 @@
                             sender.track.enabled = shouldEnableVideo; // True = Send Video, False = Black Screen (Bandwidth Saved)
                         }
                         if (shouldEnableVideo) updateMonitorBitrate();
+                        else setBitrate(pcs.monitor, 50000); // Set low bitrate when blind
                     }
                 }
             });

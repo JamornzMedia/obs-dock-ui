@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.4</title>
+    <title>OBSCam Control V2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -219,6 +219,12 @@
         <button id="btn-start-fresh" onclick="initializeControl(false)"
             class="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
                 class="fas fa-play mr-2"></i> Start New Session</button>
+
+        <div class="absolute bottom-10 text-center">
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
+            </p>
+            <p class="text-[9px] text-gray-600">Version 2.1</p>
+        </div>
     </div>
 
     <div id="mode-control" class="hidden control-panel p-4">
@@ -263,7 +269,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.4</p>
+            <p class="text-[9px] text-gray-600">V2.1</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -321,7 +327,7 @@
                     <div class="flex items-center gap-3">
                         <div class="cam-preview relative" data-label="CAM ${i}">
                             <video id="preview-video-${i}" autoplay playsinline muted></video>
-                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center hidden" id="overlay-off-${i}"><i class="fas fa-eye-slash text-gray-500 text-xs"></i></div>
+                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center" id="overlay-off-${i}"><i class="fas fa-eye-slash text-gray-500 text-xs"></i></div>
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
@@ -342,11 +348,11 @@
                     <div class="flex flex-col items-end gap-1 ml-2">
                         <div class="flex items-center gap-2">
                             <select onchange="updateMonitorBitrate('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5 w-16">
-                                <option value="50">50 K</option>
+                                <option value="50" selected>50 K</option>
                                 <option value="100">100 K</option>
                                 <option value="150">150 K</option>
                                 <option value="200">200 K</option>
-                                <option value="300" selected>300 K</option>
+                                <option value="300">300 K</option>
                                 <option value="500">500 K</option>
                                 <option value="1000">1 M</option>
                             </select>
