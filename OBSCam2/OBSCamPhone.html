@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.3</title>
+    <title>OBSCam Sender V2.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -88,7 +88,6 @@
             translate: -50% -50%;
         }
 
-        /* LOGO STYLE */
         .simple-logo {
             text-align: center;
             margin-bottom: 20px;
@@ -145,6 +144,11 @@
                             class="fas fa-qrcode text-2xl"></i></button>
                 </div>
             </div>
+
+            <button onclick="startStreaming()"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform text-white mb-4">
+                START STREAMING
+            </button>
 
             <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
                 <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
@@ -210,14 +214,11 @@
                 </div>
             </div>
 
-            <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-4 active:scale-95 transition-transform text-white">START
-                STREAMING</button>
             <div class="text-center pt-6 pb-10">
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.3</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.4</p>
             </div>
         </div>
     </div>
@@ -333,15 +334,14 @@
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         let pcs = { monitor: null, obs: null };
-        let dcs = { monitor: null }; // Data Channel Store
+        let dcs = { monitor: null };
         let myStream, videoTrack, qrStream;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
-
         let lastBytes = { obs: 0, monitor: 0 };
         let lastTime = 0;
         let sessionTotalBytes = 0;
-        let monitorBitrateTarget = 300; // Default 300 kbps
+        let monitorBitrateTarget = 300;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -443,7 +443,10 @@
 
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
 
+                // ALWAYS CONNECT MONITOR (for Stats/Data Channel)
                 connectToPath(roomId, targetCamIndex, 'obs');
+                connectToPath(roomId, targetCamIndex, 'monitor');
+
                 listenMonitorControl(roomId, targetCamIndex);
                 startUpdatingStatsLocal(quality, fpsVal);
 
@@ -468,24 +471,23 @@
 
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
-            controlRef.update({ enabled: false, bitratePercent: 300 }); // Default 300 kbps
+            // Default: Enabled=false (Video Off, Stats On)
+            controlRef.update({ enabled: false, bitratePercent: 300 });
 
             controlRef.on('value', snap => {
                 const val = snap.val();
                 if (val) {
-                    const shouldEnable = val.enabled;
-                    monitorBitrateTarget = val.bitratePercent || 300; // Now this is KBPS direct
+                    const shouldEnableVideo = val.enabled;
+                    monitorBitrateTarget = val.bitratePercent || 300;
 
-                    if (shouldEnable && !pcs.monitor) {
-                        connectToPath(rid, cIdx, 'monitor');
-                    } else if (!shouldEnable && pcs.monitor) {
-                        if (dcs.monitor) dcs.monitor.close();
-                        pcs.monitor.close();
-                        pcs.monitor = null;
-                        dcs.monitor = null;
-                        db.ref(`rooms/${rid}/cam${cIdx}/monitor`).remove();
-                    } else if (shouldEnable && pcs.monitor) {
-                        updateMonitorBitrate();
+                    // Logic: Connection always exists (created in startStreaming),
+                    // we just toggle the VIDEO TRACK enabled state.
+                    if (pcs.monitor) {
+                        const sender = pcs.monitor.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender && sender.track) {
+                            sender.track.enabled = shouldEnableVideo; // True = Send Video, False = Black Screen (Bandwidth Saved)
+                        }
+                        if (shouldEnableVideo) updateMonitorBitrate();
                     }
                 }
             });
@@ -514,11 +516,9 @@
 
         function updateMonitorBitrate() {
             if (!pcs.monitor) return;
-            // Now monitorBitrateTarget is absolute kbps (e.g., 300)
             setBitrate(pcs.monitor, monitorBitrateTarget * 1000);
         }
 
-        // --- WEBRTC CORE ---
         function preferCodec(sdp, codec) {
             var sdpLines = sdp.split('\r\n');
             var mLineIndex = -1;
@@ -543,12 +543,18 @@
             pcs[type] = pc;
 
             if (type === 'monitor') {
-                // Create Data Channel for sending Stats to Control
                 const dc = pc.createDataChannel("stats");
                 dcs.monitor = dc;
             }
 
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
+
+            // Initial state for monitor: Disabled (Muted)
+            if (type === 'monitor') {
+                const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                if (sender) sender.track.enabled = false;
+            }
+
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('callerCandidates').push(event.candidate.toJSON()); };
 
             let offer = await pc.createOffer();
@@ -594,12 +600,10 @@
             statsInterval = setInterval(async () => {
                 let obsBytes = 0, monBytes = 0;
 
-                // Get OBS Bytes
                 if (pcs.obs && pcs.obs.connectionState === 'connected') {
                     const s = await pcs.obs.getStats();
                     s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') obsBytes += r.bytesSent; });
                 }
-                // Get Monitor Bytes
                 if (pcs.monitor && pcs.monitor.connectionState === 'connected') {
                     const s = await pcs.monitor.getStats();
                     s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') monBytes += r.bytesSent; });
@@ -622,10 +626,8 @@
                 lastBytes.monitor = monBytes;
                 lastTime = now;
 
-                // Update Local UI
                 document.getElementById('realtime-bw').innerText = `${mainKbps} kbps`;
 
-                // Battery
                 let batLevel = 100;
                 try {
                     const battery = await navigator.getBattery();
@@ -633,7 +635,6 @@
                     document.getElementById('battery-stat').innerHTML = `<i class="fas fa-bolt"></i> ${batLevel}%`;
                 } catch (e) { }
 
-                // SEND VIA DATA CHANNEL (If Monitor is connected)
                 if (dcs.monitor && dcs.monitor.readyState === 'open') {
                     const payload = {
                         res: resH + "p",

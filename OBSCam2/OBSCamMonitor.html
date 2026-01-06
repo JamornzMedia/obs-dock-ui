@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.3</title>
+    <title>OBSCam Control V2.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -140,7 +140,6 @@
             color: #6b7280;
         }
 
-        /* FIXED LOGO STYLE MATCHING PHONE */
         .simple-logo {
             text-align: center;
             margin-bottom: 10px;
@@ -264,7 +263,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.3</p>
+            <p class="text-[9px] text-gray-600">V2.4</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -393,7 +392,11 @@
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            // Watchdog for "Offline" status (No data packet for 3s)
+            // Connect ALL monitors immediately for Stats
+            for (let i = 1; i <= 4; i++) {
+                initDashboardReceiver(i);
+            }
+
             setInterval(() => {
                 const now = Date.now();
                 for (let i = 1; i <= 4; i++) {
@@ -410,14 +413,13 @@
         function toggleMonitor(i) {
             const btn = document.getElementById(`btn-mon-${i}`);
             const isInactive = btn.classList.contains('monitor-inactive');
+            // Toggle UI & Firebase ONLY (Don't close PC)
             if (isInactive) {
                 btn.classList.remove('monitor-inactive'); btn.classList.add('monitor-active');
                 document.getElementById(`overlay-off-${i}`).classList.add('hidden');
-                initDashboardReceiver(i);
             } else {
                 btn.classList.remove('monitor-active'); btn.classList.add('monitor-inactive');
                 document.getElementById(`overlay-off-${i}`).classList.remove('hidden');
-                if (dashboardPCs[i]) { dashboardPCs[i].close(); dashboardPCs[i] = null; }
             }
             db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ enabled: isInactive });
         }
@@ -433,27 +435,22 @@
             const dPC = new RTCPeerConnection(rtcConfig);
             dashboardPCs[cIdx] = dPC;
 
-            // DATA CHANNEL HANDLER (RECEIVE STATS)
             dPC.ondatachannel = (e) => {
                 const dc = e.channel;
                 dc.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
 
-                    // Update UI with Data received directly
                     document.getElementById(`info-res-${cIdx}`).innerText = `${data.res} ${data.fps}fps`;
                     document.getElementById(`info-data-${cIdx}`).innerText = `${data.totalData} MB`;
                     document.getElementById(`info-main-bw-${cIdx}`).innerText = `Main: ${data.mainKbps}kbps`;
                     document.getElementById(`info-mon-bw-${cIdx}`).innerText = `Pre: ${data.monKbps}kbps`;
                     document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
 
-                    // Keep Alive Logic
                     const badge = document.getElementById(`badge-${cIdx}`);
                     badge.className = "status-badge status-live";
                     badge.innerText = "LIVE";
                     badge.dataset.lastSeen = Date.now();
 
-                    // Calculate Global Total Data (approx from received data)
-                    // Note: This sums up what we see on screen
                     calculateTotalData();
                 }
             };
@@ -505,7 +502,6 @@
         }
 
         function resetDataUsage() {
-            // Reset UI only (Phone keeps counting session)
             for (let i = 1; i <= 4; i++) document.getElementById(`info-data-${i}`).innerText = "0 MB";
             document.getElementById('val-total-data').innerText = "0.0 MB";
         }
