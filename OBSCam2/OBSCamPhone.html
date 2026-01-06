@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.2</title>
+    <title>OBSCam Sender V2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -88,6 +88,7 @@
             translate: -50% -50%;
         }
 
+        /* LOGO STYLE */
         .simple-logo {
             text-align: center;
             margin-bottom: 20px;
@@ -125,9 +126,8 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
-        <button onclick="toggleFullScreen()" class="absolute top-4 right-4 text-gray-500 hover:text-white">
-            <i class="fas fa-expand text-xl"></i>
-        </button>
+        <button onclick="toggleFullScreen()" class="absolute top-4 right-4 text-gray-500 hover:text-white"><i
+                class="fas fa-expand text-xl"></i></button>
 
         <div class="simple-logo mt-6">
             <div class="logo-main">OBSCam</div>
@@ -189,9 +189,14 @@
                     <select id="bitrate"
                         class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700"
                         onchange="checkCustomBitrate(this)">
-                        <option value="2500">2.5 M</option>
+                        <option value="2000">2.0 M</option>
+                        <option value="2500" selected>2.5 M</option>
+                        <option value="3000">3.0 M</option>
                         <option value="3500">3.5 M</option>
+                        <option value="4000">4.0 M</option>
                         <option value="6000">6.0 M</option>
+                        <option value="8500">8.5 M</option>
+                        <option value="10000">10 M</option>
                         <option value="custom">Custom...</option>
                     </select>
                 </div>
@@ -206,15 +211,13 @@
             </div>
 
             <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-4 active:scale-95 transition-transform text-white">
-                START STREAMING
-            </button>
-
+                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-4 active:scale-95 transition-transform text-white">START
+                STREAMING</button>
             <div class="text-center pt-6 pb-10">
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.3</p>
             </div>
         </div>
     </div>
@@ -237,7 +240,6 @@
         </div>
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none fade-ui z-20">
-
             <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
                 <div class="bg-black/60 px-3 py-1.5 rounded-md border-l-4 border-green-500 backdrop-blur-sm">
                     <div class="flex items-center gap-2">
@@ -247,14 +249,25 @@
                     </div>
                     <div class="text-[10px] text-white font-mono mt-0.5" id="room-info">Room: ----</div>
                 </div>
-                <div id="realtime-bw"
-                    class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-green-300 font-mono w-fit">0 kbps</div>
+
+                <div class="flex gap-2">
+                    <div id="realtime-bw"
+                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-green-300 font-mono w-fit">0 kbps</div>
+                    <div id="battery-stat"
+                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-yellow-300 font-mono w-fit"><i
+                            class="fas fa-bolt"></i> --%</div>
+                </div>
 
                 <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
                     class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur mt-1 w-24">
+                    <option value="2000">2.0 M</option>
                     <option value="2500">2.5 M</option>
+                    <option value="3000">3.0 M</option>
                     <option value="3500">3.5 M</option>
+                    <option value="4000">4.0 M</option>
                     <option value="6000">6.0 M</option>
+                    <option value="8500">8.5 M</option>
+                    <option value="10000">10 M</option>
                 </select>
             </div>
 
@@ -320,11 +333,15 @@
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         let pcs = { monitor: null, obs: null };
+        let dcs = { monitor: null }; // Data Channel Store
         let myStream, videoTrack, qrStream;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
-        let lastBytes = 0, lastTime = 0, sessionTotalBytes = 0;
-        let monitorEnabled = false, monitorBitratePercent = 30;
+
+        let lastBytes = { obs: 0, monitor: 0 };
+        let lastTime = 0;
+        let sessionTotalBytes = 0;
+        let monitorBitrateTarget = 300; // Default 300 kbps
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -337,10 +354,8 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoSelect = document.getElementById('camera-select');
                 const liveSelect = document.getElementById('live-cam-select');
-
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
                 liveSelect.innerHTML = '<option value="">Change Lens...</option>';
-
                 let count = 0;
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
@@ -357,7 +372,6 @@
             if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
             else if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
-
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
@@ -395,10 +409,7 @@
             document.getElementById('status-txt').innerText = "CHECKING...";
 
             const roomSnap = await db.ref(`rooms/${roomId}/active`).get();
-            if (!roomSnap.exists()) {
-                alert(`Room ${roomId} not found! Please create room on PC first.`);
-                return;
-            }
+            if (!roomSnap.exists()) { alert(`Room ${roomId} not found!`); return; }
 
             targetCamIndex = document.getElementById('cam-index').value;
             document.getElementById('status-txt').innerText = `LIVE : CAM ${targetCamIndex}`;
@@ -409,62 +420,44 @@
             const selectedCamId = document.getElementById('camera-select').value;
             const useAudio = document.getElementById('audio-enable').value === 'true';
 
-            // Sync Live Bitrate Select
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
             if (currentBitrateSet === 'custom') {
                 let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
                 liveBitSel.add(opt);
                 liveBitSel.value = customBitrateVal;
-            } else {
-                liveBitSel.value = currentBitrateSet;
-            }
+            } else { liveBitSel.value = currentBitrateSet; }
 
             let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
-            if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId };
-            else videoConstraints.facingMode = 'environment';
+            if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
 
             try {
-                try {
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints });
-                } catch (err) {
-                    delete videoConstraints.facingMode;
-                    delete videoConstraints.deviceId;
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints });
-                }
+                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints }); }
+                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints }); }
 
                 videoTrack = myStream.getVideoTracks()[0];
                 document.getElementById('preview').srcObject = myStream;
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
-
                 checkZoomCapabilities();
 
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
 
                 connectToPath(roomId, targetCamIndex, 'obs');
                 listenMonitorControl(roomId, targetCamIndex);
-                startUpdatingStatsLocal(roomId, targetCamIndex, quality, fpsVal);
+                startUpdatingStatsLocal(quality, fpsVal);
 
             } catch (e) { alert('Camera Error: ' + e.message); }
         }
 
         function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => { console.log(e); });
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { console.log(e); }); }
+            else { if (document.exitFullscreen) document.exitFullscreen(); }
         }
 
         function toggleUI(e) {
             if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            const ui = document.getElementById('overlay-controls');
-            if (ui.classList.contains('ui-hidden')) {
-                ui.classList.remove('ui-hidden');
-            } else {
-                ui.classList.add('ui-hidden');
-            }
+            document.getElementById('overlay-controls').classList.toggle('ui-hidden');
         }
 
         function updateLiveBitrate(val) {
@@ -475,19 +468,21 @@
 
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
-            controlRef.update({ enabled: false, bitratePercent: 30 });
+            controlRef.update({ enabled: false, bitratePercent: 300 }); // Default 300 kbps
 
             controlRef.on('value', snap => {
                 const val = snap.val();
                 if (val) {
                     const shouldEnable = val.enabled;
-                    monitorBitratePercent = val.bitratePercent || 30;
+                    monitorBitrateTarget = val.bitratePercent || 300; // Now this is KBPS direct
 
                     if (shouldEnable && !pcs.monitor) {
                         connectToPath(rid, cIdx, 'monitor');
                     } else if (!shouldEnable && pcs.monitor) {
+                        if (dcs.monitor) dcs.monitor.close();
                         pcs.monitor.close();
                         pcs.monitor = null;
+                        dcs.monitor = null;
                         db.ref(`rooms/${rid}/cam${cIdx}/monitor`).remove();
                     } else if (shouldEnable && pcs.monitor) {
                         updateMonitorBitrate();
@@ -501,11 +496,11 @@
             if (pcs.monitor) pcs.monitor.close();
             if (pcs.obs) pcs.obs.close();
             pcs = { monitor: null, obs: null };
+            dcs = { monitor: null };
             clearInterval(statsInterval);
 
-            if (roomId && targetCamIndex) db.ref(`rooms/${roomId}/cam${targetCamIndex}/monitorControl`).off();
-
             if (roomId && targetCamIndex) {
+                db.ref(`rooms/${roomId}/cam${targetCamIndex}/monitorControl`).off();
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).remove();
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().cancel();
             }
@@ -515,18 +510,15 @@
             sessionTotalBytes = 0;
         }
 
-        function getTargetBitrate() {
-            const liveVal = document.getElementById('live-bitrate').value;
-            return parseInt(liveVal) || 2500;
-        }
+        function getTargetBitrate() { return parseInt(document.getElementById('live-bitrate').value) || 2500; }
 
         function updateMonitorBitrate() {
             if (!pcs.monitor) return;
-            const mainBitrate = getTargetBitrate();
-            const monitorBps = (mainBitrate * (monitorBitratePercent / 100)) * 1000;
-            setBitrate(pcs.monitor, monitorBps);
+            // Now monitorBitrateTarget is absolute kbps (e.g., 300)
+            setBitrate(pcs.monitor, monitorBitrateTarget * 1000);
         }
 
+        // --- WEBRTC CORE ---
         function preferCodec(sdp, codec) {
             var sdpLines = sdp.split('\r\n');
             var mLineIndex = -1;
@@ -549,6 +541,12 @@
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/${type}`);
             const pc = new RTCPeerConnection(rtcConfig);
             pcs[type] = pc;
+
+            if (type === 'monitor') {
+                // Create Data Channel for sending Stats to Control
+                const dc = pc.createDataChannel("stats");
+                dcs.monitor = dc;
+            }
 
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('callerCandidates').push(event.candidate.toJSON()); };
@@ -584,75 +582,88 @@
                 const params = sender.getParameters();
                 if (!params.encodings) params.encodings = [{}];
                 params.encodings[0].maxBitrate = bitrate;
-                if (sender.track) sender.track.contentHint = "motion";
                 sender.setParameters(params).catch(e => console.log(e));
             }
         }
 
-        function startUpdatingStatsLocal(rid, cIdx, resH, fps) {
-            lastBytes = 0; lastTime = Date.now();
+        function startUpdatingStatsLocal(resH, fps) {
+            lastBytes = { obs: 0, monitor: 0 };
+            lastTime = Date.now();
             sessionTotalBytes = 0;
-            let tickCount = 0;
 
             statsInterval = setInterval(async () => {
-                let totalBytesSent = 0;
-                for (let key of ['monitor', 'obs']) {
-                    const pc = pcs[key];
-                    if (pc && pc.connectionState === 'connected') {
-                        const stats = await pc.getStats();
-                        stats.forEach(report => { if (report.type === 'outbound-rtp' && report.kind === 'video') totalBytesSent += report.bytesSent; });
-                    }
+                let obsBytes = 0, monBytes = 0;
+
+                // Get OBS Bytes
+                if (pcs.obs && pcs.obs.connectionState === 'connected') {
+                    const s = await pcs.obs.getStats();
+                    s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') obsBytes += r.bytesSent; });
+                }
+                // Get Monitor Bytes
+                if (pcs.monitor && pcs.monitor.connectionState === 'connected') {
+                    const s = await pcs.monitor.getStats();
+                    s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') monBytes += r.bytesSent; });
                 }
 
                 const now = Date.now();
-                let currentBitrate = 0;
-                if (totalBytesSent > 0 && lastBytes > 0) {
-                    const diffTime = now - lastTime;
-                    const diffBytes = totalBytesSent - lastBytes;
-                    if (diffTime > 0) currentBitrate = Math.round(((diffBytes) * 8) / diffTime);
-                    sessionTotalBytes += diffBytes;
+                const diffTime = now - lastTime;
+                let mainKbps = 0, monKbps = 0;
+
+                if (diffTime > 0) {
+                    if (obsBytes > 0 && lastBytes.obs > 0) mainKbps = Math.round(((obsBytes - lastBytes.obs) * 8) / diffTime);
+                    if (monBytes > 0 && lastBytes.monitor > 0) monKbps = Math.round(((monBytes - lastBytes.monitor) * 8) / diffTime);
+
+                    const diffMain = (obsBytes > lastBytes.obs) ? (obsBytes - lastBytes.obs) : 0;
+                    const diffMon = (monBytes > lastBytes.monitor) ? (monBytes - lastBytes.monitor) : 0;
+                    sessionTotalBytes += (diffMain + diffMon);
                 }
-                lastBytes = totalBytesSent; lastTime = now;
 
-                document.getElementById('realtime-bw').innerText = `${currentBitrate} kbps`;
+                lastBytes.obs = obsBytes;
+                lastBytes.monitor = monBytes;
+                lastTime = now;
 
-                tickCount++;
-                if (tickCount >= 5) {
-                    tickCount = 0;
-                    const mbUsed = (sessionTotalBytes / (1024 * 1024)).toFixed(1);
-                    db.ref(`rooms/${rid}/cam${cIdx}/stats`).set({
-                        online: true,
+                // Update Local UI
+                document.getElementById('realtime-bw').innerText = `${mainKbps} kbps`;
+
+                // Battery
+                let batLevel = 100;
+                try {
+                    const battery = await navigator.getBattery();
+                    batLevel = Math.round(battery.level * 100);
+                    document.getElementById('battery-stat').innerHTML = `<i class="fas fa-bolt"></i> ${batLevel}%`;
+                } catch (e) { }
+
+                // SEND VIA DATA CHANNEL (If Monitor is connected)
+                if (dcs.monitor && dcs.monitor.readyState === 'open') {
+                    const payload = {
                         res: resH + "p",
                         fps: fps,
-                        dataUsed: mbUsed,
-                        ts: Date.now()
-                    });
+                        mainKbps: mainKbps,
+                        monKbps: monKbps,
+                        bat: batLevel,
+                        totalData: (sessionTotalBytes / (1024 * 1024)).toFixed(1)
+                    };
+                    dcs.monitor.send(JSON.stringify(payload));
                 }
+
             }, 1000);
         }
 
-        // --- ZOOM & CONTROLS ---
         async function checkZoomCapabilities() {
             if (!videoTrack) return;
             const capabilities = videoTrack.getCapabilities();
             if (capabilities.zoom) {
                 const slider = document.getElementById('zoom-slider');
-                slider.min = capabilities.zoom.min;
-                slider.max = capabilities.zoom.max;
-                slider.step = capabilities.zoom.step;
-                slider.value = capabilities.zoom.min;
+                slider.min = capabilities.zoom.min; slider.max = capabilities.zoom.max; slider.step = capabilities.zoom.step; slider.value = capabilities.zoom.min;
                 document.getElementById('zoom-container').classList.remove('hidden');
-            } else {
-                document.getElementById('zoom-container').classList.add('hidden');
-            }
+            } else { document.getElementById('zoom-container').classList.add('hidden'); }
         }
         async function applyZoom(value) { if (videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ zoom: value }] }); } catch (e) { } } }
 
         function rotateUI() {
             isUIRotated = !isUIRotated;
             const ui = document.getElementById('overlay-controls');
-            if (isUIRotated) ui.classList.add('ui-rotate-90');
-            else ui.classList.remove('ui-rotate-90');
+            if (isUIRotated) ui.classList.add('ui-rotate-90'); else ui.classList.remove('ui-rotate-90');
         }
 
         async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
@@ -676,8 +687,7 @@
                 ['monitor', 'obs'].forEach(key => { if (pcs[key]) { const sender = pcs[key].getSenders().find(s => s.track.kind === 'video'); if (sender) sender.replaceTrack(newVideoTrack); } });
 
                 const audioTrack = newStream.getAudioTracks()[0];
-                let tracks = [newVideoTrack];
-                if (audioTrack) tracks.push(audioTrack);
+                let tracks = [newVideoTrack]; if (audioTrack) tracks.push(audioTrack);
 
                 myStream = new MediaStream(tracks);
                 document.getElementById('preview').srcObject = myStream;

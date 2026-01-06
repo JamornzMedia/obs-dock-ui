@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.2</title>
+    <title>OBSCam Control V2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -140,25 +140,48 @@
             color: #6b7280;
         }
 
-        /* NEW LOGO CSS FOR CONTROL */
+        /* FIXED LOGO STYLE MATCHING PHONE */
+        .simple-logo {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
         .logo-main {
-            font-size: 1.2rem;
+            font-size: 3rem;
             font-weight: 900;
             font-style: italic;
-            letter-spacing: -1px;
+            letter-spacing: -2px;
             line-height: 1;
-            background: -webkit-linear-gradient(#4facfe, #00f2fe);
+            background: -webkit-linear-gradient(#fff, #999);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .logo-sub {
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #666;
+            margin-top: -5px;
+        }
+
+        .logo-header-main {
+            font-size: 1.5rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: -webkit-linear-gradient(#fff, #999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-header-sub {
             font-size: 0.6rem;
             font-weight: 700;
             letter-spacing: 2px;
             color: #666;
             text-transform: uppercase;
-            margin-left: 2px;
         }
 
         ::-webkit-scrollbar {
@@ -176,10 +199,9 @@
     <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline muted></video></div>
 
     <div id="start-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
-        <div class="text-center mb-6">
-            <div class="logo-main" style="font-size: 3rem; background: -webkit-linear-gradient(#fff, #999);">OBSCam
-            </div>
-            <div class="logo-sub" style="font-size: 1rem; color: #666;">CONTROL</div>
+        <div class="simple-logo">
+            <div class="logo-main">OBSCam</div>
+            <div class="logo-sub">CONTROL</div>
         </div>
 
         <div id="rejoin-area" class="hidden w-full max-w-xs text-center mb-4">
@@ -203,8 +225,8 @@
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <div class="flex flex-col">
-                <div class="logo-main">OBSCam</div>
-                <div class="logo-sub">CONTROL CENTER</div>
+                <div class="logo-header-main">OBSCam</div>
+                <div class="logo-header-sub">CONTROL CENTER</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -223,17 +245,11 @@
 
         <div class="flex-1 overflow-y-auto pr-1" id="cam-list"></div>
 
-        <div class="grid grid-cols-2 gap-2 mt-3 mb-3">
-            <div class="bg-gray-900 border border-gray-800 rounded p-2 text-center">
-                <span class="text-[9px] text-gray-500 uppercase block">Mon. Download</span>
-                <div id="val-total-bitrate" class="text-sm font-bold text-blue-400">0 kbps</div>
-            </div>
-            <div class="bg-gray-900 border border-gray-800 rounded p-2 text-center relative">
-                <span class="text-[9px] text-gray-500 uppercase block">Data Used</span>
-                <div id="val-total-data" class="text-sm font-bold text-yellow-400">0.0 MB</div>
-                <button onclick="resetDataUsage()"
-                    class="absolute top-1 right-1 text-[8px] text-gray-500 bg-gray-800 px-1 rounded">R</button>
-            </div>
+        <div class="bg-gray-900 border border-gray-800 rounded p-2 text-center relative mt-2 mb-2">
+            <span class="text-[9px] text-gray-500 uppercase block">Total All Data</span>
+            <div id="val-total-data" class="text-sm font-bold text-yellow-400">0.0 MB</div>
+            <button onclick="resetDataUsage()"
+                class="absolute top-1 right-1 text-[8px] text-gray-500 bg-gray-800 px-1 rounded">R</button>
         </div>
 
         <div class="mt-auto space-y-2">
@@ -248,7 +264,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.2</p>
+            <p class="text-[9px] text-gray-600">V2.3</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -264,7 +280,6 @@
                 <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
                 <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
                         class="w-32 h-32"></div>
-
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="phone-url-input"
                         class="bg-black text-[10px] text-gray-400 border border-gray-700 rounded p-2 flex-1 font-mono"
@@ -272,7 +287,6 @@
                     <button onclick="copyPhoneLink()"
                         class="bg-blue-600 text-white text-[10px] px-3 rounded font-bold">Copy</button>
                 </div>
-
                 <button onclick="closeModal('phone-link-modal')"
                     class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
@@ -297,11 +311,10 @@
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
         const camIndex = params.get('cam') || '1';
-        let roomId, pc, dashboardPCs = {}, lastBytes = { 1: 0, 2: 0, 3: 0, 4: 0 }, lastTime = Date.now(), totalBytesConsumed = 0;
+        let roomId, pc, dashboardPCs = {}, totalBytesData = 0;
 
         if (!mode) {
             checkExistingSession();
-
             const list = document.getElementById('cam-list');
             for (let i = 1; i <= 4; i++) {
                 list.innerHTML += `
@@ -311,24 +324,32 @@
                             <video id="preview-video-${i}" autoplay playsinline muted></video>
                             <div class="absolute inset-0 bg-black/50 flex items-center justify-center hidden" id="overlay-off-${i}"><i class="fas fa-eye-slash text-gray-500 text-xs"></i></div>
                         </div>
-                        <div>
+                        <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-xs font-bold text-gray-300">CAM ${i}</span>
                                 <span class="status-badge status-wait" id="badge-${i}">OFF</span>
+                                <span class="text-[8px] text-yellow-500 font-mono ml-auto" id="bat-${i}"></span>
                             </div>
-                            <div class="text-[9px] text-gray-500 font-mono" id="stats-${i}">wait...</div>
-                            <div class="text-[8px] text-blue-500" id="data-stats-${i}"></div>
+                            <div class="text-[8px] text-gray-400 font-mono flex gap-2">
+                                <span id="info-res-${i}">--p --fps</span>
+                                <span id="info-data-${i}" class="text-blue-400">0 MB</span>
+                            </div>
+                             <div class="text-[8px] text-gray-500 font-mono flex gap-2 mt-0.5">
+                                <span id="info-main-bw-${i}">Main: 0kbps</span>
+                                <span id="info-mon-bw-${i}">Pre: 0kbps</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
+                    <div class="flex flex-col items-end gap-1 ml-2">
                         <div class="flex items-center gap-2">
-                            <select onchange="updateMonitorPercent('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5">
-                                <option value="1">1%</option>
-                                <option value="5">5%</option>
-                                <option value="10">10%</option>
-                                <option value="30" selected>30%</option>
-                                <option value="50">50%</option>
-                                <option value="100">100%</option>
+                            <select onchange="updateMonitorBitrate('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5 w-16">
+                                <option value="50">50 K</option>
+                                <option value="100">100 K</option>
+                                <option value="150">150 K</option>
+                                <option value="200">200 K</option>
+                                <option value="300" selected>300 K</option>
+                                <option value="500">500 K</option>
+                                <option value="1000">1 M</option>
                             </select>
                             <button onclick="toggleMonitor('${i}')" id="btn-mon-${i}" class="monitor-toggle monitor-inactive p-1" title="Toggle Monitor View"><i class="fas fa-eye"></i></button>
                         </div>
@@ -337,18 +358,9 @@
             }
         } else if (mode === 'screen') {
             document.getElementById('mode-screen').classList.remove('hidden');
-            let foundRoom = params.get('room');
-            if (!foundRoom) {
-                foundRoom = localStorage.getItem('obs_v2_room_id');
-                if (!foundRoom) {
-                    const v = document.getElementById('mode-screen');
-                    v.innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found in URL or LocalStorage.<br>Please open Control Panel first.</div>";
-                }
-            }
-            if (foundRoom) {
-                roomId = foundRoom;
-                startReceiver(roomId, camIndex);
-            }
+            let foundRoom = params.get('room') || localStorage.getItem('obs_v2_room_id');
+            if (foundRoom) { roomId = foundRoom; startReceiver(roomId, camIndex); }
+            else { document.getElementById('mode-screen').innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found.</div>"; }
         }
 
         function checkExistingSession() {
@@ -362,18 +374,15 @@
         }
 
         function initializeControl(rejoin) {
-            if (rejoin) {
-                roomId = localStorage.getItem('obs_v2_room_id');
-            } else {
+            if (rejoin) { roomId = localStorage.getItem('obs_v2_room_id'); }
+            else {
                 const old = localStorage.getItem('obs_v2_room_id');
                 if (old) db.ref(`rooms/${old}`).remove();
-
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem('obs_v2_room_id', roomId);
             }
 
             db.ref(`rooms/${roomId}/active`).set(true);
-            window.addEventListener('beforeunload', () => { });
             db.ref(`rooms/${roomId}`).onDisconnect().remove();
 
             document.getElementById('start-screen').classList.add('hidden');
@@ -384,59 +393,36 @@
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            for (let i = 1; i <= 4; i++) {
-                db.ref(`rooms/${roomId}/cam${i}/stats`).on('value', snap => {
-                    const val = snap.val();
-                    if (val) {
-                        const el = document.getElementById(`stats-${i}`);
-                        const currentMonitorSpeed = el.innerText.split(' ')[0];
-                        el.innerText = `${currentMonitorSpeed} / ${val.res} ${val.fps}fps`;
-                        document.getElementById(`data-stats-${i}`).innerText = `M.Data: ${val.dataUsed || 0} MB`;
-                        const badge = document.getElementById(`badge-${i}`);
-                        badge.className = "status-badge status-live";
-                        badge.innerText = "LIVE";
-                        badge.dataset.lastSeen = Date.now();
-                    }
-                });
-            }
-
+            // Watchdog for "Offline" status (No data packet for 3s)
             setInterval(() => {
                 const now = Date.now();
                 for (let i = 1; i <= 4; i++) {
                     const badge = document.getElementById(`badge-${i}`);
                     const lastSeen = badge.dataset.lastSeen || 0;
-                    if (badge.innerText === 'LIVE' && (now - lastSeen > 12000)) {
-                        badge.className = "status-badge status-wait";
-                        badge.innerText = "OFF";
+                    if (badge.innerText === 'LIVE' && (now - lastSeen > 3000)) {
+                        badge.className = "status-badge status-wait"; badge.innerText = "OFF";
+                        document.getElementById(`info-main-bw-${i}`).innerText = "Main: --";
                     }
                 }
-            }, 5000);
-
-            startIncomingStats();
+            }, 1000);
         }
 
-        // --- MONITOR CONTROL ---
         function toggleMonitor(i) {
             const btn = document.getElementById(`btn-mon-${i}`);
             const isInactive = btn.classList.contains('monitor-inactive');
-            const newState = isInactive;
-
-            if (newState) {
-                btn.classList.remove('monitor-inactive');
-                btn.classList.add('monitor-active');
+            if (isInactive) {
+                btn.classList.remove('monitor-inactive'); btn.classList.add('monitor-active');
                 document.getElementById(`overlay-off-${i}`).classList.add('hidden');
                 initDashboardReceiver(i);
             } else {
-                btn.classList.remove('monitor-active');
-                btn.classList.add('monitor-inactive');
+                btn.classList.remove('monitor-active'); btn.classList.add('monitor-inactive');
                 document.getElementById(`overlay-off-${i}`).classList.remove('hidden');
                 if (dashboardPCs[i]) { dashboardPCs[i].close(); dashboardPCs[i] = null; }
             }
-
-            db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ enabled: newState });
+            db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ enabled: isInactive });
         }
 
-        function updateMonitorPercent(i, val) {
+        function updateMonitorBitrate(i, val) {
             db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ bitratePercent: parseInt(val) });
         }
 
@@ -447,15 +433,36 @@
             const dPC = new RTCPeerConnection(rtcConfig);
             dashboardPCs[cIdx] = dPC;
 
-            dPC.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
-            dPC.ontrack = event => {
-                const video = document.getElementById(`preview-video-${cIdx}`);
-                video.srcObject = event.streams[0];
+            // DATA CHANNEL HANDLER (RECEIVE STATS)
+            dPC.ondatachannel = (e) => {
+                const dc = e.channel;
+                dc.onmessage = (msg) => {
+                    const data = JSON.parse(msg.data);
+
+                    // Update UI with Data received directly
+                    document.getElementById(`info-res-${cIdx}`).innerText = `${data.res} ${data.fps}fps`;
+                    document.getElementById(`info-data-${cIdx}`).innerText = `${data.totalData} MB`;
+                    document.getElementById(`info-main-bw-${cIdx}`).innerText = `Main: ${data.mainKbps}kbps`;
+                    document.getElementById(`info-mon-bw-${cIdx}`).innerText = `Pre: ${data.monKbps}kbps`;
+                    document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
+
+                    // Keep Alive Logic
+                    const badge = document.getElementById(`badge-${cIdx}`);
+                    badge.className = "status-badge status-live";
+                    badge.innerText = "LIVE";
+                    badge.dataset.lastSeen = Date.now();
+
+                    // Calculate Global Total Data (approx from received data)
+                    // Note: This sums up what we see on screen
+                    calculateTotalData();
+                }
             };
 
+            dPC.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
+            dPC.ontrack = event => { document.getElementById(`preview-video-${cIdx}`).srcObject = event.streams[0]; };
+
             roomRef.child('offer').on('value', async snapshot => {
-                const data = snapshot.val();
-                if (!data) return;
+                const data = snapshot.val(); if (!data) return;
                 try {
                     await dPC.setRemoteDescription(new RTCSessionDescription(data));
                     const answer = await dPC.createAnswer();
@@ -466,52 +473,23 @@
             roomRef.child('callerCandidates').on('child_added', snapshot => { const c = snapshot.val(); if (c) dPC.addIceCandidate(new RTCIceCandidate(c)).catch(e => { }); });
         }
 
-        function startIncomingStats() {
-            setInterval(async () => {
-                let totalDownload = 0;
-                const now = Date.now();
-                const diffTime = now - lastTime;
-                if (diffTime <= 0) return;
-
-                for (let i = 1; i <= 4; i++) {
-                    const pc = dashboardPCs[i];
-                    if (pc && pc.connectionState === 'connected') {
-                        const stats = await pc.getStats();
-                        let bytes = 0;
-                        stats.forEach(r => { if (r.type === 'inbound-rtp' && r.kind === 'video') bytes += r.bytesReceived; });
-                        if (bytes > lastBytes[i] && lastBytes[i] > 0) {
-                            const diff = bytes - lastBytes[i];
-                            const kbps = Math.round((diff * 8) / diffTime);
-                            const txt = document.getElementById(`stats-${i}`);
-                            const parts = txt.innerText.split('/');
-                            const extra = parts.length > 1 ? `/${parts.slice(1).join('/')}` : "";
-                            txt.innerText = `${kbps} kbps ${extra}`;
-                            totalDownload += kbps;
-                            totalBytesConsumed += diff;
-                        }
-                        lastBytes[i] = bytes;
-                    } else { lastBytes[i] = 0; }
-                }
-                lastTime = now;
-                document.getElementById('val-total-bitrate').innerText = totalDownload + " kbps";
-                document.getElementById('val-total-data').innerText = (totalBytesConsumed / (1024 * 1024)).toFixed(1) + " MB";
-            }, 1000);
+        function calculateTotalData() {
+            let total = 0.0;
+            for (let i = 1; i <= 4; i++) {
+                const txt = document.getElementById(`info-data-${i}`).innerText.replace(' MB', '');
+                total += parseFloat(txt) || 0;
+            }
+            document.getElementById('val-total-data').innerText = total.toFixed(1) + " MB";
         }
 
-        // --- OBS Logic (Main Receiver) ---
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
-
-            // FIXED: Don't remove the whole node, only reset our answer
-            // This prevents deleting the Phone's offer if Phone is already active
-            await roomRef.child('answer').remove();
-            await roomRef.child('calleeCandidates').remove();
+            await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
             pc.ontrack = event => { document.getElementById('remote-video').srcObject = event.streams[0]; };
 
-            // Check for existing offer or wait for new one
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
                 try {
@@ -521,12 +499,16 @@
                         await pc.setLocalDescription(answer);
                         await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
                     }
-                } catch (e) { console.log(e); }
+                } catch (e) { }
             });
             roomRef.child('callerCandidates').on('child_added', snapshot => { const c = snapshot.val(); if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => { }); });
         }
 
-        function resetDataUsage() { totalBytesConsumed = 0; document.getElementById('val-total-data').innerText = "0.0 MB"; }
+        function resetDataUsage() {
+            // Reset UI only (Phone keeps counting session)
+            for (let i = 1; i <= 4; i++) document.getElementById(`info-data-${i}`).innerText = "0 MB";
+            document.getElementById('val-total-data').innerText = "0.0 MB";
+        }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function openLinkModal() {
