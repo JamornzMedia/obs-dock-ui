@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.1</title>
+    <title>OBSCam Control V2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -94,7 +94,6 @@
             justify-content: center;
         }
 
-        /* Show Text when video is hidden/empty */
         .cam-preview:before {
             content: attr(data-label);
             position: absolute;
@@ -141,6 +140,27 @@
             color: #6b7280;
         }
 
+        /* NEW LOGO CSS FOR CONTROL */
+        .logo-main {
+            font-size: 1.2rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: -webkit-linear-gradient(#4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-sub {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #666;
+            text-transform: uppercase;
+            margin-left: 2px;
+        }
+
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -156,7 +176,11 @@
     <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline muted></video></div>
 
     <div id="start-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
-        <h1 class="text-3xl font-bold text-blue-500 mb-6">OBSCam Control</h1>
+        <div class="text-center mb-6">
+            <div class="logo-main" style="font-size: 3rem; background: -webkit-linear-gradient(#fff, #999);">OBSCam
+            </div>
+            <div class="logo-sub" style="font-size: 1rem; color: #666;">CONTROL</div>
+        </div>
 
         <div id="rejoin-area" class="hidden w-full max-w-xs text-center mb-4">
             <div class="bg-gray-900 p-4 rounded-xl border border-gray-700">
@@ -178,7 +202,11 @@
 
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
-            <h1 class="text-blue-400 font-bold text-xs uppercase"><i class="fas fa-sliders-h"></i> OBSCam Control</h1>
+            <div class="flex flex-col">
+                <div class="logo-main">OBSCam</div>
+                <div class="logo-sub">CONTROL CENTER</div>
+            </div>
+
             <div class="flex items-center gap-2">
                 <button onclick="window.location.reload()"
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
@@ -220,7 +248,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.1</p>
+            <p class="text-[9px] text-gray-600">V2.2</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -271,7 +299,6 @@
         const camIndex = params.get('cam') || '1';
         let roomId, pc, dashboardPCs = {}, lastBytes = { 1: 0, 2: 0, 3: 0, 4: 0 }, lastTime = Date.now(), totalBytesConsumed = 0;
 
-        // Render Control UI
         if (!mode) {
             checkExistingSession();
 
@@ -338,7 +365,6 @@
             if (rejoin) {
                 roomId = localStorage.getItem('obs_v2_room_id');
             } else {
-                // If creating new, ensure we clean old if exists (though listener handles disconnect, explicit is good)
                 const old = localStorage.getItem('obs_v2_room_id');
                 if (old) db.ref(`rooms/${old}`).remove();
 
@@ -347,12 +373,7 @@
             }
 
             db.ref(`rooms/${roomId}/active`).set(true);
-            window.addEventListener('beforeunload', () => {
-                // Only remove if we are not intending to keep it? 
-                // Actually, standard behavior for this app seems to be room dies when control dies.
-                // But Refresh logic implies we want to keep it briefly.
-                // We rely on onDisconnect for sudden closure.
-            });
+            window.addEventListener('beforeunload', () => { });
             db.ref(`rooms/${roomId}`).onDisconnect().remove();
 
             document.getElementById('start-screen').classList.add('hidden');
@@ -363,20 +384,14 @@
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            // Stats Listener
             for (let i = 1; i <= 4; i++) {
-                // Listen for Stats from Sender
                 db.ref(`rooms/${roomId}/cam${i}/stats`).on('value', snap => {
                     const val = snap.val();
                     if (val) {
                         const el = document.getElementById(`stats-${i}`);
-                        // Current Monitor Speed (from PC) / Sender Res (from Phone) / Sender FPS
                         const currentMonitorSpeed = el.innerText.split(' ')[0];
                         el.innerText = `${currentMonitorSpeed} / ${val.res} ${val.fps}fps`;
-
                         document.getElementById(`data-stats-${i}`).innerText = `M.Data: ${val.dataUsed || 0} MB`;
-
-                        // If we got stats, it means it's live
                         const badge = document.getElementById(`badge-${i}`);
                         badge.className = "status-badge status-live";
                         badge.innerText = "LIVE";
@@ -385,7 +400,6 @@
                 });
             }
 
-            // Watchdog: Check if camera went offline (no stats update for 12s)
             setInterval(() => {
                 const now = Date.now();
                 for (let i = 1; i <= 4; i++) {
@@ -405,7 +419,7 @@
         function toggleMonitor(i) {
             const btn = document.getElementById(`btn-mon-${i}`);
             const isInactive = btn.classList.contains('monitor-inactive');
-            const newState = isInactive; // Toggle
+            const newState = isInactive;
 
             if (newState) {
                 btn.classList.remove('monitor-inactive');
@@ -468,13 +482,10 @@
                         if (bytes > lastBytes[i] && lastBytes[i] > 0) {
                             const diff = bytes - lastBytes[i];
                             const kbps = Math.round((diff * 8) / diffTime);
-
-                            // Update UI Text
                             const txt = document.getElementById(`stats-${i}`);
                             const parts = txt.innerText.split('/');
                             const extra = parts.length > 1 ? `/${parts.slice(1).join('/')}` : "";
                             txt.innerText = `${kbps} kbps ${extra}`;
-
                             totalDownload += kbps;
                             totalBytesConsumed += diff;
                         }
@@ -487,16 +498,30 @@
             }, 1000);
         }
 
-        // --- OBS Logic ---
+        // --- OBS Logic (Main Receiver) ---
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
-            await roomRef.remove();
+
+            // FIXED: Don't remove the whole node, only reset our answer
+            // This prevents deleting the Phone's offer if Phone is already active
+            await roomRef.child('answer').remove();
+            await roomRef.child('calleeCandidates').remove();
+
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
             pc.ontrack = event => { document.getElementById('remote-video').srcObject = event.streams[0]; };
+
+            // Check for existing offer or wait for new one
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
-                try { await pc.setRemoteDescription(new RTCSessionDescription(data)); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type }); } catch (e) { }
+                try {
+                    if (!pc.currentRemoteDescription) {
+                        await pc.setRemoteDescription(new RTCSessionDescription(data));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        await roomRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
+                    }
+                } catch (e) { console.log(e); }
             });
             roomRef.child('callerCandidates').on('child_added', snapshot => { const c = snapshot.val(); if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => { }); });
         }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.1</title>
+    <title>OBSCam Sender V2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -88,7 +88,6 @@
             translate: -50% -50%;
         }
 
-        /* NEW SIMPLE LOGO */
         .simple-logo {
             text-align: center;
             margin-bottom: 20px;
@@ -126,7 +125,6 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
-
         <button onclick="toggleFullScreen()" class="absolute top-4 right-4 text-gray-500 hover:text-white">
             <i class="fas fa-expand text-xl"></i>
         </button>
@@ -216,7 +214,7 @@
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.1</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
             </div>
         </div>
     </div>
@@ -251,6 +249,13 @@
                 </div>
                 <div id="realtime-bw"
                     class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-green-300 font-mono w-fit">0 kbps</div>
+
+                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                    class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur mt-1 w-24">
+                    <option value="2500">2.5 M</option>
+                    <option value="3500">3.5 M</option>
+                    <option value="6000">6.0 M</option>
+                </select>
             </div>
 
             <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
@@ -260,29 +265,20 @@
                 <i class="fas fa-minus text-[10px] text-white mt-2"></i>
             </div>
 
-            <div class="absolute bottom-6 left-6 flex flex-col gap-2 pointer-events-auto">
-                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
-                    class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur mb-1 w-24">
-                    <option value="2500">2.5 M</option>
-                    <option value="3500">3.5 M</option>
-                    <option value="6000">6.0 M</option>
+            <div class="absolute bottom-6 left-6 flex gap-3 items-center pointer-events-auto">
+                <button onclick="stopStreaming()"
+                    class="bg-red-600/90 w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition text-white border-2 border-red-400/50"><i
+                        class="fas fa-stop text-lg"></i></button>
+                <button onclick="reconnectSignaling()"
+                    class="bg-yellow-500/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition text-white"><i
+                        class="fas fa-sync text-sm"></i></button>
+            </div>
+
+            <div class="absolute bottom-6 right-24 pointer-events-auto">
+                <select id="live-cam-select" onchange="switchCamera(this.value)"
+                    class="bg-black/60 text-white text-[10px] h-10 px-3 rounded-lg border border-white/20 outline-none backdrop-blur shadow-lg">
+                    <option value="">Change Lens...</option>
                 </select>
-
-                <div class="flex gap-3 items-center">
-                    <button onclick="stopStreaming()"
-                        class="bg-red-600/90 w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition text-white border-2 border-red-400/50"><i
-                            class="fas fa-stop text-lg"></i></button>
-                    <button onclick="reconnectSignaling()"
-                        class="bg-yellow-500/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition text-white"><i
-                            class="fas fa-sync text-sm"></i></button>
-
-                    <div class="flex flex-col gap-1">
-                        <select id="live-cam-select" onchange="switchCamera(this.value)"
-                            class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none max-w-[100px] backdrop-blur">
-                            <option value="">Change Lens...</option>
-                        </select>
-                    </div>
-                </div>
             </div>
 
             <div class="right-bar">
@@ -417,7 +413,6 @@
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
             if (currentBitrateSet === 'custom') {
-                // Add custom option to live select if not exist
                 let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
                 liveBitSel.add(opt);
                 liveBitSel.value = customBitrateVal;
@@ -433,7 +428,6 @@
                 try {
                     myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints });
                 } catch (err) {
-                    // Fallback
                     delete videoConstraints.facingMode;
                     delete videoConstraints.deviceId;
                     myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints });
@@ -448,7 +442,6 @@
 
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
 
-                // Connect
                 connectToPath(roomId, targetCamIndex, 'obs');
                 listenMonitorControl(roomId, targetCamIndex);
                 startUpdatingStatsLocal(roomId, targetCamIndex, quality, fpsVal);
@@ -465,7 +458,6 @@
         }
 
         function toggleUI(e) {
-            // Only toggle if clicking background, not buttons
             if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             const ui = document.getElementById('overlay-controls');
             if (ui.classList.contains('ui-hidden')) {
@@ -476,9 +468,7 @@
         }
 
         function updateLiveBitrate(val) {
-            // Update global variable used by getTargetBitrate
-            if (!isNaN(val)) customBitrateVal = parseInt(val); // Treat as custom value override
-            // Update Active Connections
+            if (!isNaN(val)) customBitrateVal = parseInt(val);
             if (pcs.obs) setBitrate(pcs.obs, parseInt(val) * 1000);
             updateMonitorBitrate();
         }
@@ -526,7 +516,6 @@
         }
 
         function getTargetBitrate() {
-            // Uses the value from Live Select if active, otherwise setup
             const liveVal = document.getElementById('live-bitrate').value;
             return parseInt(liveVal) || 2500;
         }
@@ -625,10 +614,8 @@
                 }
                 lastBytes = totalBytesSent; lastTime = now;
 
-                // Show Local Realtime
                 document.getElementById('realtime-bw').innerText = `${currentBitrate} kbps`;
 
-                // Update Firebase ONLY every 5 ticks (5 seconds) to save load
                 tickCount++;
                 if (tickCount >= 5) {
                     tickCount = 0;
@@ -641,7 +628,6 @@
                         ts: Date.now()
                     });
                 }
-
             }, 1000);
         }
 
@@ -688,9 +674,6 @@
                 });
                 const newVideoTrack = newStream.getVideoTracks()[0];
                 ['monitor', 'obs'].forEach(key => { if (pcs[key]) { const sender = pcs[key].getSenders().find(s => s.track.kind === 'video'); if (sender) sender.replaceTrack(newVideoTrack); } });
-
-                // Audio Handling logic if changed
-                // (Simplification: We assume audio track persists or is recreated if we re-request getUserMedia with audio:true)
 
                 const audioTrack = newStream.getAudioTracks()[0];
                 let tracks = [newVideoTrack];
