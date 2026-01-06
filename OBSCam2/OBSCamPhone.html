@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OBSCam Sender V2.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        body {
+            background: #050505;
+            color: white;
+            touch-action: manipulation;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            /* Prevent body scroll in live mode */
+        }
+
+        /* Setup Screen Scrollable fix for Landscape */
+        #setup {
+            min-height: 100vh;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            z-index: 50;
+        }
+
+        .video-full {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: translateZ(0);
+        }
+
+        /* Vertical Range Slider for Zoom */
+        .zoom-wrapper {
+            position: absolute;
+            right: 80px;
+            /* Left of the sidebar */
+            top: 50%;
+            transform: translateY(-50%);
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 10px 5px;
+            backdrop-filter: blur(2px);
+        }
+
+        input[type=range][orient=vertical] {
+            writing-mode: bt-lr;
+            /* IE */
+            -webkit-appearance: slider-vertical;
+            /* Webkit */
+            width: 8px;
+            height: 150px;
+            padding: 0 5px;
+        }
+
+        /* Fallback for browsers that don't support vertical range natively */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            .vertical-range {
+                transform: rotate(-90deg);
+                width: 150px;
+                margin: 70px -70px;
+                /* Adjust positioning */
+            }
+        }
+
+        .right-bar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            pointer-events: auto;
+            z-index: 50;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.5), transparent);
+        }
+
+        .ui-rotate-90 {
+            transform: rotate(90deg);
+            width: 100vh !important;
+            height: 100vw !important;
+            top: 50% !important;
+            left: 50% !important;
+            translate: -50% -50%;
+        }
+
+        /* JAMORNZ LOGO STYLE */
+        .brand-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #111;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .brand-top {
+            font-size: 24px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            line-height: 1;
+            color: white;
+        }
+
+        .brand-bar {
+            display: flex;
+            width: 100%;
+            height: 4px;
+            margin: 4px 0;
+        }
+
+        .bar-r {
+            flex: 1;
+            background: #ef4444;
+        }
+
+        .bar-g {
+            flex: 1;
+            background: #22c55e;
+        }
+
+        .bar-b {
+            flex: 1;
+            background: #3b82f6;
+        }
+
+        .brand-bot {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #888;
+            line-height: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
+
+        <div class="brand-logo mt-4">
+            <div class="brand-top">OBSCAM</div>
+            <div class="brand-bar">
+                <div class="bar-r"></div>
+                <div class="bar-g"></div>
+                <div class="bar-b"></div>
+            </div>
+            <div class="brand-bot">SENDER</div>
+        </div>
+
+        <div class="space-y-3 max-w-sm w-full mb-10">
+            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
+                <div class="flex gap-2">
+                    <input type="tel" id="room-id" placeholder="######" maxlength="6"
+                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
+                    <button onclick="startQRScanner()"
+                        class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition"><i
+                            class="fas fa-qrcode text-2xl"></i></button>
+                </div>
+            </div>
+
+            <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
+                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
+                <select id="cam-index"
+                    class="w-full bg-black text-white p-3 rounded-lg text-sm border border-blue-500/50 outline-none font-bold">
+                    <option value="1">CAMERA 1</option>
+                    <option value="2">CAMERA 2</option>
+                    <option value="3">CAMERA 3</option>
+                    <option value="4">CAMERA 4</option>
+                </select>
+            </div>
+
+            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Lens / Camera</label>
+                <select id="camera-select"
+                    class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
+                    <option value="">Default (Rear/Auto)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res</label>
+                    <select id="res" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
+                        <option value="1080">1080p</option>
+                        <option value="720" selected>720p</option>
+                        <option value="480">480p</option>
+                    </select>
+                </div>
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">FPS</label>
+                    <select id="fps" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
+                        <option value="30" selected>30</option>
+                        <option value="60">60</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate (OBS Main)</label>
+                <select id="bitrate"
+                    class="w-full h-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none"
+                    onchange="checkCustomBitrate(this)">
+                    <option value="2500">2.5 M (Standard)</option>
+                    <option value="3500">3.5 M (High)</option>
+                    <option value="6000">6.0 M (Ultra)</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+
+            <button onclick="startStreaming()"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg shadow-lg mt-4 active:scale-95 transition-transform text-white">
+                START STREAMING
+            </button>
+
+            <div class="text-center pt-6 pb-10">
+                <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
+                        target="_blank"
+                        class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="live-ui" class="hidden absolute inset-0 bg-black z-0 transition-transform duration-300">
+        <video id="preview" class="video-full" autoplay playsinline muted></video>
+
+        <div id="grid-layer"
+            class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10">
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+            <div class="border border-white/20"></div>
+        </div>
+
+        <div id="overlay-controls" class="absolute inset-0 pointer-events-none transition-opacity duration-300 z-20">
+            <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
+                <div class="bg-black/60 px-3 py-1.5 rounded-md border-l-4 border-green-500 backdrop-blur-sm">
+                    <div class="flex items-center gap-2">
+                        <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                        <span id="status-txt" class="text-sm text-white font-bold tracking-wide">CONNECTING...</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-mono mt-0.5" id="room-info">Room: ----</div>
+                </div>
+                <div id="realtime-bw"
+                    class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-green-300 font-mono w-fit">0 kbps</div>
+            </div>
+
+            <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
+                <i class="fas fa-plus text-[10px] text-white mb-2"></i>
+                <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
+                    oninput="applyZoom(this.value)" style="height: 120px; width: 6px; appearance: slider-vertical;">
+                <i class="fas fa-minus text-[10px] text-white mt-2"></i>
+            </div>
+
+            <div class="absolute bottom-6 left-6 flex gap-3 pointer-events-auto items-center">
+                <button onclick="stopStreaming()"
+                    class="bg-red-600/90 w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition text-white border-2 border-red-400/50"><i
+                        class="fas fa-stop text-lg"></i></button>
+                <button onclick="reconnectSignaling()"
+                    class="bg-yellow-500/80 w-10 h-10 rounded-full flex items-center justify-center shadow active:scale-90 transition text-white"><i
+                        class="fas fa-sync text-sm"></i></button>
+
+                <div class="flex flex-col gap-1">
+                    <select id="live-cam-select" onchange="switchCamera(this.value)"
+                        class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none max-w-[100px] backdrop-blur">
+                        <option value="">Change Lens...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="right-bar">
+                <button onclick="rotateUI()"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
+                        class="fas fa-redo"></i></button>
+                <button onclick="toggleTorch()" id="torch-btn"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500 text-white"><i
+                        class="fas fa-bolt"></i></button>
+                <button onclick="triggerAutoFocus()"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
+                        class="fas fa-crosshairs"></i></button>
+                <button onclick="toggleGrid()"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500 text-white"><i
+                        class="fas fa-border-all"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
+        <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+                class="w-64 h-64 border-4 border-blue-500 rounded-2xl relative shadow-[0_0_100px_rgba(59,130,246,0.5)]">
+            </div>
+        </div>
+        <button onclick="stopQRScanner()"
+            class="absolute bottom-10 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20 text-white">CANCEL</button>
+        <canvas id="qr-canvas" hidden></canvas>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", authDomain: "obscam-p2p.firebaseapp.com", databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "obscam-p2p", appId: "1:531335072084:web:dc373db6b66581a63160c1" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+
+        let pcs = { monitor: null, obs: null };
+        let myStream, videoTrack, qrStream;
+        let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
+        let isUIRotated = false, statsInterval = null;
+        let lastBytes = 0, lastTime = 0;
+        let monitorEnabled = false, monitorBitratePercent = 30; // Default 30%
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomFromUrl = urlParams.get('room');
+
+        initCameraSelection().then(() => { loadSettings(); });
+
+        async function initCameraSelection() {
+            try {
+                // Request generic first to get permissions
+                await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoSelect = document.getElementById('camera-select');
+                const liveSelect = document.getElementById('live-cam-select');
+
+                videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
+                liveSelect.innerHTML = '<option value="">Change Lens...</option>';
+
+                let count = 0;
+                devices.forEach(device => {
+                    if (device.kind === 'videoinput') {
+                        // Filter generic names if needed, or show all
+                        const label = device.label || `Camera ${count++}`;
+                        const option = new Option(label, device.deviceId);
+                        videoSelect.appendChild(option);
+                        liveSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            } catch (e) { console.log("Permission Error", e); }
+        }
+
+        function loadSettings() {
+            if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
+            else if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+            if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+
+            // Bitrate load
+            if (localStorage.getItem('obs_bitrate')) {
+                const b = localStorage.getItem('obs_bitrate');
+                const sel = document.getElementById('bitrate');
+                if (b === 'custom' && localStorage.getItem('obs_custom_bitrate')) {
+                    customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
+                    sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
+                    sel.value = 'custom';
+                } else { sel.value = b; }
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
+            localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
+            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
+            if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
+        }
+
+        function checkCustomBitrate(el) {
+            if (el.value === 'custom') {
+                const val = prompt("Bitrate (kbps):", customBitrateVal);
+                if (val && !isNaN(val)) {
+                    customBitrateVal = parseInt(val);
+                    el.options[el.options.length - 1].text = `Custom (${val})`;
+                } else { el.value = "2500"; }
+            }
+        }
+
+        async function startStreaming() {
+            saveSettings();
+            roomId = document.getElementById('room-id').value;
+            if (roomId.length < 6) return alert('Invalid Room ID');
+
+            document.getElementById('room-info').innerText = "Room: " + roomId;
+            document.getElementById('status-txt').innerText = "CHECKING...";
+
+            const roomSnap = await db.ref(`rooms/${roomId}/active`).get();
+            if (!roomSnap.exists()) {
+                alert(`Room ${roomId} not found! Please create room on PC first.`);
+                return;
+            }
+
+            targetCamIndex = document.getElementById('cam-index').value;
+            // UPDATE LABEL UI
+            document.getElementById('status-txt').innerText = `LIVE : CAM ${targetCamIndex}`;
+            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+
+            const quality = parseInt(document.getElementById('res').value);
+            const fpsVal = parseInt(document.getElementById('fps').value);
+            const selectedCamId = document.getElementById('camera-select').value;
+
+            let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
+            if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId };
+            else videoConstraints.facingMode = 'environment';
+
+            try {
+                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); }
+                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); }
+
+                videoTrack = myStream.getVideoTracks()[0];
+                document.getElementById('preview').srcObject = myStream;
+                document.getElementById('setup').classList.add('hidden');
+                document.getElementById('live-ui').classList.remove('hidden');
+
+                checkZoomCapabilities();
+
+                // Clean old session
+                db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
+
+                // 1. Always Connect OBS (Main Stream)
+                connectToPath(roomId, targetCamIndex, 'obs');
+
+                // 2. Listen for Monitor Control (Enable/Disable/Percent)
+                listenMonitorControl(roomId, targetCamIndex);
+
+                startUpdatingStatsLocal(roomId, targetCamIndex);
+
+            } catch (e) { alert('Camera Error: ' + e.message); }
+        }
+
+        function listenMonitorControl(rid, cIdx) {
+            const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
+
+            // Default values
+            controlRef.update({ enabled: false, bitratePercent: 30 }); // Default off to save data
+
+            controlRef.on('value', snap => {
+                const val = snap.val();
+                if (val) {
+                    const shouldEnable = val.enabled;
+                    monitorBitratePercent = val.bitratePercent || 30;
+
+                    if (shouldEnable && !pcs.monitor) {
+                        // Turn ON
+                        connectToPath(rid, cIdx, 'monitor');
+                    } else if (!shouldEnable && pcs.monitor) {
+                        // Turn OFF
+                        pcs.monitor.close();
+                        pcs.monitor = null;
+                        db.ref(`rooms/${rid}/cam${cIdx}/monitor`).remove(); // Clean signal
+                    } else if (shouldEnable && pcs.monitor) {
+                        // Just Update Bitrate
+                        updateMonitorBitrate();
+                    }
+                }
+            });
+        }
+
+        function stopStreaming() {
+            if (myStream) myStream.getTracks().forEach(track => track.stop());
+            if (pcs.monitor) pcs.monitor.close();
+            if (pcs.obs) pcs.obs.close();
+            pcs = { monitor: null, obs: null };
+            clearInterval(statsInterval);
+
+            // Stop Listening
+            if (roomId && targetCamIndex) db.ref(`rooms/${roomId}/cam${targetCamIndex}/monitorControl`).off();
+
+            if (roomId && targetCamIndex) {
+                db.ref(`rooms/${roomId}/cam${targetCamIndex}`).remove();
+                db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().cancel();
+            }
+
+            document.getElementById('live-ui').classList.add('hidden');
+            document.getElementById('setup').classList.remove('hidden');
+        }
+
+        function getTargetBitrate() {
+            let val = document.getElementById('bitrate').value;
+            return (val === 'custom') ? customBitrateVal : parseInt(val);
+        }
+
+        function updateMonitorBitrate() {
+            if (!pcs.monitor) return;
+            const mainBitrate = getTargetBitrate();
+            const monitorBps = (mainBitrate * (monitorBitratePercent / 100)) * 1000;
+            setBitrate(pcs.monitor, monitorBps);
+        }
+
+        // H.264 Helper
+        function preferCodec(sdp, codec) {
+            var sdpLines = sdp.split('\r\n');
+            var mLineIndex = -1;
+            for (var i = 0; i < sdpLines.length; i++) { if (sdpLines[i].search('m=video') !== -1) { mLineIndex = i; break; } }
+            if (mLineIndex === -1) return sdp;
+            var codecPayload = null;
+            var pattern = new RegExp(":(\\d+) " + codec + "/90000");
+            for (var i = 0; i < sdpLines.length; i++) { var result = sdpLines[i].match(pattern); if (result) { codecPayload = result[1]; break; } }
+            if (!codecPayload) return sdp;
+            var mLine = sdpLines[mLineIndex];
+            var elements = mLine.split(' ');
+            var newMLine = elements.slice(0, 3);
+            newMLine.push(codecPayload);
+            for (var i = 3; i < elements.length; i++) { if (elements[i] !== codecPayload) newMLine.push(elements[i]); }
+            sdpLines[mLineIndex] = newMLine.join(' ');
+            return sdpLines.join('\r\n');
+        }
+
+        async function connectToPath(rid, cIdx, type) {
+            const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/${type}`);
+            const pc = new RTCPeerConnection(rtcConfig);
+            pcs[type] = pc;
+
+            myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
+            pc.onicecandidate = event => { if (event.candidate) roomRef.child('callerCandidates').push(event.candidate.toJSON()); };
+
+            let offer = await pc.createOffer();
+            const sdpH264 = preferCodec(offer.sdp, 'H264');
+            offer = new RTCSessionDescription({ type: 'offer', sdp: sdpH264 });
+
+            await pc.setLocalDescription(offer);
+            await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
+
+            roomRef.child('answer').on('value', async snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+                if (!pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(data));
+            });
+
+            roomRef.child('calleeCandidates').on('child_added', snapshot => {
+                const candidate = snapshot.val(); if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate));
+            });
+
+            // Bitrate Logic
+            if (type === 'obs') {
+                const bps = getTargetBitrate() * 1000;
+                setBitrate(pc, bps);
+            } else {
+                updateMonitorBitrate();
+            }
+        }
+
+        function setBitrate(pc, bitrate) {
+            const sender = pc.getSenders().find(s => s.track.kind === 'video');
+            if (sender && sender.getParameters) {
+                const params = sender.getParameters();
+                if (!params.encodings) params.encodings = [{}];
+                params.encodings[0].maxBitrate = bitrate;
+                if (sender.track) sender.track.contentHint = "motion";
+                sender.setParameters(params).catch(e => console.log(e));
+            }
+        }
+
+        function startUpdatingStatsLocal(rid, cIdx) {
+            lastBytes = 0; lastTime = Date.now();
+            setTimeout(() => {
+                let w = 0, h = 0;
+                if (videoTrack && videoTrack.getSettings) { w = videoTrack.getSettings().width || 0; h = videoTrack.getSettings().height || 0; }
+                db.ref(`rooms/${rid}/cam${cIdx}/stats`).set({ online: true, res: `${w}x${h}`, ts: Date.now() });
+            }, 2000);
+
+            statsInterval = setInterval(async () => {
+                let totalBytesSent = 0;
+                for (let key of ['monitor', 'obs']) {
+                    const pc = pcs[key];
+                    if (pc && pc.connectionState === 'connected') {
+                        const stats = await pc.getStats();
+                        stats.forEach(report => { if (report.type === 'outbound-rtp' && report.kind === 'video') totalBytesSent += report.bytesSent; });
+                    }
+                }
+                const now = Date.now();
+                let currentBitrate = 0;
+                if (totalBytesSent > 0 && lastBytes > 0) {
+                    const diffTime = now - lastTime;
+                    if (diffTime > 0) currentBitrate = Math.round(((totalBytesSent - lastBytes) * 8) / diffTime);
+                }
+                lastBytes = totalBytesSent; lastTime = now;
+                document.getElementById('realtime-bw').innerText = `${currentBitrate} kbps`;
+            }, 1000);
+        }
+
+        // --- ZOOM & CONTROLS ---
+        async function checkZoomCapabilities() {
+            if (!videoTrack) return;
+            const capabilities = videoTrack.getCapabilities();
+            if (capabilities.zoom) {
+                const slider = document.getElementById('zoom-slider');
+                slider.min = capabilities.zoom.min;
+                slider.max = capabilities.zoom.max;
+                slider.step = capabilities.zoom.step;
+                slider.value = capabilities.zoom.min;
+                document.getElementById('zoom-container').classList.remove('hidden');
+            } else {
+                document.getElementById('zoom-container').classList.add('hidden');
+            }
+        }
+        async function applyZoom(value) { if (videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ zoom: value }] }); } catch (e) { } } }
+
+        function rotateUI() {
+            isUIRotated = !isUIRotated;
+            const ui = document.getElementById('overlay-controls');
+            if (isUIRotated) ui.classList.add('ui-rotate-90');
+            else ui.classList.remove('ui-rotate-90');
+        }
+
+        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
+        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
+        function toggleGrid() { document.getElementById('grid-layer').classList.toggle('hidden'); }
+        function reconnectSignaling() { if (roomId) { stopStreaming(); setTimeout(startStreaming, 1000); } }
+
+        async function switchCamera(deviceId) {
+            if (!deviceId || !myStream) return;
+            try {
+                myStream.getVideoTracks().forEach(t => t.stop());
+                const quality = parseInt(document.getElementById('res').value);
+                const fpsVal = parseInt(document.getElementById('fps').value);
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                });
+                const newVideoTrack = newStream.getVideoTracks()[0];
+                ['monitor', 'obs'].forEach(key => { if (pcs[key]) { const sender = pcs[key].getSenders().find(s => s.track.kind === 'video'); if (sender) sender.replaceTrack(newVideoTrack); } });
+                const audioTrack = myStream.getAudioTracks()[0];
+                myStream = new MediaStream([audioTrack, newVideoTrack]);
+                document.getElementById('preview').srcObject = myStream;
+                videoTrack = newVideoTrack;
+                checkZoomCapabilities();
+                document.getElementById('live-cam-select').value = "";
+            } catch (e) { alert("Switch failed"); }
+        }
+
+        async function startQRScanner() {
+            document.getElementById('qr-overlay').classList.remove('hidden');
+            const video = document.getElementById('qr-video'); const canvas = document.getElementById('qr-canvas'); const ctx = canvas.getContext('2d');
+            qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = qrStream; video.play(); requestAnimationFrame(tick);
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight; canvas.width = video.videoWidth;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+                    if (code && code.data.length >= 6) { document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6); stopQRScanner(); }
+                }
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
+            }
+        }
+        function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) qrStream.getTracks().forEach(t => t.stop()); }
+    </script>
+</body>
+
+</html>
