@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.1 (H.264)</title>
+    <title>OBSCam Sender V2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,9 +17,9 @@
             color: white;
             touch-action: manipulation;
             font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
         }
 
+        /* Force GPU Acceleration for Video */
         .video-full {
             position: absolute;
             inset: 0;
@@ -33,7 +33,6 @@
         #setup {
             min-height: 100vh;
             height: auto;
-            overflow-y: auto;
         }
 
         select {
@@ -41,28 +40,9 @@
             appearance: none;
         }
 
-        /* Range Slider for Zoom */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
+        ::-webkit-scrollbar {
+            width: 0px;
             background: transparent;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
-            margin-top: -8px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
         }
 
         .grid-lines {
@@ -114,36 +94,20 @@
             transform: rotate(90deg);
             transition: transform 0.3s;
         }
-
-        /* Zoom Control Container */
-        .zoom-control {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60%;
-            z-index: 40;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 5px 15px;
-            border-radius: 20px;
-            backdrop-filter: blur(4px);
-        }
     </style>
 </head>
 
 <body>
-    <div id="setup" class="p-6 py-10 flex flex-col min-h-screen justify-center bg-slate-950 relative z-10">
-        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V2.1</h1>
+    <div id="setup"
+        class="p-6 py-10 flex flex-col min-h-screen justify-center bg-slate-950 relative z-10 overflow-y-auto">
+        <h1 class="text-xl font-bold text-center text-blue-400 uppercase tracking-widest mb-4">OBSCam Sender V2.0</h1>
 
         <div class="space-y-3 max-w-sm mx-auto w-full">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
                 <div class="flex gap-2">
                     <input type="tel" id="room-id" placeholder="######" maxlength="6"
-                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white font-bold outline-none placeholder-gray-800">
+                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-white outline-none">
                     <button onclick="startQRScanner()"
                         class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700"><i
                             class="fas fa-qrcode text-2xl"></i></button>
@@ -186,7 +150,7 @@
             </div>
 
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate (OBS Stream)</label>
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate (Mbps)</label>
                 <select id="bitrate"
                     class="w-full h-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none"
                     onchange="checkCustomBitrate(this)">
@@ -196,7 +160,6 @@
                     <option value="6000">6.0 M</option>
                     <option value="custom">Custom...</option>
                 </select>
-                <p class="text-[8px] text-gray-600 mt-1">*Monitor stream is capped at 800kbps to save data.</p>
             </div>
 
             <button onclick="startStreaming()"
@@ -206,18 +169,17 @@
         <div class="text-center mt-6 pt-4 pb-4">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">OBSCam V2.1 H.264</p>
+            <p class="text-[9px] text-gray-600">OBSCam V2.0</p>
         </div>
     </div>
 
-    <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
-        <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
+    <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-50 flex flex-col items-center justify-center"><video
+            id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="w-64 h-64 border-2 border-blue-500 rounded-lg relative"></div>
-        </div>
-        <button onclick="stopQRScanner()"
-            class="absolute bottom-10 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20 text-white">CANCEL</button>
-        <canvas id="qr-canvas" hidden></canvas>
+        </div><button onclick="stopQRScanner()"
+            class="absolute bottom-10 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20 text-white">CANCEL</button><canvas
+            id="qr-canvas" hidden></canvas>
     </div>
 
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0 transition-transform duration-300">
@@ -238,10 +200,8 @@
             <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
                 <div class="bg-black/50 px-3 py-1 rounded-full border border-white/10 w-fit">
                     <span id="status-txt" class="text-xs text-yellow-400 font-bold">Connecting...</span>
-                    <div id="cam-name-display" class="text-[14px] text-blue-400 font-bold uppercase leading-tight">
-                        CAMERA ?</div>
-                    <div id="realtime-bw" class="text-[10px] text-green-400 font-mono mt-0 font-bold">0 kbps</div>
-                    <div id="live-room-display" class="text-[8px] text-gray-400 font-mono">Room: -----</div>
+                    <div id="realtime-bw" class="text-[10px] text-green-400 font-mono mt-[-2px] font-bold">0 kbps</div>
+                    <div id="live-room-display" class="text-[8px] text-gray-500 font-mono">Room: -----</div>
                 </div>
 
                 <select id="live-bitrate" onchange="updateLiveBitrate(this)"
@@ -252,13 +212,6 @@
                     <option value="6000">6.0M</option>
                     <option value="custom">Custom...</option>
                 </select>
-            </div>
-
-            <div id="zoom-container" class="hidden zoom-control pointer-events-auto">
-                <i class="fas fa-minus text-[10px] text-gray-400"></i>
-                <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
-                    oninput="applyZoom(this.value)">
-                <i class="fas fa-plus text-[10px] text-gray-400"></i>
             </div>
 
             <div class="absolute bottom-6 left-6 flex gap-2 pointer-events-auto items-center">
@@ -295,6 +248,7 @@
     </div>
 
     <script>
+        // --- CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
             authDomain: "obscam-p2p.firebaseapp.com",
@@ -313,7 +267,6 @@
         let myStream, videoTrack, qrStream, customBitrateVal = 2500, targetCamIndex = "1";
         let isUIRotated = false, statsInterval = null;
         let lastBytes = 0, lastTime = 0;
-        let zoomCapabilities = null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -341,7 +294,10 @@
         function loadSettings() {
             if (roomFromUrl) { document.getElementById('room-id').value = roomFromUrl; }
             else if (localStorage.getItem('obs_room_id')) { document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); }
+
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+
+            // Bitrate Load
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
@@ -362,7 +318,7 @@
 
         function checkCustomBitrate(el) {
             if (el.value === 'custom') {
-                const val = prompt("กรอก Bitrate สำหรับ OBS (kbps):", customBitrateVal);
+                const val = prompt("กรอก Bitrate (kbps):", customBitrateVal);
                 if (val && !isNaN(val)) {
                     customBitrateVal = parseInt(val);
                     el.options[el.options.length - 1].text = `Custom (${val})`;
@@ -377,12 +333,9 @@
                 if (input && !isNaN(input)) { val = parseInt(input); customBitrateVal = val; el.options[el.options.length - 1].text = `Custom (${val})`; }
                 else { el.value = "2500"; return; }
             }
-
-            // Apply เฉพาะท่อ OBS ที่ต้องการความคมชัด
+            // Update ทั้ง 2 ท่อ
+            if (pcs.monitor) setBitrate(pcs.monitor, parseInt(val) * 1000);
             if (pcs.obs) setBitrate(pcs.obs, parseInt(val) * 1000);
-
-            // Monitor ยังคง Low Bitrate เสมอ (800k)
-            if (pcs.monitor) setBitrate(pcs.monitor, 800000);
         }
 
         async function startStreaming() {
@@ -395,13 +348,11 @@
 
             const roomSnap = await db.ref(`rooms/${rid}/active`).get();
             if (!roomSnap.exists()) {
-                alert(`ไม่พบห้อง ${rid}!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) แล้วกด "Create Room" ก่อนครับ`);
+                alert(`ไม่พบห้อง ${rid}!\nโปรดเปิดหน้าจอคอมพิวเตอร์ (Monitor) ให้ขึ้นเลขห้องก่อนครับ`);
                 return;
             }
 
             targetCamIndex = document.getElementById('cam-index').value;
-            document.getElementById('cam-name-display').innerText = "CAMERA " + targetCamIndex; // Show name
-
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
             const selectedCamId = document.getElementById('camera-select').value;
@@ -418,15 +369,14 @@
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
 
-                checkZoomCapabilities(); // Check for Zoom
-
                 db.ref(`rooms/${rid}/cam${targetCamIndex}`).onDisconnect().remove();
 
-                // Connect with specific bitrate logic
+                // Connect Dual Stream
                 connectToPath(rid, targetCamIndex, 'monitor');
                 connectToPath(rid, targetCamIndex, 'obs');
 
-                startUpdatingStatsLocal(rid, targetCamIndex); // Local Only
+                // Start Real Stats Reporting
+                startUpdatingStats(rid, targetCamIndex);
 
             } catch (e) { alert('Camera Error: ' + e.message); }
         }
@@ -458,38 +408,31 @@
             }
         }
 
-        // --- H.264 Priority Helper ---
-        function preferCodec(sdp, codec) {
-            var sdpLines = sdp.split('\r\n');
-            var mLineIndex = -1;
-            for (var i = 0; i < sdpLines.length; i++) {
-                if (sdpLines[i].search('m=video') !== -1) {
-                    mLineIndex = i;
-                    break;
-                }
-            }
-            if (mLineIndex === -1) return sdp;
+        async function switchCamera(deviceId) {
+            if (!deviceId || !myStream) return;
+            try {
+                myStream.getVideoTracks().forEach(t => t.stop());
+                const quality = parseInt(document.getElementById('res').value);
+                const fpsVal = parseInt(document.getElementById('fps').value);
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                });
+                const newVideoTrack = newStream.getVideoTracks()[0];
 
-            var codecPayload = null;
-            var pattern = new RegExp(":(\\d+) " + codec + "/90000");
-            for (var i = 0; i < sdpLines.length; i++) {
-                var result = sdpLines[i].match(pattern);
-                if (result) {
-                    codecPayload = result[1];
-                    break;
-                }
-            }
-            if (!codecPayload) return sdp;
+                ['monitor', 'obs'].forEach(key => {
+                    if (pcs[key]) {
+                        const sender = pcs[key].getSenders().find(s => s.track.kind === 'video');
+                        if (sender) sender.replaceTrack(newVideoTrack);
+                    }
+                });
 
-            var mLine = sdpLines[mLineIndex];
-            var elements = mLine.split(' ');
-            var newMLine = elements.slice(0, 3);
-            newMLine.push(codecPayload);
-            for (var i = 3; i < elements.length; i++) {
-                if (elements[i] !== codecPayload) newMLine.push(elements[i]);
-            }
-            sdpLines[mLineIndex] = newMLine.join(' ');
-            return sdpLines.join('\r\n');
+                const audioTrack = myStream.getAudioTracks()[0];
+                myStream = new MediaStream([audioTrack, newVideoTrack]);
+                document.getElementById('preview').srcObject = myStream;
+                videoTrack = newVideoTrack;
+                document.getElementById('live-cam-select').value = "";
+            } catch (e) { alert("Switch failed: " + e.message); }
         }
 
         async function connectToPath(rid, cIdx, type) {
@@ -503,13 +446,7 @@
 
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('callerCandidates').push(event.candidate.toJSON()); };
 
-            let offer = await pc.createOffer();
-
-            // --- FORCE H.264 ---
-            const sdpH264 = preferCodec(offer.sdp, 'H264');
-            offer = new RTCSessionDescription({ type: 'offer', sdp: sdpH264 });
-            // -------------------
-
+            const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
@@ -541,20 +478,15 @@
                 if (candidate) pc.addIceCandidate(new RTCIceCandidate(candidate));
             });
 
-            // Set Bitrate แยกท่อ
+            // Set Bitrate Correctly
             let bitrateVal = document.getElementById('bitrate').value;
+            // ** แก้บัค: ถ้าเลือก Preset ค่าต้องมา ถ้า Custom ตัวแปรต้องมา **
             if (bitrateVal === 'custom') bitrateVal = customBitrateVal;
             else bitrateVal = parseInt(bitrateVal);
 
-            if (type === 'obs') {
-                // ท่อหลัก ส่งเต็มที่ตามตั้งค่า
-                setBitrate(pc, bitrateVal * 1000);
-            } else {
-                // ท่อ Monitor ส่งแค่ 800kbps พอ
-                setBitrate(pc, 800000);
-            }
+            setBitrate(pc, bitrateVal * 1000);
 
-            // Sync Dropdown
+            // Sync Live Dropdown
             const liveDrop = document.getElementById('live-bitrate');
             if ([...liveDrop.options].some(o => o.value == bitrateVal)) {
                 liveDrop.value = bitrateVal;
@@ -568,43 +500,28 @@
 
         function setBitrate(pc, bitrate) {
             const sender = pc.getSenders().find(s => s.track.kind === 'video');
-            if (sender && sender.getParameters) {
+            if (sender) {
                 const params = sender.getParameters();
                 if (!params.encodings) params.encodings = [{}];
                 params.encodings[0].maxBitrate = bitrate;
-                // Add content hint to favor fluid motion for sports
-                if (sender.track) sender.track.contentHint = "motion";
                 sender.setParameters(params).catch(e => console.log(e));
             }
         }
 
-        // --- LOCAL STATS ONLY (No Firebase Upload for Bitrate) ---
-        function startUpdatingStatsLocal(rid, cIdx) {
+        // --- REAL BITRATE CALCULATION ---
+        function startUpdatingStats(rid, cIdx) {
             lastBytes = 0;
             lastTime = Date.now();
 
-            // ส่งความละเอียดครั้งเดียวพอ ไม่ต้องส่งตลอด
-            setTimeout(() => {
-                let w = 0, h = 0;
-                if (videoTrack && videoTrack.getSettings) {
-                    w = videoTrack.getSettings().width || 0;
-                    h = videoTrack.getSettings().height || 0;
-                }
-                // ส่งแค่ online status กับ res
-                db.ref(`rooms/${rid}/cam${cIdx}/stats`).set({
-                    online: true,
-                    res: `${w}x${h}`,
-                    ts: Date.now()
-                });
-            }, 2000);
-
             statsInterval = setInterval(async () => {
                 let totalBytesSent = 0;
+                let activePCs = 0;
 
-                // รวม Bytes จากทุกท่อที่มี
+                // Loop ทั้ง 2 ท่อ (Monitor + OBS) เพื่อหา Total Upload
                 for (let key of ['monitor', 'obs']) {
                     const pc = pcs[key];
                     if (pc && pc.connectionState === 'connected') {
+                        activePCs++;
                         const stats = await pc.getStats();
                         stats.forEach(report => {
                             if (report.type === 'outbound-rtp' && report.kind === 'video') {
@@ -618,6 +535,7 @@
                 let currentBitrate = 0;
 
                 if (totalBytesSent > 0 && lastBytes > 0) {
+                    // สูตร: (Diff Bytes * 8) / (Diff Time in Seconds) / 1000 = kbps
                     const diffBytes = totalBytesSent - lastBytes;
                     const diffTime = now - lastTime;
                     if (diffTime > 0) {
@@ -628,38 +546,24 @@
                 lastBytes = totalBytesSent;
                 lastTime = now;
 
-                // อัพเดตเฉพาะหน้าจอตัวเอง
+                // Update UI ฝั่งมือถือ
                 document.getElementById('realtime-bw').innerText = `${currentBitrate} kbps`;
 
-                // ไม่ยิง currentBitrate ขึ้น Firebase แล้วตามคำขอ
+                // Update Firebase (ส่งค่า Upload จริงไป)
+                let w = 0, h = 0;
+                if (videoTrack && videoTrack.getSettings) {
+                    w = videoTrack.getSettings().width || 0;
+                    h = videoTrack.getSettings().height || 0;
+                }
 
-            }, 1000);
-        }
+                db.ref(`rooms/${rid}/cam${cIdx}/stats`).set({
+                    online: true,
+                    realtimeBitrate: currentBitrate, // ค่านี้แหละที่ Control จะดึงไปโชว์
+                    res: `${w}x${h}`,
+                    ts: Date.now()
+                });
 
-        // --- ZOOM CONTROL ---
-        async function checkZoomCapabilities() {
-            if (!videoTrack) return;
-            const capabilities = videoTrack.getCapabilities();
-
-            if (capabilities.zoom) {
-                zoomCapabilities = capabilities.zoom;
-                const slider = document.getElementById('zoom-slider');
-                slider.min = zoomCapabilities.min;
-                slider.max = zoomCapabilities.max;
-                slider.step = zoomCapabilities.step;
-                slider.value = zoomCapabilities.min; // start at 1x
-                document.getElementById('zoom-container').classList.remove('hidden');
-            } else {
-                document.getElementById('zoom-container').classList.add('hidden');
-            }
-        }
-
-        async function applyZoom(value) {
-            if (videoTrack) {
-                try {
-                    await videoTrack.applyConstraints({ advanced: [{ zoom: value }] });
-                } catch (e) { console.log('Zoom error', e); }
-            }
+            }, 1000); // อัปเดตทุก 1 วินาที
         }
 
         // --- Utils ---
@@ -694,37 +598,6 @@
             }
         }
         function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) qrStream.getTracks().forEach(t => t.stop()); }
-        async function switchCamera(deviceId) {
-            if (!deviceId || !myStream) return;
-            try {
-                myStream.getVideoTracks().forEach(t => t.stop());
-                const quality = parseInt(document.getElementById('res').value);
-                const fpsVal = parseInt(document.getElementById('fps').value);
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    audio: false,
-                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
-                });
-                const newVideoTrack = newStream.getVideoTracks()[0];
-
-                ['monitor', 'obs'].forEach(key => {
-                    if (pcs[key]) {
-                        const sender = pcs[key].getSenders().find(s => s.track.kind === 'video');
-                        if (sender) sender.replaceTrack(newVideoTrack);
-                    }
-                });
-
-                // Update track ref
-                const audioTrack = myStream.getAudioTracks()[0];
-                myStream = new MediaStream([audioTrack, newVideoTrack]);
-                document.getElementById('preview').srcObject = myStream;
-                videoTrack = newVideoTrack;
-
-                // Re-check zoom
-                checkZoomCapabilities();
-
-                document.getElementById('live-cam-select').value = "";
-            } catch (e) { alert("Switch failed: " + e.message); }
-        }
     </script>
 </body>
 
