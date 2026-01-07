@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.1</title>
+    <title>OBSCam Sender V2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -137,7 +137,7 @@
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
                 <div class="flex gap-2">
-                    <input type="tel" id="room-id" placeholder="######" maxlength="6"
+                    <input type="tel" id="room-id" placeholder="######" maxlength="6" onkeyup="checkRoomConfig()"
                         class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
                     <button onclick="startQRScanner()"
                         class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition"><i
@@ -146,9 +146,8 @@
             </div>
 
             <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform text-white mb-4">
-                START STREAMING
-            </button>
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform text-white mb-4">START
+                STREAMING</button>
 
             <div class="bg-blue-900/20 p-3 rounded-xl border border-blue-500/30">
                 <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
@@ -205,11 +204,11 @@
                     </select>
                 </div>
                 <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Audio</label>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Audio Init</label>
                     <select id="audio-enable"
                         class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                        <option value="false" selected>Mute (No Audio)</option>
-                        <option value="true">Enable Audio</option>
+                        <option value="false">Mute Start</option>
+                        <option value="true" selected>Enable Start</option>
                     </select>
                 </div>
             </div>
@@ -218,7 +217,7 @@
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.1</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
             </div>
         </div>
     </div>
@@ -305,6 +304,11 @@
                 <button onclick="toggleTorch()" id="torch-btn"
                     class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500 text-white"><i
                         class="fas fa-bolt"></i></button>
+
+                <button onclick="toggleMic()" id="mic-btn"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500 text-white"><i
+                        class="fas fa-microphone"></i></button>
+
                 <button onclick="triggerAutoFocus()"
                     class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
                         class="fas fa-crosshairs"></i></button>
@@ -335,13 +339,13 @@
 
         let pcs = { monitor: null, obs: null };
         let dcs = { monitor: null };
-        let myStream, videoTrack, qrStream;
+        let myStream, videoTrack, audioTrack, qrStream;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
         let lastBytes = { obs: 0, monitor: 0 };
         let lastTime = 0;
         let sessionTotalBytes = 0;
-        let monitorBitrateTarget = 50; // DEFAULT 50k
+        let monitorBitrateTarget = 50;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -350,8 +354,13 @@
 
         async function initCameraSelection() {
             try {
-                await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                // ขอสิทธิ์แค่ชั่วคราวแล้ว Stop ทันที เพื่อป้องกัน Device Busy
+                const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
+
+                // Stop ทันที
+                tmpStream.getTracks().forEach(track => track.stop());
+
                 const videoSelect = document.getElementById('camera-select');
                 const liveSelect = document.getElementById('live-cam-select');
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
@@ -369,11 +378,14 @@
         }
 
         function loadSettings() {
-            if (roomFromUrl) document.getElementById('room-id').value = roomFromUrl;
-            else if (localStorage.getItem('obs_room_id')) document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+            if (roomFromUrl) {
+                document.getElementById('room-id').value = roomFromUrl;
+                checkRoomConfig();
+            } else if (localStorage.getItem('obs_room_id')) {
+                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+                checkRoomConfig();
+            }
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
-
-            // LOAD LENS SELECTION
             if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
 
             if (localStorage.getItem('obs_bitrate')) {
@@ -387,11 +399,33 @@
             }
         }
 
+        function checkRoomConfig() {
+            const rId = document.getElementById('room-id').value;
+            if (rId.length >= 6) {
+                db.ref(`rooms/${rId}/config/maxCams`).once('value').then(snap => {
+                    if (snap.exists()) {
+                        const max = snap.val();
+                        const sel = document.getElementById('cam-index');
+                        const currentVal = sel.value;
+                        sel.innerHTML = '';
+                        for (let i = 1; i <= max; i++) {
+                            const opt = document.createElement('option');
+                            opt.value = i;
+                            opt.text = `CAMERA ${i}`;
+                            sel.appendChild(opt);
+                        }
+                        // พยายามเลือกค่าเดิมถ้ามี
+                        if (currentVal <= max) sel.value = currentVal;
+                    }
+                });
+            }
+        }
+
         function saveSettings() {
             localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
             localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
             localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
-            localStorage.setItem('obs_camera_id', document.getElementById('camera-select').value); // SAVE LENS
+            localStorage.setItem('obs_camera_id', document.getElementById('camera-select').value);
             if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
         }
 
@@ -406,6 +440,12 @@
         }
 
         async function startStreaming() {
+            // Safety: Stop ทุกอย่างก่อนเริ่มใหม่
+            if (myStream) {
+                myStream.getTracks().forEach(track => track.stop());
+                myStream = null;
+            }
+
             saveSettings();
             roomId = document.getElementById('room-id').value;
             if (roomId.length < 6) return alert('Invalid Room ID');
@@ -425,6 +465,14 @@
             const selectedCamId = document.getElementById('camera-select').value;
             const useAudio = document.getElementById('audio-enable').value === 'true';
 
+            // Init Mic Button State
+            const micBtn = document.getElementById('mic-btn');
+            if (useAudio) {
+                micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            } else {
+                micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500'); micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+            }
+
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
             if (currentBitrateSet === 'custom') {
@@ -437,10 +485,15 @@
             if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
 
             try {
-                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints }); }
-                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: useAudio, video: videoConstraints }); }
+                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); } // ขอ audio true ไว้ก่อน แล้วมา disable track เอาถ้าไม่ใช้
+                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoConstraints }); }
 
                 videoTrack = myStream.getVideoTracks()[0];
+                audioTrack = myStream.getAudioTracks()[0];
+
+                // Set Audio State based on Dropdown
+                if (audioTrack) audioTrack.enabled = useAudio;
+
                 document.getElementById('preview').srcObject = myStream;
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
@@ -448,7 +501,6 @@
 
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
 
-                // ALWAYS CONNECT MONITOR (for Stats/Data Channel)
                 connectToPath(roomId, targetCamIndex, 'obs');
                 connectToPath(roomId, targetCamIndex, 'monitor');
 
@@ -456,6 +508,18 @@
                 startUpdatingStatsLocal(quality, fpsVal);
 
             } catch (e) { alert('Camera Error: ' + e.message); }
+        }
+
+        function toggleMic() {
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                const micBtn = document.getElementById('mic-btn');
+                if (audioTrack.enabled) {
+                    micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                } else {
+                    micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500'); micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                }
+            }
         }
 
         function toggleFullScreen() {
@@ -476,7 +540,6 @@
 
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
-            // Default: Enabled=false (Video Off, Stats On), Bitrate=50k
             controlRef.update({ enabled: false, bitratePercent: 50 });
 
             controlRef.on('value', snap => {
@@ -484,16 +547,13 @@
                 if (val) {
                     const shouldEnableVideo = val.enabled;
                     monitorBitrateTarget = val.bitratePercent || 50;
-
-                    // Logic: Connection always exists (created in startStreaming),
-                    // we just toggle the VIDEO TRACK enabled state.
                     if (pcs.monitor) {
                         const sender = pcs.monitor.getSenders().find(s => s.track && s.track.kind === 'video');
                         if (sender && sender.track) {
-                            sender.track.enabled = shouldEnableVideo; // True = Send Video, False = Black Screen (Bandwidth Saved)
+                            sender.track.enabled = shouldEnableVideo;
                         }
                         if (shouldEnableVideo) updateMonitorBitrate();
-                        else setBitrate(pcs.monitor, 50000); // Set low bitrate when blind
+                        else setBitrate(pcs.monitor, 50000);
                     }
                 }
             });
@@ -555,7 +615,6 @@
 
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
 
-            // Initial state for monitor: Disabled (Muted)
             if (type === 'monitor') {
                 const sender = pc.getSenders().find(s => s.track.kind === 'video');
                 if (sender) sender.track.enabled = false;
@@ -687,20 +746,35 @@
                 const useAudio = document.getElementById('audio-enable').value === 'true';
 
                 const newStream = await navigator.mediaDevices.getUserMedia({
-                    audio: useAudio,
+                    audio: useAudio, // ต้องใช้ค่าจาก dropdown
                     video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
                 });
                 const newVideoTrack = newStream.getVideoTracks()[0];
                 ['monitor', 'obs'].forEach(key => { if (pcs[key]) { const sender = pcs[key].getSenders().find(s => s.track.kind === 'video'); if (sender) sender.replaceTrack(newVideoTrack); } });
 
-                const audioTrack = newStream.getAudioTracks()[0];
-                let tracks = [newVideoTrack]; if (audioTrack) tracks.push(audioTrack);
+                // Audio Handling Check
+                const newAudioTrack = newStream.getAudioTracks()[0];
+                if (newAudioTrack) newAudioTrack.enabled = useAudio;
 
-                myStream = new MediaStream(tracks);
-                document.getElementById('preview').srcObject = myStream;
+                // Update Global Var
                 videoTrack = newVideoTrack;
+                audioTrack = newAudioTrack;
+
+                let tracks = [newVideoTrack]; if (newAudioTrack) tracks.push(newAudioTrack);
+                myStream = new MediaStream(tracks);
+
+                document.getElementById('preview').srcObject = myStream;
                 checkZoomCapabilities();
                 document.getElementById('live-cam-select').value = "";
+
+                // Check Mic Button Status
+                const micBtn = document.getElementById('mic-btn');
+                if (useAudio) {
+                    micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                } else {
+                    micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500'); micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                }
+
             } catch (e) { alert("Switch failed: " + e); }
         }
 
@@ -714,7 +788,11 @@
                     canvas.height = video.videoHeight; canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-                    if (code && code.data.length >= 6) { document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6); stopQRScanner(); }
+                    if (code && code.data.length >= 6) {
+                        document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6);
+                        stopQRScanner();
+                        checkRoomConfig(); // เรียกเช็คจำนวนกล้องทันทีที่ได้ ID
+                    }
                 }
                 if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
             }
