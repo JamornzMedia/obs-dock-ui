@@ -13,14 +13,14 @@
 
     <style>
         body {
-            background: #050505;
+            background: #000;
             color: white;
             touch-action: manipulation;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
         }
 
-        /* Layout & Controls */
+        /* Setup Layout */
         #setup {
             height: 100vh;
             overflow-y: auto;
@@ -38,90 +38,49 @@
             transform: translateZ(0);
         }
 
-        /* Zoom Slider (Right Vertical) */
-        .zoom-wrapper {
+        /* Left Side: Exposure Slider (Vertical Stepped) */
+        .exposure-wrapper {
             position: absolute;
-            right: 70px;
-            top: 55%;
+            left: 20px;
+            top: 50%;
             transform: translateY(-50%);
-            height: 180px;
+            height: 200px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 40;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 20px;
             padding: 10px 5px;
             backdrop-filter: blur(2px);
         }
 
-        input[type=range][orient=vertical] {
+        /* Custom Range Slider Vertical */
+        input[type=range].vertical-slider {
             writing-mode: bt-lr;
+            /* IE/Edge */
             -webkit-appearance: slider-vertical;
+            /* Webkit */
             width: 8px;
-            height: 140px;
+            height: 160px;
             padding: 0 5px;
-        }
-
-        /* Exposure Slider (Top Right Horizontal) */
-        .exposure-wrapper {
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            width: 150px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 40;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 5px 10px;
-            border-radius: 20px;
-            backdrop-filter: blur(2px);
-        }
-
-        .exposure-slider {
-            width: 100%;
-            height: 4px;
-            background: #555;
-            border-radius: 2px;
-            -webkit-appearance: none;
-            appearance: none;
-            outline: none;
-        }
-
-        .exposure-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #fff;
-            border-radius: 50%;
             cursor: pointer;
         }
 
-        /* Audio Meter (Left Vertical) */
-        .audio-meter-container {
+        /* Bottom Center: Audio Wave */
+        .audio-wave-container {
             position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 180px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            overflow: hidden;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 60px;
             z-index: 30;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             display: flex;
-            flex-direction: column-reverse;
-        }
-
-        .audio-bar {
-            width: 100%;
-            background: linear-gradient(to top, #22c55e 0%, #22c55e 60%, #eab308 60%, #eab308 85%, #ef4444 85%, #ef4444 100%);
-            transition: height 0.05s ease-out;
-            height: 0%;
+            align-items: end;
+            justify-content: center;
+            pointer-events: none;
         }
 
         /* Right Sidebar */
@@ -130,17 +89,18 @@
             top: 0;
             right: 0;
             bottom: 0;
-            width: 60px;
+            width: 70px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             pointer-events: auto;
             z-index: 50;
-            background: linear-gradient(to left, rgba(0, 0, 0, 0.6), transparent);
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.5), transparent);
         }
 
+        /* UI Helpers */
         .ui-rotate-90 {
             transform: rotate(90deg);
             width: 100vh !important;
@@ -148,11 +108,6 @@
             top: 50% !important;
             left: 50% !important;
             translate: -50% -50%;
-        }
-
-        .simple-logo {
-            text-align: center;
-            margin-bottom: 20px;
         }
 
         .logo-main {
@@ -183,11 +138,11 @@
             pointer-events: none;
         }
 
-        /* Modal Styles */
+        /* Modal */
         .modal-base {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             z-index: 100;
             display: flex;
             align-items: center;
@@ -210,62 +165,62 @@
             border-radius: 16px;
             border: 1px solid #333;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
-        .top-brand {
+        /* Top Info */
+        .top-info-bar {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            text-align: right;
-            z-index: 20;
+            top: 10px;
+            left: 10px;
+            z-index: 40;
+            display: flex;
+            gap: 10px;
             pointer-events: none;
         }
 
-        .top-brand-main {
-            font-size: 1.2rem;
-            font-weight: 900;
-            font-style: italic;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .top-brand-sub {
-            font-size: 0.5rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.5);
+        .status-pill {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border-left: 3px solid #22c55e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
 
 <body>
-    <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
-        <button onclick="toggleFullScreen()" class="absolute top-4 left-4 text-gray-500 hover:text-white"><i
-                class="fas fa-expand text-xl"></i></button>
 
-        <div class="simple-logo mt-10">
+    <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
+        <button onclick="toggleFullScreen()"
+            class="absolute top-4 right-4 w-10 h-10 bg-gray-800 rounded-full text-white shadow-lg active:scale-90 transition flex items-center justify-center">
+            <i class="fas fa-expand"></i>
+        </button>
+
+        <div class="text-center mt-12 mb-8">
             <div class="logo-main">OBSCam</div>
             <div class="logo-sub">SENDER V2.2</div>
         </div>
 
-        <div class="space-y-4 max-w-sm w-full mb-10">
-            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
+        <div class="space-y-5 max-w-sm w-full mb-10">
+            <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800 shadow-xl">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Target Room ID</label>
                 <div class="flex gap-2">
                     <input type="tel" id="room-id" placeholder="######" maxlength="6" onkeyup="checkRoomConfig()"
-                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
+                        class="w-full bg-black border border-gray-700 p-3 rounded-xl text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest focus:border-green-500 transition">
                     <button onclick="startQRScanner()"
-                        class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition"><i
-                            class="fas fa-qrcode text-2xl"></i></button>
+                        class="bg-gray-800 w-16 rounded-xl flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition border border-gray-700">
+                        <i class="fas fa-qrcode text-2xl"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
-                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
+            <div class="bg-blue-900/10 p-4 rounded-2xl border border-blue-500/20">
+                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-2">Camera Slot</label>
                 <select id="cam-index"
-                    class="w-full bg-black text-white p-3 rounded-lg text-sm border border-blue-500/50 outline-none font-bold">
+                    class="w-full bg-black text-white p-3 rounded-xl text-lg border border-blue-500/40 outline-none font-bold text-center appearance-none">
                     <option value="1">CAMERA 1</option>
                     <option value="2">CAMERA 2</option>
                     <option value="3">CAMERA 3</option>
@@ -273,65 +228,45 @@
                 </select>
             </div>
 
-            <div class="grid grid-cols-1 gap-2">
-                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Initial Camera</label>
-                    <select id="init-camera-select"
-                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
-                        <option value="">Default (Auto)</option>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-900 p-3 rounded-2xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Quality</label>
+                    <select id="res"
+                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 mb-2">
+                        <option value="1080">1080p</option>
+                        <option value="720" selected>720p</option>
+                        <option value="480">480p</option>
+                    </select>
+                    <select id="fps" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
+                        <option value="30" selected>30 FPS</option>
+                        <option value="60">60 FPS</option>
                     </select>
                 </div>
-                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Initial Mic</label>
-                    <select id="init-audio-select"
-                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
-                        <option value="">Default (Auto)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res / FPS</label>
-                    <div class="flex gap-1">
-                        <select id="res"
-                            class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                            <option value="1080">1080p</option>
-                            <option value="720" selected>720p</option>
-                            <option value="480">480p</option>
-                        </select>
-                        <select id="fps" class="w-20 bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                            <option value="30" selected>30</option>
-                            <option value="60">60</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                <div class="bg-gray-900 p-3 rounded-2xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
                     <select id="bitrate"
-                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700"
+                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 h-full"
                         onchange="checkCustomBitrate(this)">
-                        <option value="2000">2.0 M</option>
-                        <option value="2500" selected>2.5 M</option>
-                        <option value="4000">4.0 M</option>
-                        <option value="6000">6.0 M</option>
-                        <option value="10000">10 M</option>
+                        <option value="2500" selected>2.5 Mbps</option>
+                        <option value="4000">4.0 Mbps</option>
+                        <option value="6000">6.0 Mbps</option>
+                        <option value="10000">10 Mbps</option>
                         <option value="custom">Custom</option>
                     </select>
                 </div>
             </div>
 
             <button onclick="startStreaming()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform text-white mb-4 mt-2">
-                START STREAMING
+                class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 py-4 rounded-2xl font-bold text-xl shadow-lg shadow-blue-900/20 active:scale-95 transition-transform text-white mt-4">
+                START LIVE
             </button>
 
-            <div class="text-center pt-2">
-                <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
-                        target="_blank"
-                        class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
-            </div>
+            <p class="text-[10px] text-gray-600 text-center">Settings like Camera/Mic can be changed after starting.</p>
+        </div>
+
+        <div class="text-center mt-auto">
+            <p class="text-[10px] text-gray-500">Powered by <span class="text-blue-400 font-bold">JamornzMedia</span>
+            </p>
         </div>
     </div>
 
@@ -339,125 +274,114 @@
         onclick="toggleUI(event)">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
-        <div class="top-brand">
-            <div class="top-brand-main">OBSCam</div>
-            <div class="top-brand-sub">V2.2</div>
+        <div id="overlay-top" class="top-info-bar fade-ui">
+            <div class="status-pill">
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                <span id="status-txt" class="text-[10px] font-bold tracking-wide text-white">CONNECTING</span>
+            </div>
+            <div class="status-pill border-l-0 bg-black/40">
+                <span id="realtime-bw" class="text-[10px] font-mono text-gray-300">0 kbps</span>
+            </div>
+            <div class="status-pill border-l-0 bg-black/40">
+                <span id="battery-stat" class="text-[10px] font-mono text-yellow-400"><i class="fas fa-bolt"></i>
+                    --%</span>
+            </div>
         </div>
 
-        <div class="audio-meter-container fade-ui">
-            <div id="audio-bar-visual" class="audio-bar"></div>
+        <div class="audio-wave-container fade-ui">
+            <canvas id="audio-canvas" width="200" height="60"></canvas>
+        </div>
+
+        <div id="exposure-container" class="hidden exposure-wrapper fade-ui pointer-events-auto">
+            <div class="text-[9px] font-bold text-yellow-400 mb-2">+</div>
+            <input type="range" id="exposure-slider" class="vertical-slider" min="-3" max="3" step="1" value="0"
+                oninput="applyExposure(this.value)">
+            <div class="text-[9px] font-bold text-yellow-400 mt-2">-</div>
+            <div class="absolute -right-8 top-1/2 -translate-y-1/2 bg-black/50 px-1 rounded text-[10px]" id="ev-val">0
+            </div>
         </div>
 
         <div id="grid-layer"
-            class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10">
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
-            <div class="border border-white/20"></div>
+            class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10 opacity-50">
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
         </div>
 
-        <div id="overlay-controls" class="absolute inset-0 pointer-events-none fade-ui z-20">
-            <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
-                <div class="bg-black/60 px-3 py-1.5 rounded-md border-l-4 border-green-500 backdrop-blur-sm">
-                    <div class="flex items-center gap-2">
-                        <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                        <span id="status-txt"
-                            class="text-sm text-green-400 font-bold tracking-wide">CONNECTING...</span>
-                    </div>
-                    <div class="text-[10px] text-white font-mono mt-0.5" id="room-info">Room: ----</div>
-                </div>
-                <div class="flex gap-2">
-                    <div id="realtime-bw"
-                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-green-300 font-mono w-fit">0 kbps</div>
-                    <div id="battery-stat"
-                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-yellow-300 font-mono w-fit"><i
-                            class="fas fa-bolt"></i> --%</div>
-                </div>
-            </div>
+        <div id="overlay-controls" class="right-bar fade-ui">
+            <button onclick="openLiveSettings()"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-gray-700 text-white shadow-lg"><i
+                    class="fas fa-cog text-sm"></i></button>
 
-            <div id="exposure-container" class="hidden exposure-wrapper pointer-events-auto">
-                <i class="fas fa-sun text-yellow-400 text-xs"></i>
-                <input type="range" id="exposure-slider" class="exposure-slider" step="0.5"
-                    oninput="applyExposure(this.value)">
-                <i class="fas fa-plus text-white text-[10px]"></i>
-            </div>
+            <button onclick="toggleMic()" id="mic-btn"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-green-500 text-white"><i
+                    class="fas fa-microphone text-sm"></i></button>
 
-            <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
-                <i class="fas fa-search-plus text-[10px] text-white mb-2"></i>
-                <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
-                    oninput="applyZoom(this.value)" style="height: 120px; width: 6px; appearance: slider-vertical;">
-                <i class="fas fa-search-minus text-[10px] text-white mt-2"></i>
-            </div>
+            <button onclick="toggleTorch()" id="torch-btn"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-yellow-500 text-white"><i
+                    class="fas fa-bolt text-sm"></i></button>
 
-            <div class="right-bar">
-                <button onclick="openLiveSettings()"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-gray-600 text-white shadow-lg"><i
-                        class="fas fa-cog text-lg"></i></button>
+            <button onclick="triggerAutoFocus()"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
+                    class="fas fa-crosshairs text-sm"></i></button>
 
-                <button onclick="toggleMic()" id="mic-btn"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500 text-white"><i
-                        class="fas fa-microphone"></i></button>
+            <button onclick="toggleGrid()"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-purple-500 text-white"><i
+                    class="fas fa-border-all text-sm"></i></button>
 
-                <button onclick="toggleTorch()" id="torch-btn"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500 text-white"><i
-                        class="fas fa-bolt"></i></button>
+            <button onclick="toggleFullScreen()"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
+                    class="fas fa-expand text-sm"></i></button>
 
-                <button onclick="triggerAutoFocus()"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
-                        class="fas fa-crosshairs"></i></button>
+            <button onclick="rotateUI()"
+                class="w-10 h-10 rounded-full bg-black/40 border border-white/20 backdrop-blur flex items-center justify-center active:bg-gray-600 text-white mt-2"><i
+                    class="fas fa-redo text-sm"></i></button>
 
-                <button onclick="rotateUI()"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-blue-500 text-white"><i
-                        class="fas fa-redo"></i></button>
-
-                <button onclick="toggleGrid()"
-                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-purple-500 text-white"><i
-                        class="fas fa-border-all"></i></button>
-            </div>
-
-            <div class="absolute bottom-6 left-10 pointer-events-auto">
-                <button onclick="stopStreaming()"
-                    class="bg-red-600/90 w-14 h-14 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition text-white border-4 border-red-400/50"><i
-                        class="fas fa-stop text-xl"></i></button>
-            </div>
-            <div class="absolute bottom-6 left-28 pointer-events-auto">
-                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
-                    class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur shadow-lg w-20">
-                    <option value="2500">2.5M</option>
-                    <option value="4000">4.0M</option>
-                    <option value="6000">6.0M</option>
-                    <option value="10000">10M</option>
-                </select>
-            </div>
+            <button onclick="stopStreaming()"
+                class="w-12 h-12 rounded-full bg-red-600/90 border-2 border-red-400 flex items-center justify-center shadow-lg active:scale-90 transition text-white mt-auto mb-4">
+                <i class="fas fa-stop"></i>
+            </button>
         </div>
     </div>
 
     <div id="live-settings-modal" class="modal-base">
         <div class="modal-content">
             <div class="bg-gray-900 p-4 border-b border-gray-800 flex justify-between items-center">
-                <h3 class="text-white font-bold"><i class="fas fa-sliders-h mr-2 text-blue-400"></i>Live Settings</h3>
+                <h3 class="text-white font-bold text-sm"><i class="fas fa-sliders-h mr-2 text-blue-400"></i>Settings
+                </h3>
                 <button onclick="closeLiveSettings()" class="text-gray-400 hover:text-white"><i
                         class="fas fa-times"></i></button>
             </div>
             <div class="p-4 space-y-4">
                 <div>
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Active Camera</label>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Camera</label>
                     <select id="live-camera-list" onchange="switchCamera(this.value)"
-                        class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none"></select>
+                        class="w-full bg-black text-white p-3 rounded-lg text-xs border border-gray-700 outline-none"></select>
                 </div>
                 <div>
-                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Active Microphone</label>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Microphone</label>
                     <select id="live-audio-list" onchange="switchMicrophone(this.value)"
-                        class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none"></select>
+                        class="w-full bg-black text-white p-3 rounded-lg text-xs border border-gray-700 outline-none"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Live Bitrate</label>
+                    <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                        class="w-full bg-black text-white p-3 rounded-lg text-xs border border-gray-700 outline-none">
+                        <option value="2500">2.5 Mbps</option>
+                        <option value="4000">4.0 Mbps</option>
+                        <option value="6000">6.0 Mbps</option>
+                        <option value="10000">10 Mbps</option>
+                    </select>
                 </div>
                 <div class="pt-2">
                     <button onclick="closeLiveSettings()"
-                        class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold text-sm text-white">Close</button>
+                        class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold text-sm text-white">Done</button>
                 </div>
             </div>
         </div>
@@ -484,86 +408,23 @@
         let pcs = { monitor: null, obs: null };
         let dcs = { monitor: null };
         let myStream, videoTrack, audioTrack, qrStream;
-        let audioContext, audioAnalyser, audioSourceNode, audioVisualInterval;
+        let audioContext, audioAnalyser, audioSourceNode;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
         let lastBytes = { obs: 0, monitor: 0 };
         let lastTime = 0, sessionTotalBytes = 0;
         let monitorBitrateTarget = 50, currentMaxCams = 4;
+        let animationFrameId;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
 
-        initDeviceSelection().then(() => { loadSettings(); });
-
-        // --- DEVICE INIT & RENAMING LOGIC ---
-        async function initDeviceSelection() {
-            try {
-                // Request temp permission to get labels
-                const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                tmpStream.getTracks().forEach(track => track.stop());
-
-                // Target Selects
-                const selCamInit = document.getElementById('init-camera-select');
-                const selMicInit = document.getElementById('init-audio-select');
-                const selCamLive = document.getElementById('live-camera-list');
-                const selMicLive = document.getElementById('live-audio-list');
-
-                // Clear & Add Defaults
-                [selCamInit, selCamLive].forEach(s => s.innerHTML = '<option value="">Default (Auto)</option>');
-                [selMicInit, selMicLive].forEach(s => s.innerHTML = '<option value="">Default (Auto)</option>');
-
-                let vCount = 1, aCount = 1;
-
-                devices.forEach(device => {
-                    if (device.kind === 'videoinput') {
-                        let label = device.label || `Camera ${vCount++}`;
-                        if (label.toLowerCase().includes('back')) label = "📸 Rear Camera " + label.replace('Back', '');
-                        else if (label.toLowerCase().includes('front')) label = "🤳 Front Camera";
-
-                        const opt = new Option(label, device.deviceId);
-                        selCamInit.appendChild(opt);
-                        selCamLive.appendChild(opt.cloneNode(true));
-
-                    } else if (device.kind === 'audioinput') {
-                        let label = device.label || `Microphone ${aCount++}`;
-                        let prefix = "🎤 ";
-                        if (label.toLowerCase().includes('headset') || label.toLowerCase().includes('bluetooth')) prefix = "🎧 ";
-                        else if (label.toLowerCase().includes('usb') || label.toLowerCase().includes('external')) prefix = "🔌 ";
-
-                        // Clean Label Text for better reading
-                        let cleanLabel = prefix + label.replace(/Communications|Microphone|Default/gi, '').trim();
-                        if (cleanLabel.length < 3) cleanLabel = prefix + label;
-
-                        const opt = new Option(cleanLabel, device.deviceId);
-                        selMicInit.appendChild(opt);
-                        selMicLive.appendChild(opt.cloneNode(true));
-                    }
-                });
-            } catch (e) { console.log("Permission Error", e); }
-        }
-
-        // --- SETTINGS MODAL LOGIC ---
-        function openLiveSettings() {
-            document.getElementById('live-settings-modal').classList.add('active');
-            // Sync current values
-            const currCam = videoTrack ? videoTrack.getSettings().deviceId : "";
-            const currMic = audioTrack ? audioTrack.getSettings().deviceId : "";
-            document.getElementById('live-camera-list').value = currCam;
-            document.getElementById('live-audio-list').value = currMic;
-        }
-        function closeLiveSettings() { document.getElementById('live-settings-modal').classList.remove('active'); }
+        loadSettings();
 
         // --- SETTINGS STORAGE ---
         function loadSettings() {
-            if (roomFromUrl) {
-                document.getElementById('room-id').value = roomFromUrl;
-                checkRoomConfig();
-            } else if (localStorage.getItem('obs_room_id')) {
-                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
-                checkRoomConfig();
-            }
+            if (roomFromUrl) { document.getElementById('room-id').value = roomFromUrl; checkRoomConfig(); }
+            else if (localStorage.getItem('obs_room_id')) { document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); checkRoomConfig(); }
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
@@ -607,7 +468,56 @@
             }
         }
 
-        // --- STREAMING LOGIC ---
+        // --- DEVICE ENUMERATION (DONE IN LIVE SETTINGS) ---
+        async function updateDeviceLists() {
+            try {
+                // Ensure we have permissions first (usually already have stream active)
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const selCam = document.getElementById('live-camera-list');
+                const selMic = document.getElementById('live-audio-list');
+                const currCam = videoTrack ? videoTrack.getSettings().deviceId : "";
+                const currMic = audioTrack ? audioTrack.getSettings().deviceId : "";
+
+                selCam.innerHTML = ''; selMic.innerHTML = '';
+
+                let vCount = 1, aCount = 1;
+                devices.forEach(d => {
+                    if (d.kind === 'videoinput') {
+                        let label = d.label || `Camera ${vCount++}`;
+                        if (label.toLowerCase().includes('back')) label = "Rear: " + label.replace('Back', '');
+                        else if (label.toLowerCase().includes('front')) label = "Front";
+                        selCam.add(new Option(label, d.deviceId, false, d.deviceId === currCam));
+                    } else if (d.kind === 'audioinput') {
+                        let label = d.label || `Mic ${aCount++}`;
+                        let prefix = "🎤 ";
+                        if (label.toLowerCase().includes('bluetooth') || label.toLowerCase().includes('headset')) prefix = "🎧 ";
+                        // Shorten label
+                        label = label.replace(/Microphone|Default|Communications/gi, '').trim();
+                        selMic.add(new Option(prefix + label, d.deviceId, false, d.deviceId === currMic));
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function openLiveSettings() {
+            document.getElementById('live-settings-modal').classList.add('active');
+            updateDeviceLists();
+            const bitSel = document.getElementById('live-bitrate');
+            if (document.getElementById('bitrate').value === 'custom') {
+                // ensure custom exists
+                if (bitSel.options[bitSel.options.length - 1].value !== 'custom') {
+                    let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
+                    bitSel.add(opt);
+                }
+                bitSel.value = customBitrateVal;
+            } else {
+                bitSel.value = document.getElementById('bitrate').value;
+            }
+        }
+        function closeLiveSettings() { document.getElementById('live-settings-modal').classList.remove('active'); }
+
+
+        // --- STREAMING START ---
         async function startStreaming() {
             if (myStream) { myStream.getTracks().forEach(track => track.stop()); myStream = null; }
             saveSettings();
@@ -615,7 +525,7 @@
             roomId = document.getElementById('room-id').value;
             if (roomId.length < 6) return alert('Invalid Room ID');
 
-            // Check Room Active
+            // Validate Room
             const roomSnap = await db.ref(`rooms/${roomId}/active`).get();
             if (!roomSnap.exists()) { alert(`Room ${roomId} not found!`); return; }
 
@@ -625,34 +535,17 @@
                 return;
             }
 
-            document.getElementById('room-info').innerText = "Room: " + roomId;
-            document.getElementById('status-txt').innerText = `LIVE : CAM ${targetCamIndex}`;
+            document.getElementById('status-txt').innerText = `LIVE: CAM ${targetCamIndex}`;
             document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
 
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
-            const camId = document.getElementById('init-camera-select').value;
-            const micId = document.getElementById('init-audio-select').value;
 
-            // Update Live Selects to match Init
-            document.getElementById('live-camera-list').value = camId;
-            document.getElementById('live-audio-list').value = micId;
-
-            // Constraints
-            let videoCons = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
-            if (camId) videoCons.deviceId = { exact: camId }; else videoCons.facingMode = 'environment';
-            let audioCons = micId ? { deviceId: { exact: micId } } : true;
-
-            // Bitrate Init
-            const currentBitrateSet = document.getElementById('bitrate').value;
-            const liveBitSel = document.getElementById('live-bitrate');
-            if (currentBitrateSet === 'custom') {
-                let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
-                liveBitSel.add(opt); liveBitSel.value = customBitrateVal;
-            } else { liveBitSel.value = currentBitrateSet; }
+            // Start with DEFAULT devices (safest for mobile permissions)
+            const videoCons = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal }, facingMode: 'environment' };
 
             try {
-                myStream = await navigator.mediaDevices.getUserMedia({ audio: audioCons, video: videoCons });
+                myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoCons });
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
 
@@ -662,9 +555,9 @@
 
                 // Init Features
                 checkCapabilities();
-                initAudioMeter(myStream);
+                initAudioVisualizer(myStream);
 
-                // Start WebRTC
+                // Signaling
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
                 connectToPath(roomId, targetCamIndex, 'obs');
                 connectToPath(roomId, targetCamIndex, 'monitor');
@@ -674,47 +567,60 @@
             } catch (e) { alert('Stream Error: ' + e.message); }
         }
 
-        // --- AUDIO METER LOGIC ---
-        function initAudioMeter(stream) {
+        // --- AUDIO VISUALIZER (WAVE) ---
+        function initAudioVisualizer(stream) {
             if (!stream.getAudioTracks().length) return;
 
-            if (audioContext) audioContext.close();
+            if (audioContext) { audioContext.close(); }
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             audioAnalyser = audioContext.createAnalyser();
-            audioAnalyser.fftSize = 32;
+            audioAnalyser.fftSize = 64; // Low FFT size for simple bars
             audioSourceNode = audioContext.createMediaStreamSource(stream);
             audioSourceNode.connect(audioAnalyser);
 
+            const canvas = document.getElementById('audio-canvas');
+            const ctx = canvas.getContext('2d');
             const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-            const bar = document.getElementById('audio-bar-visual');
-            const micBtn = document.getElementById('mic-btn');
 
-            if (audioVisualInterval) clearInterval(audioVisualInterval);
-            audioVisualInterval = setInterval(() => {
-                // If mic muted, zero out
+            const draw = () => {
+                animationFrameId = requestAnimationFrame(draw);
+                audioAnalyser.getByteFrequencyData(dataArray);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Mute logic
                 if (audioTrack && !audioTrack.enabled) {
-                    bar.style.height = '0%';
-                    micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500');
-                    micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                    document.getElementById('mic-btn').classList.remove('bg-green-500');
+                    document.getElementById('mic-btn').classList.add('bg-red-500');
+                    document.getElementById('mic-btn').innerHTML = '<i class="fas fa-microphone-slash text-sm"></i>';
                     return;
                 } else {
-                    micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500');
-                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    document.getElementById('mic-btn').classList.remove('bg-red-500');
+                    document.getElementById('mic-btn').classList.add('bg-green-500');
+                    document.getElementById('mic-btn').innerHTML = '<i class="fas fa-microphone text-sm"></i>';
                 }
 
-                audioAnalyser.getByteFrequencyData(dataArray);
-                let sum = 0;
-                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-                let average = sum / dataArray.length;
+                // Draw center-out green bars
+                const barWidth = (canvas.width / dataArray.length) * 2;
+                let x = 0;
 
-                // Map 0-255 to Percentage (with some boost)
-                let percent = (average / 255) * 100 * 1.5;
-                if (percent > 100) percent = 100;
-                bar.style.height = percent + '%';
-            }, 50);
+                ctx.fillStyle = '#22c55e'; // Green
+
+                // Simple visualization logic: mirror from center
+                const center = canvas.width / 2;
+
+                for (let i = 0; i < dataArray.length; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    // Right side
+                    ctx.fillRect(center + (i * 4), canvas.height - barHeight, 3, barHeight);
+                    // Left side
+                    ctx.fillRect(center - (i * 4), canvas.height - barHeight, 3, barHeight);
+                }
+            };
+            draw();
         }
 
-        // --- SWITCHING DEVICES (LIVE) ---
+        // --- SWITCH DEVICES LOGIC ---
         async function switchCamera(deviceId) {
             if (!deviceId || !myStream) return;
             try {
@@ -727,99 +633,113 @@
                     video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
                 });
 
-                const newVideoTrack = newStream.getVideoTracks()[0];
-                videoTrack = newVideoTrack;
+                const newTrack = newStream.getVideoTracks()[0];
+                videoTrack = newTrack;
 
-                // Replace in PeerConnections
+                // Replace in WebRTC
                 ['monitor', 'obs'].forEach(key => {
                     if (pcs[key]) {
                         const sender = pcs[key].getSenders().find(s => s.track && s.track.kind === 'video');
-                        if (sender) sender.replaceTrack(newVideoTrack);
+                        if (sender) sender.replaceTrack(newTrack);
                     }
                 });
 
-                // Re-assemble local stream
                 myStream.removeTrack(myStream.getVideoTracks()[0]);
-                myStream.addTrack(newVideoTrack);
+                myStream.addTrack(newTrack);
                 document.getElementById('preview').srcObject = myStream;
-
-                checkCapabilities(); // Update sliders (Zoom/Exposure)
+                checkCapabilities();
                 closeLiveSettings();
-
-            } catch (e) { alert("Switch Cam Failed: " + e); }
+            } catch (e) { alert("Cam Switch Error: " + e.message); }
         }
 
         async function switchMicrophone(deviceId) {
             if (!myStream) return;
             try {
+                // Completely stop old audio track to release hardware
                 if (audioTrack) audioTrack.stop();
+
                 const newStream = await navigator.mediaDevices.getUserMedia({
-                    audio: { deviceId: { exact: deviceId } }, video: false
+                    audio: { deviceId: { exact: deviceId } },
+                    video: false
                 });
 
-                const newAudioTrack = newStream.getAudioTracks()[0];
-                audioTrack = newAudioTrack;
+                const newTrack = newStream.getAudioTracks()[0];
+                audioTrack = newTrack;
 
-                // Replace in PeerConnections
+                // Replace in WebRTC
                 ['monitor', 'obs'].forEach(key => {
                     if (pcs[key]) {
                         const sender = pcs[key].getSenders().find(s => s.track && s.track.kind === 'audio');
-                        if (sender) sender.replaceTrack(newAudioTrack);
+                        if (sender) sender.replaceTrack(newTrack);
                     }
                 });
 
-                // Update Local Stream & Audio Meter
+                // Update Local
                 const oldAudio = myStream.getAudioTracks()[0];
                 if (oldAudio) myStream.removeTrack(oldAudio);
-                myStream.addTrack(newAudioTrack);
+                myStream.addTrack(newTrack);
 
-                // Restart Meter with new source
-                initAudioMeter(myStream);
+                // Re-init Visualizer (Context needs new source)
+                initAudioVisualizer(myStream);
                 closeLiveSettings();
 
-            } catch (e) { alert("Switch Mic Failed: " + e); }
+            } catch (e) { alert("Mic Switch Error: " + e.message + "\nTry restarting stream if issue persists."); }
         }
 
         // --- EXPOSURE & ZOOM ---
         async function checkCapabilities() {
             if (!videoTrack) return;
             const caps = videoTrack.getCapabilities();
-
-            // Zoom
-            if (caps.zoom) {
-                const slider = document.getElementById('zoom-slider');
-                slider.min = caps.zoom.min; slider.max = caps.zoom.max; slider.step = caps.zoom.step; slider.value = caps.zoom.min;
-                document.getElementById('zoom-container').classList.remove('hidden');
-            } else { document.getElementById('zoom-container').classList.add('hidden'); }
-
             // Exposure
             if (caps.exposureCompensation) {
                 const slider = document.getElementById('exposure-slider');
-                slider.min = caps.exposureCompensation.min; slider.max = caps.exposureCompensation.max; slider.step = caps.exposureCompensation.step; slider.value = 0;
+                // Force step range -3 to +3 if supported, else clamp to capability
+                const min = Math.max(caps.exposureCompensation.min, -3);
+                const max = Math.min(caps.exposureCompensation.max, 3);
+                slider.min = min; slider.max = max; slider.step = caps.exposureCompensation.step; slider.value = 0;
                 document.getElementById('exposure-container').classList.remove('hidden');
             } else { document.getElementById('exposure-container').classList.add('hidden'); }
         }
 
-        async function applyZoom(val) { if (videoTrack) videoTrack.applyConstraints({ advanced: [{ zoom: val }] }).catch(e => { }); }
-        async function applyExposure(val) { if (videoTrack) videoTrack.applyConstraints({ advanced: [{ exposureMode: 'continuous', exposureCompensation: val }] }).catch(e => { }); }
+        async function applyExposure(val) {
+            document.getElementById('ev-val').innerText = (val > 0 ? "+" : "") + val;
+            if (videoTrack) videoTrack.applyConstraints({ advanced: [{ exposureMode: 'continuous', exposureCompensation: parseFloat(val) }] }).catch(e => { });
+        }
 
         // --- UTILS ---
         function toggleMic() { if (audioTrack) audioTrack.enabled = !audioTrack.enabled; }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e => { }); else if (document.exitFullscreen) document.exitFullscreen(); }
-        function toggleUI(e) { if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; document.getElementById('overlay-controls').classList.toggle('ui-hidden'); }
-        function updateLiveBitrate(val) { if (!isNaN(val)) customBitrateVal = parseInt(val); if (pcs.obs) setBitrate(pcs.obs, parseInt(val) * 1000); updateMonitorBitrate(); }
+        function toggleUI(e) {
+            if (e.target.closest('button') || e.target.closest('.modal-content') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            const ui = document.getElementById('overlay-controls');
+            const top = document.getElementById('overlay-top');
+            const exp = document.getElementById('exposure-container');
+            const aud = document.querySelector('.audio-wave-container');
 
-        // --- WEBRTC CORE (Same as previous, omitted logic changes) ---
+            const isHidden = ui.classList.contains('ui-hidden');
+            [ui, top, exp, aud].forEach(el => el.classList.toggle('ui-hidden', !isHidden));
+        }
+        function updateLiveBitrate(val) {
+            if (!isNaN(val)) customBitrateVal = parseInt(val);
+            if (pcs.obs) setBitrate(pcs.obs, parseInt(val) * 1000);
+            updateMonitorBitrate();
+        }
+        function rotateUI() { isUIRotated = !isUIRotated; document.getElementById('overlay-controls').classList.toggle('ui-rotate-90', isUIRotated); }
+        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
+        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
+        function toggleGrid() { document.getElementById('grid-layer').classList.toggle('hidden'); }
+
+        // --- STOP ---
         function stopStreaming() {
             if (myStream) myStream.getTracks().forEach(track => track.stop());
             if (audioContext) audioContext.close();
+            cancelAnimationFrame(animationFrameId);
             if (pcs.monitor) pcs.monitor.close();
             if (pcs.obs) pcs.obs.close();
             pcs = { monitor: null, obs: null };
             clearInterval(statsInterval);
-            clearInterval(audioVisualInterval);
+
             if (roomId && targetCamIndex) {
-                db.ref(`rooms/${roomId}/cam${targetCamIndex}/monitorControl`).off();
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).remove();
                 db.ref(`rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().cancel();
             }
@@ -827,27 +747,25 @@
             document.getElementById('setup').classList.remove('hidden');
         }
 
-        // (Previous helper functions: listenMonitorControl, updateMonitorBitrate, connectToPath, setBitrate, startUpdatingStatsLocal, preferCodec... KEEP THEM AS IS)
+        // --- WEBRTC HELPERS (Standard) ---
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`rooms/${rid}/cam${cIdx}/monitorControl`);
             controlRef.update({ enabled: false, bitratePercent: 50 });
             controlRef.on('value', snap => {
                 const val = snap.val();
                 if (val) {
-                    const shouldEnableVideo = val.enabled;
                     monitorBitrateTarget = val.bitratePercent || 50;
                     if (pcs.monitor) {
                         const sender = pcs.monitor.getSenders().find(s => s.track && s.track.kind === 'video');
-                        if (sender && sender.track) sender.track.enabled = shouldEnableVideo;
-                        if (shouldEnableVideo) updateMonitorBitrate(); else setBitrate(pcs.monitor, 50000);
+                        if (sender && sender.track) sender.track.enabled = val.enabled;
+                        if (val.enabled) updateMonitorBitrate(); else setBitrate(pcs.monitor, 50000);
                     }
                 }
             });
         }
-        function getTargetBitrate() { return parseInt(document.getElementById('live-bitrate').value) || 2500; }
         function updateMonitorBitrate() { if (pcs.monitor) setBitrate(pcs.monitor, monitorBitrateTarget * 1000); }
+        function getTargetBitrate() { return parseInt(document.getElementById('live-bitrate').value) || 2500; }
 
-        // ... (Standard WebRTC Connect Code - Compact for Length) ...
         function preferCodec(sdp, codec) { var sdpLines = sdp.split('\r\n'); var mLineIndex = -1; for (var i = 0; i < sdpLines.length; i++) { if (sdpLines[i].search('m=video') !== -1) { mLineIndex = i; break; } } if (mLineIndex === -1) return sdp; var codecPayload = null; var pattern = new RegExp(":(\\d+) " + codec + "/90000"); for (var i = 0; i < sdpLines.length; i++) { var result = sdpLines[i].match(pattern); if (result) { codecPayload = result[1]; break; } } if (!codecPayload) return sdp; var mLine = sdpLines[mLineIndex]; var elements = mLine.split(' '); var newMLine = elements.slice(0, 3); newMLine.push(codecPayload); for (var i = 3; i < elements.length; i++) { if (elements[i] !== codecPayload) newMLine.push(elements[i]); } sdpLines[mLineIndex] = newMLine.join(' '); return sdpLines.join('\r\n'); }
 
         async function connectToPath(rid, cIdx, type) {
@@ -886,11 +804,7 @@
             }, 1000);
         }
 
-        // UI Extras
-        function rotateUI() { isUIRotated = !isUIRotated; document.getElementById('overlay-controls').classList.toggle('ui-rotate-90', isUIRotated); }
-        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
-        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
-        function toggleGrid() { document.getElementById('grid-layer').classList.toggle('hidden'); }
+        // QR
         async function startQRScanner() { document.getElementById('qr-overlay').classList.remove('hidden'); const video = document.getElementById('qr-video'); const canvas = document.getElementById('qr-canvas'); const ctx = canvas.getContext('2d'); qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); video.srcObject = qrStream; video.play(); requestAnimationFrame(tick); function tick() { if (video.readyState === video.HAVE_ENOUGH_DATA) { canvas.height = video.videoHeight; canvas.width = video.videoWidth; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height); if (code && code.data.length >= 6) { document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6); stopQRScanner(); checkRoomConfig(); } } if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick); } }
         function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) qrStream.getTracks().forEach(t => t.stop()); }
     </script>
