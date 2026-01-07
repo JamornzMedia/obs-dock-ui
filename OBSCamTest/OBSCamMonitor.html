@@ -183,6 +183,12 @@
             text-transform: uppercase;
         }
 
+        #display-room-name {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: -2px;
+        }
+
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -216,9 +222,14 @@
             </div>
         </div>
 
-        <button id="btn-start-fresh" onclick="initializeControl(false)"
-            class="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
-                class="fas fa-play mr-2"></i> Start New Session</button>
+        <div id="new-room-form" class="w-full max-w-xs space-y-3">
+            <input type="text" id="room-name-input" placeholder="Enter Room Name (e.g. Football Match A)"
+                class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-white text-center text-sm outline-none placeholder-gray-600 focus:border-blue-500">
+
+            <button id="btn-start-fresh" onclick="initializeControl(false)"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
+                    class="fas fa-play mr-2"></i> Create Session</button>
+        </div>
 
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
@@ -232,6 +243,7 @@
             <div class="flex flex-col">
                 <div class="logo-header-main">OBSCam</div>
                 <div class="logo-header-sub">CONTROL CENTER V2.2</div>
+                <div id="display-room-name">...</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -330,6 +342,7 @@
         const camIndex = params.get('cam') || '1';
         let roomId, pc, dashboardPCs = {}, totalBytesData = 0;
         let maxCams = 4; // Default
+        let roomName = "Unknown Room";
 
         if (!mode) {
             checkExistingSession();
@@ -343,7 +356,7 @@
         function checkExistingSession() {
             const saved = localStorage.getItem('obs_v2_room_id');
             if (saved) {
-                document.getElementById('btn-start-fresh').classList.add('hidden');
+                document.getElementById('new-room-form').classList.add('hidden'); // Hide create form
                 document.getElementById('rejoin-area').classList.remove('hidden');
                 document.getElementById('prev-room-id').innerText = saved;
             }
@@ -406,22 +419,30 @@
         function initializeControl(rejoin) {
             if (rejoin) {
                 roomId = localStorage.getItem('obs_v2_room_id');
-                db.ref(`rooms/${roomId}/config/maxCams`).once('value').then(snap => {
-                    if (snap.exists()) {
-                        maxCams = snap.val();
-                        document.getElementById('max-cams-select').value = maxCams;
-                    }
+                db.ref(`rooms/${roomId}/config`).once('value').then(snap => {
+                    const config = snap.val() || {};
+                    if (config.maxCams) maxCams = config.maxCams;
+                    if (config.name) roomName = config.name;
+                    document.getElementById('max-cams-select').value = maxCams;
                     renderCamList();
                     initAfterRender();
                 });
             } else {
                 const old = localStorage.getItem('obs_v2_room_id');
                 if (old) db.ref(`rooms/${old}`).remove();
+
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem('obs_v2_room_id', roomId);
 
+                const inputName = document.getElementById('room-name-input').value;
+                roomName = inputName.trim() === "" ? "OBSCam Room" : inputName;
+
                 maxCams = 4;
-                db.ref(`rooms/${roomId}/config/maxCams`).set(maxCams);
+                db.ref(`rooms/${roomId}/config`).set({
+                    maxCams: maxCams,
+                    name: roomName
+                });
+
                 document.getElementById('max-cams-select').value = 4;
                 renderCamList();
                 initAfterRender();
@@ -435,6 +456,7 @@
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('mode-control').classList.remove('hidden');
             document.getElementById('display-room-id').innerText = roomId;
+            document.getElementById('display-room-name').innerText = roomName;
 
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
@@ -538,6 +560,16 @@
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
+
+            // --- AUTO REFRESH LISTENER ---
+            roomRef.child('cmd').on('value', snap => {
+                const val = snap.val();
+                if (val && val.action === 'reload') {
+                    console.log("Remote reload command received");
+                    window.location.reload();
+                }
+            });
+            // -----------------------------
 
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };

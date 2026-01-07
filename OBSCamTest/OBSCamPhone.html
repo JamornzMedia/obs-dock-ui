@@ -61,9 +61,7 @@
         /* SLIDERS Vertical */
         input[type=range][orient=vertical] {
             writing-mode: bt-lr;
-            /* IE/Edge */
             -webkit-appearance: slider-vertical;
-            /* Webkit */
             width: 8px;
             height: 150px;
             padding: 0 5px;
@@ -184,8 +182,16 @@
             left: 10px;
             z-index: 40;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            /* Stack vertically */
+            gap: 4px;
             pointer-events: none;
+            align-items: flex-start;
+        }
+
+        .status-row {
+            display: flex;
+            gap: 5px;
         }
 
         .status-pill {
@@ -197,6 +203,16 @@
             align-items: center;
             gap: 6px;
             backdrop-filter: blur(4px);
+        }
+
+        .room-info-pill {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            color: #ccc;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -214,60 +230,77 @@
         </button>
 
         <div class="space-y-4 max-w-sm w-full mb-10">
-            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
+            <div id="step-join" class="space-y-4">
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Target Room ID</label>
+                    <div class="flex gap-2">
+                        <input type="tel" id="room-id" placeholder="######" maxlength="6"
+                            class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
+                        <button onclick="startQRScanner()"
+                            class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition border border-gray-700">
+                            <i class="fas fa-qrcode text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="joinRoom()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform text-white">
+                    JOIN ROOM
+                </button>
+            </div>
+
+            <div id="step-config" class="hidden space-y-4">
+
+                <div class="bg-indigo-900/20 p-3 rounded-lg border border-indigo-500/30 text-center">
+                    <div id="room-name-display" class="text-white font-bold text-lg">Room Name</div>
+                    <div class="text-[10px] text-indigo-300 uppercase tracking-widest">ID: <span
+                            id="room-id-display"></span></div>
+                </div>
+
+                <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
+                    <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
+                    <select id="cam-index"
+                        class="w-full bg-black text-white p-3 rounded-lg text-lg border border-blue-500/50 outline-none font-bold text-center">
+                    </select>
+                </div>
+
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res / FPS</label>
+                    <div class="flex gap-2">
+                        <select id="res"
+                            class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
+                            <option value="1080">1080p</option>
+                            <option value="720" selected>720p</option>
+                            <option value="480">480p</option>
+                        </select>
+                        <select id="fps" class="w-24 bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
+                            <option value="30" selected>30 FPS</option>
+                            <option value="60">60 FPS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
+                    <select id="bitrate"
+                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700"
+                        onchange="checkCustomBitrate(this)">
+                        <option value="2500" selected>2.5 Mbps</option>
+                        <option value="4000">4.0 Mbps</option>
+                        <option value="6000">6.0 Mbps</option>
+                        <option value="10000">10 Mbps</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+
                 <div class="flex gap-2">
-                    <input type="tel" id="room-id" placeholder="######" maxlength="6"
-                        class="w-full bg-black border border-gray-700 p-3 rounded-lg text-center text-3xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
-                    <button onclick="startQRScanner()"
-                        class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition border border-gray-700">
-                        <i class="fas fa-qrcode text-2xl"></i>
+                    <button onclick="resetToJoin()" class="w-1/4 bg-gray-800 rounded-xl text-gray-400 font-bold"><i
+                            class="fas fa-arrow-left"></i></button>
+                    <button onclick="startStreaming()"
+                        class="w-3/4 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform text-white">
+                        START LIVE
                     </button>
                 </div>
             </div>
-
-            <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
-                <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
-                <select id="cam-index"
-                    class="w-full bg-black text-white p-3 rounded-lg text-lg border border-blue-500/50 outline-none font-bold text-center">
-                    <option value="1">CAMERA 1</option>
-                    <option value="2">CAMERA 2</option>
-                    <option value="3">CAMERA 3</option>
-                    <option value="4">CAMERA 4</option>
-                </select>
-            </div>
-
-            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res / FPS</label>
-                <div class="flex gap-2">
-                    <select id="res" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                        <option value="1080">1080p</option>
-                        <option value="720" selected>720p</option>
-                        <option value="480">480p</option>
-                    </select>
-                    <select id="fps" class="w-24 bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                        <option value="30" selected>30 FPS</option>
-                        <option value="60">60 FPS</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
-                <select id="bitrate" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700"
-                    onchange="checkCustomBitrate(this)">
-                    <option value="2500" selected>2.5 Mbps</option>
-                    <option value="4000">4.0 Mbps</option>
-                    <option value="6000">6.0 Mbps</option>
-                    <option value="10000">10 Mbps</option>
-                    <option value="custom">Custom</option>
-                </select>
-            </div>
-
-            <button onclick="checkAndStart()"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform text-white mt-4">
-                START STREAMING
-            </button>
 
             <div class="text-center pt-4">
                 <p class="text-[10px] text-gray-500">Developed by <a href="#"
@@ -282,16 +315,31 @@
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
         <div id="overlay-top" class="top-info-bar fade-ui">
-            <div class="status-pill">
-                <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                <span id="status-txt" class="text-[10px] font-bold tracking-wide text-white">CONNECTING...</span>
+            <div class="status-row">
+                <div class="status-pill">
+                    <div id="status-dot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span id="status-txt" class="text-[10px] font-bold tracking-wide text-white">CONNECTING...</span>
+                </div>
             </div>
-            <div class="status-pill border-l-0 bg-black/40">
-                <span id="realtime-bw" class="text-[10px] font-mono text-gray-300">0 kbps</span>
+            <div class="status-row mt-1">
+                <div class="room-info-pill">
+                    <i class="fas fa-home mr-1"></i><span id="live-room-name">...</span>
+                </div>
             </div>
-            <div class="status-pill border-l-0 bg-black/40">
-                <span id="battery-stat" class="text-[10px] font-mono text-yellow-400"><i class="fas fa-bolt"></i>
-                    --%</span>
+            <div class="status-row">
+                <div class="room-info-pill">
+                    <i class="fas fa-fingerprint mr-1"></i>ID: <span id="live-room-id">...</span>
+                </div>
+            </div>
+
+            <div class="status-row mt-1">
+                <div class="status-pill border-l-0 bg-black/40">
+                    <span id="realtime-bw" class="text-[10px] font-mono text-gray-300">0 kbps</span>
+                </div>
+                <div class="status-pill border-l-0 bg-black/40">
+                    <span id="battery-stat" class="text-[10px] font-mono text-yellow-400"><i class="fas fa-bolt"></i>
+                        --%</span>
+                </div>
             </div>
         </div>
 
@@ -305,7 +353,9 @@
                 <input type="range" id="exposure-slider" orient="vertical" class="block"
                     oninput="applyExposure(this.value)">
                 <button onclick="resetExposure()"
-                    class="mt-2 w-6 h-6 rounded-full bg-gray-700 text-[8px] flex items-center justify-center border border-gray-500 hover:bg-gray-600">0</button>
+                    class="mt-2 w-6 h-6 rounded-full bg-gray-700 text-[10px] flex items-center justify-center border border-gray-500 hover:bg-gray-600 text-white">
+                    <i class="fas fa-undo"></i>
+                </button>
             </div>
         </div>
 
@@ -425,6 +475,7 @@
         let myStream, videoTrack, audioTrack, qrStream;
         let audioContext, audioAnalyser, audioSourceNode;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
+        let currentRoomName = "Unknown Room";
         let isUIRotated = false, statsInterval = null;
         let lastBytes = { obs: 0, monitor: 0 };
         let lastTime = 0, sessionTotalBytes = 0;
@@ -441,7 +492,7 @@
             if (roomFromUrl) { document.getElementById('room-id').value = roomFromUrl; }
             else if (localStorage.getItem('obs_room_id')) { document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); }
 
-            if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+            // Logic moved to joinRoom
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
@@ -468,12 +519,11 @@
             }
         }
 
-        // --- START WITH CHECK ---
-        async function checkAndStart() {
+        // --- JOIN LOGIC (NEW) ---
+        async function joinRoom() {
             roomId = document.getElementById('room-id').value;
             if (roomId.length < 6) return alert('Please enter a valid 6-digit Room ID');
 
-            // Check Room Exists & Max Cams
             const roomRef = db.ref(`rooms/${roomId}`);
             const snap = await roomRef.get();
 
@@ -484,16 +534,36 @@
 
             const config = snap.child('config').val();
             const max = (config && config.maxCams) ? config.maxCams : 4;
+            const name = (config && config.name) ? config.name : "Unnamed Room";
             currentMaxCams = max;
+            currentRoomName = name;
 
-            const selectedSlot = parseInt(document.getElementById('cam-index').value);
-            if (selectedSlot > max) {
-                alert(`Cannot start! This room allows maximum ${max} cameras.\nYou selected Camera ${selectedSlot}.`);
-                return;
+            // Populate Slots
+            const camSel = document.getElementById('cam-index');
+            camSel.innerHTML = '';
+            for (let i = 1; i <= max; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `CAMERA ${i}`;
+                camSel.appendChild(opt);
             }
 
-            // If ok, proceed
-            startStreaming();
+            // Restore previous selection if valid
+            const savedSlot = localStorage.getItem('obs_cam_index');
+            if (savedSlot && parseInt(savedSlot) <= max) {
+                camSel.value = savedSlot;
+            }
+
+            // Update UI
+            document.getElementById('room-name-display').innerText = currentRoomName;
+            document.getElementById('room-id-display').innerText = roomId;
+            document.getElementById('step-join').classList.add('hidden');
+            document.getElementById('step-config').classList.remove('hidden');
+        }
+
+        function resetToJoin() {
+            document.getElementById('step-config').classList.add('hidden');
+            document.getElementById('step-join').classList.remove('hidden');
         }
 
         // --- DEVICE ENUMERATION ---
@@ -543,12 +613,19 @@
 
         // --- STREAMING START ---
         async function startStreaming() {
-            if (myStream) { myStream.getTracks().forEach(track => track.stop()); myStream = null; }
+            // Stop any existing tracks first to ensure fresh start
+            if (myStream) {
+                myStream.getTracks().forEach(track => track.stop());
+                myStream = null;
+            }
             saveSettings();
 
             targetCamIndex = document.getElementById('cam-index').value;
 
+            // Set UI Texts
             document.getElementById('status-txt').innerText = `LIVE: CAM ${targetCamIndex}`;
+            document.getElementById('live-room-name').innerText = currentRoomName;
+            document.getElementById('live-room-id').innerText = roomId;
             document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
 
             const quality = parseInt(document.getElementById('res').value);
@@ -557,13 +634,29 @@
             const videoCons = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal }, facingMode: 'environment' };
 
             try {
+                // Command Refresh to Browser Source via Firebase
+                db.ref(`rooms/${roomId}/cam${targetCamIndex}/obs/cmd`).set({
+                    action: 'reload',
+                    ts: Date.now()
+                });
+
                 myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoCons });
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
 
-                document.getElementById('preview').srcObject = myStream;
+                const videoEl = document.getElementById('preview');
+                videoEl.srcObject = myStream;
+
+                // FORCE REACTIVE & PLAY
+                videoEl.onloadedmetadata = () => {
+                    videoEl.play().catch(e => console.log("Force play error:", e));
+                };
+
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
+
+                // Ensure it plays (sometimes WebView pauses hidden elements)
+                setTimeout(() => { videoEl.play().catch(e => { }); }, 500);
 
                 // Init Features
                 checkCapabilities();
@@ -649,6 +742,7 @@
                 myStream.removeTrack(myStream.getVideoTracks()[0]);
                 myStream.addTrack(newTrack);
                 document.getElementById('preview').srcObject = myStream;
+                document.getElementById('preview').play(); // Ensure play after switch
                 checkCapabilities();
                 closeLiveSettings();
             } catch (e) { alert("Cam Switch Error: " + e.message); }
