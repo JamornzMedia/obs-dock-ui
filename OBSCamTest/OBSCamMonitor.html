@@ -183,12 +183,6 @@
             text-transform: uppercase;
         }
 
-        #display-room-name {
-            font-size: 0.8rem;
-            color: #aaa;
-            margin-top: -2px;
-        }
-
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -243,7 +237,6 @@
             <div class="flex flex-col">
                 <div class="logo-header-main">OBSCam</div>
                 <div class="logo-header-sub">CONTROL CENTER V2.2</div>
-                <div id="display-room-name">...</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -262,6 +255,11 @@
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
                         class="fas fa-sync"></i></button>
             </div>
+        </div>
+
+        <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3 text-center mb-2 relative">
+            <span class="text-[9px] text-orange-300 block uppercase tracking-widest mb-1">Room Name</span>
+            <div id="display-room-name" class="text-xl font-bold text-white tracking-wide">...</div>
         </div>
 
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
@@ -356,7 +354,7 @@
         function checkExistingSession() {
             const saved = localStorage.getItem('obs_v2_room_id');
             if (saved) {
-                document.getElementById('new-room-form').classList.add('hidden'); // Hide create form
+                document.getElementById('new-room-form').classList.add('hidden');
                 document.getElementById('rejoin-area').classList.remove('hidden');
                 document.getElementById('prev-room-id').innerText = saved;
             }
@@ -393,6 +391,7 @@
                     <div class="flex flex-col items-end gap-1 ml-2">
                         <div class="flex items-center gap-2">
                             <select onchange="updateMonitorBitrate('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5 w-16">
+                                <option value="0">0 K (OFF)</option>
                                 <option value="50" selected>50 K</option>
                                 <option value="100">100 K</option>
                                 <option value="300">300 K</option>
@@ -561,12 +560,15 @@
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
-            // --- AUTO REFRESH LISTENER ---
+            // --- AUTO REFRESH LISTENER (One-time execute) ---
             roomRef.child('cmd').on('value', snap => {
                 const val = snap.val();
                 if (val && val.action === 'reload') {
-                    console.log("Remote reload command received");
-                    window.location.reload();
+                    // Prevent looping: Delete the command immediately!
+                    roomRef.child('cmd').remove().then(() => {
+                        console.log("Remote reload command executed");
+                        window.location.reload();
+                    });
                 }
             });
             // -----------------------------
