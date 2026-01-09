@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.2</title>
+    <title>OBSCam Sender V2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -250,7 +250,7 @@
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
         <div class="text-center mt-8 mb-6">
             <div class="logo-main">OBSCam</div>
-            <div class="logo-sub">SENDER V2.2</div>
+            <div class="logo-sub">SENDER V2.3</div>
         </div>
 
         <button onclick="toggleFullScreen()" class="absolute top-4 right-4 text-gray-500 hover:text-white">
@@ -332,7 +332,7 @@
             <div class="text-center pt-4">
                 <p class="text-[10px] text-gray-500">Developed by <a href="#"
                         class="text-blue-400 font-bold">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.2</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.3</p>
             </div>
         </div>
     </div>
@@ -458,8 +458,13 @@
             <div class="p-4 space-y-4">
                 <div>
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Camera</label>
-                    <select id="live-camera-list" onchange="switchCamera(this.value)"
-                        class="w-full bg-black text-white p-3 rounded-lg text-xs border border-gray-700 outline-none"></select>
+                    <div class="flex gap-2">
+                        <select id="live-camera-list" onchange="switchCamera(this.value)"
+                            class="w-full bg-black text-white p-3 rounded-lg text-xs border border-gray-700 outline-none"></select>
+                        <button onclick="updateDeviceLists()"
+                            class="bg-gray-800 px-3 rounded border border-gray-700 hover:bg-gray-700 text-white"><i
+                                class="fas fa-sync"></i></button>
+                    </div>
                 </div>
                 <div>
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Microphone</label>
@@ -590,9 +595,14 @@
             document.getElementById('step-join').classList.remove('hidden');
         }
 
-        // --- DEVICE ENUMERATION ---
+        // --- DEVICE ENUMERATION (FIXED FOR CAPTURE CARDS) ---
         async function updateDeviceLists() {
             try {
+                // IMPORTANT: Sometimes need to request stream first to see external devices on Android/iOS
+                if (!myStream) {
+                    // Optional: Can add a dummy request here if needed, but usually refreshing list after startStreaming is enough.
+                }
+
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const selCam = document.getElementById('live-camera-list');
                 const selMic = document.getElementById('live-audio-list');
@@ -604,10 +614,18 @@
                 let vCount = 1, aCount = 1;
                 devices.forEach(d => {
                     if (d.kind === 'videoinput') {
-                        let label = d.label || `Camera ${vCount++}`;
-                        if (label.toLowerCase().includes('back')) label = "Rear: " + label.replace('Back', '');
-                        else if (label.toLowerCase().includes('front')) label = "Front";
+                        let label = d.label || `Camera ${vCount}`;
+                        // Logic to catch everything but rename common ones nicely
+                        if (label.toLowerCase().includes('back')) label = "Rear: " + label.replace(/back/gi, '').replace(/camera/gi, '').trim();
+                        else if (label.toLowerCase().includes('front')) label = "Front: " + label.replace(/front/gi, '').replace(/camera/gi, '').trim();
+                        else {
+                            // Capture cards often fall here
+                            label = `Ext/Cam ${vCount}: ${label}`;
+                        }
+
+                        // Add Everything!
                         selCam.add(new Option(label, d.deviceId, false, d.deviceId === currCam));
+                        vCount++;
                     } else if (d.kind === 'audioinput') {
                         let label = d.label || `Mic ${aCount++}`;
                         let prefix = "🎤 ";
@@ -616,7 +634,10 @@
                         selMic.add(new Option(prefix + label, d.deviceId, false, d.deviceId === currMic));
                     }
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+                alert("Error listing devices: " + e.message);
+            }
         }
 
         function openLiveSettings() {
