@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.2 (Multi-Input)</title>
+    <title>OBSCam Control V2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -228,7 +228,7 @@
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">Version 2.2</p>
+            <p class="text-[9px] text-gray-600">Version 2.3</p>
         </div>
     </div>
 
@@ -236,7 +236,7 @@
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <div class="flex flex-col">
                 <div class="logo-header-main">OBSCam</div>
-                <div class="logo-header-sub">CONTROL CENTER V2.2</div>
+                <div class="logo-header-sub">CONTROL CENTER V2.3</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -257,16 +257,27 @@
             </div>
         </div>
 
-        <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3 text-center mb-2 relative">
-            <span class="text-[9px] text-orange-300 block uppercase tracking-widest mb-1">Room Name</span>
-            <div id="display-room-name" class="text-xl font-bold text-white tracking-wide">...</div>
-        </div>
-
-        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
-            <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
-            <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
-            <button onclick="openModal('phone-link-modal')"
-                class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
+        <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-3 mb-3">
+            <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="text-[9px] text-gray-500 uppercase font-bold whitespace-nowrap">Room Name:</span>
+                    <span id="display-room-name" class="text-sm font-bold text-white truncate">...</span>
+                </div>
+                <button onclick="editRoomName()" class="text-gray-500 hover:text-blue-400 px-2">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px] text-gray-500 uppercase font-bold">Room ID:</span>
+                    <span id="display-room-id"
+                        class="text-xl font-mono font-bold text-blue-400 tracking-wider">...</span>
+                </div>
+                <button onclick="openPhoneModal()"
+                    class="bg-gray-800 hover:bg-gray-700 text-white text-[10px] px-3 py-1 rounded border border-gray-600 flex items-center gap-1">
+                    <i class="fas fa-qrcode"></i> QR Code
+                </button>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto pr-1" id="cam-list"></div>
@@ -290,7 +301,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.2</p>
+            <p class="text-[9px] text-gray-600">V2.3</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -301,11 +312,22 @@
                     class="w-full text-xs text-gray-500 hover:text-white text-center mt-3">Close</button>
             </div>
         </div>
+
         <div id="phone-link-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
-                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
-                        class="w-32 h-32"></div>
+
+                <div class="mb-3 border-b border-gray-700 pb-2">
+                    <div class="text-[10px] text-gray-500 uppercase">Room Name</div>
+                    <div id="modal-room-name" class="text-sm font-bold text-blue-400 mb-1">...</div>
+                    <div class="text-[10px] text-gray-500 uppercase">Room ID</div>
+                    <div id="modal-room-id" class="text-lg font-mono font-bold text-white">...</div>
+                </div>
+
+                <div class="bg-white p-2 rounded mb-3 inline-block shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                    <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
+                </div>
+
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="phone-url-input"
                         class="bg-black text-[10px] text-gray-400 border border-gray-700 rounded p-2 flex-1 font-mono"
@@ -317,6 +339,7 @@
                     class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
         </div>
+
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
@@ -559,19 +582,14 @@
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
-
-            // --- AUTO REFRESH LISTENER (One-time execute) ---
             roomRef.child('cmd').on('value', snap => {
                 const val = snap.val();
                 if (val && val.action === 'reload') {
-                    // Prevent looping: Delete the command immediately!
                     roomRef.child('cmd').remove().then(() => {
-                        console.log("Remote reload command executed");
                         window.location.reload();
                     });
                 }
             });
-            // -----------------------------
 
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
@@ -600,6 +618,7 @@
         }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
         function openLinkModal() {
             const container = document.getElementById('links-container');
             container.innerHTML = '';
@@ -609,6 +628,24 @@
             }
             openModal('obs-link-modal');
         }
+
+        function openPhoneModal() {
+            document.getElementById('modal-room-name').innerText = roomName;
+            document.getElementById('modal-room-id').innerText = roomId;
+            openModal('phone-link-modal');
+        }
+
+        function editRoomName() {
+            let newName = prompt("Edit Room Name:", roomName);
+            if (newName && newName.trim() !== "") {
+                roomName = newName.trim();
+                document.getElementById('display-room-name').innerText = roomName;
+                if (roomId) {
+                    db.ref(`rooms/${roomId}/config/name`).set(roomName);
+                }
+            }
+        }
+
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(document.getElementById('phone-url-input').value); }
         function openNewRoomModal() { openModal('new-room-modal'); }
