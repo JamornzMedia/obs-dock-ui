@@ -564,9 +564,15 @@
 
             const config = snap.child('config').val();
             const max = (config && config.maxCams) ? config.maxCams : 4;
-            const name = (config && config.name) ? config.name : "Unnamed Room";
+            // Listen for name changes in real-time
+            db.ref(`rooms/${roomId}/config/name`).on('value', nameSnap => {
+                const name = nameSnap.val() || "Unnamed Room";
+                currentRoomName = name;
+                if (document.getElementById('room-name-display')) document.getElementById('room-name-display').innerText = currentRoomName;
+                if (document.getElementById('live-room-name')) document.getElementById('live-room-name').innerText = currentRoomName;
+            });
+
             currentMaxCams = max;
-            currentRoomName = name;
 
             const camSel = document.getElementById('cam-index');
             camSel.innerHTML = '';
@@ -579,7 +585,6 @@
             const savedSlot = localStorage.getItem('obs_cam_index');
             if (savedSlot && parseInt(savedSlot) <= max) { camSel.value = savedSlot; }
 
-            document.getElementById('room-name-display').innerText = currentRoomName;
             document.getElementById('room-id-display').innerText = roomId;
             document.getElementById('step-join').classList.add('hidden');
             document.getElementById('step-config').classList.remove('hidden');
@@ -590,9 +595,12 @@
             document.getElementById('step-join').classList.remove('hidden');
         }
 
-        // --- DEVICE ENUMERATION ---
+        // --- DEVICE ENUMERATION (Modified for Capture Cards) ---
         async function updateDeviceLists() {
             try {
+                // Ensure permission is granted first to see labels
+                await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(e => { });
+
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const selCam = document.getElementById('live-camera-list');
                 const selMic = document.getElementById('live-audio-list');
@@ -605,13 +613,17 @@
                 devices.forEach(d => {
                     if (d.kind === 'videoinput') {
                         let label = d.label || `Camera ${vCount++}`;
+                        // Logic for naming clearer
                         if (label.toLowerCase().includes('back')) label = "Rear: " + label.replace('Back', '');
                         else if (label.toLowerCase().includes('front')) label = "Front";
+
+                        // Add ALL video devices (incl. USB/External)
                         selCam.add(new Option(label, d.deviceId, false, d.deviceId === currCam));
                     } else if (d.kind === 'audioinput') {
                         let label = d.label || `Mic ${aCount++}`;
                         let prefix = "🎤 ";
                         if (label.toLowerCase().includes('bluetooth') || label.toLowerCase().includes('headset')) prefix = "🎧 ";
+                        if (label.toLowerCase().includes('usb')) prefix = "🔌 ";
                         label = label.replace(/Microphone|Default|Communications/gi, '').trim();
                         selMic.add(new Option(prefix + label, d.deviceId, false, d.deviceId === currMic));
                     }
@@ -650,6 +662,7 @@
             const quality = parseInt(document.getElementById('res').value);
             const fpsVal = parseInt(document.getElementById('fps').value);
 
+            // Default start: use environment/back camera
             const videoCons = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal }, facingMode: 'environment' };
 
             try {
@@ -684,87 +697,25 @@
             } catch (e) { alert('Stream Error: ' + e.message); }
         }
 
-        // --- SLIDERS TOGGLE LOGIC ---
-        function toggleSlider(type) {
-            const popup = document.getElementById(`popup-${type}`);
-            const isHidden = popup.classList.contains('hidden-pop');
-
-            // Hide all first
-            document.querySelectorAll('.slider-popup').forEach(el => el.classList.add('hidden-pop'));
-
-            // Toggle clicked
-            if (isHidden) popup.classList.remove('hidden-pop');
-        }
-
-        // --- UTILS & UI ---
-        function handleUiClick(e) {
-            // Check if clicking outside sliders
-            if (!e.target.closest('.slider-control-group')) {
-                document.querySelectorAll('.slider-popup').forEach(el => el.classList.add('hidden-pop'));
-            }
-            toggleUI(e);
-        }
-
-        function toggleUI(e) {
-            if (e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('.slider-control-group') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-            const ui = document.getElementById('overlay-controls');
-            const top = document.getElementById('overlay-top');
-            const aud = document.querySelector('.audio-wave-container');
-            const stop = document.querySelector('.absolute.bottom-6.left-6');
-
-            const groups = document.querySelectorAll('.slider-control-group');
-
-            const isHidden = ui.classList.contains('ui-hidden');
-            [ui, top, aud, stop].forEach(el => el.classList.toggle('ui-hidden', !isHidden));
-            groups.forEach(el => el.classList.toggle('ui-hidden', !isHidden));
-        }
-
-        // --- AUDIO VISUALIZER ---
-        function initAudioVisualizer(stream) {
-            if (!stream.getAudioTracks().length) return;
-            if (audioContext) { audioContext.close(); }
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            audioAnalyser = audioContext.createAnalyser();
-            audioAnalyser.fftSize = 64;
-            audioSourceNode = audioContext.createMediaStreamSource(stream);
-            audioSourceNode.connect(audioAnalyser);
-            const canvas = document.getElementById('audio-canvas');
-            const ctx = canvas.getContext('2d');
-            const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-            const draw = () => {
-                animationFrameId = requestAnimationFrame(draw);
-                audioAnalyser.getByteFrequencyData(dataArray);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                if (audioTrack && !audioTrack.enabled) {
-                    document.getElementById('mic-btn').classList.replace('bg-green-500', 'bg-red-500');
-                    document.getElementById('mic-btn').innerHTML = '<i class="fas fa-microphone-slash text-sm"></i>';
-                    return;
-                } else {
-                    document.getElementById('mic-btn').classList.replace('bg-red-500', 'bg-green-500');
-                    document.getElementById('mic-btn').innerHTML = '<i class="fas fa-microphone text-sm"></i>';
-                }
-                const center = canvas.width / 2;
-                ctx.fillStyle = '#22c55e';
-                for (let i = 0; i < dataArray.length; i++) {
-                    const barHeight = (dataArray[i] / 255) * canvas.height;
-                    ctx.fillRect(center + (i * 4), canvas.height - barHeight, 3, barHeight);
-                    ctx.fillRect(center - (i * 4), canvas.height - barHeight, 3, barHeight);
-                }
-            };
-            draw();
-        }
-
-        // --- SWITCH DEVICES LOGIC ---
+        // --- SWITCH DEVICES LOGIC (Modified for Capture Cards) ---
         async function switchCamera(deviceId) {
             if (!deviceId || !myStream) return;
             try {
                 videoTrack.stop();
                 const quality = parseInt(document.getElementById('res').value);
                 const fpsVal = parseInt(document.getElementById('fps').value);
+
+                // For switching, we prioritize DeviceID and remove facingMode
+                // Capture cards hate strict resolution constraints, so we use 'ideal' carefully or basic constraints
                 const newStream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
-                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                    video: {
+                        deviceId: { exact: deviceId },
+                        width: { ideal: quality * 1.777 },
+                        height: { ideal: quality },
+                        frameRate: { ideal: fpsVal }
+                        // Note: facingMode is intentionally OMITTED here
+                    }
                 });
                 const newTrack = newStream.getVideoTracks()[0];
                 videoTrack = newTrack;
@@ -778,7 +729,11 @@
                 myStream.addTrack(newTrack);
                 document.getElementById('preview').srcObject = myStream;
                 document.getElementById('preview').play();
+
+                // IMPORTANT: Capture Cards on Android often crash when checking capabilities (Zoom/Exposure)
+                // We wrap this to prevent the app from breaking if the card driver is bad
                 checkCapabilities();
+
                 closeLiveSettings();
             } catch (e) { alert("Cam Switch Error: " + e.message); }
         }
@@ -804,20 +759,27 @@
             } catch (e) { alert("Mic Switch Error: " + e.message); }
         }
 
-        // --- EXPOSURE & ZOOM ---
+        // --- EXPOSURE & ZOOM (Modified with Safe Check) ---
         async function checkCapabilities() {
             if (!videoTrack) return;
-            const caps = videoTrack.getCapabilities();
-            if (caps.exposureCompensation) {
-                const slider = document.getElementById('exposure-slider');
-                slider.min = caps.exposureCompensation.min; slider.max = caps.exposureCompensation.max; slider.step = caps.exposureCompensation.step; slider.value = 0;
-                document.getElementById('exposure-group').classList.remove('hidden');
-            } else { document.getElementById('exposure-group').classList.add('hidden'); }
-            if (caps.zoom) {
-                const slider = document.getElementById('zoom-slider');
-                slider.min = caps.zoom.min; slider.max = caps.zoom.max; slider.step = caps.zoom.step; slider.value = caps.zoom.min;
-                document.getElementById('zoom-group').classList.remove('hidden');
-            } else { document.getElementById('zoom-group').classList.add('hidden'); }
+            try {
+                const caps = videoTrack.getCapabilities(); // This line crashes on some USB Capture Cards
+                if (caps.exposureCompensation) {
+                    const slider = document.getElementById('exposure-slider');
+                    slider.min = caps.exposureCompensation.min; slider.max = caps.exposureCompensation.max; slider.step = caps.exposureCompensation.step; slider.value = 0;
+                    document.getElementById('exposure-group').classList.remove('hidden');
+                } else { document.getElementById('exposure-group').classList.add('hidden'); }
+                if (caps.zoom) {
+                    const slider = document.getElementById('zoom-slider');
+                    slider.min = caps.zoom.min; slider.max = caps.zoom.max; slider.step = caps.zoom.step; slider.value = caps.zoom.min;
+                    document.getElementById('zoom-group').classList.remove('hidden');
+                } else { document.getElementById('zoom-group').classList.add('hidden'); }
+            } catch (e) {
+                // If capability check fails (common with USB cards), hide controls but keep stream alive
+                console.warn("Capability check failed (likely USB device)", e);
+                document.getElementById('exposure-group').classList.add('hidden');
+                document.getElementById('zoom-group').classList.add('hidden');
+            }
         }
         async function applyExposure(val) { if (videoTrack) videoTrack.applyConstraints({ advanced: [{ exposureMode: 'continuous', exposureCompensation: parseFloat(val) }] }).catch(e => { }); }
         async function resetExposure() { document.getElementById('exposure-slider').value = 0; applyExposure(0); }

@@ -260,6 +260,10 @@
         <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3 text-center mb-2 relative">
             <span class="text-[9px] text-orange-300 block uppercase tracking-widest mb-1">Room Name</span>
             <div id="display-room-name" class="text-xl font-bold text-white tracking-wide">...</div>
+            <button onclick="editRoomName()"
+                class="absolute top-2 right-2 text-orange-300 hover:text-white bg-orange-900/40 p-1.5 rounded-full text-[10px] w-6 h-6 flex items-center justify-center transition">
+                <i class="fas fa-pen"></i>
+            </button>
         </div>
 
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
@@ -445,6 +449,18 @@
                 document.getElementById('max-cams-select').value = 4;
                 renderCamList();
                 initAfterRender();
+            }
+        }
+
+        // --- NEW FUNCTION: Edit Room Name ---
+        function editRoomName() {
+            const newName = prompt("Enter new Room Name:", roomName);
+            if (newName && newName.trim() !== "") {
+                roomName = newName.trim();
+                document.getElementById('display-room-name').innerText = roomName;
+                if (roomId) {
+                    db.ref(`rooms/${roomId}/config/name`).set(roomName);
+                }
             }
         }
 
