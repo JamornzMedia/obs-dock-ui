@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.1</title>
+    <title>OBSCam Control V2.2 (Multi-Input)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -195,7 +195,7 @@
 </head>
 
 <body>
-    <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline muted></video></div>
+    <div id="mode-screen" class="hidden"><video id="remote-video" autoplay playsinline></video></div>
 
     <div id="start-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
         <div class="simple-logo">
@@ -216,14 +216,19 @@
             </div>
         </div>
 
-        <button id="btn-start-fresh" onclick="initializeControl(false)"
-            class="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
-                class="fas fa-play mr-2"></i> Start New Session</button>
+        <div id="new-room-form" class="w-full max-w-xs space-y-3">
+            <input type="text" id="room-name-input" placeholder="Enter Room Name (e.g. Football Match A)"
+                class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-white text-center text-sm outline-none placeholder-gray-600 focus:border-blue-500">
+
+            <button id="btn-start-fresh" onclick="initializeControl(false)"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
+                    class="fas fa-play mr-2"></i> Create Session</button>
+        </div>
 
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">Version 2.1</p>
+            <p class="text-[9px] text-gray-600">Version 2.2</p>
         </div>
     </div>
 
@@ -231,14 +236,30 @@
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <div class="flex flex-col">
                 <div class="logo-header-main">OBSCam</div>
-                <div class="logo-header-sub">CONTROL CENTER</div>
+                <div class="logo-header-sub">CONTROL CENTER V2.2</div>
             </div>
 
             <div class="flex items-center gap-2">
+                <select id="max-cams-select" onchange="changeMaxCams(this.value)"
+                    class="bg-gray-800 text-white text-[10px] border border-gray-700 rounded px-1 py-1 outline-none">
+                    <option value="1">1 Cam</option>
+                    <option value="2">2 Cams</option>
+                    <option value="3">3 Cams</option>
+                    <option value="4">4 Cams</option>
+                    <option value="5">5 Cams</option>
+                    <option value="6">6 Cams</option>
+                    <option value="7">7 Cams</option>
+                    <option value="8">8 Cams</option>
+                </select>
                 <button onclick="window.location.reload()"
                     class="text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 text-[10px]"><i
-                        class="fas fa-sync"></i> Refresh</button>
+                        class="fas fa-sync"></i></button>
             </div>
+        </div>
+
+        <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3 text-center mb-2 relative">
+            <span class="text-[9px] text-orange-300 block uppercase tracking-widest mb-1">Room Name</span>
+            <div id="display-room-name" class="text-xl font-bold text-white tracking-wide">...</div>
         </div>
 
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
@@ -269,14 +290,14 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.1</p>
+            <p class="text-[9px] text-gray-600">V2.2</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box text-left">
                 <h3 class="text-blue-400 font-bold mb-3 text-sm text-center">OBS Browser Sources</h3>
-                <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="links-container"></div><button
-                    onclick="closeModal('obs-link-modal')"
+                <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="links-container"></div>
+                <button onclick="closeModal('obs-link-modal')"
                     class="w-full text-xs text-gray-500 hover:text-white text-center mt-3">Close</button>
             </div>
         </div>
@@ -299,9 +320,10 @@
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
-                <p class="text-xs text-gray-400 mb-4">Create New Room?</p><button onclick="confirmNewRoom()"
-                    class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes</button><button
-                    onclick="closeModal('new-room-modal')"
+                <p class="text-xs text-gray-400 mb-4">Create New Room?</p>
+                <button onclick="confirmNewRoom()"
+                    class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes</button>
+                <button onclick="closeModal('new-room-modal')"
                     class="text-xs text-gray-500 mt-2 block w-full">Cancel</button>
             </div>
         </div>
@@ -317,11 +339,32 @@
         const mode = params.get('mode');
         const camIndex = params.get('cam') || '1';
         let roomId, pc, dashboardPCs = {}, totalBytesData = 0;
+        let maxCams = 4; // Default
+        let roomName = "Unknown Room";
 
         if (!mode) {
             checkExistingSession();
+        } else if (mode === 'screen') {
+            document.getElementById('mode-screen').classList.remove('hidden');
+            let foundRoom = params.get('room') || localStorage.getItem('obs_v2_room_id');
+            if (foundRoom) { roomId = foundRoom; startReceiver(roomId, camIndex); }
+            else { document.getElementById('mode-screen').innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found.</div>"; }
+        }
+
+        function checkExistingSession() {
+            const saved = localStorage.getItem('obs_v2_room_id');
+            if (saved) {
+                document.getElementById('new-room-form').classList.add('hidden');
+                document.getElementById('rejoin-area').classList.remove('hidden');
+                document.getElementById('prev-room-id').innerText = saved;
+            }
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function renderCamList() {
             const list = document.getElementById('cam-list');
-            for (let i = 1; i <= 4; i++) {
+            list.innerHTML = '';
+            for (let i = 1; i <= maxCams; i++) {
                 list.innerHTML += `
                 <div class="cam-row">
                     <div class="flex items-center gap-3">
@@ -348,69 +391,90 @@
                     <div class="flex flex-col items-end gap-1 ml-2">
                         <div class="flex items-center gap-2">
                             <select onchange="updateMonitorBitrate('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5 w-16">
+                                <option value="0">0 K (OFF)</option>
                                 <option value="50" selected>50 K</option>
                                 <option value="100">100 K</option>
-                                <option value="150">150 K</option>
-                                <option value="200">200 K</option>
                                 <option value="300">300 K</option>
                                 <option value="500">500 K</option>
-                                <option value="1000">1 M</option>
                             </select>
                             <button onclick="toggleMonitor('${i}')" id="btn-mon-${i}" class="monitor-toggle monitor-inactive p-1" title="Toggle Monitor View"><i class="fas fa-eye"></i></button>
                         </div>
                     </div>
                 </div>`;
             }
-        } else if (mode === 'screen') {
-            document.getElementById('mode-screen').classList.remove('hidden');
-            let foundRoom = params.get('room') || localStorage.getItem('obs_v2_room_id');
-            if (foundRoom) { roomId = foundRoom; startReceiver(roomId, camIndex); }
-            else { document.getElementById('mode-screen').innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found.</div>"; }
         }
 
-        function checkExistingSession() {
-            const saved = localStorage.getItem('obs_v2_room_id');
-            if (saved) {
-                document.getElementById('btn-start-fresh').classList.add('hidden');
-                document.getElementById('rejoin-area').classList.remove('hidden');
-                document.getElementById('prev-room-id').innerText = saved;
+        function changeMaxCams(val) {
+            maxCams = parseInt(val);
+            renderCamList();
+            if (roomId) {
+                db.ref(`rooms/${roomId}/config/maxCams`).set(maxCams);
+                for (let i = 1; i <= maxCams; i++) {
+                    initDashboardReceiver(i);
+                }
             }
-            document.getElementById('start-screen').classList.remove('hidden');
         }
 
         function initializeControl(rejoin) {
-            if (rejoin) { roomId = localStorage.getItem('obs_v2_room_id'); }
-            else {
+            if (rejoin) {
+                roomId = localStorage.getItem('obs_v2_room_id');
+                db.ref(`rooms/${roomId}/config`).once('value').then(snap => {
+                    const config = snap.val() || {};
+                    if (config.maxCams) maxCams = config.maxCams;
+                    if (config.name) roomName = config.name;
+                    document.getElementById('max-cams-select').value = maxCams;
+                    renderCamList();
+                    initAfterRender();
+                });
+            } else {
                 const old = localStorage.getItem('obs_v2_room_id');
                 if (old) db.ref(`rooms/${old}`).remove();
+
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem('obs_v2_room_id', roomId);
-            }
 
+                const inputName = document.getElementById('room-name-input').value;
+                roomName = inputName.trim() === "" ? "OBSCam Room" : inputName;
+
+                maxCams = 4;
+                db.ref(`rooms/${roomId}/config`).set({
+                    maxCams: maxCams,
+                    name: roomName
+                });
+
+                document.getElementById('max-cams-select').value = 4;
+                renderCamList();
+                initAfterRender();
+            }
+        }
+
+        function initAfterRender() {
             db.ref(`rooms/${roomId}/active`).set(true);
             db.ref(`rooms/${roomId}`).onDisconnect().remove();
 
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('mode-control').classList.remove('hidden');
             document.getElementById('display-room-id').innerText = roomId;
+            document.getElementById('display-room-name').innerText = roomName;
 
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            // Connect ALL monitors immediately for Stats
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= maxCams; i++) {
                 initDashboardReceiver(i);
             }
 
             setInterval(() => {
                 const now = Date.now();
-                for (let i = 1; i <= 4; i++) {
+                for (let i = 1; i <= maxCams; i++) {
                     const badge = document.getElementById(`badge-${i}`);
-                    const lastSeen = badge.dataset.lastSeen || 0;
-                    if (badge.innerText === 'LIVE' && (now - lastSeen > 3000)) {
-                        badge.className = "status-badge status-wait"; badge.innerText = "OFF";
-                        document.getElementById(`info-main-bw-${i}`).innerText = "Main: --";
+                    if (badge) {
+                        const lastSeen = badge.dataset.lastSeen || 0;
+                        if (badge.innerText === 'LIVE' && (now - lastSeen > 3000)) {
+                            badge.className = "status-badge status-wait"; badge.innerText = "OFF";
+                            document.getElementById(`info-main-bw-${i}`).innerText = "Main: --";
+                        }
                     }
                 }
             }, 1000);
@@ -419,7 +483,6 @@
         function toggleMonitor(i) {
             const btn = document.getElementById(`btn-mon-${i}`);
             const isInactive = btn.classList.contains('monitor-inactive');
-            // Toggle UI & Firebase ONLY (Don't close PC)
             if (isInactive) {
                 btn.classList.remove('monitor-inactive'); btn.classList.add('monitor-active');
                 document.getElementById(`overlay-off-${i}`).classList.add('hidden');
@@ -445,24 +508,29 @@
                 const dc = e.channel;
                 dc.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
+                    const resEl = document.getElementById(`info-res-${cIdx}`);
+                    if (resEl) {
+                        resEl.innerText = `${data.res} ${data.fps}fps`;
+                        document.getElementById(`info-data-${cIdx}`).innerText = `${data.totalData} MB`;
+                        document.getElementById(`info-main-bw-${cIdx}`).innerText = `Main: ${data.mainKbps}kbps`;
+                        document.getElementById(`info-mon-bw-${cIdx}`).innerText = `Pre: ${data.monKbps}kbps`;
+                        document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
 
-                    document.getElementById(`info-res-${cIdx}`).innerText = `${data.res} ${data.fps}fps`;
-                    document.getElementById(`info-data-${cIdx}`).innerText = `${data.totalData} MB`;
-                    document.getElementById(`info-main-bw-${cIdx}`).innerText = `Main: ${data.mainKbps}kbps`;
-                    document.getElementById(`info-mon-bw-${cIdx}`).innerText = `Pre: ${data.monKbps}kbps`;
-                    document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
+                        const badge = document.getElementById(`badge-${cIdx}`);
+                        badge.className = "status-badge status-live";
+                        badge.innerText = "LIVE";
+                        badge.dataset.lastSeen = Date.now();
 
-                    const badge = document.getElementById(`badge-${cIdx}`);
-                    badge.className = "status-badge status-live";
-                    badge.innerText = "LIVE";
-                    badge.dataset.lastSeen = Date.now();
-
-                    calculateTotalData();
+                        calculateTotalData();
+                    }
                 }
             };
 
             dPC.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
-            dPC.ontrack = event => { document.getElementById(`preview-video-${cIdx}`).srcObject = event.streams[0]; };
+            dPC.ontrack = event => {
+                const v = document.getElementById(`preview-video-${cIdx}`);
+                if (v) v.srcObject = event.streams[0];
+            };
 
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
@@ -478,9 +546,12 @@
 
         function calculateTotalData() {
             let total = 0.0;
-            for (let i = 1; i <= 4; i++) {
-                const txt = document.getElementById(`info-data-${i}`).innerText.replace(' MB', '');
-                total += parseFloat(txt) || 0;
+            for (let i = 1; i <= maxCams; i++) {
+                const el = document.getElementById(`info-data-${i}`);
+                if (el) {
+                    const txt = el.innerText.replace(' MB', '');
+                    total += parseFloat(txt) || 0;
+                }
             }
             document.getElementById('val-total-data').innerText = total.toFixed(1) + " MB";
         }
@@ -488,6 +559,19 @@
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
+
+            // --- AUTO REFRESH LISTENER (One-time execute) ---
+            roomRef.child('cmd').on('value', snap => {
+                const val = snap.val();
+                if (val && val.action === 'reload') {
+                    // Prevent looping: Delete the command immediately!
+                    roomRef.child('cmd').remove().then(() => {
+                        console.log("Remote reload command executed");
+                        window.location.reload();
+                    });
+                }
+            });
+            // -----------------------------
 
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
@@ -508,7 +592,10 @@
         }
 
         function resetDataUsage() {
-            for (let i = 1; i <= 4; i++) document.getElementById(`info-data-${i}`).innerText = "0 MB";
+            for (let i = 1; i <= maxCams; i++) {
+                const el = document.getElementById(`info-data-${i}`);
+                if (el) el.innerText = "0 MB";
+            }
             document.getElementById('val-total-data').innerText = "0.0 MB";
         }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -516,7 +603,7 @@
         function openLinkModal() {
             const container = document.getElementById('links-container');
             container.innerHTML = '';
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= maxCams; i++) {
                 const url = window.location.origin + window.location.pathname + `?mode=screen&cam=${i}`;
                 container.innerHTML += `<div class="mb-2"><label class="text-[9px] text-gray-500 uppercase">Camera ${i}</label><div class="flex gap-1"><div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700" id="link-cam${i}">${url}</div><button onclick="copyToClip('link-cam${i}')" class="bg-blue-600 px-3 rounded text-[10px] font-bold">Copy</button></div></div>`;
             }
