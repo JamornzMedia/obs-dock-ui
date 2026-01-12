@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>OBS VAR Replay V1.1 - JamornzMedia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* ================= CORE STYLES ================= */
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* --- Screen Mode (หน้าจอแสดงผล) --- */
+        .screen-mode body {
+            background: transparent;
+        }
+
+        .screen-mode #controls-ui {
+            display: none !important;
+        }
+
+        .screen-mode #video-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .screen-mode video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* --- Control Mode (รีโมท) --- */
+        .control-mode {
+            background: #1e1e1e;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .control-mode #video-wrapper {
+            display: none;
+        }
+
+        /* Drop Zone */
+        #drop-zone {
+            border: 2px dashed #555;
+            background: #2b2b2b;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 12px;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        #drop-zone:hover,
+        #drop-zone.hover {
+            border-color: #00aaff;
+            background: #333;
+            color: #fff;
+        }
+
+        /* --- Timeline System --- */
+        .timeline-wrapper {
+            margin-bottom: 10px;
+            background: #252525;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #333;
+        }
+
+        /* Main Detailed Timeline */
+        .timeline-container {
+            position: relative;
+            height: 30px;
+            margin-bottom: 5px;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .track-bg {
+            position: absolute;
+            top: 12px;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .track-fill {
+            position: absolute;
+            top: 12px;
+            left: 0;
+            height: 6px;
+            background: #00aaff;
+            border-radius: 3px;
+            pointer-events: none;
+            width: 0%;
+        }
+
+        /* Markers */
+        .marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 16px;
+            transform: translateX(-50%);
+            z-index: 10;
+            cursor: col-resize;
+            display: none;
+            touch-action: none;
+        }
+
+        .marker::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 8px;
+            bottom: 0;
+            width: 2px;
+            background: #ff3333;
+            transform: translateX(-50%);
+            box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+        }
+
+        .marker-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff3333;
+            color: #000;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* Seek Bar (Invisible interaction layer) */
+        .click-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        /* Navigator (Mini Map) */
+        .navigator-container {
+            position: relative;
+            height: 20px;
+            background: #111;
+            border-radius: 3px;
+            margin-top: 5px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .nav-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #333;
+            width: 0%;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .nav-window {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(255, 202, 40, 0.2);
+            border: 1px solid #ffca28;
+            box-sizing: border-box;
+            cursor: grab;
+            z-index: 20;
+        }
+
+        .nav-window:active {
+            cursor: grabbing;
+            background: rgba(255, 202, 40, 0.4);
+        }
+
+        .nav-hint {
+            font-size: 9px;
+            color: #666;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        /* Sliders & Buttons */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .slider-row input {
+            flex: 1;
+            accent-color: #00aaff;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #444;
+            color: white;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+        }
+
+        .btn-var {
+            grid-column: span 4;
+            background: #ffca28;
+            color: black;
+            font-size: 14px;
+            padding: 12px;
+            border: 1px solid #c79a00;
+        }
+
+        .btn-play {
+            background: #2e7d32;
+        }
+
+        .btn-pause {
+            background: #c62828;
+        }
+
+        .active-btn {
+            background: #00aaff;
+            color: white;
+        }
+
+        /* Joystick Controls */
+        .zoom-controls {
+            background: #2b2b2b;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            border: 1px solid #333;
+        }
+
+        .joystick-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .joystick-pad {
+            width: 100px;
+            height: 100px;
+            background: #111;
+            border-radius: 50%;
+            border: 2px solid #444;
+            position: relative;
+            touch-action: none;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        .joystick-stick {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #555, #333);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            border: 1px solid #666;
+            box-shadow: 0 4px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .joystick-stick:active {
+            background: #00aaff;
+        }
+
+        /* Copy Link UI */
+        .copy-group {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .copy-input {
+            flex: 1;
+            background: #111;
+            border: 1px solid #444;
+            color: #00aaff;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+
+        .btn-copy {
+            background: #005f73;
+            width: 60px;
+        }
+
+        /* Modals */
+        .menu-bar {
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #555;
+            color: #ccc;
+        }
+
+        .btn-outline:hover {
+            background: #333;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: #252525;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #ddd;
+            transform: translateY(20px);
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .modal-overlay.open .modal {
+            transform: translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .sponsor-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .sponsor-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .qr-box img {
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            display: block;
+            margin: 5px auto;
+        }
+
+        .sponsor-link {
+            display: block;
+            color: #00aaff;
+            text-decoration: none;
+            margin-top: 5px;
+            font-size: 11px;
+        }
+
+        #loop-status {
+            color: #cc3333;
+            font-weight: bold;
+            font-size: 11px;
+            display: none;
+            text-align: center;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px rgba(204, 51, 51, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="video-wrapper">
+        <video id="mainVideo" muted playsinline></video>
+    </div>
+
+    <div id="controls-ui">
+        <input type="file" id="fileInput" accept="video/*" style="display:none;" onchange="handleFileSelect(this)">
+
+        <div id="drop-zone" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size:20px;">📂</div>
+            <b>คลิก</b> หรือ ลากไฟล์วิดีโอมาวางที่นี่<br>
+            <span style="font-size:10px; color:#666;">รองรับ MP4, MKV, MOV (V1.1)</span>
+        </div>
+
+        <button class="btn-var" onclick="varAction()">⚽ VAR REPLAY (ย้อน 5 วิ + สโลว์)</button>
+        <div id="loop-status">⚡ LOOP ACTIVE ⚡</div>
+
+        <div class="timeline-wrapper">
+            <div class="timeline-container" id="timelineBox">
+                <div class="track-bg"></div>
+                <div class="track-fill" id="trackFill"></div>
+
+                <div id="markA" class="marker" onmousedown="startDrag('A', event)">
+                    <div class="marker-head">A</div>
+                </div>
+                <div id="markB" class="marker" onmousedown="startDrag('B', event)">
+                    <div class="marker-head">B</div>
+                </div>
+
+                <div class="click-layer" onmousedown="userScrubStart(event)"></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:-5px;">
+                <span id="currTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+
+            <div class="navigator-container" id="navBox">
+                <div class="nav-progress" id="navProgress"></div>
+                <div class="nav-window" id="navWindow"></div>
+            </div>
+            <div class="nav-hint">🖱️ Scroll บนแถบเหลืองเพื่อซูม / ลากเพื่อเลื่อนหาตำแหน่ง</div>
+        </div>
+
+        <div class="btn-grid">
+            <button class="btn-play" onclick="sendCmd('play')">▶ PLAY</button>
+            <button class="btn-pause" onclick="sendCmd('pause')">⏸ PAUSE</button>
+            <button id="btnSetA" onclick="sendCmd('setA')">SET A</button>
+            <button id="btnSetB" onclick="sendCmd('setB')">SET B</button>
+        </div>
+        <button onclick="sendCmd('clearLoop')" style="width:100%; background:#422; margin-bottom:10px; color:#ffaaaa;">❌
+            CLEAR LOOP</button>
+
+        <div class="slider-row" style="flex-wrap:wrap;">
+            <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span>SPEED: <span id="speedVal" style="color:#00aaff; font-weight:bold;">1.0x</span></span>
+            </div>
+            <input type="range" id="speedRange" min="0.01" max="2.0" step="0.01" value="1.0"
+                oninput="updateSpeed(this.value)">
+        </div>
+
+        <div class="zoom-controls">
+            <div style="font-size:11px; color:#00aaff; margin-bottom:5px; font-weight:bold;">🔍 ZOOM & POSITION
+                (Joystick)</div>
+
+            <div class="joystick-area">
+                <div style="width:40%;">
+                    <div class="slider-row" style="flex-direction:column; align-items: flex-start;">
+                        <span>ZOOM (x1-x10):</span>
+                        <input type="range" id="zoomRange" min="1.0" max="10.0" step="0.1" value="1.0"
+                            oninput="updateTransform()" style="width:100%">
+                        <span id="zoomVal" style="align-self: flex-end;">1.0x</span>
+                    </div>
+                    <button onclick="resetZoom()" style="width:100%; background:#333; margin-top:5px;">RESET</button>
+                </div>
+
+                <div class="joystick-pad" id="joyPad">
+                    <div class="joystick-stick" id="joyStick"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-bar">
+            <button class="btn btn-outline" style="flex:1;" onclick="openModal('modal-help')">❓ Get Link</button>
+            <button class="btn btn-outline" style="flex:1; color:#ffca28; border-color:#ffca28;"
+                onclick="openModal('modal-sponsor')">🎁 Sponsor</button>
+        </div>
+    </div>
+
+    <div id="modal-help" class="modal-overlay" onclick="closeModal(event, 'modal-help')">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal(null, 'modal-help')">&times;</button>
+            <h2 style="color:#00aaff;">Graphic Link (Screen)</h2>
+            <p style="font-size:12px; color:#ccc;">Copy ลิ้งค์ด้านล่างไปใส่ใน OBS Browser Source</p>
+
+            <div class="copy-group">
+                <input type="text" class="copy-input" id="linkInputScreen"
+                    value="https://jamornzmedia.github.io/obs-dock-ui/VAR_Replay_V1.1.html?mode=screen" readonly>
+                <button class="btn-copy" onclick="copyInput('linkInputScreen')">Copy</button>
+            </div>
+
+            <p style="font-size:11px; color:#666; margin-top:20px;">
+                สำหรับหน้าควบคุม (Dock UI) ใช้ลิ้งค์นี้:
+            </p>
+            <div class="copy-group">
+                <input type="text" class="copy-input" id="linkInputDock" value=".../VAR_Replay_V1.1.html?mode=control"
+                    readonly>
+                <button class="btn-copy" onclick="copyInput('linkInputDock')">Copy</button>
+            </div>
+
+            <div id="copy-msg" style="font-size:11px; color:#44aa44; opacity:0; transition:0.3s;">Copied to Clipboard!
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-sponsor" class="modal-overlay" onclick="closeModal(event, 'modal-sponsor')">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal(null, 'modal-sponsor')">&times;</button>
+            <h2 style="color:#ffca28;">Support Developer</h2>
+            <div class="sponsor-grid">
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">Thai Bank / PromptPay</span>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                            alt="QR"></div>
+                    <a href="https://easydonate.app/Jamornz" target="_blank"
+                        class="sponsor-link">easydonate.app/Jamornz</a>
+                </div>
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">Shopee Affiliate</span>
+                    <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank" class="sponsor-link"
+                        style="font-size:14px; margin-top:10px;">🛒 Shopee Link Support</a>
+                </div>
+            </div>
+            <div style="margin-top:20px; font-size:10px; color:#666;">Developed by <b>JamornzMedia</b> V1.1</div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var sc_project = 13147874;
+        var sc_invisible = 1;
+        var sc_security = "550e33c0";
+        var scJsHost = "https://";
+        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
+    </script>
+
+    <script>
+        const channel = new BroadcastChannel('jamorn_var_v1');
+        const video = document.getElementById('mainVideo');
+        const dropZone = document.getElementById('drop-zone');
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+
+        let isScrubbing = false;
+        let loopA = null, loopB = null;
+
+        // Init Mode
+        if (mode === 'screen') {
+            document.body.classList.add('screen-mode');
+            initScreen();
+        } else {
+            document.body.classList.add('control-mode');
+            initControl();
+        }
+
+        // --- Utils ---
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(e, id) { if (e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
+        function copyInput(id) {
+            const el = document.getElementById(id);
+            el.select(); el.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(el.value);
+            document.getElementById('copy-msg').style.opacity = '1';
+            setTimeout(() => document.getElementById('copy-msg').style.opacity = '0', 2000);
+        }
+
+        // ==========================================
+        // 🎮 CONTROL LOGIC (DOCK)
+        // ==========================================
+
+        // --- Navigator / Zoom Logic Variables ---
+        let viewStart = 0; // 0.0 to 1.0 (Start % of video visible in main timeline)
+        let viewWidth = 1; // 0.0 to 1.0 (How much % of video is visible. 1 = All, 0.1 = 10%)
+        let globalDuration = 1; // Store duration for calculation
+        let globalCurrentTime = 0;
+        let currentPosA = null; // Stored in %
+        let currentPosB = null; // Stored in %
+
+        // Joystick Vars
+        let joyActive = false;
+        let joyX = 0, joyY = 0; // -50 to 50
+
+        function initControl() {
+            // Drag Drop
+            dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('hover'); };
+            dropZone.ondragleave = e => { e.preventDefault(); dropZone.classList.remove('hover'); };
+            dropZone.ondrop = e => {
+                e.preventDefault(); dropZone.classList.remove('hover');
+                if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+            };
+
+            // Status Update from Screen
+            channel.onmessage = e => {
+                const msg = e.data;
+                if (msg.type === 'status') {
+                    globalDuration = msg.durSec; // Store actual duration seconds
+                    globalCurrentTime = msg.currSec;
+
+                    if (!isScrubbing) {
+                        updateMainTimelineVisuals(msg.pct, msg.posA, msg.posB);
+                        currentPosA = msg.posA; currentPosB = msg.posB;
+                    }
+
+                    document.getElementById('currTime').innerText = msg.currFmt;
+                    document.getElementById('totalTime').innerText = msg.totalFmt;
+                    document.getElementById('btnSetA').className = msg.hasA ? 'active-btn' : '';
+                    document.getElementById('btnSetB').className = msg.hasB ? 'active-btn' : '';
+                    document.getElementById('loop-status').style.display = (msg.hasA && msg.hasB) ? 'block' : 'none';
+
+                    // Update Navigator Progress
+                    document.getElementById('navProgress').style.width = msg.pct + "%";
+                }
+            };
+
+            // Initial Nav Setup
+            updateNavigatorUI();
+            setupNavigatorInteraction();
+            setupJoystick();
+        }
+
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) loadFile(input.files[0]);
+        }
+
+        function loadFile(f) {
+            dropZone.innerHTML = `<span style="color:#00aaff">Loading: ${f.name}</span>`;
+            const r = new FileReader();
+            r.onload = evt => {
+                let mime = f.type || 'video/mp4';
+                if (f.name.toLowerCase().endsWith('.mkv')) mime = 'video/webm';
+                channel.postMessage({ type: 'file', data: evt.target.result, mime: mime });
+                dropZone.innerHTML = `<span style="color:#44aa44">Playing Loop: ${f.name}</span>`;
+                resetZoomUI();
+                // Reset View
+                viewStart = 0; viewWidth = 1; updateNavigatorUI();
+                document.getElementById('speedRange').value = 1.0;
+                document.getElementById('speedVal').innerText = "1.0x";
+            };
+            r.readAsArrayBuffer(f);
+        }
+
+        // --- NEW TIMELINE LOGIC ---
+        // Convert Global % (0-100) to Local % (0-100 relative to view)
+        function globalToLocal(gPct) {
+            if (gPct === null) return null;
+            let g = gPct / 100;
+            if (g < viewStart || g > viewStart + viewWidth) return -10; // Off screen
+            let local = (g - viewStart) / viewWidth;
+            return local * 100;
+        }
+
+        // Convert Local % (click on bar) to Global %
+        function localToGlobal(lPct) {
+            let l = lPct / 100;
+            let g = viewStart + (l * viewWidth);
+            return g * 100;
+        }
+
+        function updateMainTimelineVisuals(playHeadPct, posA, posB) {
+            // Playhead
+            let lPlay = globalToLocal(playHeadPct);
+            let fillWidth = (lPlay < 0) ? 0 : (lPlay > 100 ? 100 : lPlay);
+            document.getElementById('trackFill').style.width = fillWidth + "%";
+
+            // Markers
+            updateMarker('markA', globalToLocal(posA));
+            updateMarker('markB', globalToLocal(posB));
+        }
+
+        function updateMarker(id, localPct) {
+            const el = document.getElementById(id);
+            if (localPct !== null && localPct >= 0 && localPct <= 100) {
+                el.style.display = 'block';
+                el.style.left = localPct + '%';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        // --- SCRUBBING ON MAIN TIMELINE ---
+        function userScrubStart(e) {
+            isScrubbing = true;
+            scrubMove(e);
+            window.addEventListener('mousemove', scrubMove);
+            window.addEventListener('mouseup', scrubEnd);
+        }
+        function scrubMove(e) {
+            const box = document.getElementById('timelineBox').getBoundingClientRect();
+            let x = e.clientX - box.left;
+            let lPct = (x / box.width) * 100;
+            lPct = Math.max(0, Math.min(100, lPct)); // Clamp
+
+            // Update visual immediately
+            document.getElementById('trackFill').style.width = lPct + "%";
+
+            // Send Seek
+            let gPct = localToGlobal(lPct);
+            sendCmd('seekPct', gPct);
+        }
+        function scrubEnd() {
+            isScrubbing = false;
+            window.removeEventListener('mousemove', scrubMove);
+            window.removeEventListener('mouseup', scrubEnd);
+        }
+
+        // --- DRAGGING MARKERS ---
+        let isDraggingMarker = false;
+        let dragTarget = null;
+        function startDrag(target, e) {
+            e.preventDefault(); e.stopPropagation();
+            isDraggingMarker = true; dragTarget = target;
+            window.addEventListener('mousemove', onMarkerDrag);
+            window.addEventListener('mouseup', onMarkerDragEnd);
+        }
+        function onMarkerDrag(e) {
+            const box = document.getElementById('timelineBox').getBoundingClientRect();
+            let x = e.clientX - box.left;
+            let lPct = (x / box.width) * 100;
+            lPct = Math.max(0, Math.min(100, lPct));
+
+            updateMarker('mark' + dragTarget, lPct);
+            sendCmd(dragTarget === 'A' ? 'dragA' : 'dragB', localToGlobal(lPct));
+        }
+        function onMarkerDragEnd() {
+            isDraggingMarker = false; dragTarget = null;
+            window.removeEventListener('mousemove', onMarkerDrag);
+            window.removeEventListener('mouseup', onMarkerDragEnd);
+        }
+
+        // --- NAVIGATOR & ZOOM INTERACTION ---
+        function updateNavigatorUI() {
+            const win = document.getElementById('navWindow');
+            win.style.left = (viewStart * 100) + "%";
+            win.style.width = (viewWidth * 100) + "%";
+
+            // Force redraw timeline if paused
+            updateMainTimelineVisuals((globalCurrentTime / globalDuration) * 100, currentPosA, currentPosB);
+        }
+
+        function setupNavigatorInteraction() {
+            const navBox = document.getElementById('navBox');
+            const navWin = document.getElementById('navWindow');
+
+            // Scroll Wheel to Zoom
+            navBox.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.05;
+                let delta = e.deltaY > 0 ? zoomSpeed : -zoomSpeed;
+
+                // Focus zoom on center of current view
+                let center = viewStart + (viewWidth / 2);
+                let newWidth = viewWidth + delta;
+
+                // Clamp Width (Min 5%, Max 100%)
+                if (newWidth < 0.05) newWidth = 0.05;
+                if (newWidth > 1.0) newWidth = 1.0;
+
+                // Adjust Start to keep center
+                let newStart = center - (newWidth / 2);
+                if (newStart < 0) newStart = 0;
+                if (newStart + newWidth > 1) newStart = 1 - newWidth;
+
+                viewWidth = newWidth;
+                viewStart = newStart;
+                updateNavigatorUI();
+            });
+
+            // Drag to Pan Window
+            let isNavDrag = false;
+            let startX, startViewStart;
+
+            navWin.addEventListener('mousedown', (e) => {
+                isNavDrag = true;
+                startX = e.clientX;
+                startViewStart = viewStart;
+                window.addEventListener('mousemove', onNavMove);
+                window.addEventListener('mouseup', () => {
+                    isNavDrag = false;
+                    window.removeEventListener('mousemove', onNavMove);
+                });
+            });
+
+            function onNavMove(e) {
+                if (!isNavDrag) return;
+                const box = navBox.getBoundingClientRect();
+                const deltaPx = e.clientX - startX;
+                const deltaPct = deltaPx / box.width;
+
+                let newStart = startViewStart + deltaPct;
+                // Clamp
+                if (newStart < 0) newStart = 0;
+                if (newStart + viewWidth > 1) newStart = 1 - viewWidth;
+
+                viewStart = newStart;
+                updateNavigatorUI();
+            }
+        }
+
+        // --- JOYSTICK LOGIC ---
+        function setupJoystick() {
+            const pad = document.getElementById('joyPad');
+            const stick = document.getElementById('joyStick');
+
+            pad.addEventListener('mousedown', startJoy);
+
+            function startJoy(e) {
+                joyActive = true;
+                moveJoy(e);
+                window.addEventListener('mousemove', moveJoy);
+                window.addEventListener('mouseup', endJoy);
+            }
+
+            function moveJoy(e) {
+                if (!joyActive) return;
+                const rect = pad.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let dx = e.clientX - centerX;
+                let dy = e.clientY - centerY;
+
+                // Distance cap (radius 50px minus stick radius 20px = 30px movement)
+                const maxDist = 30;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > maxDist) {
+                    const ratio = maxDist / dist;
+                    dx *= ratio;
+                    dy *= ratio;
+                }
+
+                // Move Stick Visual
+                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+                // Map to -50 to 50 Value
+                joyX = (dx / maxDist) * 50;
+                joyY = (dy / maxDist) * 50;
+
+                updateTransform();
+            }
+
+            function endJoy() {
+                joyActive = false;
+                window.removeEventListener('mousemove', moveJoy);
+                window.removeEventListener('mouseup', endJoy);
+                // Keep stick position? Or reset?
+                // User said "Like a Joystick". Usually letting go stops movement, 
+                // but for Pan & Scan, we usually want it to stay.
+                // Visual reset helps show it's "Zeroed" relative to the finger, 
+                // but let's keep the stick at the offset to show current Pan state visually?
+                // Actually, let's keep visual synced to Value.
+            }
+        }
+
+        // --- COMMANDS ---
+        function sendCmd(act, val = null) { channel.postMessage({ type: 'cmd', act, val }); }
+
+        function varAction() {
+            sendCmd('var');
+            document.getElementById('speedRange').value = 0.5;
+            document.getElementById('speedVal').innerText = "0.5x";
+        }
+
+        function updateSpeed(val) {
+            document.getElementById('speedVal').innerText = val + "x";
+            sendCmd('speed', val);
+        }
+
+        function updateTransform() {
+            const z = document.getElementById('zoomRange').value;
+            document.getElementById('zoomVal').innerText = z + "x";
+            sendCmd('transform', { z, x: joyX, y: joyY });
+        }
+        function resetZoom() { resetZoomUI(); sendCmd('transform', { z: 1, x: 0, y: 0 }); }
+        function resetZoomUI() {
+            document.getElementById('zoomRange').value = 1.0;
+            document.getElementById('zoomVal').innerText = "1.0x";
+            joyX = 0; joyY = 0;
+            document.getElementById('joyStick').style.transform = `translate(-50%, -50%)`;
+        }
+
+        // ==========================================
+        // 📺 SCREEN LOGIC (OBS)
+        // ==========================================
+        function initScreen() {
+            video.muted = true;
+            channel.onmessage = e => {
+                const msg = e.data;
+                if (msg.type === 'file') {
+                    const blob = new Blob([msg.data], { type: msg.mime });
+                    video.src = URL.createObjectURL(blob);
+                    loopA = null; loopB = null; resetVideoTransform();
+                    video.loop = true;
+                    video.playbackRate = 1.0; video.play();
+                }
+                if (msg.type === 'cmd') {
+                    switch (msg.act) {
+                        case 'play': video.play(); break;
+                        case 'pause': video.pause(); break;
+                        case 'speed': video.playbackRate = msg.val; break;
+                        case 'seekPct': if (video.duration) video.currentTime = (msg.val / 100) * video.duration; break;
+                        case 'setA': loopA = video.currentTime; break;
+                        case 'setB': loopB = video.currentTime; if (loopB < loopA) { let t = loopA; loopA = loopB; loopB = t; } if (loopA) video.currentTime = loopA; break;
+
+                        case 'dragA': if (video.duration) loopA = (msg.val / 100) * video.duration; break;
+                        case 'dragB': if (video.duration) loopB = (msg.val / 100) * video.duration; break;
+
+                        case 'clearLoop': loopA = null; loopB = null; break;
+                        case 'var': if (video.duration) { video.currentTime = Math.max(0, video.currentTime - 5); video.playbackRate = 0.5; video.play(); } break;
+                        case 'transform': applyTransform(msg.val); break;
+                    }
+                }
+            };
+
+            video.ontimeupdate = () => {
+                if (!video.duration) return;
+                // A-B Loop Logic
+                if (loopA != null && loopB != null) {
+                    let start = Math.min(loopA, loopB);
+                    let end = Math.max(loopA, loopB);
+                    if (video.currentTime >= end || video.currentTime < start) {
+                        video.currentTime = start;
+                        if (video.paused) video.play();
+                    }
+                }
+
+                const pct = (video.currentTime / video.duration) * 100;
+                channel.postMessage({
+                    type: 'status', pct: pct,
+                    durSec: video.duration, currSec: video.currentTime,
+                    currFmt: fmt(video.currentTime), totalFmt: fmt(video.duration),
+                    hasA: loopA !== null, hasB: loopB !== null,
+                    posA: loopA ? (loopA / video.duration) * 100 : null,
+                    posB: loopB ? (loopB / video.duration) * 100 : null
+                });
+            };
+        }
+
+        function applyTransform(t) {
+            // Invert Joystick Y because screen Y down is positive, usually joystick up means up.
+            // But CSS Translate Y positive is Down. So Stick Up (negative Y) should move image Down (positive Translate)?
+            // Actually, "Pan" usually means moving the VIEW. If I move view UP, Image goes DOWN.
+            // Let's stick to direct mapping first: Stick Right -> Image Moves Right.
+            video.style.transform = `scale(${t.z}) translate(${t.x}%, ${t.y}%)`;
+        }
+        function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
+        function fmt(s) { let m = Math.floor(s / 60), sc = Math.floor(s % 60); return m + ":" + (sc < 10 ? "0" : "") + sc; }
+
+    </script>
+</body>
+
+</html>
