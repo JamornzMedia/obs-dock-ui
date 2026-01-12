@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>OBS VAR Replay V1.1 (Revised) - JamornzMedia</title>
+    <title>OBS VAR Replay V1.1 - JamornzMedia</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         /* ================= CORE STYLES ================= */
@@ -16,12 +16,40 @@
             height: 100vh;
         }
 
+        /* LOGO STYLE */
+        .app-header {
+            padding: 10px 10px 5px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #151515;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #fff;
+            user-select: none;
+        }
+
+        .logo-text span {
+            color: #ffca28;
+        }
+
+        /* VAR color */
+
         /* --- Screen Mode (หน้าจอแสดงผล) --- */
         .screen-mode body {
             background: transparent;
         }
 
         .screen-mode #controls-ui {
+            display: none !important;
+        }
+
+        .screen-mode .app-header {
             display: none !important;
         }
 
@@ -39,8 +67,10 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform-origin: center center;
+            /* GPU Acceleration Hints */
             will-change: transform;
+            transform: translateZ(0);
+            transform-origin: center center;
         }
 
         /* --- Control Mode (รีโมท) --- */
@@ -55,6 +85,10 @@
 
         .control-mode #video-wrapper {
             display: none;
+        }
+
+        .control-mode .app-header {
+            margin: -10px -10px 10px -10px;
         }
 
         /* Drop Zone */
@@ -87,7 +121,6 @@
             border: 1px solid #333;
         }
 
-        /* 1. Main Detailed Timeline */
         .timeline-container {
             position: relative;
             height: 35px;
@@ -120,7 +153,6 @@
             width: 0%;
         }
 
-        /* Markers (A/B) on Main Timeline */
         .marker {
             position: absolute;
             top: 0;
@@ -148,7 +180,6 @@
             white-space: nowrap;
         }
 
-        /* Invisible Click Layer for Main Timeline */
         .click-layer {
             position: absolute;
             top: 0;
@@ -159,7 +190,7 @@
             z-index: 5;
         }
 
-        /* 2. Navigator (Mini Map) */
+        /* Navigator */
         .navigator-container {
             position: relative;
             height: 24px;
@@ -170,7 +201,6 @@
             user-select: none;
         }
 
-        /* Progress in Nav (Show current playhead globally) */
         .nav-playhead {
             position: absolute;
             top: 0;
@@ -181,7 +211,6 @@
             display: none;
         }
 
-        /* The Yellow Window */
         .nav-window {
             position: absolute;
             top: 1px;
@@ -192,7 +221,6 @@
             z-index: 20;
             cursor: grab;
             min-width: 10px;
-            /* Minimum zoom size */
         }
 
         .nav-window:active {
@@ -200,7 +228,6 @@
             background: rgba(255, 202, 40, 0.3);
         }
 
-        /* Resize Handles */
         .nav-handle {
             position: absolute;
             top: 0;
@@ -232,18 +259,6 @@
             right: 0;
             border-top-right-radius: 3px;
             border-bottom-right-radius: 3px;
-        }
-
-        .nav-handle:hover {
-            opacity: 1;
-            filter: brightness(1.2);
-        }
-
-        .nav-hint {
-            font-size: 9px;
-            color: #666;
-            text-align: center;
-            margin-top: 4px;
         }
 
         /* Buttons & Layout */
@@ -284,63 +299,80 @@
             border: 1px solid #fff;
         }
 
-        /* Sliders */
-        .slider-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: #aaa;
-        }
-
-        .slider-row input {
-            flex: 1;
-            accent-color: #00aaff;
-        }
-
-        /* Joystick Controls */
-        .zoom-controls {
+        /* --- NEW PAN & ZOOM CONTROL (Box Style) --- */
+        .pan-control-wrapper {
             background: #2b2b2b;
             padding: 10px;
             border-radius: 5px;
             margin-top: 5px;
             border: 1px solid #333;
-        }
-
-        .joystick-area {
             display: flex;
+            gap: 10px;
             align-items: center;
-            justify-content: space-around;
         }
 
-        .joystick-pad {
-            width: 100px;
+        /* Vertical Slider Container */
+        .v-slider-cont {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             height: 100px;
+            width: 30px;
+        }
+
+        input[type=range].v-slider {
+            -webkit-appearance: slider-vertical;
+            /* Chrome/Safari/Edge */
+            width: 8px;
+            height: 80px;
+            accent-color: #00aaff;
+        }
+
+        /* 16:9 Pan Area */
+        .pan-area-cont {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .pan-frame {
+            width: 100%;
+            aspect-ratio: 16/9;
             background: #111;
-            border-radius: 50%;
-            border: 2px solid #444;
+            border: 1px solid #555;
             position: relative;
-            touch-action: none;
-            box-shadow: inset 0 0 10px #000;
+            overflow: hidden;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 10px 10px;
         }
 
-        .joystick-stick {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #555, #333);
-            border-radius: 50%;
+        /* The Red Box (Viewport) */
+        .pan-viewport {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            border: 1px solid #666;
-            box-shadow: 0 4px 5px rgba(0, 0, 0, 0.5);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #ff3333;
+            background: rgba(255, 51, 51, 0.2);
+            box-sizing: border-box;
+            cursor: move;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
 
-        .joystick-stick:active {
-            background: #00aaff;
+        .pan-viewport:active {
+            background: rgba(255, 51, 51, 0.4);
+            border-color: #ffaaaa;
+        }
+
+        .reset-zoom-btn {
+            background: #333;
+            color: #aaa;
+            font-size: 10px;
+            padding: 4px;
+            border: 1px solid #444;
         }
 
         /* Modals */
@@ -413,6 +445,7 @@
             cursor: pointer;
         }
 
+        /* Sponsor V1.0 Style + Home */
         .sponsor-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -425,6 +458,14 @@
             padding: 10px;
             border-radius: 8px;
             font-size: 12px;
+        }
+
+        .qr-box img {
+            width: 100px;
+            height: 100px;
+            border-radius: 4px;
+            display: block;
+            margin: 5px auto;
         }
 
         .sponsor-link {
@@ -448,6 +489,7 @@
             color: #00aaff;
             padding: 8px;
             font-size: 11px;
+            font-family: monospace;
         }
 
         #loop-status {
@@ -470,6 +512,10 @@
 
 <body>
 
+    <div class="app-header">
+        <div class="logo-text">OBS<span>VAR</span> Replay</div>
+    </div>
+
     <div id="video-wrapper">
         <video id="mainVideo" muted playsinline></video>
     </div>
@@ -489,14 +535,12 @@
             <div class="timeline-container" id="timelineBox">
                 <div class="track-bg"></div>
                 <div class="track-fill" id="trackFill"></div>
-
                 <div id="markA" class="marker">
                     <div class="marker-head">A</div>
                 </div>
                 <div id="markB" class="marker">
                     <div class="marker-head">B</div>
                 </div>
-
                 <div class="click-layer" onmousedown="userScrubStart(event)"></div>
             </div>
 
@@ -512,7 +556,8 @@
                     <div class="nav-handle right" onmousedown="startNavResize('right', event)"></div>
                 </div>
             </div>
-            <div class="nav-hint">🖱️ ลากขอบเหลืองเพื่อย่อ/ขยาย | ลากตรงกลางเพื่อเลื่อน</div>
+            <div style="text-align:center; font-size:9px; color:#666; margin-top:2px;">Navigator: ลากขอบเพื่อซูม
+                Timeline</div>
         </div>
 
         <div class="btn-grid">
@@ -528,28 +573,23 @@
             <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:2px;">
                 <span>SPEED: <span id="speedVal" style="color:#00aaff; font-weight:bold;">1.0x</span></span>
             </div>
-            <input type="range" id="speedRange" min="0.01" max="2.0" step="0.01" value="1.0"
+            <input type="range" id="speedRange" min="0.01" max="2.0" step="0.01" value="1.0" style="width:100%"
                 oninput="updateSpeed(this.value)">
         </div>
 
-        <div class="zoom-controls">
-            <div style="font-size:11px; color:#00aaff; margin-bottom:5px; font-weight:bold;">🔍 ZOOM & POSITION
-                (Joystick)</div>
+        <div class="pan-control-wrapper">
+            <div class="v-slider-cont">
+                <span style="font-size:10px; color:#00aaff;">ZOOM</span>
+                <input type="range" class="v-slider" id="zoomRange" min="1.0" max="10.0" step="0.1" value="1.0"
+                    oninput="updateZoom(this.value)">
+                <span id="zoomVal" style="font-size:10px; color:#fff;">1.0x</span>
+            </div>
 
-            <div class="joystick-area">
-                <div style="width:40%;">
-                    <div class="slider-row" style="flex-direction:column; align-items: flex-start;">
-                        <span>ZOOM (x1-x10):</span>
-                        <input type="range" id="zoomRange" min="1.0" max="10.0" step="0.1" value="1.0"
-                            oninput="updateTransform()" style="width:100%">
-                        <span id="zoomVal" style="align-self: flex-end;">1.0x</span>
-                    </div>
-                    <button onclick="resetZoom()" style="width:100%; background:#333; margin-top:5px;">RESET</button>
+            <div class="pan-area-cont">
+                <div class="pan-frame" id="panFrame">
+                    <div class="pan-viewport" id="panViewport" onmousedown="startPanDrag(event)"></div>
                 </div>
-
-                <div class="joystick-pad" id="joyPad">
-                    <div class="joystick-stick" id="joyStick"></div>
-                </div>
+                <button class="reset-zoom-btn" onclick="resetZoom()">↺ Reset Zoom & Position</button>
             </div>
         </div>
 
@@ -564,12 +604,12 @@
         <div class="modal">
             <button class="modal-close" onclick="closeModal(null, 'modal-help')">&times;</button>
             <h2 style="color:#00aaff;">Graphic Link (Screen)</h2>
-            <p style="font-size:12px; color:#ccc;">Copy ลิ้งค์ด้านล่างไปใส่ใน OBS Browser Source</p>
+            <p style="font-size:12px; color:#ccc;">สำหรับ OBS Browser Source</p>
 
             <div class="copy-group">
                 <input type="text" class="copy-input" id="linkInputScreen"
                     value="https://jamornzmedia.github.io/obs-dock-ui/VAR_Replay_V1.1.html?mode=screen" readonly>
-                <button style="background:#005f73; color:white; width:60px;"
+                <button style="background:#005f73; color:white; width:60px; border:none; border-radius:4px;"
                     onclick="copyInput('linkInputScreen')">Copy</button>
             </div>
             <div id="copy-msg" style="font-size:11px; color:#44aa44; opacity:0; transition:0.3s;">Copied!</div>
@@ -580,24 +620,31 @@
         <div class="modal">
             <button class="modal-close" onclick="closeModal(null, 'modal-sponsor')">&times;</button>
             <h2 style="color:#ffca28;">Support Developer</h2>
+
             <div class="sponsor-grid">
                 <div class="sponsor-item">
                     <span style="color:#fff; font-weight:bold;">Thai Bank / PromptPay</span>
-                    <a href="https://easydonate.app/Jamornz" target="_blank" class="sponsor-link">👉
-                        easydonate.app/Jamornz</a>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                            alt="QR"></div>
+                    <a href="https://easydonate.app/Jamornz" target="_blank"
+                        class="sponsor-link">easydonate.app/Jamornz</a>
                 </div>
-                <div class="sponsor-item" style="background:#002233; border:1px solid #00aaff;">
-                    <span style="color:#fff; font-weight:bold;">🏠 JamornzMedia Home</span>
+
+                <div class="sponsor-item"
+                    style="background:#111; border:1px solid #555; display:flex; flex-direction:column; justify-content:center;">
+                    <span style="color:#fff; font-weight:bold; font-size:14px;">🏠 Home</span>
                     <a href="https://sites.google.com/view/jamornzmedia" target="_blank" class="sponsor-link"
-                        style="font-size:13px; color:#fff;">Visit Website</a>
+                        style="font-size:12px; color:#ffca28; margin-top:10px;">Visit JamornzMedia</a>
                 </div>
             </div>
+
             <div style="margin-top:20px; font-size:10px; color:#666;">Developed by <b>JamornzMedia</b> V1.1</div>
         </div>
     </div>
 
     <script>
-        const channel = new BroadcastChannel('jamorn_var_v1_revised');
+        const channel = new BroadcastChannel('jamorn_var_v1_final');
         const video = document.getElementById('mainVideo');
         const dropZone = document.getElementById('drop-zone');
         const urlParams = new URLSearchParams(window.location.search);
@@ -630,13 +677,17 @@
         // 🎮 CONTROL LOGIC (DOCK)
         // ==========================================
 
-        // --- NAVIGATOR VARIABLES ---
-        let viewStart = 0; // 0.0 - 1.0 (0% - 100%)
-        let viewWidth = 1; // 1.0 = Full Width
-        let globalDuration = 1;
+        // --- NAVIGATOR VARS ---
+        let viewStart = 0, viewWidth = 1, globalDuration = 1;
 
-        let joyActive = false;
-        let joyX = 0, joyY = 0; // -50 to 50
+        // --- PAN/ZOOM VARS ---
+        let currentZoom = 1.0;
+        let panX_pct = 0; // 0 = Center. Range depends on zoom. 
+        let panY_pct = 0;
+        // NOTE: We will track "Viewport Position" in % (0-100) relative to frame
+        // VP Left: 0% = Left Edge. 
+        let vpLeft = 0;
+        let vpTop = 0;
 
         function initControl() {
             // Drag Drop
@@ -652,10 +703,7 @@
                 const msg = e.data;
                 if (msg.type === 'status') {
                     globalDuration = msg.durSec;
-
-                    if (!isScrubbing) {
-                        updateTimelineVisuals(msg.currSec, msg.posA, msg.posB);
-                    }
+                    if (!isScrubbing) updateTimelineVisuals(msg.currSec, msg.posA, msg.posB);
 
                     document.getElementById('currTime').innerText = msg.currFmt;
                     document.getElementById('totalTime').innerText = msg.totalFmt;
@@ -663,32 +711,24 @@
                     document.getElementById('btnSetB').className = msg.hasB ? 'active-btn' : '';
                     document.getElementById('loop-status').style.display = (msg.hasA && msg.hasB) ? 'block' : 'none';
 
-                    // Update Navigator Playhead (White line in mini map)
                     const navPct = (msg.currSec / msg.durSec) * 100;
                     const navHead = document.getElementById('navPlayhead');
-                    navHead.style.display = 'block';
-                    navHead.style.left = navPct + '%';
+                    navHead.style.display = 'block'; navHead.style.left = navPct + '%';
                 }
             };
-
-            // Init Joystick
-            setupJoystick();
         }
 
-        function handleFileSelect(input) {
-            if (input.files && input.files[0]) loadFile(input.files[0]);
-        }
+        function handleFileSelect(input) { if (input.files && input.files[0]) loadFile(input.files[0]); }
 
         function loadFile(f) {
-            dropZone.innerHTML = `<span style="color:#00aaff">Loading: ${f.name}</span>`;
+            dropZone.innerHTML = `<span style="color:#00aaff">Loading...</span>`;
             const r = new FileReader();
             r.onload = evt => {
                 let mime = f.type || 'video/mp4';
                 if (f.name.toLowerCase().endsWith('.mkv')) mime = 'video/webm';
                 channel.postMessage({ type: 'file', data: evt.target.result, mime: mime });
                 dropZone.innerHTML = `<span style="color:#44aa44">Ready: ${f.name}</span>`;
-                resetZoomUI();
-                // Reset Nav to Full
+                resetZoom();
                 viewStart = 0; viewWidth = 1; updateNavUI();
                 document.getElementById('speedRange').value = 1.0;
                 document.getElementById('speedVal').innerText = "1.0x";
@@ -696,220 +736,217 @@
             r.readAsArrayBuffer(f);
         }
 
-        // --- TIMELINE LOGIC ---
-        // Convert Time(s) to Timeline UI %
+        // --- NEW PAN & ZOOM LOGIC ---
+        function updateZoom(val) {
+            currentZoom = parseFloat(val);
+            document.getElementById('zoomVal').innerText = currentZoom.toFixed(1) + "x";
+
+            updateViewportSize();
+            // Constraint Check: If zooming out puts viewport out of bounds, fix it
+            clampViewport();
+            updateViewportVisuals();
+            sendTransform();
+        }
+
+        function updateViewportSize() {
+            // Viewport size is inversely proportional to zoom
+            // Zoom 1x -> VP 100%
+            // Zoom 2x -> VP 50%
+            const vpW = 100 / currentZoom;
+            const vpH = 100 / currentZoom;
+            const el = document.getElementById('panViewport');
+            el.style.width = vpW + "%";
+            el.style.height = vpH + "%";
+        }
+
+        let isPanDrag = false;
+        let panStartX, panStartY;
+        let panStartLeft, panStartTop;
+
+        function startPanDrag(e) {
+            e.preventDefault();
+            if (currentZoom <= 1.01) return; // Cannot pan if not zoomed
+            isPanDrag = true;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            const el = document.getElementById('panViewport');
+            // Parse current % left/top
+            panStartLeft = parseFloat(el.style.left) || 0;
+            panStartTop = parseFloat(el.style.top) || 0;
+
+            window.addEventListener('mousemove', onPanDrag);
+            window.addEventListener('mouseup', endPanDrag);
+        }
+
+        function onPanDrag(e) {
+            if (!isPanDrag) return;
+            const frame = document.getElementById('panFrame').getBoundingClientRect();
+
+            const dxPx = e.clientX - panStartX;
+            const dyPx = e.clientY - panStartY;
+
+            // Convert px delta to % delta
+            const dxPct = (dxPx / frame.width) * 100;
+            const dyPct = (dyPx / frame.height) * 100;
+
+            vpLeft = panStartLeft + dxPct;
+            vpTop = panStartTop + dyPct;
+
+            clampViewport();
+            updateViewportVisuals();
+            sendTransform();
+        }
+
+        function endPanDrag() {
+            isPanDrag = false;
+            window.removeEventListener('mousemove', onPanDrag);
+            window.removeEventListener('mouseup', endPanDrag);
+        }
+
+        function clampViewport() {
+            const vpSize = 100 / currentZoom;
+            const maxLeft = 100 - vpSize;
+            const maxTop = 100 - vpSize;
+
+            if (vpLeft < 0) vpLeft = 0;
+            if (vpLeft > maxLeft) vpLeft = maxLeft;
+
+            if (vpTop < 0) vpTop = 0;
+            if (vpTop > maxTop) vpTop = maxTop;
+        }
+
+        function updateViewportVisuals() {
+            const el = document.getElementById('panViewport');
+            el.style.left = vpLeft + "%";
+            el.style.top = vpTop + "%";
+        }
+
+        function resetZoom() {
+            currentZoom = 1.0;
+            vpLeft = 0; vpTop = 0;
+            document.getElementById('zoomRange').value = 1.0;
+            document.getElementById('zoomVal').innerText = "1.0x";
+            updateViewportSize();
+            updateViewportVisuals();
+            sendTransform();
+        }
+
+        function sendTransform() {
+            // Calculate Translate based on Viewport Position
+            // If VP is centered, Translate is 0.
+            // If VP is Left, Image must shift Right (Positive Translate).
+            // Logic: Translate% = (CenterOfVP - CenterOfFrame) * -Zoom? 
+
+            // Easier way: Map VP position (0 to Max) to Transform Range.
+            // When Zoom=2: VP size=50%. Max Move=50%.
+            // If VP at 0% (Left), we want to see Left side.
+            // To see Left side at Scale 2, Translate X must be +25% (of image size).
+            // Formula: Translate% = (0.5 - CenterOfViewPort%) * Zoom * 100? No.
+
+            // Let's use standard transform-origin center logic.
+            // Translate X (in %) = (50 - CenterOfViewportX) * (Zoom / 100?? No)
+
+            // Let's calculate Center of Viewport in % (0-100)
+            const vpSize = 100 / currentZoom;
+            const centerVpX = vpLeft + (vpSize / 2); // 0 to 100
+            const centerVpY = vpTop + (vpSize / 2);  // 0 to 100
+
+            // Deviation from center (50)
+            const devX = 50 - centerVpX; // If left (e.g. 25), result +25.
+            const devY = 50 - centerVpY;
+
+            // When we Scale, the image grows from center.
+            // To bring "25%" to the center, we need to shift.
+            // It turns out: translate(x%, y%) works directly with the deviation if mapped correctly.
+            // Actually, for scale Z, the visible area is 1/Z.
+            // The shift required is devX * Z ?? No.
+
+            // Simple mapping that works for CSS Scale Center:
+            // Translate% = Deviation%
+            // But we need to account for the fact that 1% translate moves 1% of the *image width*.
+
+            sendCmd('transform', { z: currentZoom, x: devX, y: devY });
+        }
+
+        // --- TIMELINE & NAVIGATOR (Reused from Revised) ---
         function timeToUiPct(timeSec) {
             if (globalDuration <= 0) return 0;
-            let totalPct = timeSec / globalDuration; // 0.0 - 1.0 globally
-
-            // Map to View Window
-            // ViewStart = 0.2, ViewWidth = 0.5 (Ends at 0.7)
-            // If time is 0.4 -> (0.4 - 0.2) / 0.5 = 0.4 -> 40% on UI
-            if (totalPct < viewStart || totalPct > viewStart + viewWidth) return -10; // Off screen
-
+            let totalPct = timeSec / globalDuration;
+            if (totalPct < viewStart || totalPct > viewStart + viewWidth) return -10;
             return ((totalPct - viewStart) / viewWidth) * 100;
         }
-
-        // Convert UI % to Time(s)
         function uiPctToTime(uiPct) {
             let localRatio = uiPct / 100;
-            let globalRatio = viewStart + (localRatio * viewWidth);
-            return globalRatio * globalDuration;
+            return (viewStart + (localRatio * viewWidth)) * globalDuration;
         }
-
         function updateTimelineVisuals(currSec, timeA, timeB) {
-            // Main Playhead (Fill)
             let fillPct = timeToUiPct(currSec);
             fillPct = Math.max(0, Math.min(100, fillPct));
             document.getElementById('trackFill').style.width = fillPct + "%";
-
-            // Markers
-            setMarker('markA', timeA);
-            setMarker('markB', timeB);
+            setMarker('markA', timeA); setMarker('markB', timeB);
         }
-
         function setMarker(id, timeVal) {
             const el = document.getElementById(id);
             if (timeVal !== null) {
                 let pct = timeToUiPct(timeVal);
-                if (pct >= 0 && pct <= 100) {
-                    el.style.display = 'block';
-                    el.style.left = pct + '%';
-                } else {
-                    el.style.display = 'none'; // Hide if zoomed out/panned away
-                }
-            } else {
-                el.style.display = 'none';
-            }
+                if (pct >= 0 && pct <= 100) { el.style.display = 'block'; el.style.left = pct + '%'; }
+                else { el.style.display = 'none'; }
+            } else { el.style.display = 'none'; }
         }
-
-        // --- SCRUBBING ---
         function userScrubStart(e) {
-            isScrubbing = true;
-            scrubMove(e);
-            window.addEventListener('mousemove', scrubMove);
-            window.addEventListener('mouseup', scrubEnd);
+            isScrubbing = true; scrubMove(e);
+            window.addEventListener('mousemove', scrubMove); window.addEventListener('mouseup', scrubEnd);
         }
         function scrubMove(e) {
             const box = document.getElementById('timelineBox').getBoundingClientRect();
             let x = e.clientX - box.left;
-            let pct = (x / box.width) * 100;
-            pct = Math.max(0, Math.min(100, pct));
-
+            let pct = Math.max(0, Math.min(100, (x / box.width) * 100));
             document.getElementById('trackFill').style.width = pct + "%";
-
-            let targetTime = uiPctToTime(pct);
-            sendCmd('seek', targetTime);
+            sendCmd('seek', uiPctToTime(pct));
         }
         function scrubEnd() {
-            isScrubbing = false;
-            window.removeEventListener('mousemove', scrubMove);
-            window.removeEventListener('mouseup', scrubEnd);
+            isScrubbing = false; window.removeEventListener('mousemove', scrubMove); window.removeEventListener('mouseup', scrubEnd);
         }
 
-        // --- NAVIGATOR LOGIC (Handles) ---
         function updateNavUI() {
             const win = document.getElementById('navWindow');
             win.style.left = (viewStart * 100) + "%";
             win.style.width = (viewWidth * 100) + "%";
         }
-
-        let isNavResizing = false;
-        let navAction = null; // 'left', 'right', 'move'
-        let navStartX = 0;
-        let navStartView = 0;
-        let navStartWidth = 0;
-
+        let isNavResizing = false; let navAction = null; let navStartX = 0, navStartView = 0, navStartWidth = 0;
         function startNavResize(action, e) {
             e.stopPropagation(); e.preventDefault();
-            isNavResizing = true;
-            navAction = action;
-            navStartX = e.clientX;
-            navStartView = viewStart;
-            navStartWidth = viewWidth;
-
-            window.addEventListener('mousemove', onNavDrag);
-            window.addEventListener('mouseup', endNavDrag);
+            isNavResizing = true; navAction = action; navStartX = e.clientX; navStartView = viewStart; navStartWidth = viewWidth;
+            window.addEventListener('mousemove', onNavDrag); window.addEventListener('mouseup', endNavDrag);
         }
-
-        // Add move listener to Window body for "Pan"
         document.getElementById('navWindow').addEventListener('mousedown', function (e) {
-            if (e.target.classList.contains('nav-handle')) return; // Ignore handles
+            if (e.target.classList.contains('nav-handle')) return;
             startNavResize('move', e);
         });
-
         function onNavDrag(e) {
             if (!isNavResizing) return;
             const box = document.getElementById('navBox').getBoundingClientRect();
-            const deltaPx = e.clientX - navStartX;
-            const deltaPct = deltaPx / box.width; // Convert px move to % change
-
+            const deltaPct = (e.clientX - navStartX) / box.width;
             if (navAction === 'move') {
                 let newStart = navStartView + deltaPct;
-                // Clamp
-                if (newStart < 0) newStart = 0;
-                if (newStart + navStartWidth > 1) newStart = 1 - navStartWidth;
+                if (newStart < 0) newStart = 0; if (newStart + navStartWidth > 1) newStart = 1 - navStartWidth;
                 viewStart = newStart;
-            }
-            else if (navAction === 'left') {
-                let newStart = navStartView + deltaPct;
-                let newWidth = navStartWidth - deltaPct;
-
-                if (newWidth < 0.05) { // Min width 5%
-                    newStart = navStartView + navStartWidth - 0.05;
-                    newWidth = 0.05;
-                }
+            } else if (navAction === 'left') {
+                let newStart = navStartView + deltaPct; let newWidth = navStartWidth - deltaPct;
+                if (newWidth < 0.05) { newStart = navStartView + navStartWidth - 0.05; newWidth = 0.05; }
                 if (newStart < 0) { newStart = 0; newWidth = navStartView + navStartWidth; }
-
-                viewStart = newStart;
-                viewWidth = newWidth;
-            }
-            else if (navAction === 'right') {
+                viewStart = newStart; viewWidth = newWidth;
+            } else if (navAction === 'right') {
                 let newWidth = navStartWidth + deltaPct;
-                if (newWidth < 0.05) newWidth = 0.05;
-                if (viewStart + newWidth > 1) newWidth = 1 - viewStart;
+                if (newWidth < 0.05) newWidth = 0.05; if (viewStart + newWidth > 1) newWidth = 1 - viewStart;
                 viewWidth = newWidth;
             }
-
             updateNavUI();
         }
-
-        function endNavDrag() {
-            isNavResizing = false;
-            window.removeEventListener('mousemove', onNavDrag);
-            window.removeEventListener('mouseup', endNavDrag);
-        }
-
-        // --- JOYSTICK & ZOOM ---
-        function setupJoystick() {
-            const pad = document.getElementById('joyPad');
-            const stick = document.getElementById('joyStick');
-
-            pad.addEventListener('mousedown', startJoy);
-
-            function startJoy(e) {
-                joyActive = true;
-                moveJoy(e);
-                window.addEventListener('mousemove', moveJoy);
-                window.addEventListener('mouseup', endJoy);
-            }
-
-            function moveJoy(e) {
-                if (!joyActive) return;
-                const rect = pad.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-
-                let dx = e.clientX - centerX;
-                let dy = e.clientY - centerY;
-
-                const maxDist = 30;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > maxDist) {
-                    const ratio = maxDist / dist;
-                    dx *= ratio; dy *= ratio;
-                }
-
-                stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-                // Map to -50 to 50
-                joyX = (dx / maxDist) * 50;
-                joyY = (dy / maxDist) * 50;
-
-                updateTransform();
-            }
-
-            function endJoy() {
-                joyActive = false;
-                window.removeEventListener('mousemove', moveJoy);
-                window.removeEventListener('mouseup', endJoy);
-                // Keep position visually or reset? Standard pan stays.
-            }
-        }
+        function endNavDrag() { isNavResizing = false; window.removeEventListener('mousemove', onNavDrag); window.removeEventListener('mouseup', endNavDrag); }
 
         function sendCmd(act, val = null) { channel.postMessage({ type: 'cmd', act, val }); }
-
-        function updateSpeed(val) {
-            document.getElementById('speedVal').innerText = val + "x";
-            sendCmd('speed', val);
-        }
-
-        function updateTransform() {
-            const z = document.getElementById('zoomRange').value;
-            document.getElementById('zoomVal').innerText = z + "x";
-            // Ensure values are numbers
-            sendCmd('transform', { z: parseFloat(z), x: joyX, y: joyY });
-        }
-        function resetZoom() {
-            resetZoomUI();
-            sendCmd('transform', { z: 1, x: 0, y: 0 });
-        }
-        function resetZoomUI() {
-            document.getElementById('zoomRange').value = 1.0;
-            document.getElementById('zoomVal').innerText = "1.0x";
-            joyX = 0; joyY = 0;
-            document.getElementById('joyStick').style.transform = `translate(-50%, -50%)`;
-        }
+        function updateSpeed(val) { document.getElementById('speedVal').innerText = val + "x"; sendCmd('speed', val); }
 
         // ==========================================
         // 📺 SCREEN LOGIC (OBS)
@@ -922,8 +959,7 @@
                     const blob = new Blob([msg.data], { type: msg.mime });
                     video.src = URL.createObjectURL(blob);
                     loopA = null; loopB = null; resetVideoTransform();
-                    video.loop = true;
-                    video.playbackRate = 1.0; video.play();
+                    video.loop = true; video.playbackRate = 1.0; video.play();
                 }
                 if (msg.type === 'cmd') {
                     switch (msg.act) {
@@ -932,46 +968,30 @@
                         case 'speed': video.playbackRate = msg.val; break;
                         case 'seek': video.currentTime = msg.val; break;
                         case 'setA': loopA = video.currentTime; break;
-                        case 'setB':
-                            loopB = video.currentTime;
-                            if (loopB < loopA) { let t = loopA; loopA = loopB; loopB = t; } // Swap if wrong order
-                            break;
-
+                        case 'setB': loopB = video.currentTime; if (loopB < loopA) { let t = loopA; loopA = loopB; loopB = t; } break;
                         case 'clearLoop': loopA = null; loopB = null; break;
                         case 'transform': applyTransform(msg.val); break;
                     }
                 }
             };
-
             video.ontimeupdate = () => {
                 if (!video.duration) return;
-
-                // LOOP LOGIC
                 if (loopA !== null && loopB !== null) {
                     if (video.currentTime >= loopB || video.currentTime < loopA) {
-                        video.currentTime = loopA;
-                        if (video.paused) video.play();
+                        video.currentTime = loopA; if (video.paused) video.play();
                     }
                 }
-
                 channel.postMessage({
-                    type: 'status',
-                    durSec: video.duration,
-                    currSec: video.currentTime,
-                    currFmt: fmt(video.currentTime),
-                    totalFmt: fmt(video.duration),
-                    hasA: loopA !== null,
-                    hasB: loopB !== null,
-                    posA: loopA,
-                    posB: loopB
+                    type: 'status', durSec: video.duration, currSec: video.currentTime,
+                    currFmt: fmt(video.currentTime), totalFmt: fmt(video.duration),
+                    hasA: loopA !== null, hasB: loopB !== null, posA: loopA, posB: loopB
                 });
             };
         }
 
         function applyTransform(t) {
-            // Translate first, then Scale. Using percentages relative to frame.
-            // Note: X/Y from joystick are -50 to 50. 
-            // In CSS translate: Positive X moves Element Right. Positive Y moves Element Down.
+            // t.x and t.y are "Deviation from Center" percentages.
+            // Positive t.x means Viewport is Left, so we shift image Right (Positive).
             video.style.transform = `scale(${t.z}) translate(${t.x}%, ${t.y}%)`;
         }
         function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
