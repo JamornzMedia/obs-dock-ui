@@ -16,29 +16,38 @@
             height: 100vh;
         }
 
-        /* LOGO STYLE */
+        /* LOGO STYLE (From OBSCam) */
         .app-header {
             padding: 10px 10px 5px 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             background: #151515;
             border-bottom: 1px solid #333;
         }
 
-        .logo-text {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #fff;
+        .logo-header-main {
+            font-size: 1.5rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: -webkit-linear-gradient(#fff, #999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             user-select: none;
         }
 
-        .logo-text span {
-            color: #ffca28;
+        .logo-header-sub {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: -2px;
+            user-select: none;
         }
-
-        /* VAR color */
 
         /* --- Screen Mode (หน้าจอแสดงผล) --- */
         .screen-mode body {
@@ -67,7 +76,6 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            /* GPU Acceleration Hints */
             will-change: transform;
             transform: translateZ(0);
             transform-origin: center center;
@@ -153,15 +161,31 @@
             width: 0%;
         }
 
+        /* Draggable Markers */
         .marker {
             position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 16px;
+            /* Hit area wider */
+            transform: translateX(-50%);
+            z-index: 20;
+            display: none;
+            cursor: ew-resize;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        /* The Visual Line */
+        .marker::before {
+            content: '';
+            position: absolute;
+            left: 50%;
             top: 0;
             bottom: 0;
             width: 2px;
             background: #ff3333;
             transform: translateX(-50%);
-            z-index: 10;
-            display: none;
             pointer-events: none;
             box-shadow: 0 0 5px rgba(255, 50, 50, 0.8);
         }
@@ -178,6 +202,18 @@
             padding: 2px 4px;
             border-radius: 2px;
             white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .marker:hover::before,
+        .marker.dragging::before {
+            background: #ffaaaa;
+            width: 3px;
+        }
+
+        .marker:hover .marker-head,
+        .marker.dragging .marker-head {
+            background: #ffaaaa;
         }
 
         .click-layer {
@@ -299,7 +335,7 @@
             border: 1px solid #fff;
         }
 
-        /* --- NEW PAN & ZOOM CONTROL (Box Style) --- */
+        /* --- PAN & ZOOM CONTROL (Box Style) --- */
         .pan-control-wrapper {
             background: #2b2b2b;
             padding: 10px;
@@ -311,7 +347,6 @@
             align-items: center;
         }
 
-        /* Vertical Slider Container */
         .v-slider-cont {
             display: flex;
             flex-direction: column;
@@ -323,13 +358,11 @@
 
         input[type=range].v-slider {
             -webkit-appearance: slider-vertical;
-            /* Chrome/Safari/Edge */
             width: 8px;
             height: 80px;
             accent-color: #00aaff;
         }
 
-        /* 16:9 Pan Area */
         .pan-area-cont {
             flex: 1;
             display: flex;
@@ -348,7 +381,6 @@
             background-size: 10px 10px;
         }
 
-        /* The Red Box (Viewport) */
         .pan-viewport {
             position: absolute;
             top: 0;
@@ -445,7 +477,7 @@
             cursor: pointer;
         }
 
-        /* Sponsor V1.0 Style + Home */
+        /* Sponsor & Home */
         .sponsor-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -513,7 +545,8 @@
 <body>
 
     <div class="app-header">
-        <div class="logo-text">OBS<span>VAR</span> Replay</div>
+        <div class="logo-header-main">OBS VAR REPLAY</div>
+        <div class="logo-header-sub">CONTROL CENTER</div>
     </div>
 
     <div id="video-wrapper">
@@ -535,10 +568,10 @@
             <div class="timeline-container" id="timelineBox">
                 <div class="track-bg"></div>
                 <div class="track-fill" id="trackFill"></div>
-                <div id="markA" class="marker">
+                <div id="markA" class="marker" onmousedown="startMarkerDrag('A', event)">
                     <div class="marker-head">A</div>
                 </div>
-                <div id="markB" class="marker">
+                <div id="markB" class="marker" onmousedown="startMarkerDrag('B', event)">
                     <div class="marker-head">B</div>
                 </div>
                 <div class="click-layer" onmousedown="userScrubStart(event)"></div>
@@ -630,7 +663,6 @@
                     <a href="https://easydonate.app/Jamornz" target="_blank"
                         class="sponsor-link">easydonate.app/Jamornz</a>
                 </div>
-
                 <div class="sponsor-item"
                     style="background:#111; border:1px solid #555; display:flex; flex-direction:column; justify-content:center;">
                     <span style="color:#fff; font-weight:bold; font-size:14px;">🏠 Home</span>
@@ -677,20 +709,16 @@
         // 🎮 CONTROL LOGIC (DOCK)
         // ==========================================
 
-        // --- NAVIGATOR VARS ---
         let viewStart = 0, viewWidth = 1, globalDuration = 1;
-
-        // --- PAN/ZOOM VARS ---
         let currentZoom = 1.0;
-        let panX_pct = 0; // 0 = Center. Range depends on zoom. 
-        let panY_pct = 0;
-        // NOTE: We will track "Viewport Position" in % (0-100) relative to frame
-        // VP Left: 0% = Left Edge. 
         let vpLeft = 0;
         let vpTop = 0;
 
+        // Marker Dragging Vars
+        let isDraggingMarker = false;
+        let draggedMarker = null;
+
         function initControl() {
-            // Drag Drop
             dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('hover'); };
             dropZone.ondragleave = e => { e.preventDefault(); dropZone.classList.remove('hover'); };
             dropZone.ondrop = e => {
@@ -698,12 +726,12 @@
                 if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
             };
 
-            // Listen from Screen
             channel.onmessage = e => {
                 const msg = e.data;
                 if (msg.type === 'status') {
                     globalDuration = msg.durSec;
-                    if (!isScrubbing) updateTimelineVisuals(msg.currSec, msg.posA, msg.posB);
+                    // Don't update visuals if user is interacting with timeline or markers
+                    if (!isScrubbing && !isDraggingMarker) updateTimelineVisuals(msg.currSec, msg.posA, msg.posB);
 
                     document.getElementById('currTime').innerText = msg.currFmt;
                     document.getElementById('totalTime').innerText = msg.totalFmt;
@@ -736,44 +764,88 @@
             r.readAsArrayBuffer(f);
         }
 
-        // --- NEW PAN & ZOOM LOGIC ---
+        // --- MARKER DRAGGING LOGIC ---
+        function startMarkerDrag(markerId, e) {
+            e.stopPropagation(); // Stop propagation to prevent scrub start
+            e.preventDefault();
+            isDraggingMarker = true;
+            draggedMarker = markerId;
+            document.getElementById('mark' + markerId).classList.add('dragging');
+
+            window.addEventListener('mousemove', onMarkerDrag);
+            window.addEventListener('mouseup', endMarkerDrag);
+        }
+
+        function onMarkerDrag(e) {
+            if (!isDraggingMarker) return;
+            const box = document.getElementById('timelineBox').getBoundingClientRect();
+            let x = e.clientX - box.left;
+            let pct = (x / box.width) * 100;
+            pct = Math.max(0, Math.min(100, pct));
+
+            // Visual Update locally
+            document.getElementById('mark' + draggedMarker).style.left = pct + '%';
+
+            // Send Command
+            let timeVal = uiPctToTime(pct);
+            sendCmd(draggedMarker === 'A' ? 'setA' : 'setB', timeVal); // Send explicit time
+        }
+
+        function endMarkerDrag() {
+            isDraggingMarker = false;
+            document.getElementById('mark' + draggedMarker).classList.remove('dragging');
+            draggedMarker = null;
+            window.removeEventListener('mousemove', onMarkerDrag);
+            window.removeEventListener('mouseup', endMarkerDrag);
+        }
+
+        // --- CENTER ZOOM LOGIC ---
         function updateZoom(val) {
-            currentZoom = parseFloat(val);
+            let newZoom = parseFloat(val);
+
+            // 1. Get Current Viewport Size (Old)
+            let oldSize = 100 / currentZoom;
+
+            // 2. Calculate the Center Point of current Viewport (in % of full image)
+            let centerX = vpLeft + (oldSize / 2);
+            let centerY = vpTop + (oldSize / 2);
+
+            // 3. Apply New Zoom
+            currentZoom = newZoom;
             document.getElementById('zoomVal').innerText = currentZoom.toFixed(1) + "x";
 
+            // 4. Calculate New Viewport Size
+            let newSize = 100 / currentZoom;
+
+            // 5. Calculate New Top/Left to maintain Center
+            vpLeft = centerX - (newSize / 2);
+            vpTop = centerY - (newSize / 2);
+
             updateViewportSize();
-            // Constraint Check: If zooming out puts viewport out of bounds, fix it
             clampViewport();
             updateViewportVisuals();
             sendTransform();
         }
 
         function updateViewportSize() {
-            // Viewport size is inversely proportional to zoom
-            // Zoom 1x -> VP 100%
-            // Zoom 2x -> VP 50%
-            const vpW = 100 / currentZoom;
-            const vpH = 100 / currentZoom;
+            const vpSize = 100 / currentZoom;
             const el = document.getElementById('panViewport');
-            el.style.width = vpW + "%";
-            el.style.height = vpH + "%";
+            el.style.width = vpSize + "%";
+            el.style.height = vpSize + "%";
         }
 
+        // --- PAN LOGIC (Standard) ---
         let isPanDrag = false;
-        let panStartX, panStartY;
-        let panStartLeft, panStartTop;
+        let panStartX, panStartY, panStartLeft, panStartTop;
 
         function startPanDrag(e) {
             e.preventDefault();
-            if (currentZoom <= 1.01) return; // Cannot pan if not zoomed
+            if (currentZoom <= 1.01) return;
             isPanDrag = true;
-            panStartX = e.clientX;
-            panStartY = e.clientY;
+            panStartX = e.clientX; panStartY = e.clientY;
             const el = document.getElementById('panViewport');
-            // Parse current % left/top
             panStartLeft = parseFloat(el.style.left) || 0;
             panStartTop = parseFloat(el.style.top) || 0;
-
             window.addEventListener('mousemove', onPanDrag);
             window.addEventListener('mouseup', endPanDrag);
         }
@@ -781,13 +853,8 @@
         function onPanDrag(e) {
             if (!isPanDrag) return;
             const frame = document.getElementById('panFrame').getBoundingClientRect();
-
-            const dxPx = e.clientX - panStartX;
-            const dyPx = e.clientY - panStartY;
-
-            // Convert px delta to % delta
-            const dxPct = (dxPx / frame.width) * 100;
-            const dyPct = (dyPx / frame.height) * 100;
+            const dxPct = ((e.clientX - panStartX) / frame.width) * 100;
+            const dyPct = ((e.clientY - panStartY) / frame.height) * 100;
 
             vpLeft = panStartLeft + dxPct;
             vpTop = panStartTop + dyPct;
@@ -805,70 +872,39 @@
 
         function clampViewport() {
             const vpSize = 100 / currentZoom;
-            const maxLeft = 100 - vpSize;
-            const maxTop = 100 - vpSize;
-
-            if (vpLeft < 0) vpLeft = 0;
-            if (vpLeft > maxLeft) vpLeft = maxLeft;
-
-            if (vpTop < 0) vpTop = 0;
-            if (vpTop > maxTop) vpTop = maxTop;
+            const max = 100 - vpSize;
+            if (vpLeft < 0) vpLeft = 0; if (vpLeft > max) vpLeft = max;
+            if (vpTop < 0) vpTop = 0; if (vpTop > max) vpTop = max;
         }
 
         function updateViewportVisuals() {
             const el = document.getElementById('panViewport');
-            el.style.left = vpLeft + "%";
-            el.style.top = vpTop + "%";
+            el.style.left = vpLeft + "%"; el.style.top = vpTop + "%";
         }
 
         function resetZoom() {
-            currentZoom = 1.0;
-            vpLeft = 0; vpTop = 0;
+            currentZoom = 1.0; vpLeft = 0; vpTop = 0;
             document.getElementById('zoomRange').value = 1.0;
             document.getElementById('zoomVal').innerText = "1.0x";
-            updateViewportSize();
-            updateViewportVisuals();
-            sendTransform();
+            updateViewportSize(); updateViewportVisuals(); sendTransform();
         }
 
         function sendTransform() {
-            // Calculate Translate based on Viewport Position
-            // If VP is centered, Translate is 0.
-            // If VP is Left, Image must shift Right (Positive Translate).
-            // Logic: Translate% = (CenterOfVP - CenterOfFrame) * -Zoom? 
-
-            // Easier way: Map VP position (0 to Max) to Transform Range.
-            // When Zoom=2: VP size=50%. Max Move=50%.
-            // If VP at 0% (Left), we want to see Left side.
-            // To see Left side at Scale 2, Translate X must be +25% (of image size).
-            // Formula: Translate% = (0.5 - CenterOfViewPort%) * Zoom * 100? No.
-
-            // Let's use standard transform-origin center logic.
-            // Translate X (in %) = (50 - CenterOfViewportX) * (Zoom / 100?? No)
-
-            // Let's calculate Center of Viewport in % (0-100)
+            // Translate% calculation for CSS:
+            // Center of Viewport relative to Center of Image (50,50)
+            // If CenterVP is at 25 (Left), we must translate Image +25 to bring it to center?
+            // Yes. Deviation = 50 - CenterVP.
             const vpSize = 100 / currentZoom;
-            const centerVpX = vpLeft + (vpSize / 2); // 0 to 100
-            const centerVpY = vpTop + (vpSize / 2);  // 0 to 100
+            const centerVpX = vpLeft + (vpSize / 2);
+            const centerVpY = vpTop + (vpSize / 2);
 
-            // Deviation from center (50)
-            const devX = 50 - centerVpX; // If left (e.g. 25), result +25.
+            const devX = 50 - centerVpX;
             const devY = 50 - centerVpY;
-
-            // When we Scale, the image grows from center.
-            // To bring "25%" to the center, we need to shift.
-            // It turns out: translate(x%, y%) works directly with the deviation if mapped correctly.
-            // Actually, for scale Z, the visible area is 1/Z.
-            // The shift required is devX * Z ?? No.
-
-            // Simple mapping that works for CSS Scale Center:
-            // Translate% = Deviation%
-            // But we need to account for the fact that 1% translate moves 1% of the *image width*.
 
             sendCmd('transform', { z: currentZoom, x: devX, y: devY });
         }
 
-        // --- TIMELINE & NAVIGATOR (Reused from Revised) ---
+        // --- TIMELINE & NAVIGATOR ---
         function timeToUiPct(timeSec) {
             if (globalDuration <= 0) return 0;
             let totalPct = timeSec / globalDuration;
@@ -967,8 +1003,12 @@
                         case 'pause': video.pause(); break;
                         case 'speed': video.playbackRate = msg.val; break;
                         case 'seek': video.currentTime = msg.val; break;
-                        case 'setA': loopA = video.currentTime; break;
-                        case 'setB': loopB = video.currentTime; if (loopB < loopA) { let t = loopA; loopA = loopB; loopB = t; } break;
+                        case 'setA': loopA = msg.val !== null ? msg.val : video.currentTime; break;
+                        case 'setB':
+                            let valB = msg.val !== null ? msg.val : video.currentTime;
+                            if (loopA !== null && valB < loopA) { let t = loopA; loopA = valB; valB = t; }
+                            loopB = valB;
+                            break;
                         case 'clearLoop': loopA = null; loopB = null; break;
                         case 'transform': applyTransform(msg.val); break;
                     }
@@ -990,8 +1030,6 @@
         }
 
         function applyTransform(t) {
-            // t.x and t.y are "Deviation from Center" percentages.
-            // Positive t.x means Viewport is Left, so we shift image Right (Positive).
             video.style.transform = `scale(${t.z}) translate(${t.x}%, ${t.y}%)`;
         }
         function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
