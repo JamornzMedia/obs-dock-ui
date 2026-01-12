@@ -987,55 +987,117 @@
         // ==========================================
         // 📺 SCREEN LOGIC (OBS)
         // ==========================================
+        // ==========================================
+        // 📺 SCREEN LOGIC (OBS) - FIXED V1.1
+        // ==========================================
         function initScreen() {
             video.muted = true;
+
+            // ตั้งค่าพื้นฐานวิดีโอ
+            video.loop = false; // ปิด Loop ธรรมชาติของ Video tag เพื่อใช้ Custom Loop A-B แทน
+
             channel.onmessage = e => {
                 const msg = e.data;
+
+                // 1. กรณีโหลดไฟล์ใหม่
                 if (msg.type === 'file') {
                     const blob = new Blob([msg.data], { type: msg.mime });
                     video.src = URL.createObjectURL(blob);
-                    loopA = null; loopB = null; resetVideoTransform();
-                    video.loop = true; video.playbackRate = 1.0; video.play();
+
+                    // Reset ค่า Loop เมื่อไฟล์ใหม่มา
+                    loopA = null;
+                    loopB = null;
+
+                    resetVideoTransform();
+                    video.playbackRate = 1.0;
+                    video.play();
                 }
+
+                // 2. กรณีรับคำสั่ง (Command)
                 if (msg.type === 'cmd') {
                     switch (msg.act) {
-                        case 'play': video.play(); break;
-                        case 'pause': video.pause(); break;
-                        case 'speed': video.playbackRate = msg.val; break;
-                        case 'seek': video.currentTime = msg.val; break;
-                        case 'setA': loopA = msg.val !== null ? msg.val : video.currentTime; break;
+                        case 'play':
+                            video.play();
+                            break;
+                        case 'pause':
+                            video.pause();
+                            break;
+                        case 'speed':
+                            video.playbackRate = msg.val;
+                            break;
+                        case 'seek':
+                            video.currentTime = msg.val;
+                            break;
+
+                        // --- แก้ไข Logic SET A ---
+                        case 'setA':
+                            // รับค่ามา หรือใช้เวลาปัจจุบัน
+                            let valA = msg.val !== null ? msg.val : video.currentTime;
+                            loopA = valA;
+                            // ถ้ามีจุด B อยู่แล้ว และ A ดันมากกว่า B (ผู้ใช้ลากเลย) -> ให้สลับ A กับ B
+                            if (loopB !== null && loopA > loopB) {
+                                let temp = loopA; loopA = loopB; loopB = temp;
+                            }
+                            break;
+
+                        // --- แก้ไข Logic SET B ---
                         case 'setB':
                             let valB = msg.val !== null ? msg.val : video.currentTime;
-                            if (loopA !== null && valB < loopA) { let t = loopA; loopA = valB; valB = t; }
                             loopB = valB;
+                            // ถ้ามีจุด A อยู่แล้ว และ B ดันน้อยกว่า A -> ให้สลับ
+                            if (loopA !== null && loopB < loopA) {
+                                let temp = loopB; loopB = loopA; loopA = temp;
+                            }
                             break;
-                        case 'clearLoop': loopA = null; loopB = null; break;
-                        case 'transform': applyTransform(msg.val); break;
+
+                        case 'clearLoop':
+                            loopA = null;
+                            loopB = null;
+                            break;
+
+                        case 'transform':
+                            applyTransform(msg.val);
+                            break;
                     }
                 }
             };
+
+            // --- แก้ไข Logic การ Loop (หัวใจสำคัญ) ---
             video.ontimeupdate = () => {
                 if (!video.duration) return;
+
+                // ทำงานเฉพาะเมื่อมีครบทั้งจุด A และ B
                 if (loopA !== null && loopB !== null) {
-                    if (video.currentTime >= loopB || video.currentTime < loopA) {
-                        video.currentTime = loopA; if (video.paused) video.play();
+
+                    // 1. เช็คว่าเลยจุด B หรือไม่ (End Loop)
+                    // ใช้ > เพื่อให้เล่นจนถึงเฟรมสุดท้ายของจุด B ก่อนค่อยดีดกลับ
+                    if (video.currentTime > loopB) {
+                        video.currentTime = loopA;
+                        // ตัดบรรทัด video.play() ออก เพื่อไม่ให้มันบังคับเล่นเองถ้าเรา Pause อยู่
+                    }
+
+                    // 2. เช็คว่าอยู่ก่อนจุด A หรือไม่ (Start Loop)
+                    // กรณี User Scrub ถอยหลังไปก่อนจุด A ให้ดีดมาที่ A
+                    // เพิ่ม Buffer -0.1 เผื่อกรณี Scrub เร็วๆ จะได้ไม่กระตุกสู้มือเกินไป
+                    if (video.currentTime < loopA - 0.1) {
+                        video.currentTime = loopA;
                     }
                 }
+
+                // ส่ง Status กลับไปที่ Remote
                 channel.postMessage({
-                    type: 'status', durSec: video.duration, currSec: video.currentTime,
-                    currFmt: fmt(video.currentTime), totalFmt: fmt(video.duration),
-                    hasA: loopA !== null, hasB: loopB !== null, posA: loopA, posB: loopB
+                    type: 'status',
+                    durSec: video.duration,
+                    currSec: video.currentTime,
+                    currFmt: fmt(video.currentTime),
+                    totalFmt: fmt(video.duration),
+                    hasA: loopA !== null,
+                    hasB: loopB !== null,
+                    posA: loopA,
+                    posB: loopB
                 });
             };
         }
+</body >
 
-        function applyTransform(t) {
-            video.style.transform = `scale(${t.z}) translate(${t.x}%, ${t.y}%)`;
-        }
-        function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
-        function fmt(s) { let m = Math.floor(s / 60), sc = Math.floor(s % 60); return m + ":" + (sc < 10 ? "0" : "") + sc; }
-
-    </script>
-</body>
-
-</html>
+</html >
