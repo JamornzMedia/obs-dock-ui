@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Youtube Family Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #ff0000;
+            --bg: #f0f2f5;
+            --white: #ffffff;
+            --text: #1c1e21;
+            --success: #2e7d32;
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg);
+            margin: 0; padding: 0;
+            color: var(--text);
+            padding-bottom: calc(90px + var(--safe-area-bottom));
+        }
+
+        header {
+            background: var(--white);
+            padding: 15px 20px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-text { font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+        .yt-icon { width: 32px; height: 22px; background: red; border-radius: 6px; position: relative; }
+        .yt-icon::after { content:''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent white; }
+        
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .card { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+        /* Navigation */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--white); display: flex; justify-content: space-around;
+            padding-top: 10px; padding-bottom: calc(10px + var(--safe-area-bottom)); 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 999;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+        }
+        .nav-item { text-align: center; font-size: 0.7rem; color: #b0b3b8; cursor: pointer; width: 100%; transition: 0.2s; }
+        .nav-item.active { color: var(--primary); font-weight: 600; transform: translateY(-2px); }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+
+        /* Inputs & Buttons */
+        .form-label { font-weight: 600; margin-bottom: 8px; display: block; margin-top: 15px; font-size: 0.9rem; color: #65676b;}
+        select, input {
+            width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 8px;
+            font-family: 'Kanit'; box-sizing: border-box; font-size: 1rem; background: #f0f2f5;
+        }
+        select:focus, input:focus { outline: none; border-color: var(--primary); background: white; }
+
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-family: 'Kanit'; font-size: 1rem; color: white; cursor: pointer; font-weight: 600;
+            background: var(--primary); margin-top: 20px; box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-outline { background: white; border: 1px solid #dddfe2; color: var(--text); box-shadow: none; }
+        .btn-success { background: var(--success); box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2); }
+        .btn-black { background: #1c1e21; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+        /* Dashboard */
+        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid #f0f2f5; }
+        .history-grid { display: grid; gap: 1px; background: #f0f2f5; }
+        .h-cell { background: white; padding: 12px 8px; text-align: center; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+        .h-head { background: #f7f8fa; font-weight: 600; color: #65676b; position: sticky; top:0; z-index: 5;}
+        .h-name { position: sticky; left: 0; z-index: 10; background: #fff; border-right: 2px solid #f0f2f5; font-weight: 600; justify-content: flex-start; padding-left: 15px; }
+        .status-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #dddfe2; display: flex; align-items: center; justify-content: center; color: transparent; transition: 0.2s; }
+        .status-dot.paid { background: var(--success); border-color: var(--success); color: white; }
+
+        /* Generator */
+        .month-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .m-choice { border: 1px solid #dddfe2; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; background: white; }
+        .m-choice.selected { border-color: var(--primary); background: #fff5f5; color: var(--primary); font-weight: bold; }
+        .m-choice.paid { background: #f0f2f5; color: #bcc0c4; pointer-events: none; text-decoration: line-through; border: 1px dashed #dddfe2; }
+
+        #resultArea { display: none; margin-top: 30px; animation: fadeIn 0.4s ease-out; }
+        canvas { max-width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        
+        .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f0f2f5; }
+        .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Data Tools */
+        .data-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-text"><div class="yt-icon"></div> Family Manager <span style="font-size:0.7rem; color:#888; background:#eee; padding:2px 6px; border-radius:4px;">V5</span></div>
+    </header>
+
+    <!-- TAB: DASHBOARD -->
+    <div id="tab-dashboard" class="container">
+        <div class="card">
+            <h3 style="margin:0 0 15px 0;">📊 เช็คชื่อรายเดือน</h3>
+            <div class="table-wrapper"><div id="dashboardGrid" class="history-grid"></div></div>
+            <p style="font-size:0.8rem; color:#888; text-align:right; margin-top:10px;">แตะวงกลมเพื่อเปลี่ยนสถานะ</p>
+        </div>
+        <div class="card" style="background:#e8f5e9; border:1px solid #c8e6c9;">
+            <div style="color:#2e7d32; font-weight:600;" id="summaryText">กำลังคำนวณ...</div>
+        </div>
+    </div>
+
+    <!-- TAB: GENERATOR -->
+    <div id="tab-generator" class="container hidden">
+        <div class="card">
+            <h3 style="margin:0 0 15px 0;">🧾 ออกบิลเรียกเก็บ</h3>
+            <label class="form-label">เลือกสมาชิก:</label>
+            <select id="genFriend" onchange="loadUnpaidMonths()"><option value="">-- เลือก --</option></select>
+            <label class="form-label">เดือนที่ค้าง:</label>
+            <div id="monthContainer" class="month-selector"></div>
+            <div style="text-align:center; margin-top:20px; padding:15px; background:#f0f2f5; border-radius:12px;">
+                <div style="font-size:0.9rem; color:#65676b;">ยอดรวม</div>
+                <div style="font-size:2.5rem; font-weight:bold; color:var(--text); line-height:1;" id="displayTotal">0</div>
+            </div>
+            <button class="btn" onclick="renderBill()">✨ สร้างบิล</button>
+        </div>
+
+        <div id="resultArea">
+            <div style="text-align:center;">
+                <canvas id="billCanvas"></canvas>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn btn-black" style="margin-top:10px;" onclick="downloadBillImage()">💾 บันทึกรูป</button>
+                <button class="btn btn-success" style="margin-top:10px;" onclick="doCopy()">📋 ก๊อปข้อความ</button>
+            </div>
+            <button class="btn btn-outline" onclick="openMessenger()">💬 เปิด Messenger</button>
+            <textarea id="copyText" style="opacity:0; height:1px; position:absolute;"></textarea>
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
+                <button class="btn" style="background:#dddfe2; color:#1c1e21; margin-top:0;" onclick="quickMarkPaid()">✅ กดเมื่อเพื่อนจ่ายแล้ว (อัปเดตตาราง)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: SETTINGS -->
+    <div id="tab-settings" class="container hidden">
+        <div class="card">
+            <h3 style="margin:0 0 15px 0;">⚙️ ข้อมูลบัญชี</h3>
+            <label class="form-label">ชื่อบัญชี (โชว์ใต้ QR):</label>
+            <input type="text" id="cfgAccountName" placeholder="เช่น นายสมชาย ใจดี" onchange="saveConfig()">
+            <label class="form-label">เบอร์พร้อมเพย์:</label>
+            <input type="text" id="cfgPromptpay" placeholder="08x-xxx-xxxx" onchange="saveConfig()">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div><label class="form-label">ราคา/คน:</label><input type="number" id="cfgPrice" onchange="saveConfig()"></div>
+                <div><label class="form-label">ปีที่เริ่ม:</label><select id="cfgStartYear" onchange="saveConfig()"></select></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin:0 0 15px 0;">👥 สมาชิก</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="newFriendInput" placeholder="ชื่อเพื่อน...">
+                <button class="btn" style="width:auto; margin:0; padding:0 20px;" onclick="addNewFriend()">เพิ่ม</button>
+            </div>
+            <div id="friendList" style="margin-top:15px;"></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin:0 0 15px 0;">💾 ฐานข้อมูล (Backup)</h3>
+            <p style="font-size:0.8rem; color:#666;">ใช้สำหรับย้ายเครื่อง หรือสำรองข้อมูลกันหาย</p>
+            <div class="data-tools">
+                <button class="btn btn-black" style="margin:0; font-size:0.9rem;" onclick="exportData()">📥 ส่งออกไฟล์</button>
+                <button class="btn btn-outline" style="margin:0; font-size:0.9rem;" onclick="document.getElementById('importFile').click()">📤 นำเข้าไฟล์</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
+            </div>
+            <div style="margin-top:15px; text-align:center;">
+                <button style="background:none; border:none; color:#dc3545; text-decoration:underline;" onclick="factoryReset()">ล้างข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+        <div style="text-align:center; font-size:0.8rem; color:#bbb; margin-top:20px;">Github Edition V5</div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="goTab('dashboard', this)"><span class="nav-icon">📊</span>สถานะ</div>
+        <div class="nav-item" onclick="goTab('generator', this)"><span class="nav-icon">🧾</span>บิล</div>
+        <div class="nav-item" onclick="goTab('settings', this)"><span class="nav-icon">⚙️</span>ตั้งค่า</div>
+    </div>
+
+<script>
+    const MONTH_NAMES = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    let appData = { promptpay: "0848869712", accountName: "", price: 60, startYear: new Date().getFullYear(), startMonth: 0, friends: [], history: {} };
+
+    function init() {
+        const local = localStorage.getItem('ytManagerV5');
+        if(local) appData = JSON.parse(local);
+        
+        document.getElementById('cfgPromptpay').value = appData.promptpay;
+        document.getElementById('cfgAccountName').value = appData.accountName || "";
+        document.getElementById('cfgPrice').value = appData.price;
+        
+        const yearSelect = document.getElementById('cfgStartYear');
+        const curYear = new Date().getFullYear();
+        for(let y = curYear - 2; y <= curYear + 2; y++) {
+            let opt = document.createElement('option'); opt.value = y; opt.innerText = y;
+            if(y === appData.startYear) opt.selected = true; yearSelect.appendChild(opt);
+        }
+        renderFriends(); renderDashboard();
+    }
+    function save() { localStorage.setItem('ytManagerV5', JSON.stringify(appData)); }
+
+    // --- Data Management (Export/Import) ---
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "youtube_family_backup_" + new Date().toISOString().slice(0,10) + ".json");
+        document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+    }
+    function importData(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if(confirm("ยืนยันนำเข้าข้อมูล? ข้อมูลปัจจุบันจะถูกแทนที่")) {
+                    appData = imported; save(); location.reload();
+                }
+            } catch(err) { alert("ไฟล์ไม่ถูกต้อง"); }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- Dashboard ---
+    function renderDashboard() {
+        const grid = document.getElementById('dashboardGrid');
+        const today = new Date();
+        const endDate = new Date(today.getFullYear(), today.getMonth() + 2);
+        let loopDate = new Date(appData.startYear, appData.startMonth);
+        let columns = [];
+
+        while(loopDate <= endDate) {
+            columns.push({ label: `${MONTH_NAMES[loopDate.getMonth()]} ${loopDate.getFullYear().toString().substr(2)}`, key: `${loopDate.getFullYear()}-${loopDate.getMonth()}` });
+            loopDate.setMonth(loopDate.getMonth() + 1);
+        }
+
+        grid.style.gridTemplateColumns = `100px repeat(${columns.length}, minmax(50px, 1fr))`;
+        let html = `<div class="h-cell h-head h-name">รายชื่อ</div>`;
+        columns.forEach(c => html += `<div class="h-cell h-head">${c.label}</div>`);
+        
+        let totalUnpaid = 0;
+        appData.friends.forEach(friend => {
+            html += `<div class="h-cell h-name">${friend}</div>`;
+            columns.forEach(c => {
+                const isPaid = appData.history[friend] && appData.history[friend][c.key];
+                if(!isPaid) totalUnpaid += appData.price;
+                html += `<div class="h-cell"><div class="status-dot ${isPaid?'paid':''}" onclick="toggleStatus('${friend}','${c.key}',${!!isPaid})">✔</div></div>`;
+            });
+        });
+        grid.innerHTML = html;
+        document.getElementById('summaryText').innerHTML = `ยอดค้างรวม: ${totalUnpaid.toLocaleString()} บาท`;
+    }
+    function toggleStatus(friend, key, current) {
+        if(confirm(`เปลี่ยนสถานะของ ${friend}?`)) {
+            if(!appData.history[friend]) appData.history[friend] = {};
+            appData.history[friend][key] = !current; save(); renderDashboard();
+            if(document.getElementById('genFriend').value === friend) loadUnpaidMonths();
+        }
+    }
+
+    // --- Generator ---
+    let selectedMonths = [];
+    function loadUnpaidMonths() {
+        const friend = document.getElementById('genFriend').value;
+        const container = document.getElementById('monthContainer');
+        container.innerHTML = ''; selectedMonths = []; updateTotal(); document.getElementById('resultArea').style.display = 'none';
+        if(!friend) return;
+
+        const today = new Date(); const endDate = new Date(today.getFullYear(), today.getMonth() + 1);
+        let loopDate = new Date(appData.startYear, appData.startMonth);
+
+        while(loopDate <= endDate) {
+            const key = `${loopDate.getFullYear()}-${loopDate.getMonth()}`;
+            const label = `${MONTH_NAMES[loopDate.getMonth()]} ${loopDate.getFullYear().toString().substr(2)}`;
+            const isPaid = appData.history[friend] && appData.history[friend][key];
+            const div = document.createElement('div'); div.className = 'm-choice'; div.innerText = label;
+            const y = loopDate.getFullYear(); const m = loopDate.getMonth();
+            if(isPaid) div.classList.add('paid');
+            else {
+                div.onclick = () => {
+                    div.classList.toggle('selected');
+                    const idx = selectedMonths.findIndex(x => x.key === key);
+                    if(idx > -1) selectedMonths.splice(idx, 1); else selectedMonths.push({ key, label, y, m });
+                    updateTotal();
+                }
+            }
+            container.appendChild(div); loopDate.setMonth(loopDate.getMonth() + 1);
+        }
+    }
+    function updateTotal() { document.getElementById('displayTotal').innerText = (selectedMonths.length * appData.price).toLocaleString(); }
+
+    function renderBill() {
+        const friend = document.getElementById('genFriend').value;
+        if(!friend || selectedMonths.length === 0) { alert("เลือกเพื่อนและเดือนก่อนครับ"); return; }
+        const total = selectedMonths.length * appData.price;
+        selectedMonths.sort((a,b) => (a.y*12 + a.m) - (b.y*12 + b.m));
+        const monthText = selectedMonths.map(x => x.label).join(", ");
+
+        const canvas = document.getElementById('billCanvas'); const ctx = canvas.getContext('2d');
+        canvas.width = 650; canvas.height = 1000;
+        
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,650,1000);
+        
+        // Header
+        ctx.fillStyle = "#FF0000"; roundRect(ctx, 40, 50, 70, 48, 12); ctx.fill();
+        ctx.fillStyle = "white"; ctx.beginPath(); ctx.moveTo(68, 62); ctx.lineTo(88, 74); ctx.lineTo(68, 86); ctx.fill();
+        ctx.fillStyle = "#1c1e21"; ctx.font = "bold condensed 50px Kanit"; ctx.textAlign = "left"; ctx.fillText("YouTube", 125, 92);
+        ctx.fillStyle = "#65676b"; ctx.font = "24px Kanit"; ctx.fillText("Family Plan", 320, 92);
+
+        // Content
+        ctx.beginPath(); ctx.moveTo(40, 140); ctx.lineTo(610, 140); ctx.strokeStyle="#eee"; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle = "#65676b"; ctx.font = "22px Kanit"; ctx.fillText("เรียกเก็บจาก:", 40, 190);
+        ctx.fillStyle = "#1c1e21"; ctx.font = "bold 40px Kanit"; ctx.fillText(friend, 40, 235);
+        ctx.fillStyle = "#65676b"; ctx.font = "22px Kanit"; ctx.fillText("ประจำเดือน:", 40, 290);
+        ctx.fillStyle = "#1c1e21"; ctx.font = "28px Kanit"; wrapText(ctx, monthText, 40, 330, 570, 38);
+
+        // Total
+        ctx.fillStyle = "#f0f2f5"; ctx.fillRect(40, 420, 570, 100); borderRadi(ctx, 40, 420, 570, 100, 16);
+        ctx.fillStyle = "#1c1e21"; ctx.font = "bold 30px Kanit"; ctx.fillText("ยอดชำระ", 70, 480);
+        ctx.fillStyle = "#FF0000"; ctx.font = "bold 70px Kanit"; ctx.textAlign="right"; ctx.fillText(total.toLocaleString(), 580, 495);
+
+        // QR Code Section
+        const qrY = 560;
+        const payload = generatePayload(appData.promptpay, total);
+        const qr = new QRious({ value: payload, size: 280 });
+        ctx.textAlign = "center";
+        ctx.drawImage(qr.canvas, 185, qrY);
+        
+        // Info Below QR
+        ctx.fillStyle = "#1c1e21"; ctx.font = "bold 26px Kanit"; ctx.fillText("สแกนจ่าย (PromptPay)", 325, qrY + 310);
+        
+        // Account Name & Number (Fixed for user request)
+        ctx.fillStyle = "#65676b"; ctx.font = "22px Kanit";
+        let textY = qrY + 350;
+        if(appData.accountName) {
+            ctx.fillText("ชื่อ: " + appData.accountName, 325, textY);
+            textY += 30;
+        }
+        ctx.fillText("เบอร์: " + formatPhone(appData.promptpay), 325, textY);
+
+        document.getElementById('resultArea').style.display = 'block';
+        setTimeout(() => document.getElementById('resultArea').scrollIntoView({behavior:'smooth'}), 100);
+        document.getElementById('copyText').value = `ค่า Youtube (${friend})\n📅: ${monthText}\n💰: ${total}บ.\n🏦: ${appData.promptpay}\n(สแกนรูปได้เลย)`;
+    }
+
+    // --- Utils ---
+    function saveConfig() {
+        appData.promptpay = document.getElementById('cfgPromptpay').value;
+        appData.accountName = document.getElementById('cfgAccountName').value;
+        appData.price = parseInt(document.getElementById('cfgPrice').value);
+        appData.startYear = parseInt(document.getElementById('cfgStartYear').value);
+        save(); renderDashboard();
+    }
+    function addNewFriend() {
+        const name = document.getElementById('newFriendInput').value.trim();
+        if(name && !appData.friends.includes(name)) { appData.friends.push(name); save(); renderFriends(); renderDashboard(); document.getElementById('newFriendInput').value=''; }
+    }
+    function renderFriends() {
+        const list = document.getElementById('friendList'); const gen = document.getElementById('genFriend');
+        list.innerHTML = ''; gen.innerHTML = '<option value="">-- เลือก --</option>';
+        appData.friends.forEach((f, idx) => {
+            list.innerHTML += `<div class="friend-item"><span>${f}</span><button class="btn" style="background:#dc3545;width:auto;margin:0;padding:5px 15px;" onclick="delFriend(${idx})">ลบ</button></div>`;
+            gen.innerHTML += `<option value="${f}">${f}</option>`;
+        });
+    }
+    function delFriend(idx) { if(confirm("ลบรายชื่อ?")) { const n = appData.friends[idx]; appData.friends.splice(idx,1); delete appData.history[n]; save(); renderFriends(); renderDashboard(); } }
+    function quickMarkPaid() { const f = document.getElementById('genFriend').value; if(confirm("เพื่อนโอนแล้ว?")) { selectedMonths.forEach(m => { if(!appData.history[f]) appData.history[f]={}; appData.history[f][m.key]=true; }); save(); renderDashboard(); loadUnpaidMonths(); } }
+    function downloadBillImage() { const c = document.getElementById('billCanvas'); const l = document.createElement('a'); l.download = `Bill_${Date.now()}.png`; l.href = c.toDataURL("image/png"); l.click(); }
+    function goTab(t, el) { ['dashboard','generator','settings'].forEach(x => document.getElementById('tab-'+x).classList.add('hidden')); document.getElementById('tab-'+t).classList.remove('hidden'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); if(t==='dashboard') renderDashboard(); }
+    function doCopy() { const t = document.getElementById('copyText'); t.select(); t.setSelectionRange(0,99999); navigator.clipboard.writeText(t.value); alert("ก๊อปปี้แล้ว"); }
+    function openMessenger() { window.location.href = "https://m.me/"; }
+    function formatPhone(p) { return p.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'); }
+    function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath(); }
+    function borderRadi(ctx, x, y, w, h, r) { /* Helper for rect fill */ }
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) { let words = text.split(' '), line = ''; for(let n = 0; n < words.length; n++) { let testLine = line + words[n] + ' '; let metrics = ctx.measureText(testLine); if (metrics.width > maxWidth && n > 0) { ctx.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; } else { line = testLine; } } ctx.fillText(line, x, y); }
+    function generatePayload(mobile, amount) { const target = mobile.replace(/^0/, '66'); let amountStr = parseFloat(amount).toFixed(2); let payload = "00020101021129370016A000000677010111011300" + target + "5802TH5303764" + "54" + (amountStr.length < 10 ? "0" + amountStr.length : amountStr.length) + amountStr + "6304"; payload += crc16(payload); return payload; }
+    function crc16(data) { let crc = 0xFFFF; for (let i = 0; i < data.length; i++) { let x = ((crc >> 8) ^ data.charCodeAt(i)) & 0xFF; x ^= x >> 4; crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF; } return ("0000" + crc.toString(16).toUpperCase()).slice(-4); }
+    
+    init();
+</script>
+</body>
+</html>
