@@ -49,8 +49,11 @@ const els = {
     roomId: $('remoteRoomId'),
     connectionUI: $('remoteConnectionUI'),
     qrCode: $('remoteQrCode'),
-    linkText: $('mobileLinkText'),
-    statusText: $('remoteStatusText')
+    linkText: $('mobileLinkInput'), // Changed ID
+    copyLinkBtn: $('copyMobileLinkBtn'), // New Button
+    statusText: $('remoteStatusText'),
+    closeRoomBtn: $('closeRoomBtn'), // New Button
+    roomIdContainer: $('remoteRoomIdContainer') // New Container
 };
 
 // --- FUNCTIONS ---
@@ -85,6 +88,20 @@ function initRemote() {
     if (els.createBtn) {
         els.createBtn.addEventListener('click', startHosting);
     }
+
+    if (els.closeRoomBtn) {
+        els.closeRoomBtn.addEventListener('click', closeRoom);
+    }
+
+    if (els.copyLinkBtn) {
+        els.copyLinkBtn.addEventListener('click', copyLink);
+    }
+
+    // Load persisted name
+    const savedName = localStorage.getItem('remoteRoomName');
+    if (savedName && els.roomName) {
+        els.roomName.value = savedName;
+    }
 }
 
 function startHosting() {
@@ -111,7 +128,10 @@ function startHosting() {
     els.createBtn.disabled = true;
     els.createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
 
-    // 3. Setup PeerJS
+    // Save Name
+    localStorage.setItem('remoteRoomName', rname);
+
+    // 4. Setup PeerJS
     const myPeerId = `obsscore-host-${rid}`;
 
     if (peer) peer.destroy();
@@ -130,7 +150,10 @@ function startHosting() {
         }).then(() => {
             // Success
             showConnectionUI(rid);
-            els.createBtn.innerHTML = '<i class="fas fa-check"></i> Room Created';
+            els.createBtn.style.display = 'none'; // Hide Create
+            els.closeRoomBtn.style.display = 'inline-block'; // Show Close
+            els.roomIdContainer.style.display = 'flex'; // Show ID Row
+
             els.statusText.textContent = "Waiting for mobile...";
             els.statusText.style.color = "#f97316";
 
@@ -158,12 +181,48 @@ function startHosting() {
 
 function showConnectionUI(rid) {
     els.connectionUI.style.display = 'block';
-    // URL to Mobile App (Assuming same directory)
+    // URL to Mobile App
     const mobileUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html?room=' + rid;
 
-    els.linkText.href = mobileUrl;
-    els.linkText.textContent = mobileUrl;
+    els.linkText.value = mobileUrl; // Use value for input
     els.qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(mobileUrl)}`;
+}
+
+function closeRoom() {
+    if (peer) {
+        peer.destroy();
+        peer = null;
+    }
+
+    if (currentRoomId) {
+        database.ref('obs_rooms/' + currentRoomId).remove().catch(e => console.error(e));
+        currentRoomId = null;
+    }
+
+    // Reset UI
+    els.connectionUI.style.display = 'none';
+    els.createBtn.style.display = 'inline-block';
+    els.createBtn.disabled = false;
+    els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
+
+    els.closeRoomBtn.style.display = 'none';
+    els.roomIdContainer.style.display = 'none';
+    els.roomId.value = "";
+
+    els.statusText.textContent = "Waiting...";
+    els.statusText.style.color = "var(--warning-color)";
+}
+
+function copyLink() {
+    if (!els.linkText.value) return;
+    els.linkText.select();
+    document.execCommand('copy');
+    // Using simple alert or if main.js showToast is available (it is not directly imported here but available in global scope if loaded)
+    if (typeof showToast === 'function') {
+        showToast("Link Copied!", "success");
+    } else {
+        alert("Link Copied!");
+    }
 }
 
 function handleConnection() {

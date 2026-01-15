@@ -1209,15 +1209,16 @@
                 <label style="width: 80px;" data-lang="roomName">Name</label>
                 <input type="text" id="remoteRoomName" placeholder="My Scoreboard" maxlength="50" style="flex-grow: 1;">
             </div>
-            <div class="row" style="margin-top: 10px;">
+            <div class="row" id="remoteRoomIdContainer" style="margin-top: 10px; display: none;">
                 <label style="width: 80px;" data-lang="roomId">ID</label>
                 <input type="text" id="remoteRoomId" readonly
                     style="flex-grow: 1; font-family: monospace; letter-spacing: 2px; font-weight: bold; text-align: center; color: var(--accent-color);">
-                <button id="genRoomIdBtn" class="btn-secondary"><i class="fas fa-random"></i></button>
             </div>
             <div class="row center" style="margin-top: 15px;">
                 <button id="createRoomBtn" class="btn-primary" style="width: 100%; padding: 10px;"><i
                         class="fas fa-broadcast-tower"></i> <span data-lang="createRoom">Create Room</span></button>
+                <button id="closeRoomBtn" class="btn-danger" style="width: 100%; padding: 10px; display: none;"><i
+                        class="fas fa-power-off"></i> <span data-lang="closeRoom">Close Room</span></button>
             </div>
         </div>
 
@@ -1227,8 +1228,10 @@
             </div>
             <p style="font-size: 0.9rem; margin-top: 10px; color: var(--text-muted-color);">
                 <span data-lang="openMobileApp"></span>: <br>
-                <a id="mobileLinkText" href="#" target="_blank"
-                    style="color: var(--accent-color); word-break: break-all;">...</a>
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <input type="text" id="mobileLinkInput" readonly style="flex-grow: 1; font-size: 0.85rem;">
+                <button id="copyMobileLinkBtn" class="btn-primary"><i class="fas fa-copy"></i></button>
+            </div>
             </p>
             <div style="margin-top: 15px; padding: 10px; background: #222; border-radius: 4px;">
                 <span data-lang="remoteStatus">Status</span>
