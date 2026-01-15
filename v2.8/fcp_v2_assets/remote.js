@@ -269,6 +269,7 @@ function processCommand(cmd) {
             break;
         case 'timer':
             if (cmd.action === 'playpause') document.getElementById('playBtn').click();
+            if (cmd.action === 'stop') window.fcpAPI.stopTimer();
             if (cmd.action === 'reset') window.fcpAPI.resetToStartTime();
             if (cmd.action === 'half') window.fcpAPI.toggleHalf(); // Handle Half Toggle
             break;

@@ -1352,6 +1352,7 @@ window.fcpAPI = {
         }
     },
     toggleHalf: toggleHalf,
+    stopTimer: stopTimer,
     obs_saveReplay: () => {
         obs.call('SaveReplayBuffer').then(() => showToast("Replay Saved", "success")).catch(err => showToast("Save Replay Failed: " + err.error, "error"));
     },
