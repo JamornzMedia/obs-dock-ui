@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.7.1", // Update Version
+        appTitle: "Football Scoreboard Controller - V2.8 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -41,21 +41,21 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.7.1", // Update
+        changelog: "Update Version 2.8 (Remote)", // Update
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
         keybindsTitle: "Keyboard Shortcuts",
         keybindsListLabel: "Item",
-        clear: "Clear", // NEW
+        clear: "Clear",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "Action Button Settings (Source Visibility)",
         actionSettingsDesc: "Set button names, colors, height, and the Target OBS Source/Action to control visibility directly. The Source/Group must be in the active Scene.",
         actionSettingsName: "Name",
         actionSettingsColor: "Color",
         actionSettingsHeight: "Height (px)",
-        actionSettingsSource: "Source/Group Name", // CHANGED
-        actionSettingsAction: "Action",     // NEW
+        actionSettingsSource: "Source/Group Name",
+        actionSettingsAction: "Action",
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
@@ -132,19 +132,18 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
+                    <h5>Version 2.8 (Remote Control)</h5>
+                    <ul>
+                        <li>**Mobile Control:** Added P2P Remote Control via Smartphone.</li>
+                        <li>**OBSScore:** Rebranded and optimized for performance.</li>
+                    </ul>
+                </li>
+                <li>
                     <h5>Version 2.7.1 (Patch)</h5>
                     <ul>
                         <li>**Logo Cache Update:** Improved drag-and-drop system. Now shows a summary notification instead of individual alerts. Added total logo count display.</li>
                         <li>**Keybinds:** Added a "Trash/Clear" button to remove specific keybinds.</li>
                         <li>**Performance:** Optimized Keyboard Shortcut listener priority for better compatibility with laptops and macro pads.</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>Version 2.7 (Major)</h5>
-                    <ul>
-                        <li>**Source Control:** Replaced Hotkeys with direct Source Visibility Control via OBS-WebSocket.</li>
-                        <li>**Logo Cache:** Added Logo Cache system for Dock UI.</li>
-                        <li>**New Features:** Added Labels 4 & 5, Visibility Controls.</li>
                     </ul>
                 </li>
             </ul>`,
@@ -177,14 +176,30 @@ export const translations = {
         toastCacheSaveFailed: "Failed to save logo to cache!",
         clearCache: "Clear Logo Cache",
         toastCacheCleared: "Logo Cache cleared!",
-        logoCacheSummary: "Import Summary:", // NEW
-        logoCacheSuccess: "Success:", // NEW
-        logoCacheFailed: "Failed:", // NEW
-        logoCacheTotal: "Total Cached:", // NEW
+        logoCacheSummary: "Import Summary:",
+        logoCacheSuccess: "Success:",
+        logoCacheFailed: "Failed:",
+        logoCacheTotal: "Total Cached:",
+
+        // NEW STRINGS FOR V2.8
+        mobileControlTitle: "Mobile Remote Control (OBSScore)",
+        mobileControlDesc: "Control your scoreboard from anywhere via smartphone.",
+        createRoom: "Create Room",
+        roomName: "Room Name",
+        roomId: "Room ID",
+        scanQr: "Scan QR to Connect",
+        waitingConnection: "Waiting for connection...",
+        connectedDevice: "Connected Device:",
+        disconnect: "Disconnect",
+        openMobileApp: "Open Mobile Web App",
+        remoteStatus: "Status:",
+        remoteStatusWait: "Standby",
+        remoteStatusReady: "Ready to pair",
+        remoteStatusConnected: "Connected",
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.7.1", // Update Version
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.8 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -221,21 +236,21 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.7.1", // Update
+        changelog: "อัปเดตเวอร์ชัน 2.8 (Remote)", // Update
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
         keybindsTitle: "ตั้งค่าคีย์ลัด (Keyboard Shortcuts)",
         keybindsListLabel: "รายการ",
-        clear: "ล้างค่า", // NEW
+        clear: "ล้างค่า",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
         actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Source/Group/Action ที่ต้องการควบคุมการแสดงผลโดยตรง โปรแกรมจะใช้ Scene ที่กำลัง Live อยู่ปัจจุบัน",
         actionSettingsName: "ชื่อปุ่ม",
         actionSettingsColor: "สี",
         actionSettingsHeight: "ความสูง (px)",
-        actionSettingsSource: "ชื่อ Source/Group", // CHANGED
-        actionSettingsAction: "Action",     // NEW
+        actionSettingsSource: "ชื่อ Source/Group",
+        actionSettingsAction: "Action",
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
@@ -312,19 +327,18 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
+                    <h5>เวอร์ชัน 2.8 (Remote Control)</h5>
+                    <ul>
+                        <li>**Mobile Control:** เพิ่มฟีเจอร์ควบคุมผ่านมือถือระบบ P2P (OBSScore)</li>
+                        <li>**OBSScore:** เปลี่ยนชื่อระบบและปรับปรุงประสิทธิภาพ</li>
+                    </ul>
+                </li>
+                <li>
                     <h5>เวอร์ชัน 2.7.1 (Patch)</h5>
                     <ul>
                         <li>**Logo Cache:** ปรับปรุงระบบลากวางไฟล์ แจ้งเตือนแบบสรุปผล (Success/Fail) แทนการแจ้งเตือนทีละไฟล์ และเพิ่มการแสดงจำนวนโลโก้ทั้งหมด</li>
                         <li>**คีย์ลัด:** เพิ่มปุ่ม "ถังขยะ" ในหน้าตั้งค่าคีย์ลัด เพื่อลบค่าปุ่มที่ไม่ต้องการออกได้</li>
                         <li>**ประสิทธิภาพ:** ย้ายลำดับการทำงานของตัวจับคีย์บอร์ด (Keyboard Listener) ให้ทำงานเป็นอันดับแรก แก้ปัญหา Macro Pad/Laptop กดไม่ติด</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.7 (Major)</h5>
-                    <ul>
-                        <li>**Source Control:** เปลี่ยนระบบ Action Button เป็นการคุม Source โดยตรงผ่าน WebSocket</li>
-                        <li>**Logo Cache:** เพิ่มระบบ Cache โลโก้เพื่อแสดงผลบน Dock UI</li>
-                        <li>**ฟีเจอร์ใหม่:** เพิ่ม Label 4-5, และตัวเลือกซ่อน/แสดง Card</li>
                     </ul>
                 </li>
             </ul>`,
@@ -357,9 +371,25 @@ export const translations = {
         toastCacheSaveFailed: "บันทึกโลโก้ลง Cache ล้มเหลว!",
         clearCache: "ล้าง Logo Cache",
         toastCacheCleared: "ล้าง Logo Cache แล้ว!",
-        logoCacheSummary: "สรุปการนำเข้า:", // NEW
-        logoCacheSuccess: "สำเร็จ:", // NEW
-        logoCacheFailed: "ล้มเหลว:", // NEW
-        logoCacheTotal: "จำนวนโลโก้ใน Cache:", // NEW
+        logoCacheSummary: "สรุปการนำเข้า:",
+        logoCacheSuccess: "สำเร็จ:",
+        logoCacheFailed: "ล้มเหลว:",
+        logoCacheTotal: "จำนวนโลโก้ใน Cache:",
+
+        // NEW STRINGS FOR V2.8
+        mobileControlTitle: "ควบคุมผ่านมือถือ (OBSScore Remote)",
+        mobileControlDesc: "ควบคุมสกอร์บอร์ดผ่านอินเทอร์เน็ตด้วยมือถือ",
+        createRoom: "สร้างห้อง",
+        roomName: "ชื่อห้อง",
+        roomId: "รหัสห้อง",
+        scanQr: "สแกน QR Code เพื่อเชื่อมต่อ",
+        waitingConnection: "กำลังรอการเชื่อมต่อ...",
+        connectedDevice: "อุปกรณ์ที่เชื่อมต่อ:",
+        disconnect: "ตัดการเชื่อมต่อ",
+        openMobileApp: "เปิดหน้าเว็บมือถือ",
+        remoteStatus: "สถานะ:",
+        remoteStatusWait: "เตรียมพร้อม",
+        remoteStatusReady: "รอการจับคู่",
+        remoteStatusConnected: "เชื่อมต่อแล้ว",
     },
 };

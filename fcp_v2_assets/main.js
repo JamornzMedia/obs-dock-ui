@@ -32,7 +32,7 @@ const elements = [
     "tagsTable",
     "actionSettingsTable",
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
-    // NEW ELEMENT ID (Add this to HTML later)
+    // NEW ELEMENT ID
     "logoCacheCountLabel"
 ].reduce((acc, id) => {
     // Safety check for optional elements
@@ -154,6 +154,8 @@ const closeAllPopups = () => {
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
     elements.welcomeSponsorPopup.style.display = 'none';
+    // NEW
+    if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
 };
 
 const showWelcomePopup = () => {
@@ -1104,8 +1106,6 @@ const exitEditMode = (team, applyChanges) => {
 };
 
 const setupEventListeners = () => {
-    // --- KEY LISTENER MOVED TO START OF THIS FUNCTION ---
-    // Fix: Moved to earliest possible point for macro pad compatibility
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.getAttribute('id')?.startsWith('keybind-input') || e.target.getAttribute('id')?.startsWith('action-source-input')) return;
 
@@ -1122,7 +1122,6 @@ const setupEventListeners = () => {
             if (key === ' ') key = 'SPACE';
         }
 
-        // Fix: If no key is detected (just modifier), return
         if (!key && modifiers.length === 0) return;
 
         const keyCombination = [...modifiers, key].filter(k => k).join('+');
@@ -1154,8 +1153,6 @@ const setupEventListeners = () => {
             }
         }
     });
-    // --- END KEY LISTENER ---
-
 
     const saveHandler = () => {
         localStorage.setItem('detailsText', elements.detailsText.value);
@@ -1332,3 +1329,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
 });
+
+// --- EXPOSE API FOR REMOTE CONTROL (V2.8) ---
+window.fcpAPI = {
+    applyMatch: applyMatch,
+    changeScore: changeScore,
+    changeScore2: changeScore2,
+    resetToStartTime: resetToStartTime,
+    updateTeamFromInputs: (team, name, color1) => {
+        const master = team === 'A' ? masterTeamA : masterTeamB;
+        const newName = name || master.name;
+        const newColor = color1 || master.color1;
+        updateTeamUI(team, newName, master.logoFile, newColor, master.color2);
+
+        // Sync input fields
+        if (team === 'A') {
+            elements.nameAInput.value = newName;
+            elements.colorA.value = newColor;
+        } else {
+            elements.nameBInput.value = newName;
+            elements.colorB.value = newColor;
+        }
+    },
+    toggleHalf: toggleHalf,
+    stopTimer: stopTimer,
+    obs_saveReplay: () => {
+        obs.call('SaveReplayBuffer').then(() => showToast("Replay Saved", "success")).catch(err => showToast("Save Replay Failed: " + err.error, "error"));
+    },
+    obs_setCurrentScene: (sceneName) => {
+        obs.call('SetCurrentProgramScene', { sceneName: sceneName }).then(() => showToast("Switched to " + sceneName, "success")).catch(err => showToast("Switch Scene Failed: " + err.error, "error"));
+    }
+};
+
+// Import Remote Logic
+import './remote.js';

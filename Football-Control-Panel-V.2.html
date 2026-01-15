@@ -11,8 +11,12 @@
     </script>
 
     <meta charset="UTF-8">
-    <title data-lang="appTitle">Football Scoreboard Controller</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.8</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -446,7 +450,6 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            /* ลบเส้นคั่นของแต่ละปุ่มออกตามที่ร้องขอ */
             border: none;
         }
 
@@ -457,11 +460,8 @@
             font-weight: 600;
             color: #fff;
             box-shadow: 0 0 0 rgba(0, 0, 0, 0.2);
-            /* ทำให้ดูไม่รก */
             transition: opacity 0.2s;
         }
-
-        /* End Action Buttons Card Styles */
 
         .timer-area-container {
             display: flex;
@@ -538,7 +538,6 @@
             border-radius: var(--border-radius);
             width: 90%;
             max-width: 600px;
-            /* Increased max-width for better table display */
             border: 1px solid var(--border-color);
             z-index: 100;
             max-height: 90vh;
@@ -653,7 +652,6 @@
             color: var(--text-muted-color);
         }
 
-        /* Keybind Table Styles (Original) */
         .keybind-table {
             width: 100%;
         }
@@ -665,17 +663,14 @@
 
         .keybind-table td:nth-child(1) {
             width: 40%;
-            /* ลดความกว้างของ Label */
         }
 
         .keybind-table td:nth-child(2) {
             width: 50px;
-            /* ลดความกว้างของ Input Keybinds */
         }
 
         .keybind-table td:nth-child(3) {
             width: 70px;
-            /* เพิ่มพื้นที่สำหรับปุ่ม Clear */
             text-align: right;
         }
 
@@ -706,9 +701,7 @@
             padding: 0;
         }
 
-        /* End Keybind Table Styles */
-
-        /* Action Settings Table Styles (Revised for Source Control) */
+        /* Action Settings Table Styles */
         .action-settings-table {
             width: 100%;
             border-collapse: collapse;
@@ -729,48 +722,37 @@
             background: #333;
         }
 
-        /* Adjusted Widths for Source Control Table */
         .action-settings-table td:nth-child(1) {
             width: 10px;
             text-align: center;
             font-weight: bold;
         }
 
-        /* # */
         .action-settings-table td:nth-child(2) {
             width: 80px;
         }
 
-        /* Name Input */
         .action-settings-table td:nth-child(3) {
             width: 30px;
         }
 
-        /* Color */
         .action-settings-table td:nth-child(4) {
             width: 55px;
         }
 
-        /* Height */
         .action-settings-table td:nth-child(5) {
             width: 120px;
         }
 
-        /* Source Name Input (Increased) */
         .action-settings-table td:nth-child(6) {
             width: 80px;
         }
 
-        /* Action Select (NEW) */
         .action-settings-table td:nth-child(7) {
             width: 70px;
             text-align: right;
         }
 
-        /* Edit/Save */
-
-
-        /* แก้ไขความสูงของช่อง Input ให้สูงเท่าตัวหนังสือ */
         .action-settings-table input[type="text"],
         .action-settings-table input[type="number"],
         .action-settings-table select {
@@ -783,7 +765,6 @@
 
         .action-settings-table select {
             padding: 4px 0px;
-            /* Fix padding for select */
         }
 
         .action-settings-table input[type="color"] {
@@ -797,9 +778,6 @@
             background: #333;
         }
 
-        /* End Action Settings Table Styles */
-
-        /* Help Table Source Name (Click to Copy) */
         #sourcesTableBody td:nth-child(1) {
             font-weight: bold;
             cursor: pointer;
@@ -810,7 +788,6 @@
         #sourcesTableBody td:nth-child(1):hover {
             color: var(--accent-color);
         }
-
 
         .changelog-list {
             list-style: none;
@@ -957,7 +934,6 @@
             display: none !important;
         }
 
-        /* Styles for Tabs in Welcome Popup */
         .tab-buttons {
             display: flex;
             justify-content: space-around;
@@ -1012,7 +988,6 @@
             font-size: 0.8rem;
         }
 
-        /* NEW: Logo Drop Zone Styles */
         #logoDropZone {
             border: 2px dashed var(--border-color);
             border-radius: var(--border-radius);
@@ -1046,7 +1021,10 @@
                 </div>
                 <div class="row" style="margin-bottom:0;">
                     <label for="matchID" data-lang="matchId"></label>
-                    <input type="number" id="matchID" min="1" value="1">
+                    <!-- PC Button Trigger -->
+                    <button id="pcMatchIdBtn" onclick="openPcMatchPopup()"
+                        style="width: 60px; text-align: center; background: #000; color: #fff; border: 1px solid #333; cursor: pointer;">1</button>
+                    <input type="hidden" id="matchID" value="1">
                     <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span
                             data-lang="load"></span></button>
                     <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span
@@ -1198,6 +1176,9 @@
                 <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
                         class="fas fa-cog"></i></button>
 
+                <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"><i
+                        class="fas fa-mobile-alt"></i></button>
+
                 <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i
                         class="fas fa-question-circle"></i></button>
                 <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
@@ -1219,6 +1200,71 @@
             <div class="footer-changelog-link">
                 <span data-lang="footerAppName"></span> - <a id="changelogBtn" data-lang="changelog"></a>
             </div>
+        </div>
+    </div>
+
+    <div id="mobileControlPopup" class="popup-modal">
+        <h3><i class="fas fa-mobile-alt"></i> <span data-lang="mobileControlTitle">Mobile Remote Control</span></h3>
+        <p data-lang="mobileControlDesc"></p>
+
+        <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;">
+            <div class="row">
+                <label style="width: 80px;" data-lang="roomName">Name</label>
+                <input type="text" id="remoteRoomName" placeholder="My Scoreboard" maxlength="50" style="flex-grow: 1;">
+            </div>
+            <div class="row" id="remoteRoomIdContainer" style="margin-top: 10px; display: none;">
+                <label style="width: 80px;" data-lang="roomId">ID</label>
+                <input type="text" id="remoteRoomId" readonly
+                    style="flex-grow: 1; font-family: monospace; letter-spacing: 2px; font-weight: bold; text-align: center; color: var(--accent-color);">
+            </div>
+            <div class="row center" style="margin-top: 15px;">
+                <button id="createRoomBtn" class="btn-primary" style="width: 100%; padding: 10px;"><i
+                        class="fas fa-broadcast-tower"></i> <span data-lang="createRoom">Create Room</span></button>
+                <button id="closeRoomBtn" class="btn-danger" style="width: 100%; padding: 10px; display: none;"><i
+                        class="fas fa-power-off"></i> <span data-lang="closeRoom">Close Room</span></button>
+            </div>
+        </div>
+
+        <div id="remoteConnectionUI" style="display: none; text-align: center;">
+            <div style="background: white; padding: 10px; display: inline-block; border-radius: 8px;">
+                <img id="remoteQrCode" src="" alt="QR Code" style="width: 150px; height: 150px;">
+            </div>
+            <p style="font-size: 0.9rem; margin-top: 10px; color: var(--text-muted-color);">
+                <span data-lang="openMobileApp"></span>: <br>
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <input type="text" id="mobileLinkInput" readonly style="flex-grow: 1; font-size: 0.85rem;">
+                <button id="copyMobileLinkBtn" class="btn-primary"><i class="fas fa-copy"></i></button>
+            </div>
+            </p>
+            <div style="margin-top: 15px; padding: 10px; background: #222; border-radius: 4px;">
+                <span id="remoteStatusText" style="color: var(--warning-color); font-weight: bold;">Waiting...</span>
+            </div>
+
+            <div
+                style="margin-top: 15px; padding: 10px; border-top: 1px solid #444; font-size: 0.85rem; text-align: left;">
+                <strong style="color: #3b82f6;"><i class="fas fa-info-circle"></i> OBS Setup (Click to copy):</strong>
+                <ul style="margin: 5px 0 0 15px; padding: 0; color: #ccc;">
+                    <li style="margin-bottom: 5px;">
+                        <span style="color: #a855f7; font-weight: bold;">Save Replay:</span> Saves Replay Buffer
+                    </li>
+                    <li style="margin-bottom: 5px; cursor: pointer;" onclick="copyToClipboard('SceneReplay')"
+                        title="Click to copy">
+                        <span style="color: #6366f1; font-weight: bold;">Scene Replay:</span>
+                        <code style="background: #333; padding: 2px 5px; border-radius: 3px;">SceneReplay</code> <i
+                            class="fas fa-copy" style="font-size: 0.7rem;"></i>
+                    </li>
+                    <li style="cursor: pointer;" onclick="copyToClipboard('MainScene')" title="Click to copy">
+                        <span style="color: #14b8a6; font-weight: bold;">Main Scene:</span>
+                        <code style="background: #333; padding: 2px 5px; border-radius: 3px;">MainScene</code> <i
+                            class="fas fa-copy" style="font-size: 0.7rem;"></i>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="row center" style="margin-top: 20px;">
+            <button id="closeMobilePopupBtn" class="btn-secondary"><i class="fas fa-times"></i> <span
+                    data-lang="close">Close</span></button>
         </div>
     </div>
 
@@ -1489,6 +1535,73 @@
 
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
+    <!-- PC Match ID Popup -->
+    <div id="pcMatchPopup"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
+        <div
+            style="background: #222; padding: 20px; border-radius: 10px; border: 1px solid #444; width: 300px; text-align: center;">
+            <h3 style="margin-top: 0; color: #fff;">Select Match ID</h3>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0;">
+                <button onclick="adjustPcMatchId(-1)"
+                    style="width: 50px; height: 50px; border-radius: 50%; background: #cc0000; color: white; font-size: 24px; border: none; cursor: pointer;">-</button>
+                <div id="pcMatchPopupVal" style="font-size: 48px; font-weight: bold; color: #3b82f6; width: 80px;">1
+                </div>
+                <button onclick="adjustPcMatchId(1)"
+                    style="width: 50px; height: 50px; border-radius: 50%; background: #22c55e; color: white; font-size: 24px; border: none; cursor: pointer;">+</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="closePcMatchPopup()"
+                    style="padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                <button onclick="confirmPcMatchId()"
+                    style="padding: 10px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;">LOAD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script for PC Popup -->
+    <script>
+        function openPcMatchPopup() {
+            const current = document.getElementById('matchID').value;
+            document.getElementById('pcMatchPopupVal').innerText = current;
+            document.getElementById('pcMatchPopup').style.display = 'flex';
+        }
+        function closePcMatchPopup() {
+            document.getElementById('pcMatchPopup').style.display = 'none';
+        }
+        function adjustPcMatchId(delta) {
+            let el = document.getElementById('pcMatchPopupVal');
+            let val = parseInt(el.innerText) || 1;
+            val += delta;
+            if (val < 1) val = 1;
+            el.innerText = val;
+        }
+        function confirmPcMatchId() {
+            const val = document.getElementById('pcMatchPopupVal').innerText;
+            document.getElementById('matchID').value = val;
+            document.getElementById('pcMatchIdBtn').innerText = val;
+            fcpAPI.applyMatch(); // Trigger existing Logic
+            closePcMatchPopup();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Simple toast fallback if main toast not available (though it is)
+                const el = document.createElement('div');
+                el.style.position = 'fixed';
+                el.style.bottom = '20px';
+                el.style.left = '50%';
+                el.style.transform = 'translateX(-50%)';
+                el.style.background = '#22c55e';
+                el.style.color = 'white';
+                el.style.padding = '10px 20px';
+                el.style.borderRadius = '5px';
+                el.style.zIndex = '3000';
+                el.innerText = 'Copied: ' + text;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 2000);
+            });
+        }
+    </script>
 </body>
 
 </html>
