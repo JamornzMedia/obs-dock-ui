@@ -354,7 +354,11 @@
                         const colors = ['#22c55e', '#f97316', '#3b82f6'];
                         if (act.index) btn.style.backgroundColor = colors[(act.index - 1) % 3];
 
-                        btn.onclick = () => sendCmd('actionBtn', null, null, act.index);
+                        btn.onclick = () => {
+                            if (conn && conn.open) {
+                                conn.send({ type: 'actionBtn', index: act.index });
+                            }
+                        };
                         grid.appendChild(btn);
                     });
                 } else {
