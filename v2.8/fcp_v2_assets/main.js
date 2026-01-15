@@ -1350,6 +1350,13 @@ window.fcpAPI = {
             elements.nameBInput.value = newName;
             elements.colorB.value = newColor;
         }
+    },
+    toggleHalf: toggleHalf,
+    obs_saveReplay: () => {
+        obs.call('SaveReplayBuffer').then(() => showToast("Replay Saved", "success")).catch(err => showToast("Save Replay Failed: " + err.error, "error"));
+    },
+    obs_setCurrentScene: (sceneName) => {
+        obs.call('SetCurrentProgramScene', { sceneName: sceneName }).then(() => showToast("Switched to " + sceneName, "success")).catch(err => showToast("Switch Scene Failed: " + err.error, "error"));
     }
 };
 

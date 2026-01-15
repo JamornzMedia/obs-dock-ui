@@ -31,8 +31,8 @@
 <body class="h-screen flex flex-col overflow-hidden">
 
     <div id="login-screen" class="absolute inset-0 z-50 bg-neutral-900 flex flex-col justify-center p-6">
-        <h1 class="text-3xl font-bold text-center text-blue-500 mb-2">OBSScore</h1>
-        <p class="text-center text-gray-500 mb-6 text-sm">Remote Controller V2.8</p>
+        <h1 class="text-3xl font-bold text-center text-blue-500 mb-2">OBSScore Remote</h1>
+        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.8</p>
 
         <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700 shadow-lg space-y-4">
             <div>
@@ -51,6 +51,7 @@
 
     <div id="main-ui" class="hidden flex-1 flex flex-col p-2 space-y-2 h-full overflow-y-auto">
         <div class="flex justify-between items-center bg-neutral-800 p-2 rounded-lg border border-neutral-700">
+            <!-- Left: Room Info -->
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <div class="flex flex-col">
@@ -58,6 +59,13 @@
                     <span id="room-id-display" class="text-xs text-gray-500 font-mono"></span>
                 </div>
             </div>
+
+            <!-- Center: Title -->
+            <div class="absolute left-1/2 transform -translate-x-1/2 font-bold text-blue-500 tracking-wide">
+                OBSScore
+            </div>
+
+            <!-- Right: Match Load -->
             <div class="flex gap-2">
                 <input type="number" id="match-id-input"
                     class="w-12 bg-black border border-gray-600 text-center rounded text-xs p-1" value="1">
@@ -115,11 +123,35 @@
                 <div class="text-xs text-gray-400">Half</div>
                 <div id="half-text" class="font-bold text-xl">1st</div>
             </div>
-            <div id="timer-text" class="text-4xl font-mono font-bold text-yellow-400">00:00</div>
+            <div class="flex flex-col gap-2">
+                <button onclick="sendCmd('timer', null, 'reset')"
+                    class="bg-gray-600 w-12 h-8 rounded flex items-center justify-center text-white shadow-lg btn-push text-xs">
+                    Reset
+                </button>
+                <button onclick="sendCmd('timer', null, 'half')"
+                    class="bg-orange-600 w-12 h-8 rounded flex items-center justify-center text-white shadow-lg btn-push text-xs">
+                    Half
+                </button>
+            </div>
+            <div id="timer-text" class="text-5xl font-mono font-bold text-yellow-400">00:00</div>
             <button onclick="sendCmd('timer', null, 'playpause')"
-                class="bg-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg btn-push">
+                class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg btn-push text-xl">
                 <i class="fas fa-play"></i>
             </button>
+        </div>
+
+        <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700">
+            <div class="text-xs text-gray-400 mb-2 uppercase font-bold">OBS Control</div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="sendCmd('obs', null, 'saveReplay')"
+                    class="bg-purple-600 p-3 rounded text-xs font-bold text-white shadow-sm btn-push">Save
+                    Replay</button>
+                <button onclick="sendCmd('obs', null, 'scene', 'SceneReplay')"
+                    class="bg-indigo-600 p-3 rounded text-xs font-bold text-white shadow-sm btn-push">Scene
+                    Replay</button>
+                <button onclick="sendCmd('obs', null, 'scene', 'MainScene')"
+                    class="bg-teal-600 p-3 rounded text-xs font-bold text-white shadow-sm btn-push">Main Scene</button>
+            </div>
         </div>
 
         <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700">
@@ -222,9 +254,9 @@
             });
         }
 
-        function sendCmd(type, val, action) {
+        function sendCmd(type, val, action, name) {
             if (conn && conn.open) {
-                conn.send({ type, val, action });
+                conn.send({ type, val, action, name });
             }
         }
 

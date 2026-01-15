@@ -211,6 +211,11 @@ function processCommand(cmd) {
         case 'timer':
             if (cmd.action === 'playpause') document.getElementById('playBtn').click();
             if (cmd.action === 'reset') window.fcpAPI.resetToStartTime();
+            if (cmd.action === 'half') window.fcpAPI.toggleHalf(); // Handle Half Toggle
+            break;
+        case 'obs': // New OBS Command Handler
+            if (cmd.action === 'saveReplay') window.fcpAPI.obs_saveReplay();
+            if (cmd.action === 'scene') window.fcpAPI.obs_setCurrentScene(cmd.name);
             break;
         case 'actionBtn':
             const btn = document.getElementById(`actionBtn${cmd.index}`);
