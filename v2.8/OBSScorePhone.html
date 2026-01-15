@@ -53,7 +53,10 @@
         <div class="flex justify-between items-center bg-neutral-800 p-2 rounded-lg border border-neutral-700">
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span id="room-name-display" class="font-bold text-sm text-gray-300">Room</span>
+                <div class="flex flex-col">
+                    <span id="room-name-display" class="font-bold text-sm text-gray-300 leading-tight">Room</span>
+                    <span id="room-id-display" class="text-xs text-gray-500 font-mono"></span>
+                </div>
             </div>
             <div class="flex gap-2">
                 <input type="number" id="match-id-input"
@@ -134,14 +137,18 @@
     <script>
         // ⚠️ ใส่ค่า Config ของ Firebase ของคุณที่นี่
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            storageBucket: "obscam-p2p.firebasestorage.app",
+            messagingSenderId: "531335072084",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
+
+        if (firebaseConfig.apiKey === "YOUR_API_KEY" || firebaseConfig.apiKey.includes("YOUR_")) {
+            alert("⚠️ Firebase Config is missing!\nPlease open 'OBSScorePhone.html' to enter your Firebase API Keys.");
+        }
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -178,6 +185,7 @@
                 }
                 const roomData = snapshot.val();
                 document.getElementById('room-name-display').textContent = roomData.name;
+                document.getElementById('room-id-display').textContent = 'ID: ' + rid; // Show Room ID
 
                 // 2. Connect via PeerJS
                 startPeerConnection(rid);

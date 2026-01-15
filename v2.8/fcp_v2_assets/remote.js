@@ -2,13 +2,13 @@
 
 // ⚠️ ใส่ค่า Config ของ Firebase ของคุณที่นี่ ⚠️
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+    authDomain: "obscam-p2p.firebaseapp.com",
+    databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "obscam-p2p",
+    storageBucket: "obscam-p2p.firebasestorage.app",
+    messagingSenderId: "531335072084",
+    appId: "1:531335072084:web:dc373db6b66581a63160c1"
 };
 
 // Initialize Firebase
@@ -60,7 +60,8 @@ function generateRoomId() {
 }
 
 function initRemote() {
-    if (!els.roomId.value) els.roomId.value = generateRoomId();
+    // Clear ID initially
+    if (els.roomId) els.roomId.value = "";
 
     if (els.btn) {
         els.btn.addEventListener('click', () => {
@@ -76,10 +77,9 @@ function initRemote() {
         });
     }
 
+    // Hide Gen Button as we generate on create
     if (els.genBtn) {
-        els.genBtn.addEventListener('click', () => {
-            els.roomId.value = generateRoomId();
-        });
+        els.genBtn.style.display = 'none';
     }
 
     if (els.createBtn) {
@@ -88,15 +88,30 @@ function initRemote() {
 }
 
 function startHosting() {
-    const rid = els.roomId.value;
-    const rname = els.roomName.value || "Scoreboard";
+    // 0. Config Check
+    if (firebaseConfig.apiKey === "YOUR_API_KEY" || firebaseConfig.apiKey.includes("YOUR_")) {
+        alert("⚠️ Firebase Config is missing!\nPlease configure 'fcp_v2_assets/remote.js' and 'OBSScorePhone.html'.");
+        return;
+    }
+
+    // 1. Validation
+    const rname = els.roomName.value.trim();
+    if (!rname) {
+        alert("Please enter a Room Name (max 50 chars).");
+        els.roomName.focus();
+        return;
+    }
+
+    // 2. Generate ID
+    const rid = generateRoomId();
+    els.roomId.value = rid;
     currentRoomId = rid;
 
     // UI Updates
     els.createBtn.disabled = true;
     els.createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
 
-    // 1. Setup PeerJS
+    // 3. Setup PeerJS
     const myPeerId = `obsscore-host-${rid}`;
 
     if (peer) peer.destroy();
@@ -106,7 +121,7 @@ function startHosting() {
     peer.on('open', (id) => {
         console.log('My peer ID is: ' + id);
 
-        // 2. Register Room in Firebase
+        // 4. Register Room in Firebase
         const roomRef = database.ref('obs_rooms/' + rid);
         roomRef.set({
             name: rname,
@@ -120,6 +135,11 @@ function startHosting() {
             els.statusText.style.color = "#f97316";
 
             roomRef.onDisconnect().remove();
+        }).catch(err => {
+            console.error("Firebase Error:", err);
+            alert("Firebase Error: " + err.message);
+            els.createBtn.disabled = false;
+            els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
         });
     });
 
