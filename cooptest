@@ -1,0 +1,430 @@
+import React, { useState } from 'react';
+import { 
+  Users, 
+  MapPin, 
+  Plus, 
+  Search, 
+  Home, 
+  FileText, 
+  ChevronLeft, 
+  Navigation,
+  Save,
+  Phone,
+  Map
+} from 'lucide-react';
+
+// --- Mock Data ---
+const initialMembers = [
+  {
+    id: 1,
+    regNo: "67001",
+    firstName: "สมชาย",
+    lastName: "ใจดี",
+    address: "123 หมู่ 1 ต.ในเมือง อ.เมือง จ.พิษณุโลก",
+    phone: "081-234-5678",
+    landType: "โฉนดที่ดิน",
+    landDesc: "ที่นา 10 ไร่ ติดคลองชลประทาน",
+    gpsLat: "16.8211",
+    gpsLng: "100.2656"
+  },
+  {
+    id: 2,
+    regNo: "67002",
+    firstName: "วิภา",
+    lastName: "รักสงบ",
+    address: "44/5 หมู่ 3 ต.บ้านคลอง อ.เมือง จ.สุโขทัย",
+    phone: "089-987-6543",
+    landType: "น.ส.3 ก.",
+    landDesc: "สวนผลไม้ 5 ไร่",
+    gpsLat: "17.0077",
+    gpsLng: "99.8264"
+  }
+];
+
+// --- Sub-Components (Move OUTSIDE App to fix re-render focus issue) ---
+
+const Navbar = ({ view, navigateTo }) => (
+  <div className="bg-blue-700 text-white p-4 sticky top-0 z-50 shadow-md">
+    <div className="flex justify-between items-center max-w-lg mx-auto">
+      <div className="font-bold text-lg flex items-center gap-2" onClick={() => navigateTo('home')}>
+        <FileText size={24} />
+        <span>ระบบสหกรณ์</span>
+      </div>
+      {view !== 'home' && (
+        <button onClick={() => navigateTo('home')} className="p-2 hover:bg-blue-600 rounded-full">
+          <Home size={20} />
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+const HomeView = ({ membersCount, navigateTo }) => (
+  <div className="space-y-6 animate-fade-in">
+    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
+      <h2 className="text-2xl font-bold mb-1">ยินดีต้อนรับ</h2>
+      <p className="opacity-90">ระบบจัดการข้อมูลลูกหนี้และหลักทรัพย์</p>
+      <div className="mt-6 flex items-center gap-4">
+        <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+          <div className="text-3xl font-bold">{membersCount}</div>
+          <div className="text-xs">สมาชิกทั้งหมด</div>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <button 
+        onClick={() => navigateTo('list')}
+        className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-3 border border-gray-100"
+      >
+        <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+          <Search size={24} />
+        </div>
+        <span className="font-medium text-gray-700">ค้นหาข้อมูล</span>
+      </button>
+
+      <button 
+        onClick={() => navigateTo('add')}
+        className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-3 border border-gray-100"
+      >
+        <div className="bg-green-100 p-3 rounded-full text-green-600">
+          <Plus size={24} />
+        </div>
+        <span className="font-medium text-gray-700">เพิ่มรายชื่อ</span>
+      </button>
+    </div>
+  </div>
+);
+
+const ListView = ({ filteredMembers, searchTerm, setSearchTerm, navigateTo }) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-2 mb-4">
+      <button onClick={() => navigateTo('home')} className="text-gray-500">
+        <ChevronLeft />
+      </button>
+      <h2 className="text-xl font-bold text-gray-800">รายชื่อสมาชิก</h2>
+    </div>
+
+    <div className="relative">
+      <input 
+        type="text"
+        placeholder="ค้นหา ชื่อ, สกุล หรือ เลขทะเบียน..."
+        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
+    </div>
+
+    <div className="space-y-3 pb-20">
+      {filteredMembers.length === 0 ? (
+        <div className="text-center py-10 text-gray-400">ไม่พบข้อมูล</div>
+      ) : (
+        filteredMembers.map(member => (
+          <div 
+            key={member.id}
+            onClick={() => navigateTo('detail', member)}
+            className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-95 transition-transform"
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-medium">
+                  {member.regNo}
+                </span>
+                <span className="font-bold text-gray-800">{member.firstName} {member.lastName}</span>
+              </div>
+              <div className="text-sm text-gray-500 flex items-center gap-1">
+                <MapPin size={12} />
+                <span className="truncate max-w-[200px]">{member.address}</span>
+              </div>
+            </div>
+            <ChevronLeft className="rotate-180 text-gray-300" />
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const AddView = ({ formData, handleInputChange, handleSave, getCurrentLocation, navigateTo }) => (
+  <div className="pb-10">
+    <div className="flex items-center gap-2 mb-6">
+      <button onClick={() => navigateTo('home')} className="text-gray-500">
+        <ChevronLeft />
+      </button>
+      <h2 className="text-xl font-bold text-gray-800">เพิ่มสมาชิกใหม่</h2>
+    </div>
+
+    <form onSubmit={handleSave} className="space-y-4">
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
+        <h3 className="font-bold text-gray-700 border-b pb-2">ข้อมูลส่วนตัว</h3>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">เลขทะเบียนสมาชิก</label>
+          <input required name="regNo" value={formData.regNo} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น 67001" />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">ชื่อ</label>
+            <input required name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">นามสกุล</label>
+            <input required name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
+          <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">ที่อยู่ปัจจุบัน</label>
+          <textarea required name="address" value={formData.address} onChange={handleInputChange} rows="2" className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+      </div>
+
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
+        <h3 className="font-bold text-gray-700 border-b pb-2 flex items-center gap-2">
+          <Map size={18} />
+          ข้อมูลหลักทรัพย์ค้ำประกัน
+        </h3>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">ประเภทเอกสารสิทธิ์</label>
+          <select name="landType" value={formData.landType} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option>โฉนดที่ดิน</option>
+            <option>น.ส.3 ก.</option>
+            <option>ส.ป.ก.</option>
+            <option>อื่นๆ</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">รายละเอียดที่ดิน (ไร่-งาน-วา)</label>
+          <input name="landDesc" value={formData.landDesc} onChange={handleInputChange} className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น 5 ไร่ 2 งาน บ้านพร้อมที่ดิน" />
+        </div>
+
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-bold text-blue-800">พิกัด GPS ที่ดิน</label>
+            <button 
+              type="button"
+              onClick={getCurrentLocation}
+              className="text-xs bg-blue-600 text-white px-2 py-1 rounded flex items-center gap-1 hover:bg-blue-700"
+            >
+              <Navigation size={12} />
+              ดึงพิกัดจุดนี้
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder="ละติจูด" name="gpsLat" value={formData.gpsLat} onChange={handleInputChange} className="w-full p-2 border rounded bg-white text-sm" />
+            <input placeholder="ลองจิจูด" name="gpsLng" value={formData.gpsLng} onChange={handleInputChange} className="w-full p-2 border rounded bg-white text-sm" />
+          </div>
+          <p className="text-xs text-gray-500 mt-2">* กดปุ่มเพื่อดึงพิกัดปัจจุบันหากลงพื้นที่ หรือกรอกเองจากโฉนด</p>
+        </div>
+      </div>
+
+      <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-green-700 flex justify-center items-center gap-2">
+        <Save size={20} />
+        บันทึกข้อมูล
+      </button>
+    </form>
+  </div>
+);
+
+const DetailView = ({ selectedMember, navigateTo }) => {
+  if (!selectedMember) return null;
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${selectedMember.gpsLat},${selectedMember.gpsLng}`;
+
+  return (
+    <div className="pb-10">
+      <div className="flex items-center gap-2 mb-6">
+        <button onClick={() => navigateTo('list')} className="text-gray-500">
+          <ChevronLeft />
+        </button>
+        <h2 className="text-xl font-bold text-gray-800">ข้อมูลสมาชิก</h2>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-blue-600 p-6 text-white text-center">
+          <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full mx-auto flex items-center justify-center mb-3 text-2xl font-bold">
+            {selectedMember.firstName.charAt(0)}
+          </div>
+          <h1 className="text-2xl font-bold">{selectedMember.firstName} {selectedMember.lastName}</h1>
+          <p className="opacity-80">ทะเบียน: {selectedMember.regNo}</p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">ข้อมูลติดต่อ</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <MapPin className="text-blue-500 shrink-0 mt-1" size={18} />
+                <span className="text-gray-700">{selectedMember.address}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="text-green-500 shrink-0" size={18} />
+                <span className="text-gray-700">{selectedMember.phone || "-"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 my-4"></div>
+
+          {/* Land/Collateral Info */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">หลักทรัพย์ค้ำประกัน</h3>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="mb-2">
+                <span className="text-xs text-gray-500 block">ประเภท</span>
+                <span className="font-medium text-gray-800">{selectedMember.landType}</span>
+              </div>
+              <div className="mb-4">
+                <span className="text-xs text-gray-500 block">รายละเอียด</span>
+                <span className="font-medium text-gray-800">{selectedMember.landDesc}</span>
+              </div>
+              
+              {selectedMember.gpsLat && selectedMember.gpsLng ? (
+                <a 
+                  href={mapUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 bg-blue-100 text-blue-700 py-3 rounded-lg font-bold hover:bg-blue-200 transition-colors w-full"
+                >
+                  <MapPin size={18} />
+                  นำทางไปที่ดิน (Google Maps)
+                </a>
+              ) : (
+                <div className="text-center text-gray-400 text-sm py-2">ไม่ระบุพิกัด GPS</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main App Component ---
+
+export default function App() {
+  // State Management
+  const [view, setView] = useState('home');
+  const [members, setMembers] = useState(initialMembers);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    regNo: '',
+    firstName: '',
+    lastName: '',
+    address: '',
+    phone: '',
+    landType: 'โฉนดที่ดิน',
+    landDesc: '',
+    gpsLat: '',
+    gpsLng: ''
+  });
+
+  // Function to switch views
+  const navigateTo = (page, member = null) => {
+    if (member) setSelectedMember(member);
+    setView(page);
+    window.scrollTo(0, 0);
+  };
+
+  // Function to handle form input
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Function to get current GPS location
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData(prev => ({
+            ...prev,
+            gpsLat: position.coords.latitude.toFixed(6),
+            gpsLng: position.coords.longitude.toFixed(6)
+          }));
+          alert("ดึงพิกัดปัจจุบันเรียบร้อยแล้ว");
+        },
+        (error) => {
+          alert("ไม่สามารถดึงพิกัดได้: " + error.message);
+        }
+      );
+    } else {
+      alert("Browser ของคุณไม่รองรับการระบุตำแหน่ง");
+    }
+  };
+
+  // Function to save new member
+  const handleSave = (e) => {
+    e.preventDefault();
+    const newMember = {
+      ...formData,
+      id: Date.now()
+    };
+    setMembers([newMember, ...members]);
+    alert("บันทึกข้อมูลเรียบร้อย");
+    setFormData({
+      regNo: '', firstName: '', lastName: '', address: '', phone: '',
+      landType: 'โฉนดที่ดิน', landDesc: '', gpsLat: '', gpsLng: ''
+    });
+    navigateTo('list');
+  };
+
+  // Filter members based on search
+  const filteredMembers = members.filter(m => 
+    m.firstName.includes(searchTerm) || 
+    m.lastName.includes(searchTerm) || 
+    m.regNo.includes(searchTerm)
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-gray-900">
+      <Navbar view={view} navigateTo={navigateTo} />
+      <div className="max-w-lg mx-auto p-4">
+        {view === 'home' && (
+          <HomeView 
+            membersCount={members.length} 
+            navigateTo={navigateTo} 
+          />
+        )}
+        {view === 'list' && (
+          <ListView 
+            filteredMembers={filteredMembers} 
+            searchTerm={searchTerm} 
+            setSearchTerm={setSearchTerm} 
+            navigateTo={navigateTo} 
+          />
+        )}
+        {view === 'add' && (
+          <AddView 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+            handleSave={handleSave} 
+            getCurrentLocation={getCurrentLocation} 
+            navigateTo={navigateTo} 
+          />
+        )}
+        {view === 'detail' && (
+          <DetailView 
+            selectedMember={selectedMember} 
+            navigateTo={navigateTo} 
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+  
