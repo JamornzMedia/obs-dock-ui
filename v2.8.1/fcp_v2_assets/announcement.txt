@@ -1,0 +1,1 @@
+[UPDATE V2.8.1] 1. Mobile & Web Control Colors (ปรับสีทีมได้จากมือถือ) 2. Google Sheets Support (ดึงข้อมูลจาก Google Sheets) 3. Fixed Layout (แก้บั๊กเลย์เอาท์) 4. Logo Prefix Match (ค้นหาโลโก้แบบย่อ)
