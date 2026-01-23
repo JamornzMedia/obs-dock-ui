@@ -33,7 +33,15 @@ const elements = [
     "actionSettingsTable",
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
     // NEW ELEMENT ID
-    "logoCacheCountLabel"
+    "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
+    // NEW ELEMENT ID
+    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect",
+    // V2.8.1 NEW VISIBILITY INPUTS
+    "visibility_plus_minus", "visibility_reset_time", "visibility_reset_start", "visibility_edit_time", "visibility_countdown",
+    // Online Count
+    "onlineCountVal", "onlineMaxVal",
+    // Logic Elements
+    "injuryTimeContainer", "resetToZeroBtn", "resetToStartBtn", "editTimeBtn"
 ].reduce((acc, id) => {
     // Safety check for optional elements
     const el = $(id);
@@ -51,6 +59,8 @@ let countdownStartTime = 2700;
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
 let logoCache = {};
+let dataSourceMode = 'excel';
+let googleSheetUrl = '';
 
 let masterTeamA = createDefaultTeam('A');
 let masterTeamB = createDefaultTeam('B');
@@ -61,6 +71,9 @@ const KEYBINDS_KEY = 'customKeybinds';
 const ACTION_SETTINGS_KEY = 'actionButtonSettings';
 const LOGO_CACHE_KEY = 'logoDataCache';
 const ACTION_BUTTON_COUNT = 6;
+let maxHalves = parseInt(localStorage.getItem('maxHalves') || '2'); // Default 2
+
+
 
 function createDefaultTeam(teamId) {
     return {
@@ -82,6 +95,16 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     actionType: 'Toggle',
     internalState: false,
 }));
+
+
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
 
 
 // --- OBS ---
@@ -132,6 +155,7 @@ const setSourceVisibility = (sourceName, visible) => {
 
 // --- UI & Language ---
 const showToast = (message, type = 'info') => {
+    elements.toastContainer.innerHTML = ''; // Clear previous toasts
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
@@ -438,6 +462,7 @@ const loadActionSettings = () => {
 
 const renderActionButtons = () => {
     const settings = loadActionSettings();
+
     elements.actionButtonsGrid.innerHTML = '';
 
     settings.forEach((setting, i) => {
@@ -516,13 +541,33 @@ const populateActionSettingsTable = (lang) => {
     });
     window.toggleActionEditMode = toggleActionEditMode;
     window.saveActionSettingsRow = saveActionSettingsRow;
+
 }
+
+// Welcome Screen Logic
+window.enterApp = () => {
+    const screen = document.getElementById('welcomeScreen');
+    if (screen) {
+        screen.style.opacity = '0';
+        setTimeout(() => {
+            screen.style.display = 'none';
+        }, 500);
+    }
+}
+
 
 const loadVisibilitySettings = () => {
     const defaultSettings = {
         score2: true,
         swapCard: true,
         actionButtons: true,
+        labelCount: 5,
+        // V2.9
+        showPlusMinus: true,
+        showResetTime: true,
+        showResetStart: true,
+        showEditTime: true,
+        showCountdown: true
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -536,6 +581,38 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+
+    // V2.9 Visibility Logic
+    if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
+    // showResetTime removed - always visible
+    // showResetTime removed - always visible
+    if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
+    if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
+    if (elements.visibility_edit_time) elements.visibility_edit_time.checked = settings.showEditTime;
+    if (elements.visibility_countdown) elements.visibility_countdown.checked = settings.showCountdown;
+
+    // Apply to UI Elements
+    if (elements.injuryTimeContainer) elements.injuryTimeContainer.style.display = settings.showPlusMinus ? 'flex' : 'none';
+
+    if (elements.resetToZeroBtn) elements.resetToZeroBtn.style.display = 'inline-flex'; // Always visible
+    if (elements.resetToStartBtn) elements.resetToStartBtn.style.display = settings.showResetStart ? 'inline-flex' : 'none';
+    if (elements.editTimeBtn) elements.editTimeBtn.style.display = settings.showEditTime ? 'inline-flex' : 'none';
+
+    // Countdown checkbox container
+    const countdownLabel = elements.countdownCheck ? elements.countdownCheck.closest('label') : null;
+    if (countdownLabel) countdownLabel.style.display = settings.showCountdown ? 'flex' : 'none';
+
+
+    // Label Visibility Control
+    const count = settings.labelCount !== undefined ? settings.labelCount : 5;
+    if (elements.labelCountInput) elements.labelCountInput.value = count;
+
+    for (let i = 1; i <= 5; i++) {
+        const label = elements[`label${i}`];
+        if (label) {
+            label.style.display = i <= count ? 'block' : 'none';
+        }
+    }
 }
 
 const saveVisibilitySetting = (key, value) => {
@@ -706,7 +783,7 @@ const populateLogoCacheList = () => {
 
     keys.forEach(key => {
         const li = document.createElement('li');
-        li.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem;';
+        li.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem; padding: 5px; border-radius: 4px; cursor: pointer; transition: background 0.2s;';
         const img = document.createElement('img');
         img.src = logoCache[key];
         img.alt = key;
@@ -715,6 +792,13 @@ const populateLogoCacheList = () => {
         span.textContent = key;
         li.appendChild(img);
         li.appendChild(span);
+
+        li.onclick = () => {
+            Array.from(elements.logoCacheList.children).forEach(c => c.style.backgroundColor = '');
+            li.style.backgroundColor = 'var(--accent-color)';
+            copySourceName(key); // Copy name on click
+        };
+
         elements.logoCacheList.appendChild(li);
     });
 }
@@ -820,9 +904,19 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
-        const logoKey = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
-        if (logoCache[logoKey]) {
-            logoEl.src = logoCache[logoKey];
+        const logoNameClean = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
+
+        let foundKey = null;
+        if (logoCache[logoNameClean]) {
+            foundKey = logoNameClean;
+        } else {
+            // Prefix Match Strategy
+            const keys = Object.keys(logoCache);
+            foundKey = keys.find(k => k.startsWith(logoNameClean + '.') || k === logoNameClean);
+        }
+
+        if (foundKey && logoCache[foundKey]) {
+            logoEl.src = logoCache[foundKey];
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         } else {
@@ -1011,7 +1105,15 @@ const saveAndUpdateTime = () => {
 }
 
 const toggleHalf = () => {
-    half = half === '1st' ? '2nd' : '1st';
+    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
+    // Limit halves array based on maxHalves
+    const activeHalves = halves.slice(0, maxHalves);
+
+    let currentIndex = activeHalves.indexOf(half);
+    if (currentIndex === -1) currentIndex = 0;
+
+    let nextIndex = (currentIndex + 1) % activeHalves.length;
+    half = activeHalves[nextIndex];
     elements.halfText.textContent = half;
     setText('half_text', half);
 };
@@ -1049,6 +1151,75 @@ const handleExcel = () => {
         reader.readAsArrayBuffer(file);
     };
     input.click();
+};
+
+const fetchGoogleSheet = async () => {
+    if (!googleSheetUrl) return showToast(translations[currentLang].toastGoogleSheetError, 'error');
+
+    // Extract ID (basic regex for standard URLs)
+    const match = googleSheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!match) return showToast(translations[currentLang].toastGoogleSheetError, 'error');
+    const docId = match[1];
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`;
+
+    try {
+        const loadingToast = document.createElement('div');
+        loadingToast.className = 'toast info';
+        loadingToast.textContent = "Fetching Google Sheet...";
+        elements.toastContainer.appendChild(loadingToast);
+
+        const response = await fetch(exportUrl);
+        if (!response.ok) throw new Error("Network response was not ok");
+        const csvText = await response.text();
+
+        // Remove loading toast
+        loadingToast.remove();
+
+        const workbook = XLSX.read(csvText, { type: 'string', raw: true });
+        const sheetName = workbook.SheetNames[0];
+        sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+
+        showToast(translations[currentLang].toastGoogleSheetSuccess, 'success');
+        // Auto-refresh match data if ID matches
+        const currentId = parseInt(elements.matchID.value);
+        if (sheetData.length > 1) {
+            // Optional: could auto-apply match here
+        }
+
+    } catch (e) {
+        console.error(e);
+        showToast(translations[currentLang].toastGoogleSheetError, 'error');
+    }
+}
+
+const handleDataSourceAction = () => {
+    if (dataSourceMode === 'gsheet') {
+        fetchGoogleSheet();
+    } else {
+        handleExcel();
+    }
+};
+
+const setDataSourceMode = (mode) => {
+    dataSourceMode = mode;
+    localStorage.setItem('dataSourceMode', mode);
+
+    const isGSheet = mode === 'gsheet';
+    const gsheetSettings = document.getElementById('gsheetSettings');
+    if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
+
+    const btnSpan = elements.excelBtn.querySelector('span');
+    const trans = translations[currentLang];
+
+    if (isGSheet) {
+        btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
+        btnSpan.setAttribute('data-lang', 'loadFromGoogleSheet');
+        elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
+    } else {
+        btnSpan.textContent = trans.excel;
+        btnSpan.setAttribute('data-lang', 'excel');
+        elements.excelBtn.innerHTML = `<i class="fas fa-file-excel"></i> <span data-lang="excel">${trans.excel}</span>`;
+    }
 };
 
 const copyDetails = () => {
@@ -1189,7 +1360,29 @@ const setupEventListeners = () => {
     elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
 
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
-    elements.excelBtn.addEventListener('click', handleExcel);
+    elements.excelBtn.addEventListener('click', handleDataSourceAction);
+
+    // NEW LISTENERS FOR DATA SOURCE
+    document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            setDataSourceMode(e.target.value);
+        });
+    });
+
+    const saveGSheetBtn = document.getElementById('saveGSheetBtn');
+    if (saveGSheetBtn) {
+        saveGSheetBtn.addEventListener('click', () => {
+            const input = document.getElementById('gsheetUrlInput');
+            if (input) {
+                const url = input.value.trim();
+                if (url) {
+                    googleSheetUrl = url;
+                    localStorage.setItem('googleSheetUrl', url);
+                    showToast(translations[currentLang].toastSaved, 'success');
+                }
+            }
+        });
+    }
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', fullReset);
     elements.swapBtn.addEventListener('click', swapTeams);
@@ -1209,6 +1402,22 @@ const setupEventListeners = () => {
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
 
+    // V2.8.1 Listeners
+    if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
+    if (elements.visibility_reset_time) elements.visibility_reset_time.addEventListener('change', (e) => saveVisibilitySetting('showResetTime', e.target.checked));
+    if (elements.visibility_reset_start) elements.visibility_reset_start.addEventListener('change', (e) => saveVisibilitySetting('showResetStart', e.target.checked));
+    if (elements.visibility_edit_time) elements.visibility_edit_time.addEventListener('change', (e) => saveVisibilitySetting('showEditTime', e.target.checked));
+    if (elements.visibility_countdown) elements.visibility_countdown.addEventListener('change', (e) => saveVisibilitySetting('showCountdown', e.target.checked));
+
+    if (elements.labelCountInput) {
+        elements.labelCountInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value);
+            if (val < 0) val = 0;
+            if (val > 5) val = 5; // Enforce max
+            saveVisibilitySetting('labelCount', val);
+        });
+    }
+
     elements.resetKeybindsBtn.addEventListener('click', resetKeybinds);
     elements.resetColorsBtn.addEventListener('click', resetTeamColors);
 
@@ -1221,6 +1430,7 @@ const setupEventListeners = () => {
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
+        if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
         populateActionSettingsTable(currentLang);
         populateKeybindsTable(currentLang);
         applyVisibilitySettings();
@@ -1250,18 +1460,18 @@ const setupEventListeners = () => {
     elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
     elements.okBtnB.addEventListener('click', () => exitEditMode('B', true));
 
-    elements.colorA.addEventListener('input', (e) => {
+    elements.colorA.addEventListener('input', debounce((e) => {
         updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, e.target.value, masterTeamA.color2);
-    });
-    elements.colorA2.addEventListener('input', (e) => {
+    }, 300)); // Debounce 300ms
+    elements.colorA2.addEventListener('input', debounce((e) => {
         updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, e.target.value);
-    });
-    elements.colorB.addEventListener('input', (e) => {
+    }, 300));
+    elements.colorB.addEventListener('input', debounce((e) => {
         updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, e.target.value, masterTeamB.color2);
-    });
-    elements.colorB2.addEventListener('input', (e) => {
+    }, 300));
+    elements.colorB2.addEventListener('input', debounce((e) => {
         updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, e.target.value);
-    });
+    }, 300));
 
     elements.injuryTimePlusBtn.addEventListener('click', () => changeInjuryTime(1));
     elements.injuryTimeMinusBtn.addEventListener('click', () => changeInjuryTime(-1));
@@ -1289,10 +1499,61 @@ const setupEventListeners = () => {
     });
 
     elements.clearLogoCacheBtn.addEventListener('click', clearLogoCache);
+
+    // LOGO DROP ONE CLICK & DRAG
     elements.logoDropZone.addEventListener('dragover', handleDragOver);
     elements.logoDropZone.addEventListener('dragleave', handleDragLeave);
     elements.logoDropZone.addEventListener('drop', handleFileDrop);
+    elements.logoDropZone.addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.onchange = (e) => {
+            // Mock drag event structure for reuse of handleFileDrop logic or call simpler handler
+            const files = Array.from(e.target.files);
+            if (files.length > 0) processFiles(files);
+        };
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+    });
+
+    // NEW: Max Halves Change Listener
+    if (elements.maxHalvesSelect) {
+        elements.maxHalvesSelect.addEventListener('change', (e) => {
+            maxHalves = parseInt(e.target.value);
+            localStorage.setItem('maxHalves', maxHalves);
+        });
+    }
 };
+
+// NEW HELPER LOOP FOR FILES
+const processFiles = async (files) => {
+    let successCount = 0;
+    showToast("Processing logos...", "info");
+    const promises = files.map(file => {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith('image/')) { resolve(); return; }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileName = file.name.replace(/\.(png|jpe?g|gif|webp)$/i, '');
+                const logoKey = fileName.replace(/\s/g, '').toLowerCase();
+                logoCache[logoKey] = event.target.result;
+                successCount++;
+                resolve();
+            };
+            reader.onerror = () => resolve();
+            reader.readAsDataURL(file);
+        });
+    });
+    await Promise.all(promises);
+    if (successCount > 0) {
+        saveLogoCache();
+        showToast(`Added ${successCount} logos to cache.`, "success");
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
@@ -1304,6 +1565,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedPath) {
         logoFolderPath = savedPath;
     }
+
+    // LOAD DATA SOURCE SETTINGS
+    const savedDSMode = localStorage.getItem('dataSourceMode');
+    if (savedDSMode) {
+        dataSourceMode = savedDSMode;
+        // Update Radio
+        const radio = document.querySelector(`input[name="dataSource"][value="${savedDSMode}"]`);
+        if (radio) radio.checked = true;
+    }
+
+    const savedGSUrl = localStorage.getItem('googleSheetUrl');
+    if (savedGSUrl) {
+        googleSheetUrl = savedGSUrl;
+        const input = document.getElementById('gsheetUrlInput');
+        if (input) input.value = savedGSUrl;
+    }
+
+    setDataSourceMode(dataSourceMode);
 
     loadLogoCache();
     masterTeamA = createDefaultTeam('A');
@@ -1336,19 +1615,22 @@ window.fcpAPI = {
     changeScore: changeScore,
     changeScore2: changeScore2,
     resetToStartTime: resetToStartTime,
-    updateTeamFromInputs: (team, name, color1) => {
+    updateTeamFromInputs: (team, name, color1, color2) => {
         const master = team === 'A' ? masterTeamA : masterTeamB;
         const newName = name || master.name;
         const newColor = color1 || master.color1;
-        updateTeamUI(team, newName, master.logoFile, newColor, master.color2);
+        const newColor2 = color2 || master.color2;
+        updateTeamUI(team, newName, master.logoFile, newColor, newColor2);
 
         // Sync input fields
         if (team === 'A') {
             elements.nameAInput.value = newName;
             elements.colorA.value = newColor;
+            elements.colorA2.value = newColor2;
         } else {
             elements.nameBInput.value = newName;
             elements.colorB.value = newColor;
+            elements.colorB2.value = newColor2;
         }
     },
     toggleHalf: toggleHalf,

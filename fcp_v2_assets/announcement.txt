@@ -1,3 +1,1 @@
-!!!!! New Update Dock Ui - OBS Version 2.8 / อัปเดตใหญ่! แผงควบคุม V2.8   ||
-*Mobile Control: ดีไซน์ใหม่! เพิ่มปุ่ม Stop Timer 🛑, คู่มือใช้งานภาษาไทย 🇹🇭, ระบบ Retry Actions 🔄  *PC: เพิ่ม Match ID Popup 🔢 เลือกแมตช์ง่ายขึ้น, ปุ่ม Close Room ❌ สำหรับปิดห้อง, ปุ่ม Copy Link 📋  ||
-ขอบคุณทุกคนที่สนับสนุนนะครับ
+[UPDATE V2.9] 1. Online User Count (แสดงจำนวนคนออนไลน์/สถิติ) 2. Responsive UI (รองรับจอมือถือ/จอเล็ก) 3. Performance (แก้เลือกสีหน่วง/Debounce) 4. Settings (ซ่อนปุ่มเวลา/Label Dropdown) 5. Mobile Layout (ปรับปุ่มสีแยกส่วน) 6. Previous: Logo Cache & Google Sheets

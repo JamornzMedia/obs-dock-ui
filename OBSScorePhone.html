@@ -12,14 +12,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, sans-serif;
             touch-action: manipulation;
         }
 
-        .btn-push {
-            transition: transform 0.1s;
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-grad-blue {
+            background: linear-gradient(180deg, #3b82f6, #2563eb);
+        }
+
+        .btn-grad-red {
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+        }
+
+        .btn-grad-green {
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+        }
+
+        .btn-grad-dark {
+            background: linear-gradient(180deg, #334155, #1e293b);
         }
 
         .btn-push:active {
@@ -31,14 +49,14 @@
 <body class="h-screen flex flex-col overflow-hidden">
 
     <div id="login-screen" class="absolute inset-0 z-50 bg-neutral-900 flex flex-col justify-center p-6">
-        <div
-            class="flex flex-col items-center justify-center py-6 bg-black mb-6 rounded-2xl shadow-lg border border-neutral-800">
-            <h1 class="text-6xl font-bold text-white tracking-tighter leading-none"
+        <div class="flex flex-col items-center justify-center py-6 bg-transparent mb-6">
+            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tighter leading-none"
                 style="font-family: Arial, sans-serif;">
                 OBSScore
             </h1>
-            <div class="mt-1 bg-[#cc0000] text-white px-8 py-1 rounded-2xl text-3xl font-bold tracking-wide">
-                PHONE
+            <div
+                class="mt-2 bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-1 rounded-full text-xl font-bold tracking-wide shadow-lg shadow-red-500/30">
+                REMOTE
             </div>
         </div>
         <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.8</p>
@@ -58,8 +76,8 @@
         <div id="status-msg" class="text-center mt-4 text-sm text-red-500 hidden"></div>
     </div>
 
-    <div id="main-ui" class="hidden flex-1 flex flex-col p-2 space-y-2 h-full overflow-y-auto">
-        <div class="flex justify-between items-center bg-neutral-800 p-2 rounded-lg border border-neutral-700">
+    <div id="main-ui" class="hidden flex-1 flex flex-col p-3 space-y-3 h-full overflow-y-auto">
+        <div class="flex justify-between items-center glass-panel p-3 rounded-xl">
             <!-- Left: Room Info -->
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -84,17 +102,27 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-            <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 flex flex-col items-center">
-                <input type="text" id="name-a"
-                    class="bg-transparent text-center font-bold text-white w-full border-b border-gray-700 mb-2 focus:border-blue-500 outline-none"
-                    value="Team A" onchange="updateTeam('A')">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="glass-panel p-3 rounded-xl flex flex-col items-center">
+                <div class="flex flex-col items-center gap-2 mb-2 w-full">
+                    <!-- Colors Row -->
+                    <div class="flex gap-4 justify-center w-full bg-neutral-900 p-2 rounded">
+                        <input type="color" id="color-a" class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff">
+                        <input type="color" id="color-a-2"
+                            class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow" value="#000000">
+                    </div>
+                    <!-- Name Input -->
+                    <input type="text" id="name-a"
+                        class="w-full bg-transparent text-center font-bold text-white border-b border-gray-700 focus:border-blue-500 outline-none text-xl py-1"
+                        value="Team A">
+                </div>
                 <div class="text-5xl font-bold mb-2" id="score-a">0</div>
-                <div class="flex gap-2 w-full">
+                <div class="flex gap-2 w-full mt-2">
                     <button onclick="sendScore('A', -1)"
-                        class="flex-1 bg-red-600 py-2 rounded text-white font-bold btn-push">-</button>
+                        class="flex-1 btn-grad-red py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-red-500/20">-</button>
                     <button onclick="sendScore('A', 1)"
-                        class="flex-1 bg-green-600 py-2 rounded text-white font-bold btn-push">+</button>
+                        class="flex-1 btn-grad-green py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-green-500/20">+</button>
                 </div>
                 <div class="mt-2 w-full bg-neutral-900 p-1 rounded">
                     <div class="text-center text-xs text-yellow-500">Fouls/Sub</div>
@@ -106,16 +134,26 @@
                 </div>
             </div>
 
-            <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 flex flex-col items-center">
-                <input type="text" id="name-b"
-                    class="bg-transparent text-center font-bold text-white w-full border-b border-gray-700 mb-2 focus:border-blue-500 outline-none"
-                    value="Team B" onchange="updateTeam('B')">
+            <div class="glass-panel p-3 rounded-xl flex flex-col items-center">
+                <div class="flex flex-col items-center gap-2 mb-2 w-full">
+                    <!-- Colors Row -->
+                    <div class="flex gap-4 justify-center w-full bg-neutral-900 p-2 rounded">
+                        <input type="color" id="color-b" class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff">
+                        <input type="color" id="color-b-2"
+                            class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow" value="#000000">
+                    </div>
+                    <!-- Name Input -->
+                    <input type="text" id="name-b"
+                        class="w-full bg-transparent text-center font-bold text-white border-b border-gray-700 focus:border-blue-500 outline-none text-xl py-1"
+                        value="Team B">
+                </div>
                 <div class="text-5xl font-bold mb-2" id="score-b">0</div>
-                <div class="flex gap-2 w-full">
+                <div class="flex gap-2 w-full mt-2">
                     <button onclick="sendScore('B', -1)"
-                        class="flex-1 bg-red-600 py-2 rounded text-white font-bold btn-push">-</button>
+                        class="flex-1 btn-grad-red py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-red-500/20">-</button>
                     <button onclick="sendScore('B', 1)"
-                        class="flex-1 bg-green-600 py-2 rounded text-white font-bold btn-push">+</button>
+                        class="flex-1 btn-grad-green py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-green-500/20">+</button>
                 </div>
                 <div class="mt-2 w-full bg-neutral-900 p-1 rounded">
                     <div class="text-center text-xs text-yellow-500">Fouls/Sub</div>
@@ -128,30 +166,26 @@
             </div>
         </div>
 
-        <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 flex items-center justify-between">
+        <div class="glass-panel p-3 rounded-xl flex items-center justify-between">
             <div class="text-center">
                 <div class="text-xs text-gray-400">Half</div>
                 <div id="half-text" class="font-bold text-xl">1st</div>
             </div>
             <div class="flex flex-col gap-2">
                 <button onclick="sendCmd('timer', null, 'reset')"
-                    class="bg-gray-600 w-12 h-8 rounded flex items-center justify-center text-white shadow-lg btn-push text-xs">
-                    Reset
+                    class="btn-grad-red w-12 h-9 rounded-lg flex items-center justify-center text-white shadow-lg btn-push text-xs font-bold">
+                    <i class="fas fa-undo"></i>
                 </button>
                 <button onclick="sendCmd('timer', null, 'half')"
-                    class="bg-orange-600 w-12 h-8 rounded flex items-center justify-center text-white shadow-lg btn-push text-xs">
-                    Half
+                    class="bg-orange-600 w-12 h-9 rounded-lg flex items-center justify-center text-white shadow-lg btn-push text-xs font-bold">
+                    HT
                 </button>
             </div>
             <div id="timer-text" class="text-5xl font-mono font-bold text-yellow-400">00:00</div>
             <div class="flex gap-2">
                 <button onclick="sendCmd('timer', null, 'playpause')" title="Play/Pause"
-                    class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg btn-push text-xl">
+                    class="btn-grad-blue w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg btn-push text-xl border-2 border-white/20">
                     <i class="fas fa-play"></i>
-                </button>
-                <button onclick="sendCmd('timer', null, 'stop')" title="Stop"
-                    class="bg-red-600 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg btn-push text-xl">
-                    <i class="fas fa-stop"></i>
                 </button>
             </div>
         </div>
@@ -252,10 +286,35 @@
         let peer, conn;
 
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomUrl = urlParams.get('room');
             if (roomUrl) document.getElementById('room-input').value = roomUrl;
+
+            // Setup Debounced Listeners
+            setupDebouncedListeners();
         };
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        function setupDebouncedListeners() {
+            const debouncedUpdateA = debounce(() => updateTeam('A'), 500); // 500ms delay
+            const debouncedUpdateB = debounce(() => updateTeam('B'), 500);
+
+            // Team A
+            document.getElementById('color-a').addEventListener('input', debouncedUpdateA);
+            document.getElementById('color-a-2').addEventListener('input', debouncedUpdateA);
+            document.getElementById('name-a').addEventListener('input', debouncedUpdateA);
+
+            // Team B
+            document.getElementById('color-b').addEventListener('input', debouncedUpdateB);
+            document.getElementById('color-b-2').addEventListener('input', debouncedUpdateB);
+            document.getElementById('name-b').addEventListener('input', debouncedUpdateB);
+        }
 
         function connectToRoom() {
             const rid = document.getElementById('room-input').value;
@@ -276,10 +335,26 @@
 
                 // 2. Connect via PeerJS
                 startPeerConnection(rid);
+
+                // 3. Register Presence (Online Count)
+                setupPresence(rid);
+
             }).catch(err => {
                 console.error(err);
                 // Fallback: try connecting anyway even if Firebase fails
                 startPeerConnection(rid);
+            });
+        }
+
+        function setupPresence(rid) {
+            const uid = 'mobile_' + Math.floor(Math.random() * 10000000);
+            const userRef = database.ref('obs_rooms_presence/' + rid + '/' + uid);
+
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    userRef.onDisconnect().remove();
+                    userRef.set(true);
+                }
             });
         }
 
@@ -323,8 +398,9 @@
 
         function updateTeam(team) {
             const name = document.getElementById(team === 'A' ? 'name-a' : 'name-b').value;
-            // Can add color picker later
-            conn.send({ type: 'updateTeam', team, name });
+            const color1 = document.getElementById(team === 'A' ? 'color-a' : 'color-b').value;
+            const color2 = document.getElementById(team === 'A' ? 'color-a-2' : 'color-b-2').value;
+            if (conn && conn.open) conn.send({ type: 'updateTeam', team, name, color1, color2 });
         }
 
         function updateUI(data) {
@@ -334,6 +410,10 @@
             document.getElementById('score2-b').textContent = data.teamB.score2;
             document.getElementById('name-a').value = data.teamA.name;
             document.getElementById('name-b').value = data.teamB.name;
+            if (data.teamA.color) document.getElementById('color-a').value = data.teamA.color;
+            if (data.teamB.color) document.getElementById('color-b').value = data.teamB.color;
+            if (data.teamA.color2) document.getElementById('color-a-2').value = data.teamA.color2;
+            if (data.teamB.color2) document.getElementById('color-b-2').value = data.teamB.color2;
             document.getElementById('timer-text').textContent = data.timer;
             document.getElementById('half-text').textContent = data.half;
             // CHECK: Safe update for Match ID

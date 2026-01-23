@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.8 (OBSScore)", // Update Version
+        appTitle: "Football Scoreboard Controller - V2.9 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -18,15 +18,17 @@ export const translations = {
         label3: "Label 3",
         label4: "Label 4",
         label5: "Label 5",
+        label6: "Label 6",
         swap: "Swap Teams",
         reset: "Reset",
-        fullReset: "Full Reset",
+        fullReset: "Reset",
         score2Label: "Fouls/Counts",
         hide: "Hide",
         show: "Show",
         score2VisibilityGroup: "Score 2 Visibility Control",
         swapCardVisibility: "Swap Card Visibility",
         actionCardVisibility: "Action Buttons Visibility",
+        labelCount: "Label Count:",
         visibilityTitle: "Card Visibility Control",
         resetKeybinds: "Reset Keybinds",
         resetColors: "Clear Team Color Memory",
@@ -37,11 +39,11 @@ export const translations = {
         resetToZeroHint: "Reset timer to 00:00",
         resetToStartHint: "Reset timer to configured start time",
         settings: "Settings",
-        copy: "Announcement Text",
+        copy: "Message",
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.8 (Remote)", // Update
+        changelog: "Update Version 2.9", // Update
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -59,18 +61,18 @@ export const translations = {
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
-            { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
-            { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
-            { id: "scoreB_plus", label: "+ Score B (Main)", default: "4" },
-            { id: "scoreB_minus", label: "- Score B (Main)", default: "5" },
-            { id: "score2A_plus", label: "+ Score A (Sub)", default: "7" },
-            { id: "score2A_minus", label: "- Score A (Sub)", default: "8" },
-            { id: "score2B_plus", label: "+ Score B (Sub)", default: "9" },
-            { id: "score2B_minus", label: "- Score B (Sub)", default: "0" },
-            { id: "timer_playpause", label: "Play/Pause Timer", default: "SPACE" },
-            { id: "timer_resetstart", label: "Reset to Start Time", default: "F10" },
-            { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
-            { id: "full_reset", label: "Full Reset (All)", default: "F12" },
+            { id: "scoreA_plus", label: "+ Score A (Main)", default: "" },
+            { id: "scoreA_minus", label: "- Score A (Main)", default: "" },
+            { id: "scoreB_plus", label: "+ Score B (Main)", default: "" },
+            { id: "scoreB_minus", label: "- Score B (Main)", default: "" },
+            { id: "score2A_plus", label: "+ Score A (Sub)", default: "" },
+            { id: "score2A_minus", label: "- Score A (Sub)", default: "" },
+            { id: "score2B_plus", label: "+ Score B (Sub)", default: "" },
+            { id: "score2B_minus", label: "- Score B (Sub)", default: "" },
+            { id: "timer_playpause", label: "Play/Pause Timer", default: "" },
+            { id: "timer_resetstart", label: "Reset to Start Time", default: "" },
+            { id: "timer_togglehalf", label: "Toggle Half", default: "" },
+            { id: "full_reset", label: "Full Reset (All)", default: "" },
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'Team A Name' },
@@ -132,21 +134,16 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.8 (Remote Control)</h5>
+                    <h5>Version 2.9</h5>
                     <ul>
-                        <li>**Mobile Control:** Added P2P Remote Control via Smartphone.</li>
-                        <li>**OBSScore:** Rebranded and optimized for performance.</li>
+                        <li>**Core:** Online User Count (Firebase Presence), Performance Improvements (Debounce).</li>
+                        <li>**UI/UX:** Responsive Design (~400px), Button Renaming, Score Reset Position Optimization.</li>
+                        <li>**Settings:** Control Control Visibility (Extras), Label Count Dropdown.</li>
+                        <li>**Mobile:** Improved Color Picker Layout, Performance Fixes.</li>
+                        <li>**Previous:** Logo Cache (Drag & Drop), Secondary Colors, Google Sheets Support.</li>
                     </ul>
                 </li>
-                <li>
-                    <h5>Version 2.7.1 (Patch)</h5>
-                    <ul>
-                        <li>**Logo Cache Update:** Improved drag-and-drop system. Now shows a summary notification instead of individual alerts. Added total logo count display.</li>
-                        <li>**Keybinds:** Added a "Trash/Clear" button to remove specific keybinds.</li>
-                        <li>**Performance:** Optimized Keyboard Shortcut listener priority for better compatibility with laptops and macro pads.</li>
-                    </ul>
-                </li>
-            </ul>`,
+            </ul > `,
         toastLoadFileFirst: "Please upload a file first",
         toastMatchNotFound: "Match ID not found:",
         toastLoaded: "Loaded ID:",
@@ -181,7 +178,7 @@ export const translations = {
         logoCacheFailed: "Failed:",
         logoCacheTotal: "Total Cached:",
 
-        // NEW STRINGS FOR V2.8
+        // NEW STRINGS FOR V2.9
         mobileControlTitle: "Mobile Remote Control (OBSScore)",
         mobileControlDesc: "Control your scoreboard from anywhere via smartphone.",
         createRoom: "Create Room",
@@ -196,10 +193,17 @@ export const translations = {
         remoteStatusWait: "Standby",
         remoteStatusReady: "Ready to pair",
         remoteStatusConnected: "Connected",
+        dataSourceTitle: "Data Source Configuration",
+        dsExcel: "Excel File (Offline)",
+        dsGoogleSheet: "Google Sheet (Online)",
+        confirm: "Confirm",
+        toastGoogleSheetSuccess: "Google Sheet Loaded Successfully!",
+        toastGoogleSheetError: "Failed to load Google Sheet. Check URL or permission.",
+        loadFromGoogleSheet: "Fetch / Reload GS",
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.8 (OBSScore)", // Update Version
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -215,7 +219,7 @@ export const translations = {
         label5: "ป้าย 5",
         swap: "สลับฝั่ง",
         reset: "รีเซ็ต",
-        fullReset: "รีเซ็ตทั้งหมด",
+        fullReset: "รีเซ็ต",
         score2Label: "ฟาวล์/แต้ม 2",
         hide: "ซ่อน",
         show: "แสดง",
@@ -232,11 +236,11 @@ export const translations = {
         resetToZeroHint: "รีเซ็ตเวลาเป็น 00:00",
         resetToStartHint: "รีเซ็ตตามเวลาที่ตั้งค่า",
         settings: "ตั้งค่า",
-        copy: "ข้อความประกาศ",
+        copy: "ข้อความ",
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.8 (Remote)", // Update
+        changelog: "อัปเดตเวอร์ชัน 2.9", // Update
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -254,18 +258,18 @@ export const translations = {
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
-            { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
-            { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
-            { id: "scoreB_plus", label: "+ คะแนน B (หลัก)", default: "4" },
-            { id: "scoreB_minus", label: "- คะแนน B (หลัก)", default: "5" },
-            { id: "score2A_plus", label: "+ คะแนน A (รอง)", default: "7" },
-            { id: "score2A_minus", label: "- คะแนน A (รอง)", default: "8" },
-            { id: "score2B_plus", label: "+ คะแนน B (รอง)", default: "9" },
-            { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "0" },
-            { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: "SPACE" },
-            { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "F10" },
-            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
-            { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
+            { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "" },
+            { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "" },
+            { id: "scoreB_plus", label: "+ คะแนน B (หลัก)", default: "" },
+            { id: "scoreB_minus", label: "- คะแนน B (หลัก)", default: "" },
+            { id: "score2A_plus", label: "+ คะแนน A (รอง)", default: "" },
+            { id: "score2A_minus", label: "- คะแนน A (รอง)", default: "" },
+            { id: "score2B_plus", label: "+ คะแนน B (รอง)", default: "" },
+            { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "" },
+            { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: "" },
+            { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "" },
+            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "" },
+            { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "" },
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'ชื่อทีม A' },
@@ -327,21 +331,16 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.8 (Remote Control)</h5>
+                    <h5>เวอร์ชัน 2.9 (รวมอัปเดตล่าสุด)</h5>
                     <ul>
-                        <li>**Mobile Control:** เพิ่มฟีเจอร์ควบคุมผ่านมือถือระบบ P2P (OBSScore)</li>
-                        <li>**OBSScore:** เปลี่ยนชื่อระบบและปรับปรุงประสิทธิภาพ</li>
+                        <li>**ระบบใหม่:** แสดงจำนวนคนออนไลน์ (Online Count), ปรับปรุงประสิทธิภาพ (Debounce).</li>
+                        <li>**หน้าตา (UI):** รองรับจอมือถือ/จอเล็ก (~400px), ปรับย้ายปุ่มรีเซ็ต, เปลี่ยนชื่อปุ่ม.</li>
+                        <li>**ตั้งค่า:** ซ่อน/แสดงปุ่มเสริม (เวลา/นับถอยหลัง) ได้, เปลี่ยนตัวเลือกจำนวนป้ายเป็น Dropdown.</li>
+                        <li>**มือถือ:** แยกปุ่มเลือกสีออกมาจัดเรียงใหม่เพื่อความสะดวก.</li>
+                        <li>**ก่อนหน้า:** Logo Cache, สีรอง (Secondary Color), Google Sheets.</li>
                     </ul>
                 </li>
-                <li>
-                    <h5>เวอร์ชัน 2.7.1 (Patch)</h5>
-                    <ul>
-                        <li>**Logo Cache:** ปรับปรุงระบบลากวางไฟล์ แจ้งเตือนแบบสรุปผล (Success/Fail) แทนการแจ้งเตือนทีละไฟล์ และเพิ่มการแสดงจำนวนโลโก้ทั้งหมด</li>
-                        <li>**คีย์ลัด:** เพิ่มปุ่ม "ถังขยะ" ในหน้าตั้งค่าคีย์ลัด เพื่อลบค่าปุ่มที่ไม่ต้องการออกได้</li>
-                        <li>**ประสิทธิภาพ:** ย้ายลำดับการทำงานของตัวจับคีย์บอร์ด (Keyboard Listener) ให้ทำงานเป็นอันดับแรก แก้ปัญหา Macro Pad/Laptop กดไม่ติด</li>
-                    </ul>
-                </li>
-            </ul>`,
+            </ul > `,
         toastLoadFileFirst: "โปรด Upload ไฟล์ก่อน",
         toastMatchNotFound: "ไม่พบ Match ID:",
         toastLoaded: "โหลด ID สำเร็จ:",
@@ -391,5 +390,12 @@ export const translations = {
         remoteStatusWait: "เตรียมพร้อม",
         remoteStatusReady: "รอการจับคู่",
         remoteStatusConnected: "เชื่อมต่อแล้ว",
+        dataSourceTitle: "ตั้งค่าแหล่งข้อมูล (Data Source)",
+        dsExcel: "ไฟล์ Excel (ออฟไลน์)",
+        dsGoogleSheet: "Google Sheet (ออนไลน์)",
+        confirm: "ยืนยันตกลง",
+        toastGoogleSheetSuccess: "ดึงข้อมูลจาก Google Sheet สำเร็จ!",
+        toastGoogleSheetError: "ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือการแชร์",
+        loadFromGoogleSheet: "ดึงข้อมูล GS",
     },
 };

@@ -164,6 +164,10 @@ function startHosting() {
             els.createBtn.disabled = false;
             els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
         });
+
+        // 5. Setup Presence (Online Count)
+        setupPresence(rid);
+
     });
 
     peer.on('connection', (connection) => {
@@ -283,11 +287,10 @@ function processCommand(cmd) {
             if (btn) btn.click();
             break;
         case 'updateTeam':
-            // cmd: { team: 'A', name: '...', color1: '...' }
             if (cmd.team === 'A') {
-                window.fcpAPI.updateTeamFromInputs('A', cmd.name, cmd.color1);
+                window.fcpAPI.updateTeamFromInputs('A', cmd.name, cmd.color1, cmd.color2);
             } else {
-                window.fcpAPI.updateTeamFromInputs('B', cmd.name, cmd.color1);
+                window.fcpAPI.updateTeamFromInputs('B', cmd.name, cmd.color1, cmd.color2);
             }
             break;
         case 'requestState':
@@ -306,13 +309,15 @@ function sendFullState() {
             name: document.getElementById('nameA').innerText,
             score: document.getElementById('scoreA').innerText,
             score2: document.getElementById('score2A').innerText,
-            color: document.getElementById('colorA').value
+            color: document.getElementById('colorA').value,
+            color2: document.getElementById('colorA2').value
         },
         teamB: {
             name: document.getElementById('nameB').innerText,
             score: document.getElementById('scoreB').innerText,
             score2: document.getElementById('score2B').innerText,
-            color: document.getElementById('colorB').value
+            color: document.getElementById('colorB').value,
+            color2: document.getElementById('colorB2').value
         },
         timer: document.getElementById('timerText').innerText,
         half: document.getElementById('halfText').innerText,
@@ -348,4 +353,41 @@ window.addEventListener('load', () => {
         const el = document.getElementById(id);
         if (el) observer.observe(el, { childList: true, characterData: true, subtree: true });
     });
+});
+
+// --- ONLINE PRESENCE SYSTEM (SEPARATED) ---
+const ONLINE_ROOM_KEY = "obs_online_room_id";
+
+function initOnlinePresenceSystem() {
+    // 1. Auto-Create "Online Room" on Load
+    // Fixed Room ID as per request to aggregate all users.
+    const onlineRoomId = "UserCounter";
+
+    // 2. Connect to Firebase Presence for THIS room
+    const presenceRef = database.ref(`obs_rooms_presence/${onlineRoomId}`);
+
+    // Self-register (I am online)
+    const myRef = presenceRef.push();
+    myRef.onDisconnect().remove();
+    myRef.set({
+        type: 'host',
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // Listen for count
+    presenceRef.on('value', (snapshot) => {
+        const users = snapshot.val() || {};
+        const count = Object.keys(users).length;
+        if (document.getElementById('onlineCountVal')) {
+            document.getElementById('onlineCountVal').innerText = count;
+        }
+    });
+
+    // We do NOT couple this with the Mobile Remote PeerJS anymore.
+    // This is purely Firebase Realtime Database presence.
+    console.log("Online Presence Started:", onlineRoomId);
+}
+// Import logic (ensure this runs on load)
+window.addEventListener('load', () => {
+    initOnlinePresenceSystem();
 });
