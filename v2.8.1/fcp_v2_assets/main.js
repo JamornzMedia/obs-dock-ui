@@ -562,7 +562,7 @@ const loadVisibilitySettings = () => {
         swapCard: true,
         actionButtons: true,
         labelCount: 5,
-        // V2.8.1
+        // V2.9
         showPlusMinus: true,
         showResetTime: true,
         showResetStart: true,
@@ -582,7 +582,7 @@ const applyVisibilitySettings = () => {
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
 
-    // V2.8.1 Visibility Logic
+    // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
     // showResetTime removed - always visible
     // showResetTime removed - always visible

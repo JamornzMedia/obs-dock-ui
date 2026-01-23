@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.8.1 (OBSScore)", // Update Version
+        appTitle: "Football Scoreboard Controller - V2.9 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.8.1", // Update
+        changelog: "Update Version 2.9", // Update
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -134,7 +134,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.8.1</h5>
+                    <h5>Version 2.9</h5>
                     <ul>
                         <li>**Core:** Online User Count (Firebase Presence), Performance Improvements (Debounce).</li>
                         <li>**UI/UX:** Responsive Design (~400px), Button Renaming, Score Reset Position Optimization.</li>
@@ -178,7 +178,7 @@ export const translations = {
         logoCacheFailed: "Failed:",
         logoCacheTotal: "Total Cached:",
 
-        // NEW STRINGS FOR V2.8
+        // NEW STRINGS FOR V2.9
         mobileControlTitle: "Mobile Remote Control (OBSScore)",
         mobileControlDesc: "Control your scoreboard from anywhere via smartphone.",
         createRoom: "Create Room",
@@ -203,7 +203,7 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.8.1 (OBSScore)", // Update Version
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9 (OBSScore)", // Update Version
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -240,7 +240,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.8.1", // Update
+        changelog: "อัปเดตเวอร์ชัน 2.9", // Update
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -331,7 +331,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.8.1 (รวมอัปเดตล่าสุด)</h5>
+                    <h5>เวอร์ชัน 2.9 (รวมอัปเดตล่าสุด)</h5>
                     <ul>
                         <li>**ระบบใหม่:** แสดงจำนวนคนออนไลน์ (Online Count), ปรับปรุงประสิทธิภาพ (Debounce).</li>
                         <li>**หน้าตา (UI):** รองรับจอมือถือ/จอเล็ก (~400px), ปรับย้ายปุ่มรีเซ็ต, เปลี่ยนชื่อปุ่ม.</li>

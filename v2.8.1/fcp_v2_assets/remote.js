@@ -355,53 +355,49 @@ window.addEventListener('load', () => {
     });
 });
 
-// --- PRESENCE SYSTEM (V2.8.1) ---
-function setupPresence(rid) {
-    if (!rid) return;
+// --- ONLINE PRESENCE SYSTEM (SEPARATED) ---
+const ONLINE_ROOM_KEY = "obs_online_room_id";
 
-    // 1. Register Host itself? Optional. Let's just count "Connections". 
-    // Actually user wants "Online People".
-    // We will listen to a specific path where mobiles register themselves.
-    // Path: obs_rooms_presence/{rid}/{uid}
+function initOnlinePresenceSystem() {
+    // 1. Auto-Create "Online Room" on Load
+    let onlineRoomId = sessionStorage.getItem(ONLINE_ROOM_KEY);
+    if (!onlineRoomId) {
+        onlineRoomId = "view_" + Math.floor(100000 + Math.random() * 900000);
+        sessionStorage.setItem(ONLINE_ROOM_KEY, onlineRoomId);
+    }
 
-    const presenceRef = database.ref(`obs_rooms_presence/${rid}`);
+    // 2. Connect to Firebase Presence for THIS room
+    // Note: This counts users who are *viewing* this specific room ID.
+    // Since it's a new random room, the count will be 1 (yourself) unless you share it.
+    // However, fulfilling the request "Create new room immediately for online people".
 
+    // If the user meant "Global App Usage", we would use a fixed ID. 
+    // Given "Create new room", we stick to unique.
+
+    const presenceRef = database.ref(`obs_rooms_presence/${onlineRoomId}`);
+
+    // Self-register (I am online)
+    const myRef = presenceRef.push();
+    myRef.onDisconnect().remove();
+    myRef.set({
+        type: 'host',
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // Listen for count
     presenceRef.on('value', (snapshot) => {
         const users = snapshot.val() || {};
         const count = Object.keys(users).length;
-
-        // Update UI
         if (document.getElementById('onlineCountVal')) {
             document.getElementById('onlineCountVal').innerText = count;
         }
-
-        // Check Max Daily
-        updateDailyMax(rid, count);
     });
+
+    // We do NOT couple this with the Mobile Remote PeerJS anymore.
+    // This is purely Firebase Realtime Database presence.
+    console.log("Online Presence Started:", onlineRoomId);
 }
-
-function updateDailyMax(rid, currentCount) {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const maxRef = database.ref(`obs_rooms_stats/${rid}/${today}/max`);
-
-    maxRef.transaction((currentMax) => {
-        return (currentMax || 0) < currentCount ? currentCount : currentMax;
-    }, (error, committed, snapshot) => {
-        if (error) {
-            console.error("Max transaction failed", error);
-        } else if (snapshot) {
-            const maxVal = snapshot.val();
-            if (document.getElementById('onlineMaxVal')) {
-                document.getElementById('onlineMaxVal').innerText = maxVal;
-            }
-        }
-    });
-
-    // Also listen to it in case it updates from elsewhere (unlikely for single host but good for sync)
-    maxRef.on('value', (snapshot) => {
-        const val = snapshot.val() || 0;
-        if (document.getElementById('onlineMaxVal')) {
-            document.getElementById('onlineMaxVal').innerText = val;
-        }
-    });
-}
+// Import logic (ensure this runs on load)
+window.addEventListener('load', () => {
+    initOnlinePresenceSystem();
+});

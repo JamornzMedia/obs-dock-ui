@@ -11,7 +11,7 @@
     </script>
 
     <meta charset="UTF-8">
-    <title data-lang="appTitle">OBSScore Control Panel V2.8.1</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -676,15 +676,15 @@
             font-weight: bold;
             line-height: 1.1;
             padding: 0 5px;
-            /* Tighter padding */
             background: rgba(0, 0, 0, 0.2);
             border-radius: 4px;
-            min-width: 60px;
-            /* Reduced minimum width */
+            width: 100%;
+            /* Full Width */
             text-align: center;
             margin: 2px 0;
             color: #ffffff;
-            /* White Text */
+            box-sizing: border-box;
+            /* Ensure padding doesn't overflow */
         }
 
         .score2-card .clean-score-display {

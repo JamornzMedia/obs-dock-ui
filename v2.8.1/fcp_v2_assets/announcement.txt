@@ -1,1 +1,1 @@
-[UPDATE V2.8.1] 1. Online User Count (แสดงจำนวนคนออนไลน์/สถิติ) 2. Responsive UI (รองรับจอมือถือ/จอเล็ก) 3. Performance (แก้เลือกสีหน่วง/Debounce) 4. Settings (ซ่อนปุ่มเวลา/Label Dropdown) 5. Mobile Layout (ปรับปุ่มสีแยกส่วน) 6. Previous: Logo Cache & Google Sheets
+[UPDATE V2.9] 1. Online User Count (แสดงจำนวนคนออนไลน์/สถิติ) 2. Responsive UI (รองรับจอมือถือ/จอเล็ก) 3. Performance (แก้เลือกสีหน่วง/Debounce) 4. Settings (ซ่อนปุ่มเวลา/Label Dropdown) 5. Mobile Layout (ปรับปุ่มสีแยกส่วน) 6. Previous: Logo Cache & Google Sheets
