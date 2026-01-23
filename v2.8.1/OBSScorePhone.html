@@ -87,8 +87,12 @@
         <div class="grid grid-cols-2 gap-2">
             <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 flex flex-col items-center">
                 <div class="flex items-center gap-2 mb-2 w-full">
-                    <input type="color" id="color-a" class="w-8 h-8 rounded border-none p-0 cursor-pointer"
-                        value="#ffffff" onchange="updateTeam('A')">
+                    <div class="flex flex-col gap-1">
+                        <input type="color" id="color-a" class="w-8 h-8 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff" onchange="updateTeam('A')">
+                        <input type="color" id="color-a-2" class="w-8 h-8 rounded border-none p-0 cursor-pointer shadow"
+                            value="#000000" onchange="updateTeam('A')">
+                    </div>
                     <input type="text" id="name-a"
                         class="bg-transparent text-center font-bold text-white flex-1 border-b border-gray-700 focus:border-blue-500 outline-none"
                         value="Team A" onchange="updateTeam('A')">
@@ -112,8 +116,12 @@
 
             <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 flex flex-col items-center">
                 <div class="flex items-center gap-2 mb-2 w-full">
-                    <input type="color" id="color-b" class="w-8 h-8 rounded border-none p-0 cursor-pointer"
-                        value="#ffffff" onchange="updateTeam('B')">
+                    <div class="flex flex-col gap-1">
+                        <input type="color" id="color-b" class="w-8 h-8 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff" onchange="updateTeam('B')">
+                        <input type="color" id="color-b-2" class="w-8 h-8 rounded border-none p-0 cursor-pointer shadow"
+                            value="#000000" onchange="updateTeam('B')">
+                    </div>
                     <input type="text" id="name-b"
                         class="bg-transparent text-center font-bold text-white flex-1 border-b border-gray-700 focus:border-blue-500 outline-none"
                         value="Team B" onchange="updateTeam('B')">
@@ -332,7 +340,8 @@
         function updateTeam(team) {
             const name = document.getElementById(team === 'A' ? 'name-a' : 'name-b').value;
             const color1 = document.getElementById(team === 'A' ? 'color-a' : 'color-b').value;
-            conn.send({ type: 'updateTeam', team, name, color1 });
+            const color2 = document.getElementById(team === 'A' ? 'color-a-2' : 'color-b-2').value;
+            if (conn && conn.open) conn.send({ type: 'updateTeam', team, name, color1, color2 });
         }
 
         function updateUI(data) {
@@ -344,6 +353,8 @@
             document.getElementById('name-b').value = data.teamB.name;
             if (data.teamA.color) document.getElementById('color-a').value = data.teamA.color;
             if (data.teamB.color) document.getElementById('color-b').value = data.teamB.color;
+            if (data.teamA.color2) document.getElementById('color-a-2').value = data.teamA.color2;
+            if (data.teamB.color2) document.getElementById('color-b-2').value = data.teamB.color2;
             document.getElementById('timer-text').textContent = data.timer;
             document.getElementById('half-text').textContent = data.half;
             // CHECK: Safe update for Match ID

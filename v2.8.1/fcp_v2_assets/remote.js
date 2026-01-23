@@ -283,11 +283,10 @@ function processCommand(cmd) {
             if (btn) btn.click();
             break;
         case 'updateTeam':
-            // cmd: { team: 'A', name: '...', color1: '...' }
             if (cmd.team === 'A') {
-                window.fcpAPI.updateTeamFromInputs('A', cmd.name, cmd.color1);
+                window.fcpAPI.updateTeamFromInputs('A', cmd.name, cmd.color1, cmd.color2);
             } else {
-                window.fcpAPI.updateTeamFromInputs('B', cmd.name, cmd.color1);
+                window.fcpAPI.updateTeamFromInputs('B', cmd.name, cmd.color1, cmd.color2);
             }
             break;
         case 'requestState':
@@ -306,13 +305,15 @@ function sendFullState() {
             name: document.getElementById('nameA').innerText,
             score: document.getElementById('scoreA').innerText,
             score2: document.getElementById('score2A').innerText,
-            color: document.getElementById('colorA').value
+            color: document.getElementById('colorA').value,
+            color2: document.getElementById('colorA2').value
         },
         teamB: {
             name: document.getElementById('nameB').innerText,
             score: document.getElementById('scoreB').innerText,
             score2: document.getElementById('score2B').innerText,
-            color: document.getElementById('colorB').value
+            color: document.getElementById('colorB').value,
+            color2: document.getElementById('colorB2').value
         },
         timer: document.getElementById('timerText').innerText,
         half: document.getElementById('halfText').innerText,

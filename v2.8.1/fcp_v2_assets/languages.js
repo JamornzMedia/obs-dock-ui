@@ -61,18 +61,18 @@ export const translations = {
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
-            { id: "scoreA_plus", label: "+ Score A (Main)", default: "1" },
-            { id: "scoreA_minus", label: "- Score A (Main)", default: "2" },
-            { id: "scoreB_plus", label: "+ Score B (Main)", default: "4" },
-            { id: "scoreB_minus", label: "- Score B (Main)", default: "5" },
-            { id: "score2A_plus", label: "+ Score A (Sub)", default: "7" },
-            { id: "score2A_minus", label: "- Score A (Sub)", default: "8" },
-            { id: "score2B_plus", label: "+ Score B (Sub)", default: "9" },
-            { id: "score2B_minus", label: "- Score B (Sub)", default: "0" },
-            { id: "timer_playpause", label: "Play/Pause Timer", default: "SPACE" },
-            { id: "timer_resetstart", label: "Reset to Start Time", default: "F10" },
-            { id: "timer_togglehalf", label: "Toggle Half", default: "F11" },
-            { id: "full_reset", label: "Full Reset (All)", default: "F12" },
+            { id: "scoreA_plus", label: "+ Score A (Main)", default: "" },
+            { id: "scoreA_minus", label: "- Score A (Main)", default: "" },
+            { id: "scoreB_plus", label: "+ Score B (Main)", default: "" },
+            { id: "scoreB_minus", label: "- Score B (Main)", default: "" },
+            { id: "score2A_plus", label: "+ Score A (Sub)", default: "" },
+            { id: "score2A_minus", label: "- Score A (Sub)", default: "" },
+            { id: "score2B_plus", label: "+ Score B (Sub)", default: "" },
+            { id: "score2B_minus", label: "- Score B (Sub)", default: "" },
+            { id: "timer_playpause", label: "Play/Pause Timer", default: "" },
+            { id: "timer_resetstart", label: "Reset to Start Time", default: "" },
+            { id: "timer_togglehalf", label: "Toggle Half", default: "" },
+            { id: "full_reset", label: "Full Reset (All)", default: "" },
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'Team A Name' },
@@ -134,21 +134,16 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.8 (Remote Control)</h5>
+                    <h5>Version 2.8.1 (Consolidated Update)</h5>
                     <ul>
-                        <li>**Mobile Control:** Added P2P Remote Control via Smartphone.</li>
-                        <li>**OBSScore:** Rebranded and optimized for performance.</li>
+                        <li>**Mobile Control:** Added Secondary Color Picker for Team A/B.</li>
+                        <li>**Logo Cache:** Drag & Drop, Click to Add, and Persistence (Cache Saved).</li>
+                        <li>**Settings:** Added "Max Halves" option (2-6). Widened "Label Count" input.</li>
+                        <li>**UI/UX:** Updated Timer Font. Cleared default Keybinds to prevent accidents.</li>
+                        <li>**Google Sheets:** Fetch data directly from online sheets.</li>
                     </ul>
                 </li>
-                <li>
-                    <h5>Version 2.7.1 (Patch)</h5>
-                    <ul>
-                        <li>**Logo Cache Update:** Improved drag-and-drop system. Now shows a summary notification instead of individual alerts. Added total logo count display.</li>
-                        <li>**Keybinds:** Added a "Trash/Clear" button to remove specific keybinds.</li>
-                        <li>**Performance:** Optimized Keyboard Shortcut listener priority for better compatibility with laptops and macro pads.</li>
-                    </ul>
-                </li>
-            </ul>`,
+            </ul > `,
         toastLoadFileFirst: "Please upload a file first",
         toastMatchNotFound: "Match ID not found:",
         toastLoaded: "Loaded ID:",
@@ -263,18 +258,18 @@ export const translations = {
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
-            { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "1" },
-            { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "2" },
-            { id: "scoreB_plus", label: "+ คะแนน B (หลัก)", default: "4" },
-            { id: "scoreB_minus", label: "- คะแนน B (หลัก)", default: "5" },
-            { id: "score2A_plus", label: "+ คะแนน A (รอง)", default: "7" },
-            { id: "score2A_minus", label: "- คะแนน A (รอง)", default: "8" },
-            { id: "score2B_plus", label: "+ คะแนน B (รอง)", default: "9" },
-            { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "0" },
-            { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: "SPACE" },
-            { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "F10" },
-            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "F11" },
-            { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "F12" },
+            { id: "scoreA_plus", label: "+ คะแนน A (หลัก)", default: "" },
+            { id: "scoreA_minus", label: "- คะแนน A (หลัก)", default: "" },
+            { id: "scoreB_plus", label: "+ คะแนน B (หลัก)", default: "" },
+            { id: "scoreB_minus", label: "- คะแนน B (หลัก)", default: "" },
+            { id: "score2A_plus", label: "+ คะแนน A (รอง)", default: "" },
+            { id: "score2A_minus", label: "- คะแนน A (รอง)", default: "" },
+            { id: "score2B_plus", label: "+ คะแนน B (รอง)", default: "" },
+            { id: "score2B_minus", label: "- คะแนน B (รอง)", default: "" },
+            { id: "timer_playpause", label: "เริ่ม/หยุด เวลา", default: "" },
+            { id: "timer_resetstart", label: "รีเซ็ตไปเวลาเริ่มต้น", default: "" },
+            { id: "timer_togglehalf", label: "สลับครึ่งเวลา", default: "" },
+            { id: "full_reset", label: "รีเซ็ตทั้งหมด", default: "" },
         ],
         tagsList: [
             { code: '&lt;TeamA&gt;', desc: 'ชื่อทีม A' },
@@ -336,19 +331,13 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.8.1 (Latest)</h5>
+                    <h5>เวอร์ชัน 2.8.1 (รวมอัปเดตล่าสุด)</h5>
                     <ul>
-                        <li>**Logo Matching:** ค้นหาโลโก้แบบ Prefix (เช่น A1 เจอ A1.Team.png) และคลิกเพื่อเลือกไฟล์ได้</li>
-                        <li>**Layout:** ซ่อนการ์ดที่ไม่ได้ใช้แบบสมบูรณ์ (Dispaly None)</li>
-                        <li>**Label Count:** ปรับจำนวน Label ใต้ชื่อทีมได้ (สูงสุด 5 ช่อง)</li>
-                        <li>**Announcement:** เพิ่มภาษาไทยและปรับความเร็วตัววิ่ง</li>
-                    </ul>
-                </li>
-                <li>
-                    <h5>เวอร์ชัน 2.8 (Remote Control)</h5>
-                    <ul>
-                        <li>**Mobile Control:** เพิ่มฟีเจอร์ควบคุมผ่านมือถือระบบ P2P (OBSScore)</li>
-                        <li>**OBSScore:** เปลี่ยนชื่อระบบและปรับปรุงประสิทธิภาพ</li>
+                        <li>**Mobile Control:** เพิ่มตัวเลือกสีรอง (Secondary Color) ในมือถือ</li>
+                        <li>**Logo Cache:** ลากไฟล์/คลิกเพิ่มไฟล์ได้ & จำค่าตลอด (Persistence)</li>
+                        <li>**Settings:** เพิ่มตั้งค่า "จำนวนครึ่งเวลาสูงสุด" (2-6) และขยายช่อง Label Count</li>
+                        <li>**UI/UX:** เปลี่ยนฟอนต์จับเวลาเป็นตัวเดียวกับคะแนน ล้างค่าคีย์ลัดเริ่มต้น</li>
+                        <li>**Google Sheets:** ดึงข้อมูลจาก Google Sheets ได้โดยตรง</li>
                     </ul>
                 </li>
             </ul > `,

@@ -33,7 +33,7 @@ const elements = [
     "actionSettingsTable",
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
     // NEW ELEMENT ID
-    "logoCacheCountLabel", "labelCountInput"
+    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect"
 ].reduce((acc, id) => {
     // Safety check for optional elements
     const el = $(id);
@@ -63,6 +63,9 @@ const KEYBINDS_KEY = 'customKeybinds';
 const ACTION_SETTINGS_KEY = 'actionButtonSettings';
 const LOGO_CACHE_KEY = 'logoDataCache';
 const ACTION_BUTTON_COUNT = 6;
+let maxHalves = parseInt(localStorage.getItem('maxHalves') || '2'); // Default 2
+
+
 
 function createDefaultTeam(teamId) {
     return {
@@ -1057,7 +1060,15 @@ const saveAndUpdateTime = () => {
 }
 
 const toggleHalf = () => {
-    half = half === '1st' ? '2nd' : '1st';
+    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
+    // Limit halves array based on maxHalves
+    const activeHalves = halves.slice(0, maxHalves);
+
+    let currentIndex = activeHalves.indexOf(half);
+    if (currentIndex === -1) currentIndex = 0;
+
+    let nextIndex = (currentIndex + 1) % activeHalves.length;
+    half = activeHalves[nextIndex];
     elements.halfText.textContent = half;
     setText('half_text', half);
 };
@@ -1367,6 +1378,7 @@ const setupEventListeners = () => {
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
+        if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
         populateActionSettingsTable(currentLang);
         populateKeybindsTable(currentLang);
         applyVisibilitySettings();
@@ -1435,10 +1447,61 @@ const setupEventListeners = () => {
     });
 
     elements.clearLogoCacheBtn.addEventListener('click', clearLogoCache);
+
+    // LOGO DROP ONE CLICK & DRAG
     elements.logoDropZone.addEventListener('dragover', handleDragOver);
     elements.logoDropZone.addEventListener('dragleave', handleDragLeave);
     elements.logoDropZone.addEventListener('drop', handleFileDrop);
+    elements.logoDropZone.addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.onchange = (e) => {
+            // Mock drag event structure for reuse of handleFileDrop logic or call simpler handler
+            const files = Array.from(e.target.files);
+            if (files.length > 0) processFiles(files);
+        };
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+    });
+
+    // NEW: Max Halves Change Listener
+    if (elements.maxHalvesSelect) {
+        elements.maxHalvesSelect.addEventListener('change', (e) => {
+            maxHalves = parseInt(e.target.value);
+            localStorage.setItem('maxHalves', maxHalves);
+        });
+    }
 };
+
+// NEW HELPER LOOP FOR FILES
+const processFiles = async (files) => {
+    let successCount = 0;
+    showToast("Processing logos...", "info");
+    const promises = files.map(file => {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith('image/')) { resolve(); return; }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileName = file.name.replace(/\.(png|jpe?g|gif|webp)$/i, '');
+                const logoKey = fileName.replace(/\s/g, '').toLowerCase();
+                logoCache[logoKey] = event.target.result;
+                successCount++;
+                resolve();
+            };
+            reader.onerror = () => resolve();
+            reader.readAsDataURL(file);
+        });
+    });
+    await Promise.all(promises);
+    if (successCount > 0) {
+        saveLogoCache();
+        showToast(`Added ${successCount} logos to cache.`, "success");
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
@@ -1500,19 +1563,22 @@ window.fcpAPI = {
     changeScore: changeScore,
     changeScore2: changeScore2,
     resetToStartTime: resetToStartTime,
-    updateTeamFromInputs: (team, name, color1) => {
+    updateTeamFromInputs: (team, name, color1, color2) => {
         const master = team === 'A' ? masterTeamA : masterTeamB;
         const newName = name || master.name;
         const newColor = color1 || master.color1;
-        updateTeamUI(team, newName, master.logoFile, newColor, master.color2);
+        const newColor2 = color2 || master.color2;
+        updateTeamUI(team, newName, master.logoFile, newColor, newColor2);
 
         // Sync input fields
         if (team === 'A') {
             elements.nameAInput.value = newName;
             elements.colorA.value = newColor;
+            elements.colorA2.value = newColor2;
         } else {
             elements.nameBInput.value = newName;
             elements.colorB.value = newColor;
+            elements.colorB2.value = newColor2;
         }
     },
     toggleHalf: toggleHalf,
