@@ -164,6 +164,10 @@ function startHosting() {
             els.createBtn.disabled = false;
             els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
         });
+
+        // 5. Setup Presence (Online Count)
+        setupPresence(rid);
+
     });
 
     peer.on('connection', (connection) => {
@@ -350,3 +354,54 @@ window.addEventListener('load', () => {
         if (el) observer.observe(el, { childList: true, characterData: true, subtree: true });
     });
 });
+
+// --- PRESENCE SYSTEM (V2.8.1) ---
+function setupPresence(rid) {
+    if (!rid) return;
+
+    // 1. Register Host itself? Optional. Let's just count "Connections". 
+    // Actually user wants "Online People".
+    // We will listen to a specific path where mobiles register themselves.
+    // Path: obs_rooms_presence/{rid}/{uid}
+
+    const presenceRef = database.ref(`obs_rooms_presence/${rid}`);
+
+    presenceRef.on('value', (snapshot) => {
+        const users = snapshot.val() || {};
+        const count = Object.keys(users).length;
+
+        // Update UI
+        if (document.getElementById('onlineCountVal')) {
+            document.getElementById('onlineCountVal').innerText = count;
+        }
+
+        // Check Max Daily
+        updateDailyMax(rid, count);
+    });
+}
+
+function updateDailyMax(rid, currentCount) {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const maxRef = database.ref(`obs_rooms_stats/${rid}/${today}/max`);
+
+    maxRef.transaction((currentMax) => {
+        return (currentMax || 0) < currentCount ? currentCount : currentMax;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error("Max transaction failed", error);
+        } else if (snapshot) {
+            const maxVal = snapshot.val();
+            if (document.getElementById('onlineMaxVal')) {
+                document.getElementById('onlineMaxVal').innerText = maxVal;
+            }
+        }
+    });
+
+    // Also listen to it in case it updates from elsewhere (unlikely for single host but good for sync)
+    maxRef.on('value', (snapshot) => {
+        const val = snapshot.val() || 0;
+        if (document.getElementById('onlineMaxVal')) {
+            document.getElementById('onlineMaxVal').innerText = val;
+        }
+    });
+}

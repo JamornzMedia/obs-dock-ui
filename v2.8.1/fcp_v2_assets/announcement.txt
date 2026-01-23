@@ -1,1 +1,1 @@
-[UPDATE V2.8.1] 1. Mobile Secondary Color (ปรับสีรองจากมือถือ) 2. Logo Cache Drag & Click (ลากไฟล์/คลิกเพิ่มโลโก้ได้ & จำค่าตลอด) 3. Max Halves Setting (ตั้งค่าจำนวนครึ่งเวลาสูงสุด 2-6) 4. Empty Keybinds Default (ล้างค่าคีย์ลัดเริ่มต้น) 5. UI & Font Improvements (ปรับฟอนต์และช่องกรอกข้อมูล)
+[UPDATE V2.8.1] 1. Online User Count (แสดงจำนวนคนออนไลน์/สถิติ) 2. Responsive UI (รองรับจอมือถือ/จอเล็ก) 3. Performance (แก้เลือกสีหน่วง/Debounce) 4. Settings (ซ่อนปุ่มเวลา/Label Dropdown) 5. Mobile Layout (ปรับปุ่มสีแยกส่วน) 6. Previous: Logo Cache & Google Sheets

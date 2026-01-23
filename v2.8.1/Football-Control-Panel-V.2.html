@@ -104,10 +104,12 @@
         }
 
         .container {
-            padding: 24px;
+            padding: 10px;
+            /* Reduced from 24px */
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
+            /* Reduced from 16px */
             max-width: 900px;
             margin: 0 auto;
         }
@@ -117,7 +119,8 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-radius: var(--border-radius);
-            padding: 20px;
+            padding: 12px;
+            /* Reduced from 20px */
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: var(--shadow-md);
             transition: max-height 0.3s ease-out, padding 0.3s ease-out, transform 0.2s ease, box-shadow 0.2s ease;
@@ -134,10 +137,104 @@
 
         .row {
             display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 8px;
+            /* Reduced from 12px */
+            margin-bottom: 8px;
+            /* Reduced from 12px */
             align-items: center;
             flex-wrap: wrap;
+        }
+
+        /* Responsive Adjustments for ~400px */
+        /* Responsive Adjustments for ~400px */
+        @media (max-width: 500px) {
+            .container {
+                padding: 10px;
+                max-width: 100%;
+            }
+
+            .row {
+                gap: 8px;
+            }
+
+            .btn-secondary,
+            .btn-primary,
+            .btn-danger,
+            .btn-warning,
+            .btn-success {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .team-row {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                background: rgba(0, 0, 0, 0.2);
+                padding: 10px;
+                border-radius: 8px;
+            }
+
+            /* Layout: Top Row = Logo + Colors, Bottom = Name */
+            .team-mobile-top-wrapper {
+                display: flex !important;
+                /* Force flex in mobile */
+                width: 100%;
+                gap: 10px;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .team-mobile-top-wrapper .logo-area {
+                display: flex;
+            }
+
+            .team-mobile-top-wrapper .colors-area {
+                display: flex;
+                gap: 5px;
+            }
+
+            /* Hide the original color row in name area if visible */
+            .name-control-area .row:nth-child(2) {
+                display: none !important;
+            }
+
+            .team-row .name-control-area {
+                width: 100%;
+            }
+
+            .score-display {
+                font-size: 2.5em;
+                flex-basis: 60px;
+            }
+
+            .timer-display {
+                font-size: 2.5em;
+                color: #fff;
+                /* Match score */
+                font-weight: bold;
+            }
+
+            .timer-area-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .timer-display-area {
+                border-left: none;
+                border-right: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 10px 0;
+                width: 100%;
+            }
+
+            .timer-right-controls {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+            }
         }
 
         .row:last-child {
@@ -314,19 +411,100 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .team-row .logo-container {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+        /* New Button Styles for Score */
+        .btn-score-plus {
+            background: linear-gradient(180deg, var(--success-color), var(--success-hover-color));
+            color: white;
+            width: 100%;
+            border-radius: 8px 8px 4px 4px;
+            /* Top rounded */
+            margin-bottom: 2px;
+        }
+
+        .btn-score-minus {
+            background: linear-gradient(180deg, var(--danger-color), var(--danger-hover-color));
+            color: white;
+            width: 100%;
+            border-radius: 4px 4px 8px 8px;
+            /* Bottom rounded */
+            margin-top: 2px;
+        }
+
+        .btn-score-plus:hover,
+        .btn-score-minus:hover {
+            filter: brightness(1.1);
+            transform: translateY(0);
+            /* Stable stack */
+        }
+
+        /* Adaptive Team Row */
+        .team-row {
             display: flex;
             align-items: center;
-            justify-content: center;
-            position: relative;
+            gap: 10px;
+            padding: 8px;
+            flex-wrap: nowrap;
+            /* Prevent wrapping */
+            overflow: hidden;
+            /* Contain ellipsis */
+        }
+
+        .team-row .logo-container {
             flex-shrink: 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
+            width: 48px;
+            height: 48px;
+        }
+
+        .team-row .color-picker-stack {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            /* More space */
+        }
+
+        .team-row .color-picker {
+            width: 40px;
+            /* Wider */
+            height: 30px;
+            /* Taller */
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .team-row .name-control-area {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            /* Crucial for text truncate */
+        }
+
+        .team-row .name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Hide Name Input by default (handled by JS toggles), ensure it fits */
+        .team-row .name-input {
+            width: 100%;
+            min-width: 50px;
+        }
+
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s;
         }
 
         .team-row .logo-container:hover {
@@ -388,10 +566,162 @@
             border: 1px solid transparent;
         }
 
-        .edit-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-color);
-            border-color: rgba(255, 255, 255, 0.1);
+        /* REBUILT TEAM ROW LAYOUT */
+        .team-row {
+            display: flex;
+            flex-direction: column !important;
+            /* Force vertical stack */
+            gap: 5px;
+            padding: 8px;
+            /* Reduced padding */
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .team-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .team-row .color-picker-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Smaller Colors as requested */
+        .team-row .color-picker {
+            width: 24px;
+            height: 18px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .team-row .logo-container {
+            width: 40px;
+            height: 40px;
+            /* Bit smaller to fit line */
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .team-row .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .team-row .logo-initials {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #666;
+        }
+
+        .team-row .name-control-area {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .team-row .name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+
+        /* REBUILT SCORE LAYOUT (CLEAN FLEX) */
+        .score-panel-clean {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            /* Spread out */
+            align-items: center;
+            width: 100%;
+            padding: 5px 0;
+        }
+
+        .score-col-team {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            /* Tight spacing */
+        }
+
+        .score-col-center {
+            flex: 0 0 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .clean-score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            line-height: 1.1;
+            padding: 0 5px;
+            /* Tighter padding */
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            min-width: 60px;
+            /* Reduced minimum width */
+            text-align: center;
+            margin: 2px 0;
+            color: #ffffff;
+            /* White Text */
+        }
+
+        .score2-card .clean-score-display {
+            font-size: 2rem;
+            color: var(--warning-color);
+        }
+
+        .score-divider {
+            font-size: 2rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.2);
+            /* align-self: flex-start; */
+            margin-top: 10px;
+        }
+
+        .score-reset-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Mobile specific styling for team header */
+        .team-mobile-top-wrapper {
+            display: none;
+            /* Hidden by default on Desktop, visible in Mobile Query */
+        }
+
+        .colors-area-desktop {
+            display: flex;
+            /* Visible on Desktop */
+            gap: 4px;
+        }
+
+        @media (max-width: 500px) {
+            .colors-area-desktop {
+                display: none !important;
+            }
         }
 
         .ok-btn {
@@ -408,6 +738,26 @@
             border: 1px solid rgba(239, 68, 68, 0.2);
             border-radius: 8px;
             margin-bottom: 5px;
+            position: relative;
+            /* For absolute positioning of online count */
+        }
+
+        #online-count-display {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: #22c55e;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 10;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         #announcement-text {
@@ -452,8 +802,28 @@
         .score-control {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            /* Centered */
             padding: 10px 0;
+            flex-wrap: wrap;
+            /* Allow wrapping */
+            gap: 15px;
+        }
+
+        .score-group-main {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .score-reset-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+            /* Force new line */
+            margin-top: 5px;
         }
 
         .score-display {
@@ -1328,6 +1698,7 @@
     <div id="popupOverlay" class="popup-overlay"></div>
     <div class="container">
         <div class="announcement-container">
+            <div id="online-count-display"><i class="fas fa-users"></i> <span id="onlineCountVal">0</span></div>
             <div id="announcement-text"></div>
         </div>
         <div class="card">
@@ -1338,7 +1709,7 @@
                     <button id="logoPathBtn" class="btn-secondary" data-lang-title="logoPathHint"><i
                             class="fas fa-folder-open"></i></button>
                     <button id="fullResetBtn" class="btn-danger"><i class="fas fa-power-off"></i> <span
-                            data-lang="fullReset"></span></button>
+                            data-lang="reset"></span></button>
                 </div>
                 <div class="row" style="margin-bottom:0;">
                     <label for="matchID" data-lang="matchId"></label>
@@ -1356,31 +1727,40 @@
         <div class="card">
             <div class="team-editor">
                 <div class="team-row">
-                    <div class="color-picker-stack">
-                        <input type="color" class="color-picker" id="colorA" value="#ffffff">
-                        <input type="color" class="color-picker" id="colorA2" value="#000000">
+                    <!-- Row 1: Header (Colors + Logo) -->
+                    <div class="team-header">
+                        <div class="color-picker-stack">
+                            <input type="color" class="color-picker" id="colorA" value="#ffffff">
+                            <input type="color" class="color-picker" id="colorA2" value="#000000">
+                        </div>
+                        <div class="logo-container"><img id="logoA" src="" alt="">
+                            <div class="logo-initials" id="initialsA">A</div>
+                        </div>
                     </div>
-                    <div class="logo-container"><img id="logoA" src="" alt="">
-                        <div class="logo-initials" id="initialsA">A</div>
-                    </div>
+                    <!-- Row 2: Name + Buttons -->
                     <div class="name-control-area">
-                        <div class="name" id="nameA" data-lang="teamA"></div>
+                        <div class="name" id="nameA" data-lang="teamA">Team A</div>
                         <input type="text" class="name-input" id="nameA-input">
                         <button class="edit-btn" id="editBtnA" data-lang-title="editHint"><i
                                 class="fas fa-pencil-alt"></i></button>
                         <button class="ok-btn" id="okBtnA" data-lang="ok"></button>
                     </div>
                 </div>
+
                 <div class="team-row">
-                    <div class="color-picker-stack">
-                        <input type="color" class="color-picker" id="colorB" value="#ffffff">
-                        <input type="color" class="color-picker" id="colorB2" value="#000000">
+                    <!-- Row 1: Header (Colors + Logo) -->
+                    <div class="team-header">
+                        <div class="color-picker-stack">
+                            <input type="color" class="color-picker" id="colorB" value="#ffffff">
+                            <input type="color" class="color-picker" id="colorB2" value="#000000">
+                        </div>
+                        <div class="logo-container"><img id="logoB" src="" alt="">
+                            <div class="logo-initials" id="initialsB">B</div>
+                        </div>
                     </div>
-                    <div class="logo-container"><img id="logoB" src="" alt="">
-                        <div class="logo-initials" id="initialsB">B</div>
-                    </div>
+                    <!-- Row 2: Name + Buttons -->
                     <div class="name-control-area">
-                        <div class="name" id="nameB" data-lang="teamB"></div>
+                        <div class="name" id="nameB" data-lang="teamB">Team B</div>
                         <input type="text" class="name-input" id="nameB-input">
                         <button class="edit-btn" id="editBtnB" data-lang-title="editHint"><i
                                 class="fas fa-pencil-alt"></i></button>
@@ -1410,40 +1790,53 @@
             </div>
         </div>
         <div class="card">
-            <div class="score-control">
-                <div class="score-buttons"><button id="scoreAPlusBtn" class="plus">+</button><button id="scoreAMinusBtn"
-                        class="minus">-</button></div>
-                <div class="score-display" id="scoreA">0</div>
-                <button id="resetScoreBtn" class="btn-secondary" style="flex-shrink: 0;"><i class="fas fa-sync-alt"></i>
-                    <span data-lang="reset"></span></button>
-                <div class="score-display" id="scoreB">0</div>
-                <div class="score-buttons"><button id="scoreBPlusBtn" class="plus">+</button><button id="scoreBMinusBtn"
-                        class="minus">-</button></div>
+            <div class="score-panel-clean">
+                <!-- Team A -->
+                <div class="score-col-team">
+                    <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="scoreA">0</div>
+                    <button id="scoreAMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
+
+                <!-- Center -->
+                <div class="score-col-center">
+                    <button id="resetScoreBtn" class="btn-secondary"
+                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                            class="fas fa-sync-alt"></i></button>
+                </div>
+
+                <!-- Team B -->
+                <div class="score-col-team">
+                    <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="scoreB">0</div>
+                    <button id="scoreBMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
             </div>
         </div>
         <div class="card score2-card" id="score2Card">
             <div class="score2-control-container">
-                <div class="score-control">
-                    <div class="score-buttons">
-                        <button id="score2APlusBtn" class="plus">+</button>
-                        <button id="score2AMinusBtn" class="minus">-</button>
-                    </div>
-                    <div class="score-display-group">
-                        <span id="score2Label" data-lang="score2Label" style="display: none;"></span>
-                        <div class="score-display" id="score2A">0</div>
-                    </div>
-
-                    <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; align-items: center;">
-                        <button id="resetScore2Btn" class="btn-warning" style="padding: 4px 8px; flex-grow: 1;"><i
-                                class="fas fa-redo"></i> <span data-lang="reset"></span></button>
+                <div class="score-panel-clean">
+                    <!-- Team A -->
+                    <div class="score-col-team">
+                        <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                        <div class="clean-score-display" id="score2A">0</div>
+                        <button id="score2AMinusBtn" class="btn-score-minus"><i
+                                class="fas fa-chevron-down"></i></button>
                     </div>
 
-                    <div class="score-display-group">
-                        <div class="score-display" id="score2B">0</div>
+                    <!-- Center -->
+                    <div class="score-col-center">
+                        <button id="resetScore2Btn" class="btn-warning"
+                            style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                                class="fas fa-redo"></i></button>
                     </div>
-                    <div class="score-buttons">
-                        <button id="score2BPlusBtn" class="plus">+</button>
-                        <button id="score2BMinusBtn" class="minus">-</button>
+
+                    <!-- Team B -->
+                    <div class="score-col-team">
+                        <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                        <div class="clean-score-display" id="score2B">0</div>
+                        <button id="score2BMinusBtn" class="btn-score-minus"><i
+                                class="fas fa-chevron-down"></i></button>
                     </div>
                 </div>
             </div>
@@ -1660,10 +2053,18 @@
             </label>
             <label class="countdown-toggle">
                 <span data-lang="labelCount" style="margin-right: 10px;">Label Count:</span>
-                <input type="number" id="labelCountInput" min="0" max="5" value="5" style="width: 80px;">
+                <select id="labelCountInput"
+                    style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
             </label>
             <label class="countdown-toggle">
-                <span style="margin-right: 10px;">Max Halves:</span>
+                <span style="margin-right: 10px;">Max Halves (Half):</span>
                 <select id="maxHalvesSelect"
                     style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
                     <option value="2">2</option>
@@ -1673,6 +2074,26 @@
                     <option value="6">6</option>
                 </select>
             </label>
+            <div class="popup-divider" style="margin: 10px 0;"></div>
+            <h5 style="margin: 0 0 5px 0; color: var(--accent-color);">Control Visibility</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <label class="countdown-toggle">
+                    <input type="checkbox" id="visibility_plus_minus" checked>
+                    <span>Extra Time Btns</span>
+                </label>
+                <label class="countdown-toggle">
+                    <input type="checkbox" id="visibility_reset_start" checked>
+                    <span>Reset to Start</span>
+                </label>
+                <label class="countdown-toggle">
+                    <input type="checkbox" id="visibility_edit_time" checked>
+                    <span>Set Time Btn</span>
+                </label>
+                <label class="countdown-toggle">
+                    <input type="checkbox" id="visibility_countdown" checked>
+                    <span>Countdown</span>
+                </label>
+            </div>
         </div>
         <div class="popup-divider"></div>
         <div class="row center" style="margin-bottom: 0;">

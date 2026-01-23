@@ -21,7 +21,7 @@ export const translations = {
         label6: "Label 6",
         swap: "Swap Teams",
         reset: "Reset",
-        fullReset: "Full Reset",
+        fullReset: "Reset",
         score2Label: "Fouls/Counts",
         hide: "Hide",
         show: "Show",
@@ -39,7 +39,7 @@ export const translations = {
         resetToZeroHint: "Reset timer to 00:00",
         resetToStartHint: "Reset timer to configured start time",
         settings: "Settings",
-        copy: "Announcement Text",
+        copy: "Message",
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
@@ -134,13 +134,13 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.8.1 (Consolidated Update)</h5>
+                    <h5>Version 2.8.1</h5>
                     <ul>
-                        <li>**Mobile Control:** Added Secondary Color Picker for Team A/B.</li>
-                        <li>**Logo Cache:** Drag & Drop, Click to Add, and Persistence (Cache Saved).</li>
-                        <li>**Settings:** Added "Max Halves" option (2-6). Widened "Label Count" input.</li>
-                        <li>**UI/UX:** Updated Timer Font. Cleared default Keybinds to prevent accidents.</li>
-                        <li>**Google Sheets:** Fetch data directly from online sheets.</li>
+                        <li>**Core:** Online User Count (Firebase Presence), Performance Improvements (Debounce).</li>
+                        <li>**UI/UX:** Responsive Design (~400px), Button Renaming, Score Reset Position Optimization.</li>
+                        <li>**Settings:** Control Control Visibility (Extras), Label Count Dropdown.</li>
+                        <li>**Mobile:** Improved Color Picker Layout, Performance Fixes.</li>
+                        <li>**Previous:** Logo Cache (Drag & Drop), Secondary Colors, Google Sheets Support.</li>
                     </ul>
                 </li>
             </ul > `,
@@ -219,7 +219,7 @@ export const translations = {
         label5: "ป้าย 5",
         swap: "สลับฝั่ง",
         reset: "รีเซ็ต",
-        fullReset: "รีเซ็ตทั้งหมด",
+        fullReset: "รีเซ็ต",
         score2Label: "ฟาวล์/แต้ม 2",
         hide: "ซ่อน",
         show: "แสดง",
@@ -236,7 +236,7 @@ export const translations = {
         resetToZeroHint: "รีเซ็ตเวลาเป็น 00:00",
         resetToStartHint: "รีเซ็ตตามเวลาที่ตั้งค่า",
         settings: "ตั้งค่า",
-        copy: "ข้อความประกาศ",
+        copy: "ข้อความ",
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
@@ -333,11 +333,11 @@ export const translations = {
                 <li>
                     <h5>เวอร์ชัน 2.8.1 (รวมอัปเดตล่าสุด)</h5>
                     <ul>
-                        <li>**Mobile Control:** เพิ่มตัวเลือกสีรอง (Secondary Color) ในมือถือ</li>
-                        <li>**Logo Cache:** ลากไฟล์/คลิกเพิ่มไฟล์ได้ & จำค่าตลอด (Persistence)</li>
-                        <li>**Settings:** เพิ่มตั้งค่า "จำนวนครึ่งเวลาสูงสุด" (2-6) และขยายช่อง Label Count</li>
-                        <li>**UI/UX:** เปลี่ยนฟอนต์จับเวลาเป็นตัวเดียวกับคะแนน ล้างค่าคีย์ลัดเริ่มต้น</li>
-                        <li>**Google Sheets:** ดึงข้อมูลจาก Google Sheets ได้โดยตรง</li>
+                        <li>**ระบบใหม่:** แสดงจำนวนคนออนไลน์ (Online Count), ปรับปรุงประสิทธิภาพ (Debounce).</li>
+                        <li>**หน้าตา (UI):** รองรับจอมือถือ/จอเล็ก (~400px), ปรับย้ายปุ่มรีเซ็ต, เปลี่ยนชื่อปุ่ม.</li>
+                        <li>**ตั้งค่า:** ซ่อน/แสดงปุ่มเสริม (เวลา/นับถอยหลัง) ได้, เปลี่ยนตัวเลือกจำนวนป้ายเป็น Dropdown.</li>
+                        <li>**มือถือ:** แยกปุ่มเลือกสีออกมาจัดเรียงใหม่เพื่อความสะดวก.</li>
+                        <li>**ก่อนหน้า:** Logo Cache, สีรอง (Secondary Color), Google Sheets.</li>
                     </ul>
                 </li>
             </ul > `,

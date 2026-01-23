@@ -33,7 +33,15 @@ const elements = [
     "actionSettingsTable",
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
     // NEW ELEMENT ID
-    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect"
+    "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
+    // NEW ELEMENT ID
+    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect",
+    // V2.8.1 NEW VISIBILITY INPUTS
+    "visibility_plus_minus", "visibility_reset_time", "visibility_reset_start", "visibility_edit_time", "visibility_countdown",
+    // Online Count
+    "onlineCountVal", "onlineMaxVal",
+    // Logic Elements
+    "injuryTimeContainer", "resetToZeroBtn", "resetToStartBtn", "editTimeBtn"
 ].reduce((acc, id) => {
     // Safety check for optional elements
     const el = $(id);
@@ -87,6 +95,16 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     actionType: 'Toggle',
     internalState: false,
 }));
+
+
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
 
 
 // --- OBS ---
@@ -543,7 +561,13 @@ const loadVisibilitySettings = () => {
         score2: true,
         swapCard: true,
         actionButtons: true,
-        labelCount: 5
+        labelCount: 5,
+        // V2.8.1
+        showPlusMinus: true,
+        showResetTime: true,
+        showResetStart: true,
+        showEditTime: true,
+        showCountdown: true
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -557,6 +581,27 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+
+    // V2.8.1 Visibility Logic
+    if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
+    // showResetTime removed - always visible
+    // showResetTime removed - always visible
+    if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
+    if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
+    if (elements.visibility_edit_time) elements.visibility_edit_time.checked = settings.showEditTime;
+    if (elements.visibility_countdown) elements.visibility_countdown.checked = settings.showCountdown;
+
+    // Apply to UI Elements
+    if (elements.injuryTimeContainer) elements.injuryTimeContainer.style.display = settings.showPlusMinus ? 'flex' : 'none';
+
+    if (elements.resetToZeroBtn) elements.resetToZeroBtn.style.display = 'inline-flex'; // Always visible
+    if (elements.resetToStartBtn) elements.resetToStartBtn.style.display = settings.showResetStart ? 'inline-flex' : 'none';
+    if (elements.editTimeBtn) elements.editTimeBtn.style.display = settings.showEditTime ? 'inline-flex' : 'none';
+
+    // Countdown checkbox container
+    const countdownLabel = elements.countdownCheck ? elements.countdownCheck.closest('label') : null;
+    if (countdownLabel) countdownLabel.style.display = settings.showCountdown ? 'flex' : 'none';
+
 
     // Label Visibility Control
     const count = settings.labelCount !== undefined ? settings.labelCount : 5;
@@ -1357,6 +1402,13 @@ const setupEventListeners = () => {
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
 
+    // V2.8.1 Listeners
+    if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
+    if (elements.visibility_reset_time) elements.visibility_reset_time.addEventListener('change', (e) => saveVisibilitySetting('showResetTime', e.target.checked));
+    if (elements.visibility_reset_start) elements.visibility_reset_start.addEventListener('change', (e) => saveVisibilitySetting('showResetStart', e.target.checked));
+    if (elements.visibility_edit_time) elements.visibility_edit_time.addEventListener('change', (e) => saveVisibilitySetting('showEditTime', e.target.checked));
+    if (elements.visibility_countdown) elements.visibility_countdown.addEventListener('change', (e) => saveVisibilitySetting('showCountdown', e.target.checked));
+
     if (elements.labelCountInput) {
         elements.labelCountInput.addEventListener('change', (e) => {
             let val = parseInt(e.target.value);
@@ -1408,18 +1460,18 @@ const setupEventListeners = () => {
     elements.editBtnB.addEventListener('click', () => enterEditMode('B'));
     elements.okBtnB.addEventListener('click', () => exitEditMode('B', true));
 
-    elements.colorA.addEventListener('input', (e) => {
+    elements.colorA.addEventListener('input', debounce((e) => {
         updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, e.target.value, masterTeamA.color2);
-    });
-    elements.colorA2.addEventListener('input', (e) => {
+    }, 300)); // Debounce 300ms
+    elements.colorA2.addEventListener('input', debounce((e) => {
         updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, e.target.value);
-    });
-    elements.colorB.addEventListener('input', (e) => {
+    }, 300));
+    elements.colorB.addEventListener('input', debounce((e) => {
         updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, e.target.value, masterTeamB.color2);
-    });
-    elements.colorB2.addEventListener('input', (e) => {
+    }, 300));
+    elements.colorB2.addEventListener('input', debounce((e) => {
         updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, e.target.value);
-    });
+    }, 300));
 
     elements.injuryTimePlusBtn.addEventListener('click', () => changeInjuryTime(1));
     elements.injuryTimeMinusBtn.addEventListener('click', () => changeInjuryTime(-1));
