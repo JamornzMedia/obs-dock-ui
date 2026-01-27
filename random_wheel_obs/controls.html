@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,19 +10,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style_controls.css">
 </head>
+
 <body class="dark-mode">
     <div class="page-container">
-        <h1>แผงควบคุมวงล้อจับคู่</h1>
+        <header class="main-header">
+            <h1>🎡 Random Wheel</h1>
+            <button class="settings-btn" id="open-settings-btn">⚙ ตั้งค่า</button>
+        </header>
 
+        <!-- Main Action Buttons -->
         <div class="card actions-card">
-            <button class="action-btn spin full-width" id="spin-button">สุ่มจับคู่</button>
-            <button class="action-btn confirm" id="confirm-winner-btn" style="display: none;">อัปเดตคู่ล่าสุด</button>
+            <button class="action-btn spin" id="spin-button">🎲 สุ่มจับคู่</button>
+            <div class="similar-warning" id="similar-warning" style="display: none;"></div>
+            <button class="action-btn confirm" id="confirm-winner-btn" style="display: none;">✅ อัปเดตคู่ล่าสุด</button>
+            <button class="action-btn respin" id="respin-btn" style="display: none;">🔄 สุ่มใหม่</button>
+            <button class="action-btn hide-wheels" id="hide-wheels-btn" style="display: none;">👁️ ซ่อนวงล้อ</button>
         </div>
 
+        <!-- Main Content Area -->
         <div class="app-container">
             <div class="controls-area">
+                <!-- History -->
                 <div class="card">
-                    <h2>ประวัติ</h2>
+                    <h2>📜 ประวัติ</h2>
                     <div class="history-controls">
                         <select id="sort-history">
                             <option value="newest">ใหม่ > เก่า</option>
@@ -33,88 +44,160 @@
                     </div>
                     <div id="history-list" class="simple-history"></div>
                 </div>
+            </div>
+            <div class="controls-area">
+                <!-- Wheel 1 Names -->
                 <div class="card">
-                    <h2>รายชื่อวงล้อ 1 (กลุ่ม) <small>(<span id="name-count-1">0</span>)</small></h2>
+                    <h2>🎯 วงล้อ 1 (กลุ่ม) <small>(<span id="name-count-1">0</span>)</small></h2>
                     <textarea id="name-list-1"></textarea>
                     <button class="update-button" id="update-button-1">อัปเดตกลุ่มหลัก</button>
                 </div>
+                <!-- Wheel 2 Names -->
                 <div class="card">
-                    <h2>รายชื่อวงล้อ 2 (ทีม) <small>(<span id="name-count-2">0</span>)</small></h2>
+                    <h2>🏆 วงล้อ 2 (ทีม) <small>(<span id="name-count-2">0</span>)</small></h2>
                     <textarea id="name-list-2"></textarea>
                     <button class="update-button" id="update-button-2">อัปเดต</button>
                 </div>
             </div>
-            <div class="controls-area">
-                 <div class="card">
-                    <h2>ตั้งค่าวงล้อ</h2>
-                     <div class="setting-row">
+        </div>
+
+        <!-- Soft Reset -->
+        <div class="card soft-reset-card">
+            <button class="action-btn soft-reset" id="soft-reset-btn">🔄 Reset วงล้อ</button>
+            <small class="reset-hint">รีเซ็ทชื่อกลับ, ล้างประวัติ, เริ่มสุ่มใหม่</small>
+        </div>
+
+        <footer>
+            <p>Developer JamornzMedia - Version 2.0</p>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙ ตั้งค่า</h2>
+                <button class="modal-close-btn" id="close-settings-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Wheel Settings -->
+                <div class="settings-section">
+                    <h3>ตั้งค่าวงล้อ</h3>
+                    <div class="setting-row">
                         <div class="input-group"><label>หัวข้อ 1</label><input type="text" id="title-input-1"></div>
                         <div class="input-group"><label>หัวข้อ 2</label><input type="text" id="title-input-2"></div>
-                     </div>
-                     <div class="setting-row">
-                        <div class="input-group"><label>สไตล์สี 1</label><select id="palette-select-1" class="palette-select"></select></div>
-                        <div class="input-group"><label>สไตล์สี 2</label><select id="palette-select-2" class="palette-select"></select></div>
-                     </div>
-                     <div class="setting-row">
-                         <div class="input-group full-width"><label>เวลาหมุน: <span id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1"></div>
-                     </div>
-                     <div class="setting-row">
-                        <div class="input-group separator-controls"><label>เส้นคั่น:</label><input type="checkbox" id="separator-toggle" checked><input type="number" id="separator-width" min="1" max="10" value="1"><span>px</span></div>
-                     </div>
-                     <div class="setting-row">
-                        <div class="input-group full-width"><label>ระยะห่างวงล้อ: <span id="spacing-value">30</span>px</label><input type="range" id="wheel-spacing" min="0" max="200" value="30"></div>
-                     </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="input-group"><label>สไตล์สี 1</label><select id="palette-select-1"
+                                class="palette-select"></select></div>
+                        <div class="input-group"><label>สไตล์สี 2</label><select id="palette-select-2"
+                                class="palette-select"></select></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="input-group full-width"><label>เวลาหมุน: <span
+                                    id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider"
+                                min="2" max="15" value="6" step="1"></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="input-group separator-controls"><label>เส้นคั่น:</label><input type="checkbox"
+                                id="separator-toggle" checked><input type="number" id="separator-width" min="1" max="10"
+                                value="1"><span>px</span></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="input-group"><label>การจัดวาง</label>
+                            <select id="wheel-layout">
+                                <option value="horizontal">แนวนอน (ซ้าย-ขวา)</option>
+                                <option value="vertical">แนวตั้ง (บน-ล่าง)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="input-group full-width"><label>ระยะห่างวงล้อ: <span
+                                    id="spacing-value">30</span>px</label><input type="range" id="wheel-spacing" min="0"
+                                max="2000" value="30"></div>
+                    </div>
                 </div>
-                 <div class="card">
-                    <h2>ตั้งค่าหน้าผลการจับคู่</h2>
+
+                <!-- Winner Display Settings -->
+                <div class="settings-section">
+                    <h3>ตั้งค่าหน้าผลการจับคู่</h3>
                     <label class="setting-subheader">สีตัวอักษร</label>
                     <div class="setting-row">
-                        <div class="input-group"><label>ชื่อกลุ่ม (บรรทัด 1)</label><input type="color" id="winner-line1-color"></div>
-                        <div class="input-group"><label>ชื่อทีม (บรรทัด 2)</label><input type="color" id="winner-line2-color"></div>
+                        <div class="input-group"><label>ชื่อกลุ่ม (บรรทัด 1)</label><input type="color"
+                                id="winner-line1-color"></div>
+                        <div class="input-group"><label>ชื่อทีม (บรรทัด 2)</label><input type="color"
+                                id="winner-line2-color"></div>
                     </div>
                     <label class="setting-subheader">พื้นหลัง</label>
                     <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="winner-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใสพื้นหลัง</label><input type="range" id="winner-bg-opacity" min="0" max="100" value="90"></div>
+                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="winner-bg-color">
+                        </div>
+                        <div class="input-group"><label>ความโปร่งใสพื้นหลัง</label><input type="range"
+                                id="winner-bg-opacity" min="0" max="100" value="90"></div>
                     </div>
                 </div>
-                <div class="card">
-                    <h2>ตั้งค่ากลุ่มรายชื่อ</h2>
-                    <div class="input-group">
-                        <label for="group-preset-select">Preset สี:</label>
-                        <select id="group-preset-select" class="palette-select"></select>
+
+                <!-- Group Display Settings -->
+                <div class="settings-section">
+                    <h3>ตั้งค่ากลุ่มรายชื่อ</h3>
+
+                    <!-- Preset Selector - Prominent -->
+                    <div class="preset-selector-box">
+                        <label for="group-preset-select">🎨 เลือก Preset สี:</label>
+                        <select id="group-preset-select" class="preset-select-large"></select>
+                        <small class="preset-hint">เลือก Preset เพื่อตั้งค่าสีทั้งหมดอัตโนมัติ
+                            หรือปรับแต่งเองด้านล่าง</small>
                     </div>
+
                     <div class="setting-row">
-                        <div class="input-group"><label>จำนวนคอลัมน์</label><input type="number" id="column-count" min="1" max="10" value="3"></div>
+                        <div class="input-group"><label>จำนวนคอลัมน์</label><input type="number" id="column-count"
+                                min="1" max="10" value="3"></div>
                     </div>
                     <hr>
                     <label class="setting-subheader">กรอบนอก (Card)</label>
                     <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-card-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range" id="group-card-bg-opacity" min="0" max="100" value="100"></div>
+                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-card-bg-color">
+                        </div>
+                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
+                                id="group-card-bg-opacity" min="0" max="100" value="100"></div>
                     </div>
                     <label class="setting-subheader">หัวข้อกลุ่ม</label>
                     <div class="setting-row">
-                         <div class="input-group"><label>จัดแนว</label><select id="group-header-align"><option value="left">ซ้าย</option><option value="center">กลาง</option><option value="right">ขวา</option></select></div>
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-header-bg-color"></div>
-                         <div class="input-group"><label>ความโปร่งใส</label><input type="range" id="group-header-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-header-color"></div>
+                        <div class="input-group"><label>จัดแนว</label><select id="group-header-align">
+                                <option value="left">ซ้าย</option>
+                                <option value="center">กลาง</option>
+                                <option value="right">ขวา</option>
+                            </select></div>
+                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color"
+                                id="group-header-bg-color"></div>
+                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
+                                id="group-header-bg-opacity" min="0" max="100" value="100"></div>
+                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-header-color">
+                        </div>
                     </div>
-                     <label class="setting-subheader">ช่องชื่อกลุ่ม (ซ้าย)</label>
-                     <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-prefix-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range" id="group-prefix-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-prefix-color"></div>
+                    <label class="setting-subheader">ช่องชื่อกลุ่ม (ซ้าย)</label>
+                    <div class="setting-row">
+                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color"
+                                id="group-prefix-bg-color"></div>
+                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
+                                id="group-prefix-bg-opacity" min="0" max="100" value="100"></div>
+                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-prefix-color">
+                        </div>
                     </div>
-                     <label class="setting-subheader">ช่องชื่อทีม (ขวา)</label>
-                     <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color"id="group-name-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range" id="group-name-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color"id="group-name-color"></div>
+                    <label class="setting-subheader">ช่องชื่อทีม (ขวา)</label>
+                    <div class="setting-row">
+                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-name-bg-color">
+                        </div>
+                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
+                                id="group-name-bg-opacity" min="0" max="100" value="100"></div>
+                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-name-color">
+                        </div>
                     </div>
                 </div>
-                <div class="card">
-                    <h2>ตั้งค่ากราฟิกและรีเซ็ต</h2>
+
+                <!-- Graphics and Reset -->
+                <div class="settings-section">
+                    <h3>ตั้งค่ากราฟิกและรีเซ็ต</h3>
                     <div class="setting-row bg-controls">
                         <div class="input-group bg-settings">
                             <label>สีพื้นหลัง:</label>
@@ -126,15 +209,14 @@
                             <label for="transparent-bg">พื้นหลังโปร่งใส</label>
                         </div>
                     </div>
-                     <hr>
-                     <button class="action-btn remove full-width" id="reset-all-btn">รีเซ็ตการตั้งค่าทั้งหมด</button>
+                    <hr>
+                    <button class="action-btn remove full-width" id="reset-all-btn">🗑️ รีเซ็ตการตั้งค่าทั้งหมด</button>
                 </div>
             </div>
         </div>
-        <footer>
-             <p>Random Wheel x2 - OBS Control Panel v5.2 FINAL (Refactored)</p>
-        </footer>
     </div>
+
     <script src="script.js"></script>
 </body>
+
 </html>
