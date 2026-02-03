@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>L3 Control Center - JamornzMedia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Using native WebSocket instead of obs-websocket-js -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div class="app-header">
+        <div class="logo-header-main">LOWER THIRD</div>
+        <div class="logo-header-sub">OBS DOCK CONTROLLER</div>
+    </div>
+
+    <div class="status-bar">
+        <div>
+            OBS: <span id="obs-status-dot" class="status-indicator"></span>
+            <span id="obs-status-text">Disconnect</span>
+        </div>
+        <div id="data-count" style="color:#666;">No Data</div>
+    </div>
+
+    <div class="container">
+        <!-- Dynamic Cards Container -->
+        <div id="cards-container" class="cards-container">
+            <!-- Cards will be generated here -->
+        </div>
+    </div>
+
+    <!-- IMPORT BAR (Collapsible) -->
+    <div id="import-bar" class="import-bar">
+        <div class="import-bar-header" onclick="toggleImportBar()">
+            <div class="import-bar-title">
+                <span class="icon">📂</span>
+                <span>Import Excel Data</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span id="import-status" class="import-status empty">ยังไม่มีข้อมูล</span>
+                <span class="toggle-arrow">▲</span>
+            </div>
+        </div>
+        <div class="import-bar-content">
+            <!-- Image Folder Setting -->
+            <div style="margin-bottom:10px;">
+                <label
+                    style="display:flex; align-items:center; gap:5px; font-size:10px; color:#888; margin-bottom:4px;">
+                    🖼️ Image Folder:
+                </label>
+                <input type="text" id="image-folder-input" placeholder="C:\Images\" style="width:100%; font-size:10px;"
+                    onchange="saveImageFolder(this.value)">
+                <div style="font-size:8px; color:#555; margin-top:2px;">
+                    ใส่แค่ชื่อไฟล์ใน Excel (ไม่ต้องใส่นามสกุล) เช่น player1
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display:none;">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-icon">📁</div>
+                <div><b>คลิกเพื่อเลือกไฟล์</b> หรือ ลากไฟล์มาวางที่นี่</div>
+                <div style="font-size:9px; color:#666; margin-top:5px;">รองรับ: .xlsx, .xls, .csv</div>
+                <div style="font-size:9px; color:#555; margin-top:3px;">Columns: ID, name, LabelName1, LabelName2,
+                    LabelName3, image</div>
+            </div>
+            <!-- Settings Buttons -->
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button class="btn-outline" onclick="openModal('modal-help')" style="flex:0;">❓</button>
+                <button class="btn-settings" onclick="openModal('modal-settings')" style="flex:1;">⚙️ ตั้งค่า
+                    Cards</button>
+                <button class="btn-outline" style="color:#ffca28; border-color:#ffca28; flex:0;"
+                    onclick="openModal('modal-sponsor')">🎁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="modal-overlay" onclick="closeModal(event, 'modal-settings')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-settings')">&times;</button>
+            <h2>⚙️ จัดการ Cards</h2>
+
+            <div id="settings-list" class="settings-list">
+                <!-- Settings items will be generated here -->
+            </div>
+
+            <div class="add-card-form">
+                <h4>➕ เพิ่ม Card ใหม่</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>ชื่อ Card</label>
+                        <input type="text" id="new-card-name" placeholder="เช่น Player Info">
+                    </div>
+                    <div class="input-group">
+                        <label>ประเภท</label>
+                        <select id="new-card-type">
+                            <option value="single">Single (1 คน)</option>
+                            <option value="double">Double (2 คน)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-add" id="btn-add-card">➕ เพิ่ม Card</button>
+            </div>
+
+            <div style="text-align:center; font-size:9px; color:#666; margin-top:12px;">
+                สามารถเพิ่มได้สูงสุด 10 Cards
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT CARD MODAL -->
+    <div id="modal-edit" class="modal-overlay" onclick="closeModal(event, 'modal-edit')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-edit')">&times;</button>
+            <h2>✏️ แก้ไข Card</h2>
+
+            <div class="edit-form">
+                <input type="hidden" id="edit-card-index">
+                <div class="input-group">
+                    <label>ชื่อ Card</label>
+                    <input type="text" id="edit-card-name">
+                </div>
+                <div class="input-group">
+                    <label>ประเภท</label>
+                    <select id="edit-card-type">
+                        <option value="single">Single (1 คน)</option>
+                        <option value="double">Double (2 คน)</option>
+                    </select>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-cancel" onclick="closeModal(null, 'modal-edit')">ยกเลิก</button>
+                    <button class="btn-save" onclick="saveCardEdit()">💾 บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPONSOR MODAL -->
+    <div id="modal-sponsor" class="modal-overlay" onclick="closeModal(event, 'modal-sponsor')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-sponsor')">&times;</button>
+            <h2 style="color:#ffca28;">Support Developer</h2>
+            <div class="sponsor-grid">
+                <div class="sponsor-item">
+                    <span style="color:#fff; font-weight:bold;">Thai Bank / PromptPay</span>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                            alt="QR"></div>
+                    <a href="https://easydonate.app/Jamornz" target="_blank">easydonate.app/Jamornz</a>
+                </div>
+            </div>
+            <div style="margin-top:15px; font-size:10px; color:#666;">Developed by <b>JamornzMedia</b></div>
+        </div>
+    </div>
+
+    <!-- HELP MODAL -->
+    <div id="modal-help" class="modal-overlay" onclick="closeModal(event, 'modal-help')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-help')">&times;</button>
+            <h2 style="color:#00aaff;">📖 วิธีใช้งาน</h2>
+            <div style="font-size:11px; color:#ccc; text-align:left;">
+                <p><b>1. Import Excel</b><br>
+                    กดแถบ "📂 Import Excel Data" ด้านล่าง แล้วเลือกหรือลากไฟล์<br>
+                    Columns: <code style="color:#888;">ID, name, LabelName1, LabelName2, LabelName3, image</code>
+                </p>
+                <p><b>2. ตั้งค่า Cards</b><br>
+                    กดปุ่ม "⚙️ ตั้งค่า Cards" เพื่อเพิ่ม/ลบ/แก้ไข Cards<br>
+                    - <span style="color:#4ade80;">Single</span>: แสดงข้อมูล 1 คน<br>
+                    - <span style="color:#fbbf24;">Double</span>: แสดงข้อมูล 2 คน (Home/Away)
+                </p>
+                <p><b>3. สร้าง OBS Sources</b><br>
+                    กดปุ่ม ⚙️ ที่มุมขวาบนของแต่ละ Card<br>
+                    กดที่ชื่อ Group (มี ➕) เพื่อสร้าง Sources อัตโนมัติ<br>
+                    ระบบจะสร้าง Text และ Image Sources ใน Scene ของ OBS
+                </p>
+                <p><b>4. ชื่อ Source ใน OBS</b><br>
+                    <u>Single Card:</u><br>
+                    <code style="color:#4ade80;">T_Name_1</code>, <code style="color:#4ade80;">T_Label1_1</code>, <code
+                        style="color:#4ade80;">I_Avatar_1</code><br>
+                    <u>Double Card:</u><br>
+                    <code style="color:#4ade80;">T_Name_Home_2</code>, <code style="color:#4ade80;">T_Name_Away_2</code>
+                </p>
+                <p><b>5. Group Sources ใน OBS</b><br>
+                    หลังจากสร้าง Sources แล้ว:<br>
+                    1. เลือก Sources ทั้งหมด (กด Ctrl ค้าง)<br>
+                    2. คลิกขวา → Group Selected Items<br>
+                    3. ตั้งชื่อ Group ตามที่แสดง เช่น <code style="color:#4ade80;">G_LowerThird_1</code>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD SETTINGS MODAL -->
+    <div id="modal-card-settings" class="modal-overlay" onclick="closeModal(event, 'modal-card-settings')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-card-settings')">&times;</button>
+            <h2 id="card-settings-title">⚙️ ตั้งค่า Card</h2>
+
+            <div id="card-settings-content">
+                <!-- Source names will be generated here -->
+            </div>
+
+            <div style="margin-top:12px; border-top:1px solid #333; padding-top:10px;">
+                <div style="font-size:10px; color:#888; margin-bottom:6px;">📊 แสดงใน Dropdown:</div>
+                <div id="column-visibility-toggles" style="display:flex; flex-wrap:wrap; gap:6px;">
+                    <!-- Column toggles will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRM CREATE SOURCE MODAL -->
+    <div id="modal-confirm-create" class="modal-overlay" onclick="closeModal(event, 'modal-confirm-create')">
+        <div class="modal" style="max-width:300px;" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal(null, 'modal-confirm-create')">&times;</button>
+            <h2 style="font-size:13px;">🔧 สร้าง OBS Source</h2>
+            <div id="confirm-create-content" style="font-size:11px; color:#ccc; margin-bottom:12px;">
+                <!-- Content will be generated -->
+            </div>
+            <div class="btn-row">
+                <button class="btn-cancel" onclick="closeModal(null, 'modal-confirm-create')">ยกเลิก</button>
+                <button class="btn-save" id="btn-confirm-create">✓ สร้างเลย</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
