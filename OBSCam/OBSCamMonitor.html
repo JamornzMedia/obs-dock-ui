@@ -4,11 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.3 (Multi-Input)</title>
+    <title>OBSCam Control V2.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- StatCounter -->
+    <script type="text/javascript">
+        var sc_project = 13147874;
+        var sc_invisible = 0;
+        var sc_security = "550e33c0";
+        var scJsHost = "https://";
+        document.write("<sc" + "ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
+    </script>
+
     <style>
         body {
             background: #111;
@@ -311,6 +321,28 @@
         <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
             <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
             <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
+
+            <!-- Room Name Display Mode -->
+            <div id="room-name-display" class="mt-2 flex items-center justify-center gap-2">
+                <span id="room-name-text" class="text-sm text-blue-300 italic">ไม่มีชื่อห้อง</span>
+                <button onclick="showRoomNameEdit()" class="text-gray-500 hover:text-blue-400 text-xs"><i
+                        class="fas fa-pencil-alt"></i></button>
+            </div>
+
+            <!-- Room Name Edit Mode (hidden by default) -->
+            <div id="room-name-edit" class="mt-2 hidden">
+                <div class="flex items-center gap-1">
+                    <input type="text" id="room-name-input" placeholder="ชื่อห้อง (ไม่บังคับ)" maxlength="30"
+                        class="flex-1 bg-black/50 border border-blue-500/30 rounded px-2 py-1 text-center text-sm text-blue-300 placeholder-gray-600 outline-none focus:border-blue-400">
+                    <button onclick="confirmRoomName()"
+                        class="bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded text-xs"><i
+                            class="fas fa-check"></i></button>
+                    <button onclick="cancelRoomNameEdit()"
+                        class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"><i
+                            class="fas fa-times"></i></button>
+                </div>
+            </div>
+
             <button onclick="openModal('phone-link-modal')"
                 class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
         </div>
@@ -336,7 +368,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.3</p>
+            <p class="text-[9px] text-gray-600">V2.4</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -471,7 +503,7 @@
             maxCams = parseInt(val);
             renderCamList();
             if (roomId) {
-                db.ref(`rooms/${roomId}/config/maxCams`).set(maxCams);
+                db.ref(`OBSCam_rooms/${roomId}/config/maxCams`).set(maxCams);
                 for (let i = 1; i <= maxCams; i++) {
                     initDashboardReceiver(i);
                 }
@@ -488,7 +520,7 @@
                 roomId = localStorage.getItem('obs_v2_room_id');
             } else {
                 const old = localStorage.getItem('obs_v2_room_id');
-                if (old) db.ref(`rooms/${old}`).remove();
+                if (old) db.ref(`OBSCam_rooms/${old}`).remove();
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem('obs_v2_room_id', roomId);
             }
@@ -548,6 +580,7 @@
             }
 
             setStepStatus('step-firebase', 'success');
+            await delay(1000); // ให้เห็นว่า Firebase connected แล้ว
 
             // Step 2: Create/Rejoin Room
             setStepStatus('step-room', 'loading');
@@ -555,21 +588,39 @@
 
             try {
                 if (rejoin) {
-                    const snap = await db.ref(`rooms/${roomId}/config/maxCams`).once('value');
+                    const snap = await db.ref(`OBSCam_rooms/${roomId}/config/maxCams`).once('value');
                     if (snap.exists()) {
                         maxCams = snap.val();
                         document.getElementById('max-cams-select').value = maxCams;
                     }
+                    // Load room name from Firebase first, fallback to localStorage
+                    const nameSnap = await db.ref(`OBSCam_rooms/${roomId}/config/roomName`).once('value');
+                    if (nameSnap.exists() && nameSnap.val()) {
+                        updateRoomNameDisplay(nameSnap.val());
+                        localStorage.setItem('obs_v2_room_name', nameSnap.val());
+                    } else {
+                        // Fallback to localStorage
+                        const savedName = localStorage.getItem('obs_v2_room_name') || '';
+                        updateRoomNameDisplay(savedName);
+                    }
                 } else {
                     maxCams = 4;
-                    await db.ref(`rooms/${roomId}/config/maxCams`).set(maxCams);
+                    await db.ref(`OBSCam_rooms/${roomId}/config/maxCams`).set(maxCams);
                     document.getElementById('max-cams-select').value = 4;
+
+                    // Load saved room name from localStorage for new room
+                    const savedName = localStorage.getItem('obs_v2_room_name') || '';
+                    updateRoomNameDisplay(savedName);
+                    if (savedName) {
+                        await db.ref(`OBSCam_rooms/${roomId}/config/roomName`).set(savedName);
+                    }
                 }
 
-                await db.ref(`rooms/${roomId}/active`).set(true);
-                db.ref(`rooms/${roomId}`).onDisconnect().remove();
+                await db.ref(`OBSCam_rooms/${roomId}/active`).set(true);
+                db.ref(`OBSCam_rooms/${roomId}`).onDisconnect().remove();
 
                 setStepStatus('step-room', 'success');
+                await delay(1000); // ให้เห็นว่าสร้างห้องเสร็จแล้ว
             } catch (error) {
                 console.error('[ERROR] Room creation failed:', error);
                 connectionFailed('สร้างห้องไม่สำเร็จ: ' + error.message);
@@ -581,6 +632,7 @@
             updateConnectStatus('กำลังเตรียมระบบ...');
 
             renderCamList();
+            await delay(1000); // ให้เห็นว่ากำลังเตรียม
 
             setStepStatus('step-ready', 'success');
             updateConnectStatus('เชื่อมต่อสำเร็จ!');
@@ -590,7 +642,7 @@
             document.getElementById('connect-icon-success').classList.remove('hidden');
 
             // Wait a moment then go to control panel
-            await delay(800);
+            await delay(1000);
 
             document.getElementById('connecting-screen').classList.add('hidden');
             document.getElementById('mode-control').classList.remove('hidden');
@@ -658,6 +710,55 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        // ============ Room Name Functions ============
+        let originalRoomName = '';
+
+        function showRoomNameEdit() {
+            originalRoomName = document.getElementById('room-name-input').value;
+            document.getElementById('room-name-display').classList.add('hidden');
+            document.getElementById('room-name-edit').classList.remove('hidden');
+            document.getElementById('room-name-input').focus();
+        }
+
+        function cancelRoomNameEdit() {
+            document.getElementById('room-name-input').value = originalRoomName;
+            document.getElementById('room-name-edit').classList.add('hidden');
+            document.getElementById('room-name-display').classList.remove('hidden');
+        }
+
+        function confirmRoomName() {
+            const input = document.getElementById('room-name-input');
+            const newName = input.value.trim().substring(0, 30);
+            input.value = newName;
+
+            // Update display
+            const textEl = document.getElementById('room-name-text');
+            textEl.innerText = newName || 'ไม่มีชื่อห้อง';
+            textEl.classList.toggle('italic', !newName);
+
+            // Save to Firebase (single write)
+            if (roomId) {
+                db.ref(`OBSCam_rooms/${roomId}/config/roomName`).set(newName);
+                console.log('[RoomName] Saved:', newName);
+            }
+
+            // Save to localStorage for persistence
+            localStorage.setItem('obs_v2_room_name', newName);
+
+            // Switch back to display mode
+            document.getElementById('room-name-edit').classList.add('hidden');
+            document.getElementById('room-name-display').classList.remove('hidden');
+        }
+
+        function updateRoomNameDisplay(name) {
+            const textEl = document.getElementById('room-name-text');
+            const input = document.getElementById('room-name-input');
+            textEl.innerText = name || 'ไม่มีชื่อห้อง';
+            textEl.classList.toggle('italic', !name);
+            input.value = name || '';
+        }
+
+
         function toggleMonitor(i) {
             const btn = document.getElementById(`btn-mon-${i}`);
             const isInactive = btn.classList.contains('monitor-inactive');
@@ -668,15 +769,15 @@
                 btn.classList.remove('monitor-active'); btn.classList.add('monitor-inactive');
                 document.getElementById(`overlay-off-${i}`).classList.remove('hidden');
             }
-            db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ enabled: isInactive });
+            db.ref(`OBSCam_rooms/${roomId}/cam${i}/monitorControl`).update({ enabled: isInactive });
         }
 
         function updateMonitorBitrate(i, val) {
-            db.ref(`rooms/${roomId}/cam${i}/monitorControl`).update({ bitratePercent: parseInt(val) });
+            db.ref(`OBSCam_rooms/${roomId}/cam${i}/monitorControl`).update({ bitratePercent: parseInt(val) });
         }
 
         async function initDashboardReceiver(cIdx) {
-            const roomRef = db.ref(`rooms/${roomId}/cam${cIdx}/monitor`);
+            const roomRef = db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/monitor`);
             if (dashboardPCs[cIdx]) { dashboardPCs[cIdx].close(); }
 
             const dPC = new RTCPeerConnection(rtcConfig);
@@ -735,7 +836,7 @@
         }
 
         async function startReceiver(rid, cIdx) {
-            const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
+            const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
             pc = new RTCPeerConnection(rtcConfig);
@@ -777,7 +878,7 @@
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(document.getElementById('phone-url-input').value); }
         function openNewRoomModal() { openModal('new-room-modal'); }
-        function confirmNewRoom() { if (roomId) db.ref(`rooms/${roomId}`).remove(); location.reload(); }
+        function confirmNewRoom() { if (roomId) db.ref(`OBSCam_rooms/${roomId}`).remove(); location.reload(); }
     </script>
 </body>
 
