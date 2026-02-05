@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.3</title>
+    <title>OBSCam Control V2.3 (Multi-Input)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -216,14 +216,9 @@
             </div>
         </div>
 
-        <div id="new-room-form" class="w-full max-w-xs space-y-3">
-            <input type="text" id="room-name-input" placeholder="Enter Room Name (e.g. Football Match A)"
-                class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-white text-center text-sm outline-none placeholder-gray-600 focus:border-blue-500">
-
-            <button id="btn-start-fresh" onclick="initializeControl(false)"
-                class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
-                    class="fas fa-play mr-2"></i> Create Session</button>
-        </div>
+        <button id="btn-start-fresh" onclick="initializeControl(false)"
+            class="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-full font-bold shadow-lg text-white transition active:scale-95"><i
+                class="fas fa-play mr-2"></i> Start New Session</button>
 
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
@@ -232,11 +227,67 @@
         </div>
     </div>
 
+    <!-- Connecting Screen -->
+    <div id="connecting-screen"
+        class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
+        <div class="simple-logo mb-6">
+            <div class="logo-main">OBSCam</div>
+            <div class="logo-sub">CONTROL</div>
+        </div>
+
+        <div class="w-full max-w-xs text-center">
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <!-- Loading Spinner -->
+                <div id="connect-spinner" class="mb-4">
+                    <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+                </div>
+
+                <!-- Status Icon (Success/Fail) -->
+                <div id="connect-icon-success" class="hidden mb-4">
+                    <i class="fas fa-check-circle text-4xl text-green-500"></i>
+                </div>
+                <div id="connect-icon-fail" class="hidden mb-4">
+                    <i class="fas fa-times-circle text-4xl text-red-500"></i>
+                </div>
+
+                <!-- Room ID Display -->
+                <div class="text-2xl font-mono text-white font-bold mb-2" id="connecting-room-id">------</div>
+
+                <!-- Status Text -->
+                <p id="connect-status" class="text-gray-400 text-sm mb-4">กำลังเชื่อมต่อ Firebase...</p>
+
+                <!-- Progress Steps -->
+                <div class="text-left text-xs space-y-1 mb-4">
+                    <div id="step-firebase" class="flex items-center gap-2 text-gray-500">
+                        <i class="fas fa-circle text-[6px]"></i> Firebase Connection
+                    </div>
+                    <div id="step-room" class="flex items-center gap-2 text-gray-500">
+                        <i class="fas fa-circle text-[6px]"></i> Room Created
+                    </div>
+                    <div id="step-ready" class="flex items-center gap-2 text-gray-500">
+                        <i class="fas fa-circle text-[6px]"></i> Ready
+                    </div>
+                </div>
+
+                <!-- Retry Button (hidden by default) -->
+                <button id="btn-retry" onclick="retryConnection()"
+                    class="hidden w-full bg-red-600 hover:bg-red-500 py-2 rounded-lg font-bold text-sm text-white">
+                    <i class="fas fa-redo mr-2"></i>ลองใหม่
+                </button>
+            </div>
+        </div>
+
+        <div class="absolute bottom-10 text-center">
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
+            </p>
+        </div>
+    </div>
+
     <div id="mode-control" class="hidden control-panel p-4">
         <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-3">
             <div class="flex flex-col">
                 <div class="logo-header-main">OBSCam</div>
-                <div class="logo-header-sub">CONTROL CENTER V2.3</div>
+                <div class="logo-header-sub">CONTROL CENTER</div>
             </div>
 
             <div class="flex items-center gap-2">
@@ -257,27 +308,11 @@
             </div>
         </div>
 
-        <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-3 mb-3">
-            <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <span class="text-[9px] text-gray-500 uppercase font-bold whitespace-nowrap">Room Name:</span>
-                    <span id="display-room-name" class="text-sm font-bold text-white truncate">...</span>
-                </div>
-                <button onclick="editRoomName()" class="text-gray-500 hover:text-blue-400 px-2">
-                    <i class="fas fa-pen text-xs"></i>
-                </button>
-            </div>
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px] text-gray-500 uppercase font-bold">Room ID:</span>
-                    <span id="display-room-id"
-                        class="text-xl font-mono font-bold text-blue-400 tracking-wider">...</span>
-                </div>
-                <button onclick="openPhoneModal()"
-                    class="bg-gray-800 hover:bg-gray-700 text-white text-[10px] px-3 py-1 rounded border border-gray-600 flex items-center gap-1">
-                    <i class="fas fa-qrcode"></i> QR Code
-                </button>
-            </div>
+        <div class="bg-blue-900/10 border border-blue-500/30 rounded-lg p-3 text-center mb-3 relative">
+            <span class="text-[9px] text-blue-300 block uppercase tracking-widest mb-1">Room ID</span>
+            <div id="display-room-id" class="text-4xl font-mono font-bold text-white tracking-widest">------</div>
+            <button onclick="openModal('phone-link-modal')"
+                class="absolute top-2 right-2 text-gray-500 hover:text-white"><i class="fas fa-qrcode"></i></button>
         </div>
 
         <div class="flex-1 overflow-y-auto pr-1" id="cam-list"></div>
@@ -312,22 +347,11 @@
                     class="w-full text-xs text-gray-500 hover:text-white text-center mt-3">Close</button>
             </div>
         </div>
-
         <div id="phone-link-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
-
-                <div class="mb-3 border-b border-gray-700 pb-2">
-                    <div class="text-[10px] text-gray-500 uppercase">Room Name</div>
-                    <div id="modal-room-name" class="text-sm font-bold text-blue-400 mb-1">...</div>
-                    <div class="text-[10px] text-gray-500 uppercase">Room ID</div>
-                    <div id="modal-room-id" class="text-lg font-mono font-bold text-white">...</div>
-                </div>
-
-                <div class="bg-white p-2 rounded mb-3 inline-block shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    <img id="qr-code-img" src="" alt="QR" class="w-32 h-32">
-                </div>
-
+                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
+                        class="w-32 h-32"></div>
                 <div class="flex gap-2 mb-2">
                     <input type="text" id="phone-url-input"
                         class="bg-black text-[10px] text-gray-400 border border-gray-700 rounded p-2 flex-1 font-mono"
@@ -339,7 +363,6 @@
                     class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
         </div>
-
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
@@ -354,8 +377,27 @@
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", authDomain: "obscam-p2p.firebaseapp.com", databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "obscam-p2p", appId: "1:531335072084:web:dc373db6b66581a63160c1" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+        // Debug: Check Firebase initialization
+        console.log('[DEBUG] Initializing Firebase...');
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            console.log('[DEBUG] Firebase initialized successfully');
+        } catch (e) {
+            console.error('[ERROR] Firebase init failed:', e);
+            alert('Firebase Init Error: ' + e.message);
+        }
+
         const db = firebase.database();
+
+        // Debug: Test Firebase connection
+        db.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                console.log('[DEBUG] ✅ Firebase CONNECTED');
+            } else {
+                console.log('[DEBUG] ❌ Firebase DISCONNECTED');
+            }
+        });
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
         const params = new URLSearchParams(window.location.search);
@@ -363,7 +405,6 @@
         const camIndex = params.get('cam') || '1';
         let roomId, pc, dashboardPCs = {}, totalBytesData = 0;
         let maxCams = 4; // Default
-        let roomName = "Unknown Room";
 
         if (!mode) {
             checkExistingSession();
@@ -377,7 +418,7 @@
         function checkExistingSession() {
             const saved = localStorage.getItem('obs_v2_room_id');
             if (saved) {
-                document.getElementById('new-room-form').classList.add('hidden');
+                document.getElementById('btn-start-fresh').classList.add('hidden');
                 document.getElementById('rejoin-area').classList.remove('hidden');
                 document.getElementById('prev-room-id').innerText = saved;
             }
@@ -414,7 +455,6 @@
                     <div class="flex flex-col items-end gap-1 ml-2">
                         <div class="flex items-center gap-2">
                             <select onchange="updateMonitorBitrate('${i}', this.value)" class="bg-black text-[8px] text-gray-400 border border-gray-700 rounded px-1 outline-none h-5 w-16">
-                                <option value="0">0 K (OFF)</option>
                                 <option value="50" selected>50 K</option>
                                 <option value="100">100 K</option>
                                 <option value="300">300 K</option>
@@ -439,46 +479,122 @@
         }
 
         function initializeControl(rejoin) {
+            // Show connecting screen
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('connecting-screen').classList.remove('hidden');
+            resetConnectingUI();
+
             if (rejoin) {
                 roomId = localStorage.getItem('obs_v2_room_id');
-                db.ref(`rooms/${roomId}/config`).once('value').then(snap => {
-                    const config = snap.val() || {};
-                    if (config.maxCams) maxCams = config.maxCams;
-                    if (config.name) roomName = config.name;
-                    document.getElementById('max-cams-select').value = maxCams;
-                    renderCamList();
-                    initAfterRender();
-                });
             } else {
                 const old = localStorage.getItem('obs_v2_room_id');
                 if (old) db.ref(`rooms/${old}`).remove();
-
                 roomId = Math.floor(100000 + Math.random() * 900000).toString();
                 localStorage.setItem('obs_v2_room_id', roomId);
+            }
 
-                const inputName = document.getElementById('room-name-input').value;
-                roomName = inputName.trim() === "" ? "OBSCam Room" : inputName;
+            document.getElementById('connecting-room-id').innerText = roomId;
+            updateConnectStatus('กำลังเชื่อมต่อ Firebase...');
 
-                maxCams = 4;
-                db.ref(`rooms/${roomId}/config`).set({
-                    maxCams: maxCams,
-                    name: roomName
-                });
+            // Start connection process
+            startConnectionProcess(rejoin);
+        }
 
-                document.getElementById('max-cams-select').value = 4;
-                renderCamList();
-                initAfterRender();
+        function resetConnectingUI() {
+            document.getElementById('connect-spinner').classList.remove('hidden');
+            document.getElementById('connect-icon-success').classList.add('hidden');
+            document.getElementById('connect-icon-fail').classList.add('hidden');
+            document.getElementById('btn-retry').classList.add('hidden');
+
+            ['step-firebase', 'step-room', 'step-ready'].forEach(id => {
+                const el = document.getElementById(id);
+                el.className = 'flex items-center gap-2 text-gray-500';
+                el.querySelector('i').className = 'fas fa-circle text-[6px]';
+            });
+        }
+
+        function updateConnectStatus(text) {
+            document.getElementById('connect-status').innerText = text;
+        }
+
+        function setStepStatus(stepId, status) {
+            const el = document.getElementById(stepId);
+            if (status === 'loading') {
+                el.className = 'flex items-center gap-2 text-blue-400';
+                el.querySelector('i').className = 'fas fa-spinner fa-spin text-[8px]';
+            } else if (status === 'success') {
+                el.className = 'flex items-center gap-2 text-green-400';
+                el.querySelector('i').className = 'fas fa-check text-[8px]';
+            } else if (status === 'fail') {
+                el.className = 'flex items-center gap-2 text-red-400';
+                el.querySelector('i').className = 'fas fa-times text-[8px]';
             }
         }
 
-        function initAfterRender() {
-            db.ref(`rooms/${roomId}/active`).set(true);
-            db.ref(`rooms/${roomId}`).onDisconnect().remove();
+        let pendingRejoin = false;
 
-            document.getElementById('start-screen').classList.add('hidden');
+        async function startConnectionProcess(rejoin) {
+            pendingRejoin = rejoin;
+
+            // Step 1: Check Firebase connection
+            setStepStatus('step-firebase', 'loading');
+            updateConnectStatus('กำลังเชื่อมต่อ Firebase...');
+
+            const isConnected = await waitForFirebaseConnection(5000);
+
+            if (!isConnected) {
+                connectionFailed('ไม่สามารถเชื่อมต่อ Firebase ได้');
+                return;
+            }
+
+            setStepStatus('step-firebase', 'success');
+
+            // Step 2: Create/Rejoin Room
+            setStepStatus('step-room', 'loading');
+            updateConnectStatus(rejoin ? 'กำลังเข้าห้องเดิม...' : 'กำลังสร้างห้องใหม่...');
+
+            try {
+                if (rejoin) {
+                    const snap = await db.ref(`rooms/${roomId}/config/maxCams`).once('value');
+                    if (snap.exists()) {
+                        maxCams = snap.val();
+                        document.getElementById('max-cams-select').value = maxCams;
+                    }
+                } else {
+                    maxCams = 4;
+                    await db.ref(`rooms/${roomId}/config/maxCams`).set(maxCams);
+                    document.getElementById('max-cams-select').value = 4;
+                }
+
+                await db.ref(`rooms/${roomId}/active`).set(true);
+                db.ref(`rooms/${roomId}`).onDisconnect().remove();
+
+                setStepStatus('step-room', 'success');
+            } catch (error) {
+                console.error('[ERROR] Room creation failed:', error);
+                connectionFailed('สร้างห้องไม่สำเร็จ: ' + error.message);
+                return;
+            }
+
+            // Step 3: Ready
+            setStepStatus('step-ready', 'loading');
+            updateConnectStatus('กำลังเตรียมระบบ...');
+
+            renderCamList();
+
+            setStepStatus('step-ready', 'success');
+            updateConnectStatus('เชื่อมต่อสำเร็จ!');
+
+            // Show success icon
+            document.getElementById('connect-spinner').classList.add('hidden');
+            document.getElementById('connect-icon-success').classList.remove('hidden');
+
+            // Wait a moment then go to control panel
+            await delay(800);
+
+            document.getElementById('connecting-screen').classList.add('hidden');
             document.getElementById('mode-control').classList.remove('hidden');
             document.getElementById('display-room-id').innerText = roomId;
-            document.getElementById('display-room-name').innerText = roomName;
 
             const phoneUrl = window.location.origin + window.location.pathname.replace('OBSCamMonitor.html', 'OBSCamPhone.html') + "?room=" + roomId;
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
@@ -501,6 +617,45 @@
                     }
                 }
             }, 1000);
+        }
+
+        function waitForFirebaseConnection(timeout) {
+            return new Promise((resolve) => {
+                let resolved = false;
+
+                const timer = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(false);
+                    }
+                }, timeout);
+
+                db.ref('.info/connected').once('value', (snap) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timer);
+                        resolve(snap.val() === true);
+                    }
+                });
+            });
+        }
+
+        function connectionFailed(message) {
+            setStepStatus('step-firebase', 'fail');
+            updateConnectStatus(message);
+
+            document.getElementById('connect-spinner').classList.add('hidden');
+            document.getElementById('connect-icon-fail').classList.remove('hidden');
+            document.getElementById('btn-retry').classList.remove('hidden');
+        }
+
+        function retryConnection() {
+            document.getElementById('connecting-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
 
         function toggleMonitor(i) {
@@ -582,14 +737,6 @@
         async function startReceiver(rid, cIdx) {
             const roomRef = db.ref(`rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
-            roomRef.child('cmd').on('value', snap => {
-                const val = snap.val();
-                if (val && val.action === 'reload') {
-                    roomRef.child('cmd').remove().then(() => {
-                        window.location.reload();
-                    });
-                }
-            });
 
             pc = new RTCPeerConnection(rtcConfig);
             pc.onicecandidate = event => { if (event.candidate) roomRef.child('calleeCandidates').push(event.candidate.toJSON()); };
@@ -618,7 +765,6 @@
         }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
         function openLinkModal() {
             const container = document.getElementById('links-container');
             container.innerHTML = '';
@@ -628,24 +774,6 @@
             }
             openModal('obs-link-modal');
         }
-
-        function openPhoneModal() {
-            document.getElementById('modal-room-name').innerText = roomName;
-            document.getElementById('modal-room-id').innerText = roomId;
-            openModal('phone-link-modal');
-        }
-
-        function editRoomName() {
-            let newName = prompt("Edit Room Name:", roomName);
-            if (newName && newName.trim() !== "") {
-                roomName = newName.trim();
-                document.getElementById('display-room-name').innerText = roomName;
-                if (roomId) {
-                    db.ref(`rooms/${roomId}/config/name`).set(roomName);
-                }
-            }
-        }
-
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(document.getElementById('phone-url-input').value); }
         function openNewRoomModal() { openModal('new-room-modal'); }
