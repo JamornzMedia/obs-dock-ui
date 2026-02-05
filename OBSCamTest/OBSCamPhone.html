@@ -165,6 +165,10 @@
                         class="bg-gray-800 w-16 rounded-lg flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition"><i
                             class="fas fa-qrcode text-2xl"></i></button>
                 </div>
+                <div id="setup-room-name" class="hidden mt-2 text-center">
+                    <span class="text-green-400 text-sm font-bold"><i class="fas fa-check-circle mr-1"></i><span
+                            id="setup-room-name-text"></span></span>
+                </div>
             </div>
 
             <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
@@ -290,6 +294,7 @@
                             class="text-sm text-green-400 font-bold tracking-wide">CONNECTING...</span>
                     </div>
                     <div class="text-[10px] text-white font-mono mt-0.5" id="room-info">Room: ----</div>
+                    <div id="live-room-name" class="hidden text-[11px] text-blue-300 font-bold mt-0.5"></div>
                 </div>
 
                 <div class="flex gap-2">
@@ -387,6 +392,7 @@
         let sessionTotalBytes = 0;
         let monitorBitrateTarget = 50;
         let currentMaxCams = 4;
+        let currentRoomName = '';
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -455,6 +461,9 @@
 
         function checkRoomConfig() {
             const rId = document.getElementById('room-id').value;
+            const setupNameDiv = document.getElementById('setup-room-name');
+            const setupNameText = document.getElementById('setup-room-name-text');
+
             if (rId.length >= 6) {
                 db.ref(`OBSCam_rooms/${rId}/config/maxCams`).once('value').then(snap => {
                     if (snap.exists()) {
@@ -470,8 +479,24 @@
                             sel.appendChild(opt);
                         }
                         if (currentVal <= max) sel.value = currentVal;
+
+                        // Fetch room name
+                        db.ref(`OBSCam_rooms/${rId}/config/roomName`).once('value').then(nameSnap => {
+                            if (nameSnap.exists() && nameSnap.val()) {
+                                currentRoomName = nameSnap.val();
+                                setupNameText.innerText = currentRoomName;
+                                setupNameDiv.classList.remove('hidden');
+                            } else {
+                                currentRoomName = '';
+                                setupNameDiv.classList.add('hidden');
+                            }
+                        });
+                    } else {
+                        setupNameDiv.classList.add('hidden');
                     }
                 });
+            } else {
+                setupNameDiv.classList.add('hidden');
             }
         }
 
@@ -506,6 +531,15 @@
 
             document.getElementById('room-info').innerText = "Room: " + roomId;
             document.getElementById('status-txt').innerText = "CHECKING...";
+
+            // Show room name in live UI if available
+            const liveNameEl = document.getElementById('live-room-name');
+            if (currentRoomName) {
+                liveNameEl.innerText = currentRoomName;
+                liveNameEl.classList.remove('hidden');
+            } else {
+                liveNameEl.classList.add('hidden');
+            }
 
             const roomSnap = await db.ref(`OBSCam_rooms/${roomId}/active`).get();
             if (!roomSnap.exists()) { alert(`Room ${roomId} not found!`); return; }
@@ -607,7 +641,7 @@
 
         function listenMonitorControl(rid, cIdx) {
             const controlRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/monitorControl`);
-            controlRef.update({ enabled: false, bitratePercent: 50 });
+            // Removed: unnecessary initial update - Monitor will set initial values
 
             controlRef.on('value', snap => {
                 const val = snap.val();
