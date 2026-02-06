@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC to PC Audio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 400px;
+            max-width: 95vw;
+            padding: 24px;
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        /* Page Sections */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Launcher Page */
+        .launcher-logo {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .launcher-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .launcher-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        }
+
+        .launcher-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .launcher-link {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .launcher-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .launcher-link .icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .launcher-link .text {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        /* Mode Selection */
+        .mode-select {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 24px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .mode-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            border-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .mode-btn .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .mode-btn .label {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .mode-btn .desc {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Back Button */
+        .back-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 8px 0;
+            margin-bottom: 16px;
+            transition: color 0.3s;
+        }
+
+        .back-btn:hover {
+            color: #fff;
+        }
+
+        /* Installation Guide Page */
+        .guide-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .guide-header h2 {
+            font-size: 1.3rem;
+            color: #00d9ff;
+            margin-bottom: 6px;
+        }
+
+        .guide-header p {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .guide-step {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .guide-step .step-num {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .guide-step .step-content {
+            flex: 1;
+        }
+
+        .guide-step .step-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .guide-step .step-desc {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .guide-step .download-btn {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .guide-step .download-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .guide-usage {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 16px;
+        }
+
+        .guide-usage h4 {
+            font-size: 0.9rem;
+            color: #00d9ff;
+            margin-bottom: 10px;
+        }
+
+        .guide-usage ol {
+            padding-left: 20px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .guide-usage li {
+            margin-bottom: 6px;
+        }
+
+        .guide-note {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 16px;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+
+        .status-dot.on {
+            background: #2ed573;
+            box-shadow: 0 0 8px #2ed573;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.85rem;
+        }
+
+        select option {
+            background: #1a1a3e;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            color: #000;
+        }
+
+        .btn-stop {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            color: #00d9ff;
+            margin: 14px 0 8px;
+            font-weight: 600;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 12px 0;
+        }
+
+        .footer {
+            text-align: center;
+            color: #555;
+            font-size: 0.65rem;
+            margin-top: 20px;
+        }
+
+        .footer a {
+            color: #00d9ff;
+            text-decoration: none;
+        }
+
+        /* Sponsor Section */
+        .sponsor-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .sponsor-section h4 {
+            font-size: 0.85rem;
+            color: #ff6b81;
+            margin-bottom: 10px;
+        }
+
+        .sponsor-qr {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 10px;
+            background: #fff;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .sponsor-qr img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sponsor-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .sponsor-link input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #00d9ff;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            text-align: center;
+            width: 160px;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #ff6b81, #ff4757);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: #2ed573;
+        }
+
+        /* Volume Slider */
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00d9ff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Language Toggle -->
+    <button class="lang-toggle" onclick="toggleLang()" id="langBtn">🇺🇸 EN</button>
+
+    <div class="container">
+        <!-- PAGE: Launcher -->
+        <div id="launcherPage" class="page active">
+            <div class="header">
+                <div class="launcher-logo">🔊</div>
+                <h1 data-i18n="title">PC to PC Audio</h1>
+                <p data-i18n="subtitle">Send audio to another computer via network</p>
+            </div>
+
+            <button class="launcher-btn" onclick="showPage('modePage')" data-i18n="start_btn">▶️ Start</button>
+
+            <div class="launcher-links">
+                <div class="launcher-link" onclick="showPage('senderGuide')">
+                    <div class="icon">📤</div>
+                    <div class="text" data-i18n="sender_setup">Sender Setup</div>
+                </div>
+                <div class="launcher-link" onclick="showPage('receiverGuide')">
+                    <div class="icon">📥</div>
+                    <div class="text" data-i18n="receiver_setup">Receiver Setup</div>
+                </div>
+            </div>
+
+            <div class="footer" style="margin-top: 24px;">
+                v1.0 &bull; <a href="https://sites.google.com/view/jamornzmedia" target="_blank">JamonrzMedia</a>
+            </div>
+        </div>
+
+        <!-- PAGE: Sender Installation Guide -->
+        <div id="senderGuide" class="page">
+            <button class="back-btn" onclick="showPage('launcherPage')" data-i18n="back">← Back</button>
+
+            <div class="guide-header">
+                <h2>📤 <span data-i18n="sender_title">Sender Setup</span></h2>
+                <p data-i18n="sender_subtitle">Install these 2 items to send audio</p>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <div class="step-title">Python 3.8+</div>
+                    <div class="step-desc" data-i18n="python_desc">Required to run the application</div>
+                </div>
+                <a href="https://www.python.org/downloads/" target="_blank" class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <div class="step-title">NDI Runtime</div>
+                    <div class="step-desc" data-i18n="ndi_desc">For sending audio over network</div>
+                </div>
+                <a href="https://downloads.ndi.tv/SDK/NDI_SDK/NDI%206%20Runtime.exe" target="_blank"
+                    class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-usage">
+                <h4 data-i18n="how_to_use">📖 How to Use</h4>
+                <ol>
+                    <li data-i18n="sender_step1">Click "Start" on the main page</li>
+                    <li data-i18n="sender_step2">Select "Sender" mode</li>
+                    <li data-i18n="sender_step3">Choose your Microphone and Desktop Audio</li>
+                    <li data-i18n="sender_step4">Click "Start Sending"</li>
+                </ol>
+            </div>
+
+            <p class="guide-note" data-i18n="restart_note">💡 Restart your computer after installation</p>
+        </div>
+
+        <!-- PAGE: Receiver Installation Guide -->
+        <div id="receiverGuide" class="page">
+            <button class="back-btn" onclick="showPage('launcherPage')" data-i18n="back">← Back</button>
+
+            <div class="guide-header">
+                <h2>📥 <span data-i18n="receiver_title">Receiver Setup</span></h2>
+                <p data-i18n="receiver_subtitle">Install all 4 items to receive audio</p>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <div class="step-title">Python 3.8+</div>
+                    <div class="step-desc" data-i18n="python_desc">Required to run the application</div>
+                </div>
+                <a href="https://www.python.org/downloads/" target="_blank" class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <div class="step-title">NDI Runtime</div>
+                    <div class="step-desc" data-i18n="ndi_desc">For receiving audio over network</div>
+                </div>
+                <a href="https://downloads.ndi.tv/SDK/NDI_SDK/NDI%206%20Runtime.exe" target="_blank"
+                    class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <div class="step-title">VB-Cable</div>
+                    <div class="step-desc" data-i18n="vbcable_desc">Virtual audio for mic input</div>
+                </div>
+                <a href="https://vb-audio.com/Cable/" target="_blank" class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <div class="step-title">Hi-Fi Cable</div>
+                    <div class="step-desc" data-i18n="hifi_desc">Separate audio for OBS/TikTok</div>
+                </div>
+                <a href="https://vb-audio.com/Cable/#DownloadASIOBridge" target="_blank"
+                    class="download-btn">Download</a>
+            </div>
+
+            <div class="guide-usage">
+                <h4 data-i18n="how_to_use">📖 How to Use</h4>
+                <ol>
+                    <li data-i18n="receiver_step1">Click "Start" on the main page</li>
+                    <li data-i18n="receiver_step2">Select "Receiver" mode</li>
+                    <li data-i18n="receiver_step3">Click "Find NDI Sources"</li>
+                    <li data-i18n="receiver_step4">Select NDI source and output device</li>
+                    <li data-i18n="receiver_step5">Use CABLE Output as microphone in Discord/OBS</li>
+                </ol>
+            </div>
+
+            <p class="guide-note" data-i18n="restart_note">💡 Restart your computer after installation</p>
+        </div>
+
+        <!-- PAGE: Mode Selection -->
+        <div id="modePage" class="page">
+            <button class="back-btn" onclick="showPage('launcherPage')" data-i18n="back">← Back</button>
+
+            <div class="header">
+                <h1 data-i18n="select_mode">Select Mode</h1>
+                <p data-i18n="select_mode_desc">Choose sender or receiver</p>
+            </div>
+
+            <div class="mode-select">
+                <div class="mode-btn" onclick="selectMode('sender')">
+                    <div class="icon">📤</div>
+                    <div class="label" data-i18n="sender">Sender</div>
+                    <div class="desc" data-i18n="sender_desc">Capture & send audio</div>
+                </div>
+                <div class="mode-btn" onclick="selectMode('receiver')">
+                    <div class="icon">📥</div>
+                    <div class="label" data-i18n="receiver">Receiver</div>
+                    <div class="desc" data-i18n="receiver_desc">Receive & playback</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: Sender Panel -->
+        <div id="senderPanel" class="page">
+            <button class="back-btn" onclick="goBack()" data-i18n="back_mode">← Back to mode selection</button>
+
+            <div class="card">
+                <div class="status-bar">
+                    <div class="status-dot" id="senderDot"></div>
+                    <span id="senderStatus" data-i18n="stopped">Stopped</span>
+                </div>
+            </div>
+
+            <div class="card" id="senderConfig">
+                <div class="form-group">
+                    <label>🎤 <span data-i18n="microphone">Microphone</span></label>
+                    <select id="micSelect">
+                        <option value="" data-i18n="none">-- None --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🔊 <span data-i18n="desktop_audio">Desktop Audio (Loopback)</span></label>
+                    <select id="desktopSelect">
+                        <option value="" data-i18n="none">-- None --</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-start" id="senderStart" onclick="startSender()" data-i18n="start_sending">▶️ Start
+                Sending</button>
+            <button class="btn btn-stop hidden" id="senderStop" onclick="stop()" data-i18n="stop">⏹️ Stop</button>
+        </div>
+
+        <!-- PAGE: Receiver Panel -->
+        <div id="receiverPanel" class="page">
+            <button class="back-btn" onclick="goBack()" data-i18n="back_mode">← Back to mode selection</button>
+
+            <div class="card">
+                <div class="status-bar">
+                    <div class="status-dot" id="receiverDot"></div>
+                    <span id="receiverStatus" data-i18n="stopped">Stopped</span>
+                </div>
+            </div>
+
+            <div class="card" id="receiverConfig">
+                <button class="btn btn-refresh" onclick="refreshSources()" data-i18n="find_sources">🔄 Find NDI
+                    Sources</button>
+
+                <div class="section-title">🎤 <span data-i18n="mic_stream">Mic Stream</span></div>
+                <div class="form-group">
+                    <label data-i18n="ndi_source">NDI Source</label>
+                    <select id="micSource">
+                        <option value="" data-i18n="none">-- None --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🔊 <span data-i18n="output_cable">Output to (CABLE Input)</span></label>
+                    <select id="micOutput">
+                        <option value="" data-i18n="select">-- Select --</option>
+                    </select>
+                    <div style="font-size:0.65rem;color:#888;margin-top:4px;">
+                        💡 <span data-i18n="cable_tip">Send to CABLE Input → Use</span> <strong style="color:#00d9ff"
+                            id="cableOutputName">CABLE Output</strong> <span data-i18n="cable_tip2">as Mic in
+                            Discord/Zoom</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🔊 Volume: <span id="micVolLabel">100</span>%</label>
+                    <input type="range" id="micVol" min="0" max="200" value="100"
+                        oninput="updateVolume('mic', this.value)">
+                </div>
+
+                <hr>
+
+                <div class="section-title">🔊 <span data-i18n="desktop_stream">Desktop Stream</span></div>
+                <div class="form-group">
+                    <label data-i18n="ndi_source">NDI Source</label>
+                    <select id="deskSource">
+                        <option value="" data-i18n="none">-- None --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="output_device">Output Device</label>
+                    <select id="deskOutput">
+                        <option value="" data-i18n="select">-- Select --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🔊 Volume: <span id="deskVolLabel">100</span>%</label>
+                    <input type="range" id="deskVol" min="0" max="200" value="100"
+                        oninput="updateVolume('desktop', this.value)">
+                </div>
+            </div>
+
+            <button class="btn btn-start" id="receiverStart" onclick="startReceiver()" data-i18n="start_receiving">▶️
+                Start Receiving</button>
+            <button class="btn btn-stop hidden" id="receiverStop" onclick="stop()" data-i18n="stop">⏹️ Stop</button>
+        </div>
+
+        <!-- Sponsor Section (shown in mode panels) -->
+        <div id="sponsorSection" class="sponsor-section hidden">
+            <h4 data-i18n="sponsor">💖 Support Developer</h4>
+            <div class="sponsor-qr">
+                <a href="https://ezdn.app/Jamornz" target="_blank">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://ezdn.app/Jamornz"
+                        alt="QR">
+                </a>
+            </div>
+            <div class="sponsor-link">
+                <input type="text" id="sponsorLink" value="https://ezdn.app/Jamornz" readonly>
+                <button class="copy-btn" onclick="copyLink()">📋</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== TRANSLATIONS ==========
+        const translations = {
+            en: {
+                title: "PC to PC Audio",
+                subtitle: "Send audio to another computer via network",
+                start_btn: "▶️ Start",
+                sender_setup: "Sender Setup",
+                receiver_setup: "Receiver Setup",
+                back: "← Back",
+                sender_title: "Sender Setup",
+                sender_subtitle: "Install these 2 items to send audio",
+                receiver_title: "Receiver Setup",
+                receiver_subtitle: "Install all 4 items to receive audio",
+                python_desc: "Required to run the application",
+                ndi_desc: "For sending/receiving audio over network",
+                vbcable_desc: "Virtual audio for mic input",
+                hifi_desc: "Separate audio for OBS/TikTok",
+                how_to_use: "📖 How to Use",
+                sender_step1: "Click \"Start\" on the main page",
+                sender_step2: "Select \"Sender\" mode",
+                sender_step3: "Choose your Microphone and Desktop Audio",
+                sender_step4: "Click \"Start Sending\"",
+                receiver_step1: "Click \"Start\" on the main page",
+                receiver_step2: "Select \"Receiver\" mode",
+                receiver_step3: "Click \"Find NDI Sources\"",
+                receiver_step4: "Select NDI source and output device",
+                receiver_step5: "Use CABLE Output as microphone in Discord/OBS",
+                restart_note: "💡 Restart your computer after installation",
+                select_mode: "Select Mode",
+                select_mode_desc: "Choose sender or receiver",
+                sender: "Sender",
+                receiver: "Receiver",
+                sender_desc: "Capture & send audio",
+                receiver_desc: "Receive & playback",
+                back_mode: "← Back to mode selection",
+                stopped: "Stopped",
+                sending: "Sending...",
+                receiving: "Receiving...",
+                microphone: "Microphone",
+                desktop_audio: "Desktop Audio (Loopback)",
+                none: "-- None --",
+                select: "-- Select --",
+                start_sending: "▶️ Start Sending",
+                start_receiving: "▶️ Start Receiving",
+                stop: "⏹️ Stop",
+                find_sources: "🔄 Find NDI Sources",
+                mic_stream: "Mic Stream",
+                desktop_stream: "Desktop Stream",
+                ndi_source: "NDI Source",
+                output_cable: "Output to (CABLE Input)",
+                output_device: "Output Device",
+                cable_tip: "Send to CABLE Input → Use",
+                cable_tip2: "as Mic in Discord/Zoom",
+                sponsor: "💖 Support Developer",
+                searching: "Searching..."
+            },
+            th: {
+                title: "ส่งเสียง PC to PC",
+                subtitle: "ส่งเสียงไปยังคอมพิวเตอร์เครื่องอื่นผ่านเครือข่าย",
+                start_btn: "▶️ เริ่มต้นใช้งาน",
+                sender_setup: "ตั้งค่าฝั่งส่ง",
+                receiver_setup: "ตั้งค่าฝั่งรับ",
+                back: "← กลับ",
+                sender_title: "ตั้งค่าฝั่งส่ง",
+                sender_subtitle: "ติดตั้ง 2 รายการนี้เพื่อส่งเสียง",
+                receiver_title: "ตั้งค่าฝั่งรับ",
+                receiver_subtitle: "ติดตั้งทั้ง 4 รายการเพื่อรับเสียง",
+                python_desc: "จำเป็นสำหรับรันแอปพลิเคชัน",
+                ndi_desc: "สำหรับส่ง/รับเสียงผ่านเครือข่าย",
+                vbcable_desc: "Virtual audio สำหรับไมค์",
+                hifi_desc: "แยกเสียงสำหรับ OBS/TikTok",
+                how_to_use: "📖 วิธีใช้งาน",
+                sender_step1: "กดปุ่ม \"เริ่มต้น\" ที่หน้าแรก",
+                sender_step2: "เลือกโหมด \"ฝั่งส่ง\"",
+                sender_step3: "เลือกไมโครโฟนและ Desktop Audio",
+                sender_step4: "กด \"เริ่มส่งเสียง\"",
+                receiver_step1: "กดปุ่ม \"เริ่มต้น\" ที่หน้าแรก",
+                receiver_step2: "เลือกโหมด \"ฝั่งรับ\"",
+                receiver_step3: "กด \"ค้นหา NDI Sources\"",
+                receiver_step4: "เลือก NDI source และ output device",
+                receiver_step5: "ใช้ CABLE Output เป็นไมค์ใน Discord/OBS",
+                restart_note: "💡 รีสตาร์ทคอมพิวเตอร์หลังติดตั้งเสร็จ",
+                select_mode: "เลือกโหมด",
+                select_mode_desc: "เลือกฝั่งส่งหรือฝั่งรับ",
+                sender: "ฝั่งส่ง",
+                receiver: "ฝั่งรับ",
+                sender_desc: "บันทึกและส่งเสียง",
+                receiver_desc: "รับและเล่นเสียง",
+                back_mode: "← กลับไปเลือกโหมด",
+                stopped: "หยุดอยู่",
+                sending: "กำลังส่ง...",
+                receiving: "กำลังรับ...",
+                microphone: "ไมโครโฟน",
+                desktop_audio: "Desktop Audio (Loopback)",
+                none: "-- ไม่เลือก --",
+                select: "-- เลือก --",
+                start_sending: "▶️ เริ่มส่งเสียง",
+                start_receiving: "▶️ เริ่มรับเสียง",
+                stop: "⏹️ หยุด",
+                find_sources: "🔄 ค้นหา NDI Sources",
+                mic_stream: "สตรีมไมค์",
+                desktop_stream: "สตรีม Desktop",
+                ndi_source: "NDI Source",
+                output_cable: "ส่งเสียงไปที่ (CABLE Input)",
+                output_device: "Output Device",
+                cable_tip: "ส่งไป CABLE Input → ใช้",
+                cable_tip2: "เป็นไมค์ใน Discord/Zoom",
+                sponsor: "💖 สนับสนุนผู้พัฒนา",
+                searching: "กำลังค้นหา..."
+            }
+        };
+
+        // ========== LANGUAGE FUNCTIONS ==========
+        let currentLang = localStorage.getItem('lang') || 'en';
+
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'th' : 'en';
+            localStorage.setItem('lang', currentLang);
+            applyTranslations();
+            updateLangBtn();
+        }
+
+        function updateLangBtn() {
+            document.getElementById('langBtn').textContent = currentLang === 'en' ? '🇺🇸 EN' : '🇹🇭 ไทย';
+        }
+
+
+
+        function applyTranslations() {
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
+            });
+        }
+
+        // ========== PAGE NAVIGATION ==========
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            // Show sponsor section in mode panels
+            const sponsorSection = document.getElementById('sponsorSection');
+            if (pageId === 'senderPanel' || pageId === 'receiverPanel') {
+                sponsorSection.classList.remove('hidden');
+            } else {
+                sponsorSection.classList.add('hidden');
+            }
+        }
+
+        // ========== MODE & API FUNCTIONS ==========
+        let currentMode = null;
+
+        async function selectMode(mode) {
+            currentMode = mode;
+            await fetch('/api/mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+
+            showPage(mode + 'Panel');
+            loadDevices();
+        }
+
+        function goBack() {
+            stop();
+            currentMode = null;
+            showPage('modePage');
+        }
+
+        async function loadDevices() {
+            const resp = await fetch('/api/devices');
+            const data = await resp.json();
+            const t = translations[currentLang];
+
+            const micSel = document.getElementById('micSelect');
+            const deskSel = document.getElementById('desktopSelect');
+            micSel.innerHTML = `<option value="">${t.none}</option>`;
+            deskSel.innerHTML = `<option value="">${t.none}</option>`;
+            data.inputs.forEach(d => micSel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+            data.outputs.forEach(d => deskSel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+
+            const micOutSel = document.getElementById('micOutput');
+            micOutSel.innerHTML = `<option value="">${t.select}</option>`;
+            data.outputs.forEach(d => {
+                const mark = d.is_cable_input ? ' ★' : '';
+                const selected = d.is_cable_input ? 'selected' : '';
+                micOutSel.innerHTML += `<option value="${d.id}" ${selected}>${d.name}${mark}</option>`;
+            });
+
+            const cableOutput = data.inputs.find(d => d.is_cable_output);
+            if (cableOutput) {
+                document.getElementById('cableOutputName').textContent = cableOutput.name;
+            }
+
+            const deskOutSel = document.getElementById('deskOutput');
+            deskOutSel.innerHTML = `<option value="">${t.select}</option>`;
+            data.outputs.forEach(d => {
+                deskOutSel.innerHTML += `<option value="${d.id}" ${d.is_vb ? 'selected' : ''}>${d.name}${d.is_vb ? ' ★' : ''}</option>`;
+            });
+        }
+
+        async function refreshSources() {
+            const t = translations[currentLang];
+            ['micSource', 'deskSource'].forEach(id => {
+                document.getElementById(id).innerHTML = `<option value="">${t.searching}</option>`;
+            });
+
+            const resp = await fetch('/api/sources');
+            const sources = await resp.json();
+
+            ['micSource', 'deskSource'].forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${t.none}</option>`;
+                sources.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+            });
+
+            sources.forEach(s => {
+                if (s.name.includes('Mic')) document.getElementById('micSource').value = s.id;
+                if (s.name.includes('Desktop')) document.getElementById('deskSource').value = s.id;
+            });
+        }
+
+        async function startSender() {
+            const mic = document.getElementById('micSelect').value;
+            const desktop = document.getElementById('desktopSelect').value;
+            const t = translations[currentLang];
+            if (!mic && !desktop) { alert(currentLang === 'en' ? 'Select at least 1 device' : 'เลือกอย่างน้อย 1 device'); return; }
+
+            await fetch('/api/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mic, desktop })
+            });
+            setRunning(true);
+        }
+
+        async function startReceiver() {
+            const micSrc = document.getElementById('micSource').value;
+            const micOut = document.getElementById('micOutput').value;
+            const deskSrc = document.getElementById('deskSource').value;
+            const deskOut = document.getElementById('deskOutput').value;
+
+            if ((!micSrc || !micOut) && (!deskSrc || !deskOut)) {
+                alert(currentLang === 'en' ? 'Select at least 1 stream with output' : 'เลือกอย่างน้อย 1 stream พร้อม output');
+                return;
+            }
+
+            await fetch('/api/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mic_source: micSrc || null,
+                    mic_output: micOut || null,
+                    desktop_source: deskSrc || null,
+                    desktop_output: deskOut || null
+                })
+            });
+            setRunning(true);
+        }
+
+        async function stop() {
+            await fetch('/api/stop', { method: 'POST' });
+            setRunning(false);
+        }
+
+        function setRunning(r) {
+            const t = translations[currentLang];
+            if (currentMode === 'sender') {
+                document.getElementById('senderDot').classList.toggle('on', r);
+                document.getElementById('senderStatus').textContent = r ? t.sending : t.stopped;
+                document.getElementById('senderStart').classList.toggle('hidden', r);
+                document.getElementById('senderStop').classList.toggle('hidden', !r);
+                document.getElementById('senderConfig').style.opacity = r ? '0.5' : '1';
+                document.getElementById('senderConfig').style.pointerEvents = r ? 'none' : 'auto';
+            } else {
+                document.getElementById('receiverDot').classList.toggle('on', r);
+                document.getElementById('receiverStatus').textContent = r ? t.receiving : t.stopped;
+                document.getElementById('receiverStart').classList.toggle('hidden', r);
+                document.getElementById('receiverStop').classList.toggle('hidden', !r);
+                document.getElementById('receiverConfig').style.opacity = r ? '0.5' : '1';
+                document.getElementById('receiverConfig').style.pointerEvents = r ? 'none' : 'auto';
+            }
+        }
+
+        async function poll() {
+            try {
+                const resp = await fetch('/api/status');
+                const data = await resp.json();
+                if (data.mode && data.mode === currentMode) {
+                    setRunning(data.running);
+                }
+            } catch (e) { }
+        }
+
+        async function updateVolume(stream, value) {
+            document.getElementById(stream === 'mic' ? 'micVolLabel' : 'deskVolLabel').textContent = value;
+            await fetch('/api/volume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stream, volume: parseInt(value) })
+            });
+        }
+
+        function copyLink() {
+            const linkInput = document.getElementById('sponsorLink');
+            linkInput.select();
+            document.execCommand('copy');
+
+            const btn = document.querySelector('.copy-btn');
+            btn.textContent = '✅';
+            btn.classList.add('copied');
+
+            setTimeout(() => {
+                btn.textContent = '📋';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        // ========== INIT ==========
+        updateLangBtn();
+        applyTranslations();
+        setInterval(poll, 1000);
+    </script>
+</body>
+
+</html>
