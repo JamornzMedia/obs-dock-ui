@@ -349,6 +349,14 @@ const populateHelpTable = (lang) => {
     elements.sourcesTableBody.innerHTML = '';
     sources.forEach(item => {
         const row = elements.sourcesTableBody.insertRow();
+
+        // V2.9.1: Styling for Score vs Score2
+        if (item.code.startsWith('score2')) {
+            row.style.backgroundColor = 'rgba(255, 99, 71, 0.15)'; // Reddish tint for Secondary
+        } else if (item.code.startsWith('score')) {
+            row.style.backgroundColor = 'rgba(144, 238, 144, 0.15)'; // Greenish tint for Main
+        }
+
         const nameCell = row.insertCell();
         nameCell.textContent = item.code;
         nameCell.onclick = () => copySourceName(item.code);
@@ -1357,7 +1365,9 @@ window.copyExcelColumns = () => {
     if (list) {
         list.select();
         list.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(list.value).then(() => {
+        // Replace ", " with "\t" for Excel column pasting
+        const textToCopy = list.value.replace(/, /g, '\t');
+        navigator.clipboard.writeText(textToCopy).then(() => {
             showToast(translations[currentLang].toastCopied, 'success');
         });
     }

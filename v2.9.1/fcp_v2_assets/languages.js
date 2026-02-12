@@ -260,7 +260,7 @@ export const translations = {
         loadFromGoogleSheet: "Fetch / Reload GS",
         labelCount: "Label Count:",
         dsExcelGuide: "<strong>Excel Guide:</strong> Ensure your file uses these columns logic. You can copy the headers below. (Unwanted columns can be deleted)",
-        dsColumnList: "Match ID, TeamA, TeamB, ColorA, ColorB, ColorA2, ColorB2, LogoA, LogoB, label1, label2, label3, label4, label5",
+        dsColumnList: "MatchID, LogoA, TeamA, LogoB, TeamB, label1, label2, label3, label4, label5",
         dsCopyColumns: "Copy Columns",
         dsGoogleSheetGuide: "<strong>Google Sheets Guide:</strong><br>1. Click <strong>Share</strong> > General Access > <strong>Anyone with the link</strong>.<br>2. Click <strong>Copy link</strong>.<br>3. Paste the link below.<br>4. Go back to main screen > Click <strong>Load/Fetch</strong> > Select Match ID.",
     },
@@ -409,7 +409,7 @@ export const translations = {
         donateAltTitle: "ทางเลือกอื่นในการสนับสนุน",
         donateEasyDonateMsg: "สนับสนุนผ่าน EasyDonate",
         dsExcelGuide: "<strong>คำแนะนำ Excel:</strong> ตรวจสอบว่าไฟล์มีคอลัมน์ตามนี้ (สามารถคัดลอกไปวางได้ / คอลัมน์ที่ไม่ใช้ลบออกได้)",
-        dsColumnList: "Match ID, TeamA, TeamB, ColorA, ColorB, ColorA2, ColorB2, LogoA, LogoB, label1, label2, label3, label4, label5",
+        dsColumnList: "MatchID, LogoA, TeamA, LogoB, TeamB, label1, label2, label3, label4, label5",
         dsCopyColumns: "คัดลอกชื่อคอลัมน์",
         dsGoogleSheetGuide: "<strong>คำแนะนำ Google Sheets:</strong><br>1. กดปุ่ม <strong>แชร์ (Share)</strong> > การเข้าถึงทั่วไป > เลือก <strong>ทุกคนที่มีลิ้งค์ (Anyone with the link)</strong><br>2. กด <strong>คัดลอกลิ้งค์ (Copy link)</strong><br>3. นำลิ้งค์มาวางในช่องด้านล่าง<br>4. กลับไปหน้าหลัก > กดปุ่ม <strong>โหลดข้อมูล</strong> > เลือก Match ID",
         sourcesList: [
