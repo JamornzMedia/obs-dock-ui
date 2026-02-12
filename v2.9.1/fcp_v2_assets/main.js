@@ -1332,19 +1332,34 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const gsheetSettings = document.getElementById('gsheetSettings');
+    const excelSettings = document.getElementById('excelSettings'); // V2.9.1
+
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
+    if (excelSettings) excelSettings.style.display = isGSheet ? 'none' : 'block'; // V2.9.1
 
     const btnSpan = elements.excelBtn.querySelector('span');
     const trans = translations[currentLang];
 
     if (isGSheet) {
-        btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
+        // btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
         btnSpan.setAttribute('data-lang', 'loadFromGoogleSheet');
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
     } else {
-        btnSpan.textContent = trans.excel;
+        // btnSpan.textContent = trans.excel;
         btnSpan.setAttribute('data-lang', 'excel');
         elements.excelBtn.innerHTML = `<i class="fas fa-file-excel"></i> <span data-lang="excel">${trans.excel}</span>`;
+    }
+};
+
+// V2.9.1: Copy Excel Column List
+window.copyExcelColumns = () => {
+    const list = document.getElementById('excelColumnList');
+    if (list) {
+        list.select();
+        list.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(list.value).then(() => {
+            showToast(translations[currentLang].toastCopied, 'success');
+        });
     }
 };
 
