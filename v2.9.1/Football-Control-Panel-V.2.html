@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -1396,7 +1396,7 @@
         }
 
         .changelog-list ul li::before {
-            content: "•";
+            content: "â€¢";
             color: var(--accent-color);
             font-weight: bold;
             position: absolute;
@@ -2131,9 +2131,9 @@
                     <div class="row" id="injuryTimeContainer">
                         <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
                         <button id="injuryTimeMinusBtn" class="btn-secondary"
-                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;">◄</button>
+                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;">â—„</button>
                         <button id="injuryTimePlusBtn" class="btn-secondary"
-                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;">►</button>
+                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;">â–º</button>
                     </div>
                     <div class="row">
                         <button id="resetToStartBtn" class="btn-secondary" data-lang-title="resetToStartHint"><i
@@ -2163,7 +2163,7 @@
                 <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
                         class="fas fa-hand-holding-usd"></i></button>
                 <select id="languageSelector" title="Select Language">
-                    <option value="th">ภาษาไทย</option>
+                    <option value="th">à¸ à¸²à¸©à¸²à¹„à¸—à¸¢</option>
                     <option value="en">English</option>
                 </select>
             </div>
@@ -2253,15 +2253,15 @@
 
         <!-- Settings Tabs -->
         <div class="settings-tabs" id="settingsTabs">
-            <button class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">📝
+            <button class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
-            <button class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">🎮
+            <button class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">ðŸŽ®
                 Actions</button>
-            <button class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">⌨️
+            <button class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">âŒ¨ï¸
                 Keys</button>
-            <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">👁️
+            <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
                 Display</button>
-            <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">📊 Data</button>
+            <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
         </div>
 
         <!-- Tab 1: General / Announce -->
@@ -2434,6 +2434,9 @@
 
     <div id="helpPopup" class="popup-modal">
         <h3 data-lang="helpTitle"></h3>
+        <p data-lang-html="helpWebSocket"
+            style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+        </p>
         <p data-lang-html="helpStep1"></p>
         <p data-lang-html="helpStep2"></p>
         <p data-lang-html="helpStep3"></p>
@@ -2497,13 +2500,13 @@
 
         <div id="ShopeeTab" class="tab-content">
             <div class="donate-section">
-                <h4 style="font-size: 1rem; color: var(--text-color);">โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน</h4>
+                <h4 style="font-size: 1rem; color: var(--text-color);">à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¸™à¸µà¹‰à¹à¸ˆà¸à¸Ÿà¸£à¸µ! à¸‚à¸­à¸‚à¸­à¸šà¸„à¸¸à¸“à¸—à¸¸à¸à¸—à¹ˆà¸²à¸™à¸—à¸µà¹ˆà¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™</h4>
                 <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">
-                    คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้</p>
+                    à¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™à¸œà¸¡à¸”à¹‰à¸§à¸¢à¸à¸²à¸£à¸‹à¸·à¹‰à¸­à¸‚à¸­à¸‡à¹ƒà¸™ Shopee à¸œà¹ˆà¸²à¸™à¸¥à¸´à¹‰à¸‡à¸„à¹Œ Affiliate à¸™à¸µà¹‰à¹„à¸”à¹‰</p>
 
                 <img id="shopee-qr-code"
                     src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L"
-                    alt="QR Code สำหรับ Shopee ของ Jamornz">
+                    alt="QR Code à¸ªà¸³à¸«à¸£à¸±à¸š Shopee à¸‚à¸­à¸‡ Jamornz">
 
                 <div class="copy-link-area">
                     <a id="shopee-link" href="https://s.shopee.co.th/4foTAYE21L"
@@ -2516,8 +2519,8 @@
 
         <div id="EasyDonateTab" class="tab-content">
             <div class="donate-section">
-                <h4 style="font-size: 1rem; color: var(--text-color);">ทางเลือกอื่นในการสนับสนุน</h4>
-                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">สนับสนุนผ่าน
+                <h4 style="font-size: 1rem; color: var(--text-color);">à¸—à¸²à¸‡à¹€à¸¥à¸·à¸­à¸à¸­à¸·à¹ˆà¸™à¹ƒà¸™à¸à¸²à¸£à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™</h4>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™à¸œà¹ˆà¸²à¸™
                     EasyDonate</p>
 
                 <img id="easydonate-qr-code"
@@ -2533,8 +2536,9 @@
             </div>
         </div>
         <div class="row center" style="margin-top: 20px;">
-            <button id="closeWelcomeBtn" class="btn-primary"><i class="fas fa-times"></i> <span
-                    data-lang="close"></span></button>
+            <button id="closeWelcomeBtn" class="btn-primary" disabled style="opacity: 0.7; cursor: not-allowed;">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </button>
         </div>
     </div>
     <div id="timeSettingsPopup" class="popup-modal">

@@ -1748,10 +1748,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.copyTag = copyTag;
 
-    obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
+    // --- V2.9.1: Loading State & Initialization ---
+    const initApp = async () => {
+        const startBtn = document.getElementById('closeWelcomeBtn');
 
-    fetchAnnouncement();
-    setInterval(fetchAnnouncement, 3600000);
+        // 1. Try OBS Connect (Wait max 2 seconds to not block UI too long if offline)
+        try {
+            const obsPromise = obs.connect('ws://localhost:4455');
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject('timeout'), 2000));
+            await Promise.race([obsPromise, timeoutPromise]);
+            // Connected
+        } catch (err) {
+            if (err !== 'timeout') {
+                showToast(translations[currentLang].toastObsError, 'error');
+            } else {
+                console.log('OBS Connection timed out (continuing offline)');
+            }
+        }
+
+        // 2. Fetch Announcement
+        fetchAnnouncement();
+        setInterval(fetchAnnouncement, 3600000);
+
+        // 3. Enable Start Button
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
+            const trans = translations[currentLang] || translations.en;
+            startBtn.innerHTML = `<i class="fas fa-times"></i> ${trans.close || 'Close'}`;
+        }
+    };
+
+    initApp();
 
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
