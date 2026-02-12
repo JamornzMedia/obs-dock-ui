@@ -2163,7 +2163,7 @@
                 <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
                         class="fas fa-hand-holding-usd"></i></button>
                 <select id="languageSelector" title="Select Language">
-                    <option value="th">à¸ à¸²à¸©à¸²à¹„à¸—à¸¢</option>
+                    <option value="th">ภาษาไทย</option>
                     <option value="en">English</option>
                 </select>
             </div>
@@ -2464,21 +2464,21 @@
         <div class="donate-section">
             <h4 data-lang="donateThai"></h4>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
-                alt="QR Code for EasyDonate">
+                alt="QR Code" data-lang-alt="donateShopeeAlt">
             <a href="https://easydonate.app/Jamornz" target="_blank">https://easydonate.app/Jamornz</a>
         </div>
         <div class="popup-divider"></div>
         <div class="donate-section">
             <h4 data-lang="donateShopee"></h4>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L"
-                alt="QR Code for Shopee Jamornz Media">
+                alt="QR Code" data-lang-alt="donateShopeeAlt">
             <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
         </div>
         <div class="popup-divider"></div>
         <div class="donate-section">
             <h4 data-lang="donateForeign"></h4>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz"
-                alt="QR Code for Ko-fi">
+                alt="QR Code" data-lang-alt="donateShopeeAlt">
             <a href="https://ko-fi.com/jamornz" target="_blank">https://ko-fi.com/jamornz</a>
         </div>
         <div class="popup-divider"></div>
@@ -2500,13 +2500,12 @@
 
         <div id="ShopeeTab" class="tab-content">
             <div class="donate-section">
-                <h4 style="font-size: 1rem; color: var(--text-color);">à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¸™à¸µà¹‰à¹à¸ˆà¸à¸Ÿà¸£à¸µ! à¸‚à¸­à¸‚à¸­à¸šà¸„à¸¸à¸“à¸—à¸¸à¸à¸—à¹ˆà¸²à¸™à¸—à¸µà¹ˆà¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™</h4>
-                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">
-                    à¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™à¸œà¸¡à¸”à¹‰à¸§à¸¢à¸à¸²à¸£à¸‹à¸·à¹‰à¸­à¸‚à¸­à¸‡à¹ƒà¸™ Shopee à¸œà¹ˆà¸²à¸™à¸¥à¸´à¹‰à¸‡à¸„à¹Œ Affiliate à¸™à¸µà¹‰à¹„à¸”à¹‰</p>
+                <h4 style="font-size: 1rem; color: var(--text-color);" data-lang="donateFreeMsg"></h4>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;" data-lang="donateShopeeMsg"></p>
 
                 <img id="shopee-qr-code"
                     src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L"
-                    alt="QR Code à¸ªà¸³à¸«à¸£à¸±à¸š Shopee à¸‚à¸­à¸‡ Jamornz">
+                    alt="QR Code" data-lang-alt="donateShopeeAlt">
 
                 <div class="copy-link-area">
                     <a id="shopee-link" href="https://s.shopee.co.th/4foTAYE21L"
@@ -2519,13 +2518,12 @@
 
         <div id="EasyDonateTab" class="tab-content">
             <div class="donate-section">
-                <h4 style="font-size: 1rem; color: var(--text-color);">à¸—à¸²à¸‡à¹€à¸¥à¸·à¸­à¸à¸­à¸·à¹ˆà¸™à¹ƒà¸™à¸à¸²à¸£à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™</h4>
-                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;">à¸ªà¸™à¸±à¸šà¸ªà¸™à¸¸à¸™à¸œà¹ˆà¸²à¸™
-                    EasyDonate</p>
+                <h4 style="font-size: 1rem; color: var(--text-color);" data-lang="donateAltTitle"></h4>
+                <p style="font-size: 0.95rem; color: var(--text-muted-color); margin-bottom: 15px;" data-lang="donateEasyDonateMsg"></p>
 
                 <img id="easydonate-qr-code"
                     src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
-                    alt="QR Code for EasyDonate">
+                    alt="QR Code" data-lang-alt="donateShopeeAlt">
 
                 <div class="copy-link-area">
                     <a id="easydonate-link" href="https://easydonate.app/Jamornz"
@@ -2694,3 +2692,4 @@
 
 
 </html>
+

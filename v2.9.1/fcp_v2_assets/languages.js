@@ -143,6 +143,12 @@ export const translations = {
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
         selectMatchId: "Select Match ID",
         loadBtn: "LOAD",
+        // V2.9.1 Welcome Sponsor
+        donateFreeMsg: "This program is free! Thank you for your support.",
+        donateShopeeMsg: "You can support me by shopping on Shopee via this Affiliate link.",
+        donateShopeeAlt: "QR Code for Jamornz's Shopee",
+        donateAltTitle: "Alternative Support Options",
+        donateEasyDonateMsg: "Support via EasyDonate",
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'Team A (Primary Color)' },
             { code: 'Color_Team_B', type: 'Color Source', desc: 'Team B (Primary Color)' },
@@ -393,6 +399,12 @@ export const translations = {
         sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"],
         selectMatchId: "เลือก Match ID",
         loadBtn: "โหลดข้อมูล",
+        // V2.9.1 Welcome Sponsor
+        donateFreeMsg: "โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน",
+        donateShopeeMsg: "คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้",
+        donateShopeeAlt: "QR Code สำหรับ Shopee ของ Jamornz",
+        donateAltTitle: "ทางเลือกอื่นในการสนับสนุน",
+        donateEasyDonateMsg: "สนับสนุนผ่าน EasyDonate",
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'สีทีม A (สีหลัก)' },
             { code: 'Color_Team_B', type: 'Color Source', desc: 'สีทีม B (สีหลัก)' },
