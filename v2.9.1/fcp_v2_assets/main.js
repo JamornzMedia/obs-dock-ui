@@ -1404,8 +1404,8 @@ const setupEventListeners = () => {
         loadActionSettings().forEach((_, i) => toggleActionEditMode(i + 1, false));
         closeAllPopups();
     };
-    elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
-    elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
+    if (elements.closeDetailsBtnTop) elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
+    if (elements.closeDetailsBtnBottom) elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
 
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
     elements.excelBtn.addEventListener('click', handleDataSourceAction);
