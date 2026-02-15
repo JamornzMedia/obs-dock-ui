@@ -604,8 +604,8 @@
         .card {
             margin-bottom: 20px;
             /* Spacing between groups */
-            padding: 16px;
-            /* Increased padding */
+            padding: 10px;
+            /* Reduced padding to match announcement bar spacing */
         }
 
         .btn-create-source {
@@ -618,6 +618,41 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             font-variant-numeric: tabular-nums;
             letter-spacing: -1px;
+            color: #94a3b8;
+            /* Default Paused Color (Gray) */
+            transition: color 0.3s;
+        }
+
+        #timerText.timer-running {
+            color: #ffffff;
+            /* Running Color (White) */
+        }
+
+        #timerText.timer-paused {
+            color: #94a3b8;
+            /* Paused Color (Gray) */
+        }
+
+        .btn-powered {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-powered:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         #halfText {
@@ -2086,10 +2121,16 @@
                     style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #4ade80; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(74, 222, 128, 0.2);">
                     <i class="fas fa-desktop"></i> <span id="onlineCountVal">0</span>
                 </div>
-                <!-- Online Count: Phone -->
-                <div title="Phone Users Online"
-                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #60a5fa; cursor: default; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(96, 165, 250, 0.2);">
+                <!-- Online Count: Phone (Mobile Control Trigger) -->
+                <div onclick="openMobileControlPopup()" title="Click to open Mobile Control"
+                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #60a5fa; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(96, 165, 250, 0.2); transition: background 0.2s;">
                     <i class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span>
+                </div>
+                <!-- Announcement Text (Added ID) -->
+                <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 24px;">
+                    <div id="announcement-text"
+                        style="position: absolute; white-space: nowrap; color: #cbd5e1; font-size: 0.9rem; line-height: 24px;">
+                    </div>
                 </div>
             </div>
 
@@ -2515,7 +2556,7 @@
                         <option value="6">6</option>
                     </select>
                 </label>
-                <!-- Color Count Selector -->
+                <!-- Color count selector -->
                 <label class="countdown-toggle">
                     <span data-lang="colorCount" style="margin-right: 10px;">Team Colors:</span>
                     <select id="colorCountSelect"
@@ -2731,9 +2772,8 @@
             </div>
         </div>
 
-        <a href="https://sites.google.com/view/jamornzmedia" target="_blank"
-            style="color: #64748b; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; opacity: 0.7; transition: opacity 0.2s;">
-            <i class="fas fa-home"></i> Powered by Jamornz Media
+        <a href="https://sites.google.com/view/jamornzmedia" target="_blank" class="btn-powered">
+            <i class="fas fa-rocket"></i> Powered by Jamornz Media
         </a>
 
         <div class="row center" style="margin-top: 25px;">
@@ -2883,6 +2923,55 @@
 
 
     <script type="module" src="fcp_v2_assets/main.js"></script>
+
+    <!-- Mobile Control Popup (Added) -->
+    <div id="mobileControlPopup" class="popup-modal">
+        <h3><i class="fas fa-mobile-alt"></i> <span data-lang="mobileControlTitle">Mobile Room</span></h3>
+        <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Control the scoreboard from your phone.</p>
+
+        <div class="row center">
+            <input type="text" id="remoteRoomName" placeholder="Room Name" value="My Scoreboard"
+                style="text-align: center; width: 100%;">
+        </div>
+
+        <div class="row center" style="margin-top: 15px;">
+            <button id="createRoomBtn" class="btn-primary" style="width: 100%;"><i class="fas fa-plus-circle"></i>
+                Create Room</button>
+            <button id="closeRoomBtn" class="btn-danger" style="display: none; width: 100%;"><i
+                    class="fas fa-power-off"></i> Close Room</button>
+        </div>
+
+        <div id="remoteConnectionUI"
+            style="display: none; margin-top: 20px; text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <div id="remoteRoomIdContainer"
+                style="display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 15px;">
+                <span style="color: #94a3b8; font-size: 0.8rem;">Room ID:</span>
+                <input type="text" id="remoteRoomId" readonly
+                    style="width: 150px; text-align: center; background: rgba(0,0,0,0.3); color: var(--accent-color); border: 1px solid rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">
+            </div>
+
+            <div
+                style="background: white; padding: 10px; display: inline-block; border-radius: 12px; margin-bottom: 15px;">
+                <img id="remoteQrCode" src="" alt="QR Code" style="display: block; border-radius: 4px;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="mobileLinkInput" readonly style="flex: 1; font-size: 0.8rem; padding: 8px;">
+                <button id="copyMobileLinkBtn" class="btn-secondary" style="padding: 8px 12px;"><i
+                        class="fas fa-copy"></i></button>
+            </div>
+
+            <p id="remoteStatusText"
+                style="margin-top: 15px; font-size: 0.9rem; font-weight: 500; color: var(--warning-color);">Waiting...
+            </p>
+        </div>
+
+        <div class="row center" style="margin-top: 25px;">
+            <button
+                onclick="document.getElementById('mobileControlPopup').classList.remove('active'); document.getElementById('mobileControlPopup').style.display='none'; document.getElementById('popupOverlay').classList.remove('active'); document.getElementById('popupOverlay').style.display='none';"
+                class="btn-secondary" style="width: 100%;">Close</button>
+        </div>
+    </div>
 
     <!-- PC Match ID Popup -->
     <div id="pcMatchPopup" class="pc-match-overlay">

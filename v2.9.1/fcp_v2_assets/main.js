@@ -1945,8 +1945,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 4. Set Initial Half Display Style
+    if (elements.halfText) {
+        elements.halfText.innerHTML = `<span class="half-ordinal">${half}</span><span class="half-label">Half</span>`;
+    }
+
     initApp();
     setupMobileRoomLogic();
+
+    // Global function for HTML onclick
+    window.openMobileControlPopup = () => {
+        const popup = document.getElementById('mobileControlPopup');
+        const overlay = document.getElementById('popupOverlay');
+        if (popup) {
+            popup.style.display = 'block';
+            setTimeout(() => popup.classList.add('active'), 10);
+        }
+        if (overlay) {
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.classList.add('active'), 10);
+        }
+    };
 
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
