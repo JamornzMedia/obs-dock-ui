@@ -1938,36 +1938,44 @@
 <body>
 
     <!-- Welcome Screen Overlay -->
-    <div id="welcomeScreen" class="welcome-overlay"
-        style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
-        <div class="welcome-card"
-            style="background: #2a2a2a; padding: 40px; border-radius: 16px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h2 style="margin-bottom: 20px; color: #f97316;">Welcome to OBSScore</h2>
-            <p style="margin-bottom: 30px; color: #aaa;">Please Setup Your Identity</p>
+    <!-- Welcome Screen Overlay (V2.9 Style Restored) -->
+    <div id="welcomeScreen">
+        <div class="welcome-content">
+            <div class="welcome-title">Dock UI : OBSScore</div>
+            <div class="welcome-subtitle">Control Panel</div>
 
-            <div style="text-align: left; margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #ccc;">Name / ชื่อของคุณ</label>
-                <input type="text" id="visitorName" placeholder="Enter your name"
-                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;">
+            <!-- Identity Inputs -->
+            <div
+                style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 16px; backdrop-filter: blur(10px); display: inline-block; text-align: left; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 15px;">
+                    <div
+                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                        Name / ชื่อของคุณ</div>
+                    <input type="text" id="visitorName" placeholder="Enter name" maxlength="30"
+                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <div
+                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                        Country / ประเทศ</div>
+                    <input type="text" id="visitorCountry" value="Thailand"
+                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white;"
+                        readonly>
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <div
+                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                        Province / จังหวัด</div>
+                    <select id="visitorProvince"
+                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; cursor: pointer;">
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
             </div>
-
-            <div style="text-align: left; margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #ccc;">Country / ประเทศ</label>
-                <input type="text" id="visitorCountry" value="Thailand"
-                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;">
-            </div>
-
-            <div style="text-align: left; margin-bottom: 25px;">
-                <label style="display: block; margin-bottom: 5px; color: #ccc;">Province / จังหวัด</label>
-                <select id="visitorProvince"
-                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;"></select>
-            </div>
-
-            <button onclick="saveAndEnterApp()"
-                style="width: 100%; padding: 12px; border-radius: 6px; border: none; background: #f97316; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.3s;">
-                START
-            </button>
+            <br>
+            <button class="welcome-btn" onclick="saveAndEnterApp()">START</button>
         </div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.1</div>
     </div>
 
     <!-- Online Users Popup -->
@@ -1994,14 +2002,7 @@
         </div>
     </div>
 
-    <div id="welcomeScreen">
-        <div class="welcome-content">
-            <div class="welcome-title">Dock UI : OBSScore</div>
-            <div class="welcome-subtitle">Control Panel</div>
-            <button class="welcome-btn" onclick="enterApp()">START</button>
-        </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9</div>
-    </div>
+
 
     <!-- V2.9.1 Confirm Reset Modal -->
     <div id="confirmOverlay" class="confirm-overlay"></div>
@@ -2023,251 +2024,233 @@
         <div class="announcement-container"
             style="display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.7); padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.08);">
 
-            <!-- Visitor Identity Slot -->
-            <div class="status-item" id="visitorIdentitySlot" style="display: flex; align-items: center; gap: 8px;">
-                <div
-                    style="width: 32px; height: 32px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #f97316;">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div style="display: flex; flex-direction: column; line-height: 1.2;">
-                    <span id="visitorNameDisplay" style="font-weight: bold; font-size: 0.9rem;">Guest</span>
-                    <span id="visitorLocationDisplay" style="font-size: 0.75rem; color: #94a3b8;">(Thailand)</span>
-                </div>
-                <button onclick="document.getElementById('welcomeScreen').style.display='flex'"
-                    style="background:none; border:none; color:#64748b; cursor:pointer; margin-left:5px; padding: 5px;"
-                    title="Edit Profile">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
-            </div>
-
             <div style="display: flex; gap: 10px; align-items: center;">
-                <!-- Online Count -->
+                <!-- Online Count (Moved to Left) -->
                 <div id="onlineUserCount" title="Click to view Online Users"
                     style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #4ade80; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(74, 222, 128, 0.2);">
                     <i class="fas fa-users"></i> <span id="onlineCountVal">1</span>
                 </div>
+            </div>
 
-                <!-- Settings Trigger (Moved here for better access if needed, or kept existing) -->
-                <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
-            </div>
-        </div>
-        <div class="card">
-            <div class="row space-between">
-                <div class="row" style="margin-bottom:0;">
-                    <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span
-                            data-lang="excel"></span></button>
-                    <button id="logoPathBtn" class="btn-secondary" data-lang-title="logoPathHint"><i
-                            class="fas fa-folder-open"></i></button>
-                    <button id="fullResetBtn" class="btn-danger"><i class="fas fa-power-off"></i> <span
-                            data-lang="reset"></span></button>
-                </div>
-                <div class="row" style="margin-bottom:0;">
-                    <label for="matchID" data-lang="matchId"></label>
-                    <!-- PC Button Trigger -->
-                    <button id="pcMatchIdBtn" onclick="openPcMatchPopup()"
-                        style="width: 60px; text-align: center; background: #000; color: #fff; border: 1px solid #333; cursor: pointer;">1</button>
-                    <input type="hidden" id="matchID" value="1">
-                    <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span
-                            data-lang="load"></span></button>
-                    <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span
-                            data-lang="copy"></span></button>
-                </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="team-editor">
-                <div class="team-row">
-                    <!-- Row 1: Header (Colors + Logo) -->
-                    <div class="team-header">
-                        <div class="color-picker-stack">
-                            <input type="color" class="color-picker" id="colorA" value="#ffffff">
-                            <input type="color" class="color-picker color-picker-2" id="colorA2" value="#000000">
-                        </div>
-                        <div class="logo-container"><img id="logoA" src="" alt="">
-                            <div class="logo-initials" id="initialsA">A</div>
-                        </div>
-                    </div>
-                    <!-- Row 2: Name + Buttons -->
-                    <div class="name-control-area">
-                        <div class="name" id="nameA" data-lang="teamA">Team A</div>
-                        <input type="text" class="name-input" id="nameA-input">
-                        <button class="edit-btn" id="editBtnA" data-lang-title="editHint"><i
-                                class="fas fa-pencil-alt"></i></button>
-                        <button class="ok-btn" id="okBtnA" data-lang="ok"></button>
-                    </div>
-                </div>
+            <!-- Removed Visitor Identity Slot (User Icon) as requested -->
 
-                <div class="team-row">
-                    <!-- Row 1: Header (Colors + Logo) -->
-                    <div class="team-header">
-                        <div class="color-picker-stack">
-                            <input type="color" class="color-picker" id="colorB" value="#ffffff">
-                            <input type="color" class="color-picker color-picker-2" id="colorB2" value="#000000">
-                        </div>
-                        <div class="logo-container"><img id="logoB" src="" alt="">
-                            <div class="logo-initials" id="initialsB">B</div>
-                        </div>
+        </div>
+        <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
+    </div>
+    </div>
+    <div class="card">
+        <div class="row space-between">
+            <div class="row" style="margin-bottom:0;">
+                <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span
+                        data-lang="excel"></span></button>
+                <button id="logoPathBtn" class="btn-secondary" data-lang-title="logoPathHint"><i
+                        class="fas fa-folder-open"></i></button>
+                <button id="fullResetBtn" class="btn-danger"><i class="fas fa-power-off"></i> <span
+                        data-lang="reset"></span></button>
+            </div>
+            <div class="row" style="margin-bottom:0;">
+                <label for="matchID" data-lang="matchId"></label>
+                <!-- PC Button Trigger -->
+                <button id="pcMatchIdBtn" onclick="openPcMatchPopup()"
+                    style="width: 60px; text-align: center; background: #000; color: #fff; border: 1px solid #333; cursor: pointer;">1</button>
+                <input type="hidden" id="matchID" value="1">
+                <button id="loadBtn" class="btn-primary"><i class="fas fa-check"></i> <span
+                        data-lang="load"></span></button>
+                <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span
+                        data-lang="copy"></span></button>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="team-editor">
+            <div class="team-row">
+                <!-- Row 1: Header (Colors + Logo) -->
+                <div class="team-header">
+                    <div class="color-picker-stack">
+                        <input type="color" class="color-picker" id="colorA" value="#ffffff">
+                        <input type="color" class="color-picker color-picker-2" id="colorA2" value="#000000">
                     </div>
-                    <!-- Row 2: Name + Buttons -->
-                    <div class="name-control-area">
-                        <div class="name" id="nameB" data-lang="teamB">Team B</div>
-                        <input type="text" class="name-input" id="nameB-input">
-                        <button class="edit-btn" id="editBtnB" data-lang-title="editHint"><i
-                                class="fas fa-pencil-alt"></i></button>
-                        <button class="ok-btn" id="okBtnB" data-lang="ok"></button>
+                    <div class="logo-container"><img id="logoA" src="" alt="">
+                        <div class="logo-initials" id="initialsA">A</div>
                     </div>
                 </div>
+                <!-- Row 2: Name + Buttons -->
+                <div class="name-control-area">
+                    <div class="name" id="nameA" data-lang="teamA">Team A</div>
+                    <input type="text" class="name-input" id="nameA-input">
+                    <button class="edit-btn" id="editBtnA" data-lang-title="editHint"><i
+                            class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnA" data-lang="ok"></button>
+                </div>
             </div>
-            <div class="labels-row">
-                <div id="label1" data-lang="label1"></div>
-                <div id="label2" data-lang="label2"></div>
-                <div id="label3" data-lang="label3"></div>
-            </div>
-            <div class="labels-row" style="margin-top: 8px;">
-                <div id="label4" data-lang="label4"></div>
-                <div id="label5" data-lang="label5"></div>
-            </div>
-        </div>
-        <div class="card" id="swapCard" style="padding: 8px;">
-            <div class="row center">
-                <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span
-                        data-lang="swap"></span></button>
-            </div>
-        </div>
 
-        <div class="card" id="actionButtonsCard">
-            <div class="action-buttons-grid" id="actionButtonsGrid">
+            <div class="team-row">
+                <!-- Row 1: Header (Colors + Logo) -->
+                <div class="team-header">
+                    <div class="color-picker-stack">
+                        <input type="color" class="color-picker" id="colorB" value="#ffffff">
+                        <input type="color" class="color-picker color-picker-2" id="colorB2" value="#000000">
+                    </div>
+                    <div class="logo-container"><img id="logoB" src="" alt="">
+                        <div class="logo-initials" id="initialsB">B</div>
+                    </div>
+                </div>
+                <!-- Row 2: Name + Buttons -->
+                <div class="name-control-area">
+                    <div class="name" id="nameB" data-lang="teamB">Team B</div>
+                    <input type="text" class="name-input" id="nameB-input">
+                    <button class="edit-btn" id="editBtnB" data-lang-title="editHint"><i
+                            class="fas fa-pencil-alt"></i></button>
+                    <button class="ok-btn" id="okBtnB" data-lang="ok"></button>
+                </div>
             </div>
         </div>
-        <div class="card">
+        <div class="labels-row">
+            <div id="label1" data-lang="label1"></div>
+            <div id="label2" data-lang="label2"></div>
+            <div id="label3" data-lang="label3"></div>
+        </div>
+        <div class="labels-row" style="margin-top: 8px;">
+            <div id="label4" data-lang="label4"></div>
+            <div id="label5" data-lang="label5"></div>
+        </div>
+    </div>
+    <div class="card" id="swapCard" style="padding: 8px;">
+        <div class="row center">
+            <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span
+                    data-lang="swap"></span></button>
+        </div>
+    </div>
+
+    <div class="card" id="actionButtonsCard">
+        <div class="action-buttons-grid" id="actionButtonsGrid">
+        </div>
+    </div>
+    <div class="card">
+        <div class="score-panel-clean">
+            <!-- Team A -->
+            <div class="score-col-team">
+                <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                <div class="clean-score-display" id="scoreA">0</div>
+                <button id="scoreAMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+            </div>
+
+            <!-- Center -->
+            <div class="score-col-center">
+                <button id="resetScoreBtn" class="btn-secondary"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                        class="fas fa-sync-alt"></i></button>
+            </div>
+
+            <!-- Team B -->
+            <div class="score-col-team">
+                <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                <div class="clean-score-display" id="scoreB">0</div>
+                <button id="scoreBMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="card score2-card" id="score2Card">
+        <div class="score2-control-container">
             <div class="score-panel-clean">
                 <!-- Team A -->
                 <div class="score-col-team">
-                    <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="scoreA">0</div>
-                    <button id="scoreAMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                    <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2A">0</div>
+                    <button id="score2AMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
                 </div>
 
                 <!-- Center -->
                 <div class="score-col-center">
-                    <button id="resetScoreBtn" class="btn-secondary"
+                    <button id="resetScore2Btn" class="btn-warning"
                         style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
-                            class="fas fa-sync-alt"></i></button>
+                            class="fas fa-redo"></i></button>
                 </div>
 
                 <!-- Team B -->
                 <div class="score-col-team">
-                    <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="scoreB">0</div>
-                    <button id="scoreBMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                    <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2B">0</div>
+                    <button id="score2BMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
                 </div>
             </div>
         </div>
-        <div class="card score2-card" id="score2Card">
-            <div class="score2-control-container">
-                <div class="score-panel-clean">
-                    <!-- Team A -->
-                    <div class="score-col-team">
-                        <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                        <div class="clean-score-display" id="score2A">0</div>
-                        <button id="score2AMinusBtn" class="btn-score-minus"><i
-                                class="fas fa-chevron-down"></i></button>
-                    </div>
+    </div>
 
-                    <!-- Center -->
-                    <div class="score-col-center">
-                        <button id="resetScore2Btn" class="btn-warning"
-                            style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
-                                class="fas fa-redo"></i></button>
-                    </div>
+    <div class="card">
+        <div class="row timer-area-container">
+            <div style="flex: 0 0 70px; display: flex;">
+                <button id="halfBtn" class="btn-secondary"
+                    style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
+                    <span style="font-size:0.8rem" data-lang="half"></span>
+                    <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
+                </button>
+            </div>
 
-                    <!-- Team B -->
-                    <div class="score-col-team">
-                        <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                        <div class="clean-score-display" id="score2B">0</div>
-                        <button id="score2BMinusBtn" class="btn-score-minus"><i
-                                class="fas fa-chevron-down"></i></button>
-                    </div>
+            <div class="timer-display-area">
+                <div id="timerText" class="timer-display">00:00</div>
+                <div class="row center" style="margin-bottom:0; margin-top: 5px;">
+                    <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
+                    <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
+                    <button id="resetToZeroBtn" class="btn-danger" data-lang-title="resetToZeroHint"><i
+                            class="fas fa-undo"></i></button>
+                </div>
+            </div>
+
+            <div class="timer-right-controls">
+                <div class="row" id="injuryTimeContainer">
+                    <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
+                    <button id="injuryTimeMinusBtn" class="btn-secondary"
+                        style="padding: 2px 8px; font-size: 1rem; line-height: 1;"><i class="fas fa-minus"></i></button>
+                    <button id="injuryTimePlusBtn" class="btn-secondary"
+                        style="padding: 2px 8px; font-size: 1rem; line-height: 1;"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="row">
+                    <button id="resetToStartBtn" class="btn-secondary" data-lang-title="resetToStartHint"><i
+                            class="fas fa-history"></i></button>
+                    <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
+                </div>
+                <div class="row">
+                    <label class="countdown-toggle" data-lang-title="countdownHint"
+                        style="display: flex; justify-content: center; width: 100%;">
+                        <input type="checkbox" id="countdownCheck">
+                        <span data-lang="countdown"></span>
+                    </label>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="card">
+        <div class="row center" style="gap: 10px;">
+            <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
+                    class="fas fa-cog"></i></button>
 
-        <div class="card">
-            <div class="row timer-area-container">
-                <div style="flex: 0 0 70px; display: flex;">
-                    <button id="halfBtn" class="btn-secondary"
-                        style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
-                        <span style="font-size:0.8rem" data-lang="half"></span>
-                        <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
-                    </button>
-                </div>
+            <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"><i
+                    class="fas fa-mobile-alt"></i></button>
 
-                <div class="timer-display-area">
-                    <div id="timerText" class="timer-display">00:00</div>
-                    <div class="row center" style="margin-bottom:0; margin-top: 5px;">
-                        <button id="playBtn" class="btn-primary"><i class="fas fa-play"></i></button>
-                        <button id="pauseBtn" class="btn-secondary"><i class="fas fa-pause"></i></button>
-                        <button id="resetToZeroBtn" class="btn-danger" data-lang-title="resetToZeroHint"><i
-                                class="fas fa-undo"></i></button>
-                    </div>
-                </div>
-
-                <div class="timer-right-controls">
-                    <div class="row" id="injuryTimeContainer">
-                        <span id="injuryTimeDisplay" style="font-size: 1.1rem; font-weight: bold;">+0</span>
-                        <button id="injuryTimeMinusBtn" class="btn-secondary"
-                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;"><i
-                                class="fas fa-minus"></i></button>
-                        <button id="injuryTimePlusBtn" class="btn-secondary"
-                            style="padding: 2px 8px; font-size: 1rem; line-height: 1;"><i
-                                class="fas fa-plus"></i></button>
-                    </div>
-                    <div class="row">
-                        <button id="resetToStartBtn" class="btn-secondary" data-lang-title="resetToStartHint"><i
-                                class="fas fa-history"></i></button>
-                        <button id="editTimeBtn" class="btn-secondary"><i class="fas fa-edit"></i></button>
-                    </div>
-                    <div class="row">
-                        <label class="countdown-toggle" data-lang-title="countdownHint"
-                            style="display: flex; justify-content: center; width: 100%;">
-                            <input type="checkbox" id="countdownCheck">
-                            <span data-lang="countdown"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
+            <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i
+                    class="fas fa-question-circle"></i></button>
+            <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
+                    class="fas fa-hand-holding-usd"></i></button>
+            <select id="languageSelector" title="Select Language">
+                <option value="th">ภาษาไทย</option>
+                <option value="en">English</option>
+            </select>
         </div>
-        <div class="card">
-            <div class="row center" style="gap: 10px;">
-                <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
-                        class="fas fa-cog"></i></button>
-
-                <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"><i
-                        class="fas fa-mobile-alt"></i></button>
-
-                <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i
-                        class="fas fa-question-circle"></i></button>
-                <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
-                        class="fas fa-hand-holding-usd"></i></button>
-                <select id="languageSelector" title="Select Language">
-                    <option value="th">ภาษาไทย</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
+    </div>
+    <div class="footer">
+        <div style="font-size: 10px;">
+            <a href='https://www.free-counters.org/'>powered by Free-Counters.org</a>
+            <script type='text/javascript'
+                src='https://www.freevisitorcounters.com/auth.php?id=40d718814ed43f91ca1ed2c87ad6ecdc4a8248ec'></script>
+            <script type="text/javascript"
+                src="https://www.freevisitorcounters.com/en/home/counter/1361951/t/24"></script>
         </div>
-        <div class="footer">
-            <div style="font-size: 10px;">
-                <a href='https://www.free-counters.org/'>powered by Free-Counters.org</a>
-                <script type='text/javascript'
-                    src='https://www.freevisitorcounters.com/auth.php?id=40d718814ed43f91ca1ed2c87ad6ecdc4a8248ec'></script>
-                <script type="text/javascript"
-                    src="https://www.freevisitorcounters.com/en/home/counter/1361951/t/24"></script>
-            </div>
-            <div class="footer-changelog-link">
-                <span data-lang="footerAppName"></span> - <a id="changelogBtn" data-lang="changelog"></a>
+        <div class="footer-changelog-link">
+            <span data-lang="footerAppName"></span> - <a id="changelogBtn" data-lang="changelog"></a>
 
-            </div>
         </div>
+    </div>
     </div>
 
     <div id="mobileControlPopup" class="popup-modal">
@@ -2761,7 +2744,7 @@
         }
     </script>
 
-    <script src="fcp_v2_assets/main_append.js"></script>
+
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
     <!-- PC Match ID Popup -->

@@ -1,4 +1,4 @@
-// fcp_v2_assets/main.js
+﻿// fcp_v2_assets/main.js
 
 import { translations } from './languages.js';
 
@@ -65,14 +65,14 @@ let googleSheetUrl = '';
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
 
 const thaiProvinces = [
-    "กรุงเทพมหานคร", "กระบี่", "กาญจนบุรี", "กาฬสินธุ์", "กำแพงเพชร", "ขอนแก่น", "จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ชัยนาท",
-    "ชัยภูมิ", "ชุมพร", "เชียงราย", "เชียงใหม่", "ตรัง", "ตราด", "ตาก", "นครนายก", "นครปฐม", "นครพนม", "นครราชสีมา",
-    "นครศรีธรรมราช", "นครสวรรค์", "นนทบุรี", "นราธิวาส", "น่าน", "บึงกาฬ", "บุรีรัมย์", "ปทุมธานี", "ประจวบคีรีขันธ์",
-    "ปราจีนบุรี", "ปัตตานี", "พระนครศรีอยุธยา", "พะเยา", "พังงา", "พัทลุง", "พิจิตร", "พิษณุโลก", "เพชรบุรี", "เพชรบูรณ์",
-    "แพร่", "ภูเก็ต", "มหาสารคาม", "มุกดาหาร", "แม่ฮ่องสอน", "ยโสธร", "ยะลา", "ร้อยเอ็ด", "ระนอง", "ระยอง", "ราชบุรี",
-    "ลพบุรี", "ลำปาง", "ลำพูน", "เลย", "ศรีสะเกษ", "สกลนคร", "สงขลา", "สตูล", "สมุทรปราการ", "สมุทรสงคราม", "สมุทรสาคร",
-    "สระแก้ว", "สระบุรี", "สิงห์บุรี", "สุโขทัย", "สุพรรณบุรี", "สุราษฎร์ธานี", "สุรินทร์", "หนองคาย", "หนองบัวลำภู",
-    "อ่างทอง", "อำนาจเจริญ", "อุดรธานี", "อุตรดิตถ์", "อุทัยธานี", "อุบลราชธานี"
+    "à¸à¸£à¸¸à¸‡à¹€à¸—à¸žà¸¡à¸«à¸²à¸™à¸„à¸£", "à¸à¸£à¸°à¸šà¸µà¹ˆ", "à¸à¸²à¸à¸ˆà¸™à¸šà¸¸à¸£à¸µ", "à¸à¸²à¸¬à¸ªà¸´à¸™à¸˜à¸¸à¹Œ", "à¸à¸³à¹à¸žà¸‡à¹€à¸žà¸Šà¸£", "à¸‚à¸­à¸™à¹à¸à¹ˆà¸™", "à¸ˆà¸±à¸™à¸—à¸šà¸¸à¸£à¸µ", "à¸‰à¸°à¹€à¸Šà¸´à¸‡à¹€à¸—à¸£à¸²", "à¸Šà¸¥à¸šà¸¸à¸£à¸µ", "à¸Šà¸±à¸¢à¸™à¸²à¸—",
+    "à¸Šà¸±à¸¢à¸ à¸¹à¸¡à¸´", "à¸Šà¸¸à¸¡à¸žà¸£", "à¹€à¸Šà¸µà¸¢à¸‡à¸£à¸²à¸¢", "à¹€à¸Šà¸µà¸¢à¸‡à¹ƒà¸«à¸¡à¹ˆ", "à¸•à¸£à¸±à¸‡", "à¸•à¸£à¸²à¸”", "à¸•à¸²à¸", "à¸™à¸„à¸£à¸™à¸²à¸¢à¸", "à¸™à¸„à¸£à¸›à¸à¸¡", "à¸™à¸„à¸£à¸žà¸™à¸¡", "à¸™à¸„à¸£à¸£à¸²à¸Šà¸ªà¸µà¸¡à¸²",
+    "à¸™à¸„à¸£à¸¨à¸£à¸µà¸˜à¸£à¸£à¸¡à¸£à¸²à¸Š", "à¸™à¸„à¸£à¸ªà¸§à¸£à¸£à¸„à¹Œ", "à¸™à¸™à¸—à¸šà¸¸à¸£à¸µ", "à¸™à¸£à¸²à¸˜à¸´à¸§à¸²à¸ª", "à¸™à¹ˆà¸²à¸™", "à¸šà¸¶à¸‡à¸à¸²à¸¬", "à¸šà¸¸à¸£à¸µà¸£à¸±à¸¡à¸¢à¹Œ", "à¸›à¸—à¸¸à¸¡à¸˜à¸²à¸™à¸µ", "à¸›à¸£à¸°à¸ˆà¸§à¸šà¸„à¸µà¸£à¸µà¸‚à¸±à¸™à¸˜à¹Œ",
+    "à¸›à¸£à¸²à¸ˆà¸µà¸™à¸šà¸¸à¸£à¸µ", "à¸›à¸±à¸•à¸•à¸²à¸™à¸µ", "à¸žà¸£à¸°à¸™à¸„à¸£à¸¨à¸£à¸µà¸­à¸¢à¸¸à¸˜à¸¢à¸²", "à¸žà¸°à¹€à¸¢à¸²", "à¸žà¸±à¸‡à¸‡à¸²", "à¸žà¸±à¸—à¸¥à¸¸à¸‡", "à¸žà¸´à¸ˆà¸´à¸•à¸£", "à¸žà¸´à¸©à¸“à¸¸à¹‚à¸¥à¸", "à¹€à¸žà¸Šà¸£à¸šà¸¸à¸£à¸µ", "à¹€à¸žà¸Šà¸£à¸šà¸¹à¸£à¸“à¹Œ",
+    "à¹à¸žà¸£à¹ˆ", "à¸ à¸¹à¹€à¸à¹‡à¸•", "à¸¡à¸«à¸²à¸ªà¸²à¸£à¸„à¸²à¸¡", "à¸¡à¸¸à¸à¸”à¸²à¸«à¸²à¸£", "à¹à¸¡à¹ˆà¸®à¹ˆà¸­à¸‡à¸ªà¸­à¸™", "à¸¢à¹‚à¸ªà¸˜à¸£", "à¸¢à¸°à¸¥à¸²", "à¸£à¹‰à¸­à¸¢à¹€à¸­à¹‡à¸”", "à¸£à¸°à¸™à¸­à¸‡", "à¸£à¸°à¸¢à¸­à¸‡", "à¸£à¸²à¸Šà¸šà¸¸à¸£à¸µ",
+    "à¸¥à¸žà¸šà¸¸à¸£à¸µ", "à¸¥à¸³à¸›à¸²à¸‡", "à¸¥à¸³à¸žà¸¹à¸™", "à¹€à¸¥à¸¢", "à¸¨à¸£à¸µà¸ªà¸°à¹€à¸à¸©", "à¸ªà¸à¸¥à¸™à¸„à¸£", "à¸ªà¸‡à¸‚à¸¥à¸²", "à¸ªà¸•à¸¹à¸¥", "à¸ªà¸¡à¸¸à¸—à¸£à¸›à¸£à¸²à¸à¸²à¸£", "à¸ªà¸¡à¸¸à¸—à¸£à¸ªà¸‡à¸„à¸£à¸²à¸¡", "à¸ªà¸¡à¸¸à¸—à¸£à¸ªà¸²à¸„à¸£",
+    "à¸ªà¸£à¸°à¹à¸à¹‰à¸§", "à¸ªà¸£à¸°à¸šà¸¸à¸£à¸µ", "à¸ªà¸´à¸‡à¸«à¹Œà¸šà¸¸à¸£à¸µ", "à¸ªà¸¸à¹‚à¸‚à¸—à¸±à¸¢", "à¸ªà¸¸à¸žà¸£à¸£à¸“à¸šà¸¸à¸£à¸µ", "à¸ªà¸¸à¸£à¸²à¸©à¸Žà¸£à¹Œà¸˜à¸²à¸™à¸µ", "à¸ªà¸¸à¸£à¸´à¸™à¸—à¸£à¹Œ", "à¸«à¸™à¸­à¸‡à¸„à¸²à¸¢", "à¸«à¸™à¸­à¸‡à¸šà¸±à¸§à¸¥à¸³à¸ à¸¹",
+    "à¸­à¹ˆà¸²à¸‡à¸—à¸­à¸‡", "à¸­à¸³à¸™à¸²à¸ˆà¹€à¸ˆà¸£à¸´à¸", "à¸­à¸¸à¸”à¸£à¸˜à¸²à¸™à¸µ", "à¸­à¸¸à¸•à¸£à¸”à¸´à¸•à¸–à¹Œ", "à¸­à¸¸à¸—à¸±à¸¢à¸˜à¸²à¸™à¸µ", "à¸­à¸¸à¸šà¸¥à¸£à¸²à¸Šà¸˜à¸²à¸™à¸µ"
 ].sort((a, b) => a.localeCompare(b, 'th'));
 
 let masterTeamA = createDefaultTeam('A');
@@ -230,7 +230,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
             inputSettings: {},
             sceneItemEnabled: true
         });
-        showToast(`✅ Created: ${sourceName}`, 'success');
+        showToast(`âœ… Created: ${sourceName}`, 'success');
         if (btnEl) {
             btnEl.innerHTML = '<i class="fas fa-check"></i>';
             btnEl.disabled = true;
@@ -241,7 +241,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
     } catch (err) {
         const errMsg = err.message || err.code || String(err);
         if (errMsg.includes('already exists') || (err.code === 601)) {
-            showToast(`⚠️ ${sourceName} already exists`, 'info');
+            showToast(`âš ï¸ ${sourceName} already exists`, 'info');
             if (btnEl) {
                 btnEl.innerHTML = '<i class="fas fa-check"></i>';
                 btnEl.disabled = true;
@@ -250,7 +250,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
             }
             return true;
         }
-        showToast(`❌ Failed: ${sourceName} (${errMsg})`, 'error');
+        showToast(`âŒ Failed: ${sourceName} (${errMsg})`, 'error');
         return false;
     }
 };
@@ -1858,128 +1858,128 @@ window.fcpAPI = {
 };
 
 // Import Remote Logic
-import './remote.js'; 
- / /   - - -   W e l c o m e   S c r e e n   L o g i c   - - -  
- c o n s t   i n i t W e l c o m e S c r e e n   =   ( )   = >   {  
-         c o n s t   s c r e e n   =   $ ( ' w e l c o m e S c r e e n ' ) ;  
-         c o n s t   p r o v i n c e S e l e c t   =   $ ( ' v i s i t o r P r o v i n c e ' ) ;  
-         c o n s t   n a m e I n p u t   =   $ ( ' v i s i t o r N a m e ' ) ;  
-  
-         / /   P o p u l a t e   P r o v i n c e s  
-         i f   ( p r o v i n c e S e l e c t )   {  
-                 t h a i P r o v i n c e s . f o r E a c h ( p   = >   {  
-                         c o n s t   o p t   =   d o c u m e n t . c r e a t e E l e m e n t ( ' o p t i o n ' ) ;  
-                         o p t . v a l u e   =   p ;  
-                         o p t . t e x t C o n t e n t   =   p ;  
-                         p r o v i n c e S e l e c t . a p p e n d C h i l d ( o p t ) ;  
-                 } ) ;  
-                 p r o v i n c e S e l e c t . v a l u e   =   " � � � � � � � � � � � ! � � � � �  � � ~� � � � � � � � � � � "!� �  � � � " ;   / /   D e f a u l t  
-         }  
-  
-         i f   ( u s e r I d e n t i t y   & &   u s e r I d e n t i t y . n a m e )   {  
-                 / /   U s e r   e x i s t s ,   s k i p   w e l c o m e   o r   p r e - f i l l  
-                 i f   ( n a m e I n p u t )   n a m e I n p u t . v a l u e   =   u s e r I d e n t i t y . n a m e ;  
-                 i f   ( p r o v i n c e S e l e c t )   p r o v i n c e S e l e c t . v a l u e   =   u s e r I d e n t i t y . p r o v i n c e   | |   " � � � � � � � � � � � ! � � � � �  � � ~� � � � � � � � � � � "!� �  � � � " ;  
-                 / /   A u t o - e n t e r   i f   d e s i r e d ,   b u t   u s e r   m i g h t   w a n t   t o   e d i t .  
-                 / /   F o r   n o w ,   l e t ' s   j u s t   p r e - f i l l   a n d   r e q u i r e   c l i c k .  
-                 / /   A c t u a l l y ,   i f   i d e n t i t y   e x i s t s ,   w e   c a n   h i d e   w e l c o m e   s c r e e n   i m m e d i a t e l y ?  
-                 / /   " � � � � � � � � ! � � a� �  � � 0 � � � � � � � � � � � � � �  � � � � � 0 � � �� � "!� � � � �  � � � � � `� � � � �  � � � � � � � � �� � � � � ! � �  � � 0 � � � � � � "   -   u s u a l l y   i m p l i e s   " R e m e m b e r   M e " .  
-                 / /   L e t ' s   c h e c k   i f   w e   s h o u l d   a u t o - e n t e r .  
-                 / /   F o r   n o w ,   l e t ' s   s h o w   t h e   s c r e e n   b u t   p r e - f i l l e d .  
-         }  
- } ;  
-  
- w i n d o w . s a v e A n d E n t e r A p p   =   ( )   = >   {  
-         c o n s t   n a m e I n p u t   =   $ ( ' v i s i t o r N a m e ' ) ;  
-         c o n s t   p r o v i n c e S e l e c t   =   $ ( ' v i s i t o r P r o v i n c e ' ) ;  
-         c o n s t   c o u n t r y I n p u t   =   $ ( ' v i s i t o r C o u n t r y ' ) ;  
-  
-         c o n s t   n a m e   =   n a m e I n p u t . v a l u e . t r i m ( ) ;  
-         i f   ( ! n a m e )   {  
-                 a l e r t ( " P l e a s e   e n t e r   y o u r   n a m e   /   � � � � � � � � � � �  � � � � � � � � � � � � � � � � � `� � � � � �� � � " ) ;  
-                 r e t u r n ;  
-         }  
-  
-         u s e r I d e n t i t y   =   {  
-                 n a m e :   n a m e ,  
-                 p r o v i n c e :   p r o v i n c e S e l e c t . v a l u e ,  
-                 c o u n t r y :   c o u n t r y I n p u t . v a l u e  
-         } ;  
-  
-         l o c a l S t o r a g e . s e t I t e m ( ' u s e r I d e n t i t y ' ,   J S O N . s t r i n g i f y ( u s e r I d e n t i t y ) ) ;  
-         u p d a t e U s e r I d e n t i t y U I ( ) ;  
-  
-         / /   A n i m a t e   o u t  
-         c o n s t   s c r e e n   =   $ ( ' w e l c o m e S c r e e n ' ) ;  
-         i f   ( s c r e e n )   {  
-                 s c r e e n . s t y l e . o p a c i t y   =   ' 0 ' ;  
-                 s e t T i m e o u t ( ( )   = >   {  
-                         s c r e e n . s t y l e . d i s p l a y   =   ' n o n e ' ;  
-                 } ,   5 0 0 ) ;  
-         }  
-  
-         / /   N o t i f y   O n l i n e   S y s t e m   ( w i l l   b e   h a n d l e d   b y   r e m o t e . j s   i n v o k i n g   m a i n . j s   o r   a c c e s s i n g   i d e n t i t y )  
-         i f   ( w i n d o w . u p d a t e O n l i n e S t a t u s )   w i n d o w . u p d a t e O n l i n e S t a t u s ( ) ;  
- } ;  
-  
- c o n s t   u p d a t e U s e r I d e n t i t y U I   =   ( )   = >   {  
-         i f   ( ! u s e r I d e n t i t y )   r e t u r n ;  
-         c o n s t   n a m e D i s p l a y   =   $ ( ' v i s i t o r N a m e D i s p l a y ' ) ;  
-         c o n s t   l o c a t i o n D i s p l a y   =   $ ( ' v i s i t o r L o c a t i o n D i s p l a y ' ) ;  
-         i f   ( n a m e D i s p l a y )   n a m e D i s p l a y . t e x t C o n t e n t   =   u s e r I d e n t i t y . n a m e ;  
-         i f   ( l o c a t i o n D i s p l a y )   l o c a t i o n D i s p l a y . t e x t C o n t e n t   =   ` $ { u s e r I d e n t i t y . p r o v i n c e } ,   $ { u s e r I d e n t i t y . c o u n t r y } ` ;  
- } ;  
-  
- / /   - - -   Q u i c k   T a g   L o g i c   - - -  
- w i n d o w . i n s e r t T a g   =   ( t a g C o d e )   = >   {  
-         c o n s t   t e x t a r e a   =   $ ( ' d e t a i l s T e x t ' ) ;  
-         i f   ( ! t e x t a r e a )   r e t u r n ;  
-  
-         c o n s t   s t a r t   =   t e x t a r e a . s e l e c t i o n S t a r t ;  
-         c o n s t   e n d   =   t e x t a r e a . s e l e c t i o n E n d ;  
-         c o n s t   t e x t   =   t e x t a r e a . v a l u e ;  
-         c o n s t   b e f o r e   =   t e x t . s u b s t r i n g ( 0 ,   s t a r t ) ;  
-         c o n s t   a f t e r   =   t e x t . s u b s t r i n g ( e n d ,   t e x t . l e n g t h ) ;  
-  
-         t e x t a r e a . v a l u e   =   b e f o r e   +   t a g C o d e   +   a f t e r ;  
-         t e x t a r e a . s e l e c t i o n S t a r t   =   t e x t a r e a . s e l e c t i o n E n d   =   s t a r t   +   t a g C o d e . l e n g t h ;  
-         t e x t a r e a . f o c u s ( ) ;  
-  
-         / /   T r i g g e r   s a v e  
-         l o c a l S t o r a g e . s e t I t e m ( ' d e t a i l s T e x t ' ,   t e x t a r e a . v a l u e ) ;  
- } ;  
-  
- / /   U p d a t e   c o p y D e t a i l s   t o   i n c l u d e   n e w   t a g s  
- c o n s t   o r i g i n a l C o p y D e t a i l s   =   c o p y D e t a i l s ;   / /   B a c k u p   i f   n e e d e d ,   b u t   w e   w i l l   o v e r w r i t e  
- w i n d o w . c o p y D e t a i l s   =   ( )   = >   {  
-         c o n s t   t e m p l a t e   =   l o c a l S t o r a g e . g e t I t e m ( ' d e t a i l s T e x t ' )   | |   ' ' ;  
-         i f   ( ! t e m p l a t e . t r i m ( ) )   r e t u r n   s h o w T o a s t ( t r a n s l a t i o n s [ c u r r e n t L a n g ] . t o a s t N o T e x t T o C o p y ,   ' e r r o r ' ) ;  
-  
-         l e t   t e a m A N a m e   =   m a s t e r T e a m A . n a m e . r e p l a c e ( / \ / / g ,   '   ' ) ;  
-         l e t   t e a m B N a m e   =   m a s t e r T e a m B . n a m e . r e p l a c e ( / \ / / g ,   '   ' ) ;  
-  
-         c o n s t   f i l l e d   =   t e m p l a t e  
-                 . r e p l a c e ( / < T e a m A > / g i ,   t e a m A N a m e )  
-                 . r e p l a c e ( / < T e a m B > / g i ,   t e a m B N a m e )  
-                 . r e p l a c e ( / < l a b e l 1 > / g i ,   e l e m e n t s . l a b e l 1 . t e x t C o n t e n t )  
-                 . r e p l a c e ( / < l a b e l 2 > / g i ,   e l e m e n t s . l a b e l 2 . t e x t C o n t e n t )  
-                 . r e p l a c e ( / < l a b e l 3 > / g i ,   e l e m e n t s . l a b e l 3 . t e x t C o n t e n t )  
-                 . r e p l a c e ( / < l a b e l 4 > / g i ,   e l e m e n t s . l a b e l 4 . t e x t C o n t e n t )  
-                 . r e p l a c e ( / < l a b e l 5 > / g i ,   e l e m e n t s . l a b e l 5 . t e x t C o n t e n t )  
-                 . r e p l a c e ( / < s c o r e _ t e a m _ a > / g i ,   m a s t e r T e a m A . s c o r e )  
-                 . r e p l a c e ( / < s c o r e _ t e a m _ b > / g i ,   m a s t e r T e a m B . s c o r e )  
-                 . r e p l a c e ( / < s c o r e 2 _ t e a m _ a > / g i ,   m a s t e r T e a m A . s c o r e 2 )  
-                 . r e p l a c e ( / < s c o r e 2 _ t e a m _ b > / g i ,   m a s t e r T e a m B . s c o r e 2 )  
-                 . r e p l a c e ( / < t i m e _ c o u n t e r > / g i ,   e l e m e n t s . t i m e r T e x t . t e x t C o n t e n t )  
-                 / /   R e m o v e   h a l f _ t e x t   l o g i c   o r   k e e p   i t   b u t   i t ' s   n o t   i n   t h e   l i s t  
-                 . r e p l a c e ( / < h a l f _ t e x t > / g i ,   e l e m e n t s . h a l f T e x t . t e x t C o n t e n t ) ;  
-  
-         n a v i g a t o r . c l i p b o a r d . w r i t e T e x t ( f i l l e d ) . t h e n ( ( )   = >   s h o w T o a s t ( t r a n s l a t i o n s [ c u r r e n t L a n g ] . t o a s t C o p i e d ,   ' i n f o ' ) ) . c a t c h ( e r r   = >   s h o w T o a s t ( t r a n s l a t i o n s [ c u r r e n t L a n g ] . t o a s t C o p y F a i l e d ,   ' e r r o r ' ) ) ;  
- } ;  
-  
- / /   C a l l   i n i t   o n   l o a d  
- w i n d o w . a d d E v e n t L i s t e n e r ( ' l o a d ' ,   ( )   = >   {  
-         i n i t W e l c o m e S c r e e n ( ) ;  
-         u p d a t e U s e r I d e n t i t y U I ( ) ;  
- } ) ;  
- 
+import './remote.js';
+
+// --- Welcome Screen Logic ---
+const initWelcomeScreen = () => {
+    const screen = $('welcomeScreen');
+    const provinceSelect = $('visitorProvince');
+    const nameInput = $('visitorName');
+
+    // Populate Provinces
+    if (provinceSelect) {
+        thaiProvinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            provinceSelect.appendChild(opt);
+        });
+        provinceSelect.value = "à¸à¸£à¸¸à¸‡à¹€à¸—à¸žà¸¡à¸«à¸²à¸™à¸„à¸£"; // Default
+    }
+
+    if (userIdentity && userIdentity.name) {
+        // User exists, skip welcome or pre-fill
+        if (nameInput) nameInput.value = userIdentity.name;
+        if (provinceSelect) provinceSelect.value = userIdentity.province || "à¸à¸£à¸¸à¸‡à¹€à¸—à¸žà¸¡à¸«à¸²à¸™à¸„à¸£";
+        // Auto-enter if desired, but user might want to edit.
+        // For now, let's just pre-fill and require click.
+        // Actually, if identity exists, we can hide welcome screen immediately?
+        // "à¹€à¸à¹‡à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹„à¸§à¹‰à¹ƒà¸™à¹à¸„à¸£à¸Šà¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸”à¹‰à¸§à¸¢" - usually implies "Remember Me".
+        // Let's check if we should auto-enter.
+        // For now, let's show the screen but pre-filled.
+    }
+};
+
+window.saveAndEnterApp = () => {
+    const nameInput = $('visitorName');
+    const provinceSelect = $('visitorProvince');
+    const countryInput = $('visitorCountry');
+
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert("Please enter your name / à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸Šà¸·à¹ˆà¸­");
+        return;
+    }
+
+    userIdentity = {
+        name: name,
+        province: provinceSelect.value,
+        country: countryInput.value
+    };
+
+    localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
+    updateUserIdentityUI();
+
+    // Animate out
+    const screen = $('welcomeScreen');
+    if (screen) {
+        screen.style.opacity = '0';
+        setTimeout(() => {
+            screen.style.display = 'none';
+        }, 500);
+    }
+
+    // Notify Online System (will be handled by remote.js invoking main.js or accessing identity)
+    if (window.updateOnlineStatus) window.updateOnlineStatus();
+};
+
+const updateUserIdentityUI = () => {
+    if (!userIdentity) return;
+    const nameDisplay = $('visitorNameDisplay');
+    const locationDisplay = $('visitorLocationDisplay');
+    if (nameDisplay) nameDisplay.textContent = userIdentity.name;
+    if (locationDisplay) locationDisplay.textContent = `${userIdentity.province}, ${userIdentity.country}`;
+};
+
+// --- Quick Tag Logic ---
+window.insertTag = (tagCode) => {
+    const textarea = $('detailsText');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    textarea.value = before + tagCode + after;
+    textarea.selectionStart = textarea.selectionEnd = start + tagCode.length;
+    textarea.focus();
+
+    // Trigger save
+    localStorage.setItem('detailsText', textarea.value);
+};
+
+// Update copyDetails to include new tags
+const originalCopyDetails = copyDetails; // Backup if needed, but we will overwrite
+window.copyDetails = () => {
+    const template = localStorage.getItem('detailsText') || '';
+    if (!template.trim()) return showToast(translations[currentLang].toastNoTextToCopy, 'error');
+
+    let teamAName = masterTeamA.name.replace(/\//g, ' ');
+    let teamBName = masterTeamB.name.replace(/\//g, ' ');
+
+    const filled = template
+        .replace(/<TeamA>/gi, teamAName)
+        .replace(/<TeamB>/gi, teamBName)
+        .replace(/<label1>/gi, elements.label1.textContent)
+        .replace(/<label2>/gi, elements.label2.textContent)
+        .replace(/<label3>/gi, elements.label3.textContent)
+        .replace(/<label4>/gi, elements.label4.textContent)
+        .replace(/<label5>/gi, elements.label5.textContent)
+        .replace(/<score_team_a>/gi, masterTeamA.score)
+        .replace(/<score_team_b>/gi, masterTeamB.score)
+        .replace(/<score2_team_a>/gi, masterTeamA.score2)
+        .replace(/<score2_team_b>/gi, masterTeamB.score2)
+        .replace(/<time_counter>/gi, elements.timerText.textContent)
+        // Remove half_text logic or keep it but it's not in the list
+        .replace(/<half_text>/gi, elements.halfText.textContent);
+
+    navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
+};
+
+// Call init on load
+window.addEventListener('load', () => {
+    initWelcomeScreen();
+    updateUserIdentityUI();
+});
