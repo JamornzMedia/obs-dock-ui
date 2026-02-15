@@ -2155,6 +2155,76 @@
 
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
+
+    <!-- Mobile Control Popup -->
+    <div id="mobileControlPopup"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; z-index: 1001; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+        <div style="margin-bottom: 20px;">
+            <h3
+                style="margin: 0 0 8px 0; color: white; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-mobile-alt" style="color: #3b82f6;"></i>
+                ควบคุมผ่านมือถือ (OBSScore Remote)
+            </h3>
+            <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">สร้างห้องเพื่อควบคุมผ่านมือถือ</p>
+        </div>
+
+        <!-- Room Name Input -->
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px;">ชื่อห้อง</label>
+            <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
+                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 1rem;">
+        </div>
+
+        <!-- Create Room Button -->
+        <button id="createRoomBtn"
+            style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; margin-bottom: 16px;">
+            <i class="fas fa-plus-circle"></i> สร้างห้อง
+        </button>
+
+        <!-- Connection UI (Hidden initially) -->
+        <div id="remoteConnectionUI" style="display: none;">
+            <!-- Room ID Display -->
+            <div id="remoteRoomIdContainer"
+                style="display: none; margin-bottom: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 4px;">Room ID (6
+                    หลัก)</label>
+                <input type="text" id="remoteRoomId" readonly
+                    style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: #60a5fa; border-radius: 6px; font-size: 1.2rem; text-align: center; font-family: monospace; letter-spacing: 0.3em;">
+            </div>
+
+            <!-- QR Code -->
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div id="remoteQrCode"
+                    style="display: inline-block; padding: 12px; background: white; border-radius: 12px;"></div>
+            </div>
+
+            <!-- Mobile Link -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 4px;">Link
+                    สำหรับมือถือ</label>
+                <input type="text" id="mobileLinkInput" readonly
+                    style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: #94a3b8; border-radius: 6px; font-size: 0.85rem;">
+            </div>
+
+            <!-- Status Text -->
+            <div id="remoteStatusText"
+                style="text-align: center; padding: 10px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px; color: #4ade80; font-size: 0.9rem;">
+                รอการเชื่อมต่อ...
+            </div>
+        </div>
+
+        <!-- Close Room Button -->
+        <button id="closeRoomBtn"
+            style="display: none; width: 100%; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 12px;">
+            <i class="fas fa-times-circle"></i> ปิดห้อง
+        </button>
+
+        <!-- Close Popup Button -->
+        <button onclick="closeMobileControlPopup()"
+            style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: none; color: #94a3b8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
     <div class="container">
         <div class="card"
             style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px;">
