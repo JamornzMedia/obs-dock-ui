@@ -319,80 +319,90 @@
             document.getElementById('status-msg').textContent = "Connecting...";
             document.getElementById('status-msg').classList.remove('hidden');
 
-            // --- CHANGED: Look in 'obs_rooms_score' instead of 'obs_rooms' ---
-            database.ref('obs_rooms_score/' + 'mobile_' + rid).once('value').then(snapshot => {
-                // Try direct lookup by name? No, we need to iterate if we don't know the full key, 
-                // BUT the host stored the 6-digit ID inside the object, not as the key?
-                // Wait, main.js said: newRoomRef = firebase.database().ref('obs_rooms_score/' + 'mobile_' + sanitizedName);
-                // AND it set: { roomId: roomId, ... }
-                // So looking up 'mobile_' + rid won't work because rid is a number, key is a name.
+            // Query by roomId (6 digits) - this matches what PC stores
+            database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
+                if (!snap.exists()) {
+                    // Fallback: try direct lookup with mobile_ prefix + rid
+                    database.ref('obs_rooms_score/mobile_' + rid).once('value').then(snap2 => {
+                        if (!snap2.exists()) {
+                            alert("Room not found! (Check ID)");
+                            document.getElementById('status-msg').textContent = "Room not found";
+                            return;
+                        }
+                        const roomData = snap2.val();
+                        const hostPeerId = roomData.hostPeerId;
+                        document.getElementById('room-name-display').textContent = roomData.name || 'Room';
+                        document.getElementById('room-id-display').textContent = 'ID: ' + rid;
+                        console.log("Found Room (fallback):", roomData.name, "HostID:", hostPeerId);
+                        startPeerConnection(rid, hostPeerId);
+                        setupPresence(rid, 'mobile_' + rid);
+                    });
+                    return;
+                }
 
-                // We need to query by child 'roomId'
-                database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
-                    if (!snap.exists()) {
-                        alert("Room not found! (Check ID)");
-                        document.getElementById('status-msg').textContent = "Room not found";
-                        return;
-                    }
+                // Get the first match
+                const rooms = snap.val();
+                const roomKey = Object.keys(rooms)[0];
+                const roomData = rooms[roomKey];
 
-                    // Get the first match
-                    const rooms = snap.val();
-                    const roomKey = Object.keys(rooms)[0];
-                    const roomData = rooms[roomKey];
+                document.getElementById('room-name-display').textContent = roomData.name || 'Room';
+                document.getElementById('room-id-display').textContent = 'ID: ' + rid;
 
-                    document.getElementById('room-name-display').textContent = roomData.name;
-                    document.getElementById('room-id-display').textContent = 'ID: ' + rid;
+                const hostPeerId = roomData.hostPeerId;
+                console.log("Found Room:", roomData.name, "HostID:", hostPeerId);
 
-                    const hostPeerId = roomData.hostPeerId;
-                    console.log("Found Room:", roomData.name, "HostID:", hostPeerId);
+                if (!hostPeerId) {
+                    alert("Room found but Host Peer ID is missing. Make sure PC is running.");
+                    return;
+                }
 
-                    startPeerConnection(rid, hostPeerId);
-                    setupPresence(rid);
+                startPeerConnection(rid, hostPeerId);
+                setupPresence(rid, roomKey);
 
-                });
             }).catch(err => {
                 console.error(err);
-                // Fallback attempt (blind connect)
-                startPeerConnection(rid);
+                alert("Connection Error: " + err.message);
             });
         }
 
-        function setupPresence(rid) {
-            // We can just use a random ID for the phone client
+        function setupPresence(rid, roomKey) {
             const uid = 'phone_' + Math.floor(Math.random() * 10000000);
-            const userRef = database.ref('obs_rooms_score/presence/' + rid + '/' + uid);
+            
+            if (!roomKey) {
+                database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
+                    if (snap.exists()) {
+                        const rooms = snap.val();
+                        roomKey = Object.keys(rooms)[0];
+                        setupPresenceForRoom(rid, roomKey, uid);
+                    }
+                });
+            } else {
+                setupPresenceForRoom(rid, roomKey, uid);
+            }
+        }
 
-            // Need to know WHO we are connected to for presence?
-            // Actually presence is usually stored under the ROOM's ID or a specific path.
-            // remote.js uses: firebase.database().ref('obs_rooms_score/' + myRoomKey + '/onlineUsers');
-            // But we don't know myRoomKey easily unless we query it.
-            // Let's rely on the Host (PC) to track PeerJS connections for count if possible, 
-            // OR use the roomKey we found in the query above.
+        function setupPresenceForRoom(rid, roomKey, uid) {
+            const presenceRef = database.ref('obs_rooms_score/' + roomKey + '/onlineUsers/' + uid);
 
-            database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
-                if (snap.exists()) {
-                    const rooms = snap.val();
-                    const roomKey = Object.keys(rooms)[0];
-                    const presenceRef = database.ref('obs_rooms_score/' + roomKey + '/onlineUsers/' + uid);
-
-                    database.ref('.info/connected').on('value', (snapshot) => {
-                        if (snapshot.val() === true) {
-                            presenceRef.onDisconnect().remove();
-                            presenceRef.set({
-                                name: 'Mobile User',
-                                province: 'Earth'
-                            });
-                        }
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    presenceRef.onDisconnect().remove();
+                    presenceRef.set({
+                        name: 'Mobile User',
+                        province: 'Earth',
+                        platform: 'Mobile'
                     });
                 }
             });
         }
 
         function startPeerConnection(rid, hostPeerId) {
+            // If no hostPeerId provided, try to construct it (fcp-v2-host-{roomId})
             if (!hostPeerId) {
-                alert("Host Peer ID not found in room data.");
-                return;
+                hostPeerId = `fcp-v2-host-${rid}`;
+                console.log("Using generated PeerID:", hostPeerId);
             }
+            
             peer = new Peer(peerConfig);
             peer.on('open', (id) => {
                 // Connect to the specific Host Peer ID from Firebase
