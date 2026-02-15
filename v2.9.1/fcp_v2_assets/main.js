@@ -1967,6 +1967,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const mobileBtn = document.getElementById('mobileControlBtn');
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', window.openMobileControlPopup);
+    }
+
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
 });
