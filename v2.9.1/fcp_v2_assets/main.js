@@ -2230,10 +2230,28 @@ window.addEventListener('load', () => {
 let hostPeer = null;
 let hostConn = [];
 
-// Integrated into setupMobileRoomLogic
+// Helper
+const sanitizeKey = (name) => {
+    return name.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_').substring(0, 30);
+};
+
+window.setupMobileRoomLogic = () => {
+    if (!userIdentity || !userIdentity.name) return;
+
+    // Reuse existing Room ID if possible
+    let savedRoomId = localStorage.getItem('myRoomId');
+    if (!savedRoomId) {
+        savedRoomId = Math.floor(100000 + Math.random() * 900000).toString();
+        localStorage.setItem('myRoomId', savedRoomId);
+    }
+
+    window.initMobileHost(savedRoomId);
+};
+
 window.initMobileHost = (customRoomId) => {
     // Generate simple 6-digit Room ID if not provided
     const roomId = customRoomId || Math.floor(100000 + Math.random() * 900000).toString();
+    // Deterministic Peer ID
     const peerId = `fcp-v2-host-${roomId}`;
 
     // Update UI
@@ -2246,11 +2264,34 @@ window.initMobileHost = (customRoomId) => {
     const fullUrl = `${baseUrl}?room=${roomId}`;
 
     const qrImg = document.getElementById('remoteQrCode');
-    // Using a public QR API
     if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
 
     const mobileLinkInput = document.getElementById('mobileLinkInput');
     if (mobileLinkInput) mobileLinkInput.value = fullUrl;
+
+    // --- WRITE TO FIREBASE (Added for Mobile Connection) ---
+    if (userIdentity && userIdentity.name && window.firebase) {
+        const key = `mobile_${sanitizeKey(userIdentity.name)}`;
+        const roomData = {
+            roomId: roomId,
+            hostPeerId: peerId, // CRITICAL: Mobile Client needs this
+            name: userIdentity.name,
+            platform: "Mobile", // Preserving structure
+            host_identity: {
+                name: userIdentity.name,
+                province: userIdentity.province || "",
+                platform: "PC"
+            },
+            created: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        firebase.database().ref(`obs_rooms_score/${key}`).set(roomData)
+            .then(() => console.log("Room data saved to Firebase:", key))
+            .catch(err => console.error("Firebase save error:", err));
+
+        // Remove on disconnect
+        firebase.database().ref(`obs_rooms_score/${key}`).onDisconnect().remove();
+    }
 
     // Init Peer
     if (!window.Peer) {
