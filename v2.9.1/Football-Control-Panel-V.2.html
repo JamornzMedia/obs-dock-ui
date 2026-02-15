@@ -2016,77 +2016,42 @@
     <!-- Welcome Screen Overlay (V2.9 Style Restored) -->
     <!-- Welcome Screen (Reverted to Simple Style) -->
     <!-- Welcome Screen (Modern Aesthetic Logic) -->
-    <div id="welcomeScreen" class="welcome-overlay"
-        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.98)); z-index: 9999; backdrop-filter: blur(8px);">
+    <div id="welcomeScreen"
+        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9999;">
 
-        <div class="welcome-content"
-            style="position: relative; background: rgba(30, 41, 59, 0.7); padding: 40px; border-radius: 24px; text-align: center; max-width: 420px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); backdrop-filter: blur(16px); overflow: hidden;">
+        <div
+            style="position: relative; background: #1e293b; padding: 40px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);">
 
-            <!-- Decorative Elements -->
-            <div
-                style="position: absolute; top: -50px; left: -50px; width: 120px; height: 120px; background: var(--accent-color); opacity: 0.2; border-radius: 50%; filter: blur(50px);">
-            </div>
-            <div
-                style="position: absolute; bottom: -50px; right: -50px; width: 120px; height: 120px; background: #8b5cf6; opacity: 0.2; border-radius: 50%; filter: blur(50px);">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-futbol" style="font-size: 3rem; color: var(--accent-color);"></i>
             </div>
 
-            <div style="margin-bottom: 25px; position: relative;">
-                <div
-                    style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);">
-                    <i class="fas fa-futbol"
-                        style="font-size: 3rem; color: var(--accent-color); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));"></i>
-                </div>
-            </div>
-
-            <h1
-                style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 5px; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
-                OBS Scoreboard</h1>
-            <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 30px; font-weight: 500;">Control Panel <span
-                    style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">V2.9.1</span>
+            <h1 style="font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 5px;">OBS Scoreboard</h1>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px;">Control Panel <span
+                    style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">V2.9.1</span>
             </p>
 
             <div style="text-align: left; margin-bottom: 20px;">
-                <label
-                    style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Your
-                    Name / ชื่อ</label>
-                <div style="position: relative;">
-                    <i class="fas fa-user"
-                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
-                    <input type="text" id="visitorName" placeholder="Enter your name"
-                        style="width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); color: white; outline: none; transition: border-color 0.3s, box-shadow 0.3s; font-size: 1rem;">
-                </div>
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px;">Name /
+                    ชื่อ</label>
+                <input type="text" id="visitorName" placeholder="Enter your name"
+                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none;">
             </div>
 
-            <div style="display: flex; gap: 15px; margin-bottom: 30px;">
-                <div style="flex: 1; text-align: left;">
-                    <label
-                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Province</label>
-                    <div style="position: relative;">
-                        <i class="fas fa-map-marker-alt"
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none;"></i>
-                        <select id="visitorProvince"
-                            style="width: 100%; padding: 14px 14px 14px 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); color: white; -webkit-appearance: none; appearance: none; outline: none; cursor: pointer;">
-                            <!-- Options populated by JS -->
-                        </select>
-                        <i class="fas fa-chevron-down"
-                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; font-size: 0.8rem;"></i>
-                    </div>
-                </div>
-                <div style="flex: 1; text-align: left;">
-                    <label
-                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Country</label>
-                    <div style="position: relative;">
-                        <i class="fas fa-globe-asia"
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
-                        <input type="text" id="visitorCountry" value="Thailand" readonly
-                            style="width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.3); color: #64748b; cursor: default; outline: none;">
-                    </div>
-                </div>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px;">Province /
+                    จังหวัด</label>
+                <select id="visitorProvince"
+                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; margin-bottom: 5px;">
+                    <!-- Options populated by JS -->
+                </select>
+                <input type="text" id="visitorProvinceOther" placeholder="Specify Province..."
+                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; display: none;">
             </div>
 
             <button id="closeWelcomeBtn"
-                style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, var(--accent-color), #2563eb); color: white; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 10px 15px -3px rgba(59, 130, 246, 0.3);">
-                Start Control Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                style="width: 100%; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; background: var(--accent-color); color: white; border: none; cursor: pointer; transition: background 0.2s;">
+                Start
             </button>
         </div>
     </div>
@@ -2357,8 +2322,8 @@
             <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
                     class="fas fa-cog"></i></button>
 
-            <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"><i
-                    class="fas fa-mobile-alt"></i></button>
+            <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"
+                onclick="openMobileControlPopup()"><i class="fas fa-mobile-alt"></i></button>
 
             <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i
                     class="fas fa-question-circle"></i></button>
@@ -2385,70 +2350,7 @@
     </div>
     </div>
 
-    <div id="mobileControlPopup" class="popup-modal">
-        <h3><i class="fas fa-mobile-alt"></i> <span data-lang="mobileControlTitle">Mobile Remote Control</span></h3>
-        <p data-lang="mobileControlDesc"></p>
-
-        <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px;">
-            <div class="row">
-                <label style="width: 80px;" data-lang="roomName">Name</label>
-                <input type="text" id="remoteRoomName" placeholder="My Scoreboard" maxlength="50" style="flex-grow: 1;">
-            </div>
-            <div class="row" id="remoteRoomIdContainer" style="margin-top: 10px; display: none;">
-                <label style="width: 80px;" data-lang="roomId">ID</label>
-                <input type="text" id="remoteRoomId" readonly
-                    style="flex-grow: 1; font-family: monospace; letter-spacing: 2px; font-weight: bold; text-align: center; color: var(--accent-color);">
-            </div>
-            <div class="row center" style="margin-top: 15px;">
-                <button id="createRoomBtn" class="btn-primary" style="width: 100%; padding: 10px;"><i
-                        class="fas fa-broadcast-tower"></i> <span data-lang="createRoom">Create Room</span></button>
-                <button id="closeRoomBtn" class="btn-danger" style="width: 100%; padding: 10px; display: none;"><i
-                        class="fas fa-power-off"></i> <span data-lang="closeRoom">Close Room</span></button>
-            </div>
-        </div>
-
-        <div id="remoteConnectionUI" style="display: none; text-align: center;">
-            <div style="background: white; padding: 10px; display: inline-block; border-radius: 8px;">
-                <img id="remoteQrCode" src="" alt="QR Code" style="width: 150px; height: 150px;">
-            </div>
-            <p style="font-size: 0.9rem; margin-top: 10px; color: var(--text-muted-color);">
-                <span data-lang="openMobileApp"></span>: <br>
-            <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <input type="text" id="mobileLinkInput" readonly style="flex-grow: 1; font-size: 0.85rem;">
-                <button id="copyMobileLinkBtn" class="btn-primary"><i class="fas fa-copy"></i></button>
-            </div>
-            </p>
-            <div style="margin-top: 15px; padding: 10px; background: #222; border-radius: 4px;">
-                <span id="remoteStatusText" style="color: var(--warning-color); font-weight: bold;">Waiting...</span>
-            </div>
-
-            <div
-                style="margin-top: 15px; padding: 10px; border-top: 1px solid #444; font-size: 0.85rem; text-align: left;">
-                <strong style="color: #3b82f6;"><i class="fas fa-info-circle"></i> OBS Setup (Click to copy):</strong>
-                <ul style="margin: 5px 0 0 15px; padding: 0; color: #ccc;">
-                    <li style="margin-bottom: 5px;">
-                        <span style="color: #a855f7; font-weight: bold;">Save Replay:</span> Saves Replay Buffer
-                    </li>
-                    <li style="margin-bottom: 5px; cursor: pointer;" onclick="copyToClipboard('SceneReplay')"
-                        title="Click to copy">
-                        <span style="color: #6366f1; font-weight: bold;">Scene Replay:</span>
-                        <code style="background: #333; padding: 2px 5px; border-radius: 3px;">SceneReplay</code> <i
-                            class="fas fa-copy" style="font-size: 0.7rem;"></i>
-                    </li>
-                    <li style="cursor: pointer;" onclick="copyToClipboard('MainScene')" title="Click to copy">
-                        <span style="color: #14b8a6; font-weight: bold;">Main Scene:</span>
-                        <code style="background: #333; padding: 2px 5px; border-radius: 3px;">MainScene</code> <i
-                            class="fas fa-copy" style="font-size: 0.7rem;"></i>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="row center" style="margin-top: 20px;">
-            <button id="closeMobilePopupBtn" class="btn-secondary"><i class="fas fa-times"></i> <span
-                    data-lang="close">Close</span></button>
-        </div>
-    </div>
+    <!-- Duplicate Mobile Popup Removed -->
 
     <div id="detailsPopup" class="popup-modal">
         <h3><i class="fas fa-cog"></i> <span data-lang="detailsTitle"></span></h3>
@@ -2551,16 +2453,25 @@
         <div class="settings-tab-content" id="settingsTabVisibility">
             <h4 style="margin: 0;"><i class="fas fa-eye"></i> <span data-lang="visibilityTitle"></span></h4>
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
-                <label class="countdown-toggle">
-                    <input type="checkbox" id="score2VisibilityCheck">
+                <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="score2VisibilityCheck">
+                        <span class="slider"></span>
+                    </div>
                     <span data-lang="score2VisibilityGroup"></span>
                 </label>
-                <label class="countdown-toggle">
-                    <input type="checkbox" id="swapCardVisibilityCheck">
+                <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="swapCardVisibilityCheck">
+                        <span class="slider"></span>
+                    </div>
                     <span data-lang="swapCardVisibility"></span>
                 </label>
-                <label class="countdown-toggle">
-                    <input type="checkbox" id="actionCardVisibilityCheck">
+                <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="actionCardVisibilityCheck">
+                        <span class="slider"></span>
+                    </div>
                     <span data-lang="actionCardVisibility"></span>
                 </label>
                 <label class="countdown-toggle">
@@ -2958,6 +2869,9 @@
     <!-- Mobile Control Popup (Added) -->
     <div id="mobileControlPopup" class="popup-modal">
         <h3><i class="fas fa-mobile-alt"></i> <span data-lang="mobileControlTitle">Mobile Room</span></h3>
+        <button id="closeMobilePopupBtn" class="btn-secondary"
+            style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.2rem; color: #fff; cursor: pointer;"><i
+                class="fas fa-times"></i></button>
         <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Control the scoreboard from your phone.</p>
 
         <div class="row center">

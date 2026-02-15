@@ -62,7 +62,6 @@ window.initOnlinePresenceSystem = () => {
     const presenceData = {
         name: identity.name.substring(0, 30),
         province: identity.province || "Unknown",
-        country: identity.country || "Thailand",
         platform: "PC",
         last_seen: firebase.database.ServerValue.TIMESTAMP
     };
@@ -93,7 +92,6 @@ window.initOnlinePresenceSystem = () => {
         window.myRoomRef.set({
             name: id.name.substring(0, 30),
             province: id.province || "Unknown",
-            country: id.country || "Thailand",
             platform: "PC",
             last_seen: firebase.database.ServerValue.TIMESTAMP
         });

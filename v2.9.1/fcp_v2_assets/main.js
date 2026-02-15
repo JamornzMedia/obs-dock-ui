@@ -418,18 +418,14 @@ const populateTagsTable = (lang) => {
     const thead = `<thead><tr><th>Tag</th><th>${trans.detailsTitle}</th></tr></thead>`;
     let tbody = '<tbody>';
 
-    // Filter tags: only TeamA, TeamB, and labels 1-5
-    const allowedTags = ['{TeamA}', '{TeamB}', '{label1}', '{label2}', '{label3}', '{label4}', '{label5}'];
-
+    // Show all tags
     tags.forEach(item => {
-        if (allowedTags.includes(item.code)) {
-            tbody += `
-            <tr>
-                <td onclick="copyTag('${item.code}')">${item.code}</td>
-                <td>${item.desc}</td>
-            </tr>
-        `;
-        }
+        tbody += `
+        <tr>
+            <td onclick="copyTag('${item.code}')">${item.code}</td>
+            <td>${item.desc}</td>
+        </tr>
+    `;
     });
     tbody += '</tbody>';
     elements.tagsTable.innerHTML = thead + tbody;
@@ -1681,6 +1677,14 @@ const setupEventListeners = () => {
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
 
+    // Expose closeAllPopups to window for inline onclicks
+    window.closeAllPopups = closeAllPopups;
+
+    const closeMobileBtn = document.getElementById('closeMobilePopupBtn');
+    if (closeMobileBtn) {
+        closeMobileBtn.addEventListener('click', closeAllPopups);
+    }
+
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
     elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
 
@@ -1976,8 +1980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nameInput && nameInput.value.trim()) {
                     const identity = {
                         name: nameInput.value.trim(),
-                        province: provInput ? provInput.value : '',
-                        country: 'Thailand',
+                        province: provInput ? (provInput.value === 'Other' ? (document.getElementById('visitorProvinceOther').value || 'Unknown') : provInput.value) : '',
                         platform: 'PC'
                     };
                     localStorage.setItem('userIdentity', JSON.stringify(identity));
@@ -2065,6 +2068,7 @@ import './remote.js';
 window.initWelcomeScreen = () => {
     const screen = $('welcomeScreen');
     const provinceSelect = $('visitorProvince');
+    const provinceOtherInput = $('visitorProvinceOther');
     const nameInput = $('visitorName');
 
     // Populate Provinces
@@ -2075,26 +2079,49 @@ window.initWelcomeScreen = () => {
             opt.textContent = p;
             provinceSelect.appendChild(opt);
         });
+        // Add "Other" option
+        const otherOpt = document.createElement('option');
+        otherOpt.value = "Other";
+        otherOpt.textContent = "Other / อื่นๆ";
+        provinceSelect.appendChild(otherOpt);
+
         provinceSelect.value = "กรุงเทพมหานคร"; // Default
+
+        // Listener for "Other"
+        provinceSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'Other') {
+                if (provinceOtherInput) {
+                    provinceOtherInput.style.display = 'block';
+                    provinceOtherInput.focus();
+                }
+            } else {
+                if (provinceOtherInput) provinceOtherInput.style.display = 'none';
+            }
+        });
     }
 
     if (userIdentity && userIdentity.name) {
-        // User exists, skip welcome or pre-fill
         if (nameInput) nameInput.value = userIdentity.name;
-        if (provinceSelect) provinceSelect.value = userIdentity.province || "กรุงเทพมหานคร";
-        // Auto-enter if desired, but user might want to edit.
-        // For now, let's just pre-fill and require click.
-        // Actually, if identity exists, we can hide welcome screen immediately?
-        // "เก็บข้อมูลไว้ในเครื่องด้วย" - usually implies "Remember Me".
-        // Let's check if we should auto-enter.
-        // For now, let's show the screen but pre-filled.
+        if (provinceSelect) {
+            // Check if province is in list
+            if (thaiProvinces.includes(userIdentity.province)) {
+                provinceSelect.value = userIdentity.province;
+            } else {
+                // Customized province
+                provinceSelect.value = "Other";
+                if (provinceOtherInput) {
+                    provinceOtherInput.style.display = 'block';
+                    provinceOtherInput.value = userIdentity.province;
+                }
+            }
+        }
     }
 };
 
 window.saveAndEnterApp = () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
-    const countryInput = $('visitorCountry');
+    const provinceOtherInput = $('visitorProvinceOther');
 
     const name = nameInput.value.trim();
     if (!name) {
@@ -2102,10 +2129,14 @@ window.saveAndEnterApp = () => {
         return;
     }
 
+    let province = provinceSelect.value;
+    if (province === 'Other' && provinceOtherInput) {
+        province = provinceOtherInput.value.trim() || "Unknown";
+    }
+
     userIdentity = {
         name: name,
-        province: provinceSelect.value,
-        country: countryInput.value
+        province: province
     };
 
     localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
@@ -2129,7 +2160,7 @@ const updateUserIdentityUI = () => {
     const nameDisplay = $('visitorNameDisplay');
     const locationDisplay = $('visitorLocationDisplay');
     if (nameDisplay) nameDisplay.textContent = userIdentity.name;
-    if (locationDisplay) locationDisplay.textContent = `${userIdentity.province}, ${userIdentity.country}`;
+    if (locationDisplay) locationDisplay.textContent = `${userIdentity.province}`;
 };
 
 // --- Quick Tag Logic ---
