@@ -1913,7 +1913,7 @@
             display: none !important;
         }
 
-        /* Welcome Screen Styles */
+        /* Welcome Screen Styles (Restored from Copy) */
         #welcomeScreen {
             position: fixed;
             top: 0;
@@ -1930,7 +1930,6 @@
             transition: opacity 0.5s ease;
         }
 
-        /* Grid Pattern Background */
         #welcomeScreen::before {
             content: "";
             position: absolute;
@@ -2016,44 +2015,20 @@
     <!-- Welcome Screen Overlay (V2.9 Style Restored) -->
     <!-- Welcome Screen (Reverted to Simple Style) -->
     <!-- Welcome Screen (Modern Aesthetic Logic) -->
-    <div id="welcomeScreen"
-        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9999;">
-
-        <div
-            style="position: relative; background: #1e293b; padding: 40px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);">
-
+    <!-- Welcome Screen Restored -->
+    <div id="welcomeScreen">
+        <div class="welcome-content">
+            <div class="welcome-title">Dock UI : OBSScore</div>
+            <div class="welcome-subtitle">Control Panel</div>
+            <!-- Identity Inputs Hidden/Integrated if needed, or just simplified check-in -->
+            <!-- We will inject the Name Input here because the user NEEDS to set a name for the connection logic -->
             <div style="margin-bottom: 20px;">
-                <i class="fas fa-futbol" style="font-size: 3rem; color: var(--accent-color);"></i>
+                <input type="text" id="visitorName" placeholder="Enter Name"
+                    style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px; color: white; border-radius: 8px; text-align: center;">
             </div>
-
-            <h1 style="font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 5px;">OBS Scoreboard</h1>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px;">Control Panel <span
-                    style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">V2.9.1</span>
-            </p>
-
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px;">Name /
-                    ชื่อ</label>
-                <input type="text" id="visitorName" placeholder="Enter your name"
-                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none;">
-            </div>
-
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px;">Province /
-                    จังหวัด</label>
-                <select id="visitorProvince"
-                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; margin-bottom: 5px;">
-                    <!-- Options populated by JS -->
-                </select>
-                <input type="text" id="visitorProvinceOther" placeholder="Specify Province..."
-                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; display: none;">
-            </div>
-
-            <button id="closeWelcomeBtn"
-                style="width: 100%; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; background: var(--accent-color); color: white; border: none; cursor: pointer; transition: background 0.2s;">
-                Start
-            </button>
+            <button id="closeWelcomeBtn" class="welcome-btn">START</button>
         </div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9</div>
     </div>
 
     <!-- Online Users Popup -->
@@ -2118,10 +2093,10 @@
                     style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #60a5fa; cursor: default; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(96, 165, 250, 0.2); transition: background 0.2s;">
                     <i class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span>
                 </div>
-                <!-- Announcement Text (Added ID) -->
-                <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 24px;">
+                <!-- Announcement Text (Fixed Visibility) -->
+                <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 30px;">
                     <div id="announcement-text"
-                        style="position: absolute; white-space: nowrap; color: #cbd5e1; font-size: 0.9rem; line-height: 24px;">
+                        style="position: absolute; white-space: nowrap; color: #cbd5e1; font-size: 1rem; line-height: 30px; top: 0;">
                     </div>
                 </div>
             </div>

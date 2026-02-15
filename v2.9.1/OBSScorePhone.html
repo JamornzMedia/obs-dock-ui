@@ -4,331 +4,543 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBS Scoreboard Remote</title>
+    <title>OBSScore Remote V2.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: white;
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, sans-serif;
             touch-action: manipulation;
         }
 
-        .btn-active:active {
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-grad-blue {
+            background: linear-gradient(180deg, #3b82f6, #2563eb);
+        }
+
+        .btn-grad-red {
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+        }
+
+        .btn-grad-green {
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+        }
+
+        .btn-grad-dark {
+            background: linear-gradient(180deg, #334155, #1e293b);
+        }
+
+        .btn-push:active {
             transform: scale(0.95);
-        }
-
-        .no-select {
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #22c55e;
-        }
-
-        .toggle-checkbox:checked+.toggle-label {
-            background-color: #22c55e;
         }
     </style>
 </head>
 
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-white mb-2">OBS Remote</h1>
-            <p class="text-slate-400">Enter Room ID from PC</p>
+    <div id="login-screen" class="absolute inset-0 z-50 bg-neutral-900 flex flex-col justify-center p-6">
+        <div class="flex flex-col items-center justify-center py-6 bg-transparent mb-6">
+            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tighter leading-none"
+                style="font-family: Arial, sans-serif;">
+                OBSScore
+            </h1>
+            <div
+                class="mt-2 bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-1 rounded-full text-xl font-bold tracking-wide shadow-lg shadow-red-500/30">
+                REMOTE
+            </div>
         </div>
+        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.8</p>
 
-        <div class="w-full max-w-xs space-y-4">
-            <input type="text" id="roomIdInput" placeholder="Room ID (6 Digits)" maxlength="6"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-center text-2xl font-bold tracking-widest focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-600"
-                pattern="[0-9]*" inputmode="numeric">
-
-            <button id="connectBtn"
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-blue-900/20 transition-all btn-active">
-                Connect
+        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700 shadow-lg space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Room ID (6 Digits)</label>
+                <input type="tel" id="room-input" maxlength="6"
+                    class="w-full bg-black border border-gray-600 rounded-lg p-3 text-center text-2xl font-mono tracking-widest text-white focus:border-blue-500 outline-none"
+                    placeholder="000000">
+            </div>
+            <button onclick="connectToRoom()"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg btn-push">
+                CONNECT
             </button>
         </div>
-
-        <div id="connectionStatus" class="text-sm text-slate-500 h-6"></div>
+        <div id="status-msg" class="text-center mt-4 text-sm text-red-500 hidden"></div>
     </div>
 
-    <!-- CONTROL PANEL -->
-    <div id="controlPanel" class="hidden flex-1 flex flex-col bg-slate-900">
-        <!-- Header -->
-        <div class="bg-slate-800 p-3 flex justify-between items-center shadow-md z-10">
+    <div id="main-ui" class="hidden flex-1 flex flex-col p-3 space-y-3 h-full overflow-y-auto">
+        <div class="flex justify-between items-center glass-panel p-3 rounded-xl">
+            <!-- Left: Room Info -->
             <div class="flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span id="roomNameDisplay" class="font-semibold text-sm text-slate-300">Room</span>
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div class="flex flex-col">
+                    <span id="room-name-display" class="font-bold text-sm text-gray-300 leading-tight">Room</span>
+                    <span id="room-id-display" class="text-xs text-gray-500 font-mono"></span>
+                </div>
             </div>
-            <button id="disconnectBtn"
-                class="text-red-400 text-xs px-2 py-1 bg-red-500/10 rounded border border-red-500/20">
-                Disconnect
-            </button>
+
+            <!-- Center: Title (Simplified for Space) -->
+            <div
+                class="absolute left-1/2 transform -translate-x-1/2 font-bold text-blue-500 tracking-wide text-xs opacity-50">
+                OBSScore
+            </div>
+
+            <!-- Right: Match Load (Popup Trigger) -->
+            <div class="flex gap-2">
+                <button onclick="openMatchPopup()"
+                    class="bg-black border border-gray-600 text-center rounded text-xs p-2 text-white min-w-[3rem]">
+                    ID: <span id="current-match-id">1</span>
+                </button>
+            </div>
         </div>
 
-        <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
-
-            <!-- TIMER -->
-            <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Timer</span>
-                    <span id="timerDisplay" class="text-3xl font-mono font-bold text-white tabular-nums">00:00</span>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <button id="btnTimerPlay"
-                        class="bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active">
-                        <i class="fas fa-play"></i> Start
-                    </button>
-                    <button id="btnTimerPause"
-                        class="bg-yellow-600/20 text-yellow-400 border border-yellow-600/30 hover:bg-yellow-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active hidden">
-                        <i class="fas fa-pause"></i> Pause
-                    </button>
-                    <button id="btnTimerReset"
-                        class="bg-slate-700 text-slate-300 hover:bg-slate-600 py-3 rounded-xl font-bold btn-active">
-                        <i class="fas fa-redo"></i> Reset
-                    </button>
-                </div>
-            </div>
-
-            <!-- TEAMS SCORE -->
-            <div class="space-y-4">
-                <!-- TEAM A -->
-                <div class="bg-slate-800 rounded-2xl p-1 border-l-4 border-l-transparent transition-all" id="cardTeamA">
-                    <div class="p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <input type="text" id="nameTeamA"
-                                class="bg-transparent font-bold text-lg text-white w-full focus:outline-none focus:bg-slate-700/50 rounded px-1"
-                                value="Team A">
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <button id="btnScoreAMinus"
-                                class="w-12 h-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center text-xl font-bold border border-red-500/30 btn-active"><i
-                                    class="fas fa-minus"></i></button>
-                            <div id="scoreTeamA"
-                                class="flex-1 text-center text-5xl font-bold text-white bg-slate-900/50 rounded-xl py-2 tabular-nums">
-                                0</div>
-                            <button id="btnScoreAPlus"
-                                class="w-12 h-12 bg-green-500/20 text-green-400 rounded-xl flex items-center justify-center text-xl font-bold border border-green-500/30 btn-active"><i
-                                    class="fas fa-plus"></i></button>
-                        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="glass-panel p-3 rounded-xl flex flex-col items-center">
+                <div class="flex flex-col items-center gap-2 mb-2 w-full">
+                    <!-- Colors Row -->
+                    <div class="flex gap-4 justify-center w-full bg-neutral-900 p-2 rounded">
+                        <input type="color" id="color-a" class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff">
+                        <input type="color" id="color-a-2"
+                            class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow" value="#000000">
                     </div>
-                    <!-- Extra Controls A -->
-                    <div class="bg-slate-900/30 p-2 rounded-b-xl flex gap-2 justify-center" id="score2ControlsA">
-                        <span class="text-xs text-slate-500 self-center mr-2">Score 2</span>
-                        <button id="btnScore2AMinus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
-                                class="fas fa-minus"></i></button>
-                        <span id="score2TeamA" class="w-8 text-center font-bold text-slate-300 self-center">0</span>
-                        <button id="btnScore2APlus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
-                                class="fas fa-plus"></i></button>
-                    </div>
+                    <!-- Name Input -->
+                    <input type="text" id="name-a"
+                        class="w-full bg-transparent text-center font-bold text-white border-b border-gray-700 focus:border-blue-500 outline-none text-xl py-1"
+                        value="Team A">
                 </div>
-
-                <!-- TEAM B -->
-                <div class="bg-slate-800 rounded-2xl p-1 border-l-4 border-l-transparent transition-all" id="cardTeamB">
-                    <div class="p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <input type="text" id="nameTeamB"
-                                class="bg-transparent font-bold text-lg text-white w-full focus:outline-none focus:bg-slate-700/50 rounded px-1"
-                                value="Team B">
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <button id="btnScoreBMinus"
-                                class="w-12 h-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center text-xl font-bold border border-red-500/30 btn-active"><i
-                                    class="fas fa-minus"></i></button>
-                            <div id="scoreTeamB"
-                                class="flex-1 text-center text-5xl font-bold text-white bg-slate-900/50 rounded-xl py-2 tabular-nums">
-                                0</div>
-                            <button id="btnScoreBPlus"
-                                class="w-12 h-12 bg-green-500/20 text-green-400 rounded-xl flex items-center justify-center text-xl font-bold border border-green-500/30 btn-active"><i
-                                    class="fas fa-plus"></i></button>
-                        </div>
-                    </div>
-                    <!-- Extra Controls B -->
-                    <div class="bg-slate-900/30 p-2 rounded-b-xl flex gap-2 justify-center" id="score2ControlsB">
-                        <span class="text-xs text-slate-500 self-center mr-2">Score 2</span>
-                        <button id="btnScore2BMinus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
-                                class="fas fa-minus"></i></button>
-                        <span id="score2TeamB" class="w-8 text-center font-bold text-slate-300 self-center">0</span>
-                        <button id="btnScore2BPlus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
-                                class="fas fa-plus"></i></button>
+                <div class="text-5xl font-bold mb-2" id="score-a">0</div>
+                <div class="flex gap-2 w-full mt-2">
+                    <button onclick="sendScore('A', -1)"
+                        class="flex-1 btn-grad-red py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-red-500/20">-</button>
+                    <button onclick="sendScore('A', 1)"
+                        class="flex-1 btn-grad-green py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-green-500/20">+</button>
+                </div>
+                <div class="mt-2 w-full bg-neutral-900 p-1 rounded">
+                    <div class="text-center text-xs text-yellow-500">Fouls/Sub</div>
+                    <div class="flex justify-between items-center px-1">
+                        <button onclick="sendScore('A', -1, true)" class="text-red-500 px-2 font-bold">-</button>
+                        <span id="score2-a" class="font-mono font-bold">0</span>
+                        <button onclick="sendScore('A', 1, true)" class="text-green-500 px-2 font-bold">+</button>
                     </div>
                 </div>
             </div>
 
-            <!-- ACTIONS -->
-            <div id="actionsPanel" class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-700/50">
-                <button id="btnSwap"
-                    class="col-span-2 bg-purple-600/20 text-purple-400 border border-purple-600/30 hover:bg-purple-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active">
-                    <i class="fas fa-exchange-alt"></i> Swap Teams
+            <div class="glass-panel p-3 rounded-xl flex flex-col items-center">
+                <div class="flex flex-col items-center gap-2 mb-2 w-full">
+                    <!-- Colors Row -->
+                    <div class="flex gap-4 justify-center w-full bg-neutral-900 p-2 rounded">
+                        <input type="color" id="color-b" class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow"
+                            value="#ffffff">
+                        <input type="color" id="color-b-2"
+                            class="w-10 h-10 rounded border-none p-0 cursor-pointer shadow" value="#000000">
+                    </div>
+                    <!-- Name Input -->
+                    <input type="text" id="name-b"
+                        class="w-full bg-transparent text-center font-bold text-white border-b border-gray-700 focus:border-blue-500 outline-none text-xl py-1"
+                        value="Team B">
+                </div>
+                <div class="text-5xl font-bold mb-2" id="score-b">0</div>
+                <div class="flex gap-2 w-full mt-2">
+                    <button onclick="sendScore('B', -1)"
+                        class="flex-1 btn-grad-red py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-red-500/20">-</button>
+                    <button onclick="sendScore('B', 1)"
+                        class="flex-1 btn-grad-green py-3 rounded-lg text-white font-bold btn-push shadow-lg shadow-green-500/20">+</button>
+                </div>
+                <div class="mt-2 w-full bg-neutral-900 p-1 rounded">
+                    <div class="text-center text-xs text-yellow-500">Fouls/Sub</div>
+                    <div class="flex justify-between items-center px-1">
+                        <button onclick="sendScore('B', -1, true)" class="text-red-500 px-2 font-bold">-</button>
+                        <span id="score2-b" class="font-mono font-bold">0</span>
+                        <button onclick="sendScore('B', 1, true)" class="text-green-500 px-2 font-bold">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-3 rounded-xl flex items-center justify-between">
+            <div class="text-center">
+                <div class="text-xs text-gray-400">Half</div>
+                <div id="half-text" class="font-bold text-xl">1st</div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="sendCmd('timer', null, 'reset')"
+                    class="btn-grad-red w-12 h-9 rounded-lg flex items-center justify-center text-white shadow-lg btn-push text-xs font-bold">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button onclick="sendCmd('timer', null, 'half')"
+                    class="bg-orange-600 w-12 h-9 rounded-lg flex items-center justify-center text-white shadow-lg btn-push text-xs font-bold">
+                    HT
+                </button>
+            </div>
+            <div id="timer-text" class="text-5xl font-mono font-bold text-yellow-400">00:00</div>
+            <div class="flex gap-2">
+                <button onclick="sendCmd('timer', null, 'playpause')" title="Play/Pause"
+                    class="btn-grad-blue w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg btn-push text-xl border-2 border-white/20">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700">
+            <div class="text-xs text-gray-400 mb-2 uppercase font-bold">Actions</div>
+            <div class="grid grid-cols-3 gap-2" id="action-grid">
+                <button class="bg-gray-700 p-2 rounded text-xs">Loading...</button>
+            </div>
+        </div>
+
+        <!-- OBS Control (Bottom, Larger) -->
+        <div class="bg-neutral-800 p-2 rounded-lg border border-neutral-700 mt-2">
+            <div class="flex justify-between items-center mb-2">
+                <div class="text-xs text-gray-400 uppercase font-bold">OBS Control</div>
+                <button onclick="openHelpPopup()" class="text-gray-400 hover:text-white"><i
+                        class="fas fa-question-circle"></i></button>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="sendCmd('obs', null, 'saveReplay')"
+                    class="bg-purple-600 p-4 rounded-lg text-lg font-bold text-white shadow-lg btn-push flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i> Save Replay
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="sendCmd('obs', null, 'scene', 'SceneReplay')"
+                        class="bg-indigo-600 p-4 rounded-lg text-md font-bold text-white shadow-lg btn-push">
+                        Scene Replay
+                    </button>
+                    <button onclick="sendCmd('obs', null, 'scene', 'MainScene')"
+                        class="bg-teal-600 p-4 rounded-lg text-md font-bold text-white shadow-lg btn-push">
+                        Main Scene
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button onclick="location.reload()" class="text-xs text-red-500 underline">Disconnect / Reload</button>
+        </div>
+    </div>
+
+    <!-- Match ID Popup Modal -->
+    <div id="match-popup"
+        class="fixed inset-0 z-[60] bg-black bg-opacity-80 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-neutral-800 p-6 rounded-xl border border-neutral-600 shadow-2xl w-full max-w-sm flex flex-col items-center gap-6">
+            <h3 class="text-xl font-bold text-white">Select Match ID</h3>
+
+            <div class="flex items-center gap-4">
+                <button onclick="adjustMatchId(-1)"
+                    class="w-16 h-16 bg-red-600 rounded-full text-2xl font-bold text-white shadow-lg active:scale-95 transition-transform flex items-center justify-center">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <div id="popup-match-val" class="text-6xl font-mono font-bold text-blue-400 w-24 text-center">text</div>
+                <button onclick="adjustMatchId(1)"
+                    class="w-16 h-16 bg-green-600 rounded-full text-2xl font-bold text-white shadow-lg active:scale-95 transition-transform flex items-center justify-center">
+                    <i class="fas fa-plus"></i>
                 </button>
             </div>
 
+            <div class="grid grid-cols-2 gap-4 w-full">
+                <button onclick="closeMatchPopup()"
+                    class="bg-gray-600 p-4 rounded-lg font-bold text-white text-lg">Cancel</button>
+                <button onclick="confirmMatchId()"
+                    class="bg-blue-600 p-4 rounded-lg font-bold text-white text-lg">LOAD</button>
+            </div>
         </div>
     </div>
 
-    <!-- SCRIPT -->
     <script>
-        // DOM Elements
-        const screens = { login: document.getElementById('loginScreen'), control: document.getElementById('controlPanel') };
-        const inputs = { room: document.getElementById('roomIdInput') };
-        const status = document.getElementById('connectionStatus');
-        const btns = {
-            connect: document.getElementById('connectBtn'),
-            disconnect: document.getElementById('disconnectBtn'),
-            timerPlay: document.getElementById('btnTimerPlay'),
-            timerPause: document.getElementById('btnTimerPause'),
-            timerReset: document.getElementById('btnTimerReset'),
-            swap: document.getElementById('btnSwap')
-        };
-        const display = {
-            roomName: document.getElementById('roomNameDisplay'),
-            timer: document.getElementById('timerDisplay'),
-            scoreA: document.getElementById('scoreTeamA'),
-            scoreB: document.getElementById('scoreTeamB'),
-            nameA: document.getElementById('nameTeamA'),
-            nameB: document.getElementById('nameTeamB'),
-            score2A: document.getElementById('score2TeamA'),
-            score2B: document.getElementById('score2TeamB')
+        // Use the Firebase Config from the original files or remote.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            storageBucket: "obscam-p2p.firebasestorage.app",
+            messagingSenderId: "531335072084",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
 
-        // State
-        let peer = null;
-        let conn = null;
-        let isTimerRunning = false;
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-        // Init
-        // Check URL params for room
+        // Standard PeerJS Config
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
+
+        let peer, conn;
+        // Parse URL params if needed
         const urlParams = new URLSearchParams(window.location.search);
-        const roomHash = urlParams.get('room');
-        if (roomHash) { inputs.room.value = roomHash; }
+        const roomUrl = urlParams.get('room');
 
-        // Connect Handler
-        btns.connect.addEventListener('click', () => {
-            const roomId = inputs.room.value.trim();
-            if (roomId.length !== 6) { alert('Invalid Room ID'); return; }
+        window.onload = () => {
+            if (roomUrl) document.getElementById('room-input').value = roomUrl;
+            setupDebouncedListeners();
+        };
 
-            status.textContent = "Connecting...";
-            btns.connect.disabled = true;
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
 
-            peer = new Peer();
+        function setupDebouncedListeners() {
+            const debouncedUpdateA = debounce(() => updateTeam('A'), 500);
+            const debouncedUpdateB = debounce(() => updateTeam('B'), 500);
 
+            document.getElementById('color-a').addEventListener('input', debouncedUpdateA);
+            document.getElementById('color-a-2').addEventListener('input', debouncedUpdateA);
+            document.getElementById('name-a').addEventListener('input', debouncedUpdateA);
+
+            document.getElementById('color-b').addEventListener('input', debouncedUpdateB);
+            document.getElementById('color-b-2').addEventListener('input', debouncedUpdateB);
+            document.getElementById('name-b').addEventListener('input', debouncedUpdateB);
+        }
+
+        function connectToRoom() {
+            const rid = document.getElementById('room-input').value;
+            if (rid.length < 6) return alert("Invalid Room ID");
+
+            document.getElementById('status-msg').textContent = "Connecting...";
+            document.getElementById('status-msg').classList.remove('hidden');
+
+            // --- CHANGED: Look in 'obs_rooms_score' instead of 'obs_rooms' ---
+            database.ref('obs_rooms_score/' + 'mobile_' + rid).once('value').then(snapshot => {
+                // Try direct lookup by name? No, we need to iterate if we don't know the full key, 
+                // BUT the host stored the 6-digit ID inside the object, not as the key?
+                // Wait, main.js said: newRoomRef = firebase.database().ref('obs_rooms_score/' + 'mobile_' + sanitizedName);
+                // AND it set: { roomId: roomId, ... }
+                // So looking up 'mobile_' + rid won't work because rid is a number, key is a name.
+
+                // We need to query by child 'roomId'
+                database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
+                    if (!snap.exists()) {
+                        alert("Room not found! (Check ID)");
+                        document.getElementById('status-msg').textContent = "Room not found";
+                        return;
+                    }
+
+                    // Get the first match
+                    const rooms = snap.val();
+                    const roomKey = Object.keys(rooms)[0];
+                    const roomData = rooms[roomKey];
+
+                    document.getElementById('room-name-display').textContent = roomData.name;
+                    document.getElementById('room-id-display').textContent = 'ID: ' + rid;
+
+                    startPeerConnection(rid);
+                    setupPresence(rid);
+
+                });
+            }).catch(err => {
+                console.error(err);
+                // Fallback attempt (blind connect)
+                startPeerConnection(rid);
+            });
+        }
+
+        function setupPresence(rid) {
+            // We can just use a random ID for the phone client
+            const uid = 'phone_' + Math.floor(Math.random() * 10000000);
+            const userRef = database.ref('obs_rooms_score/presence/' + rid + '/' + uid);
+
+            // Need to know WHO we are connected to for presence?
+            // Actually presence is usually stored under the ROOM's ID or a specific path.
+            // remote.js uses: firebase.database().ref('obs_rooms_score/' + myRoomKey + '/onlineUsers');
+            // But we don't know myRoomKey easily unless we query it.
+            // Let's rely on the Host (PC) to track PeerJS connections for count if possible, 
+            // OR use the roomKey we found in the query above.
+
+            database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
+                if (snap.exists()) {
+                    const rooms = snap.val();
+                    const roomKey = Object.keys(rooms)[0];
+                    const presenceRef = database.ref('obs_rooms_score/' + roomKey + '/onlineUsers/' + uid);
+
+                    database.ref('.info/connected').on('value', (snapshot) => {
+                        if (snapshot.val() === true) {
+                            presenceRef.onDisconnect().remove();
+                            presenceRef.set({
+                                name: 'Mobile User',
+                                province: 'Earth'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function startPeerConnection(rid) {
+            peer = new Peer(peerConfig);
             peer.on('open', (id) => {
-                const hostId = `fcp-v2-host-${roomId}`;
+                // Host ID is formatted as:
+                const hostId = `obsscore-host-${rid}`;
                 conn = peer.connect(hostId);
 
                 conn.on('open', () => {
-                    status.textContent = "Connected!";
-                    switchScreen('control');
-                    navigator.vibrate(50);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-ui').classList.remove('hidden');
+                    conn.send({ type: 'requestState' });
                 });
 
                 conn.on('data', (data) => {
-                    console.log('Received:', data);
-                    handleData(data);
+                    if (data.type === 'stateUpdate') updateUI(data);
                 });
 
                 conn.on('close', () => {
-                    alert('Disconnected from Host');
+                    alert("Disconnected from Host");
                     location.reload();
                 });
 
-                conn.on('error', (err) => {
-                    status.textContent = "Connection Error";
-                    btns.connect.disabled = false;
-                });
+                conn.on('error', (err) => alert("Connection Error: " + err));
             });
 
+            // Handle Peer Errors
             peer.on('error', (err) => {
-                status.textContent = "Peer Error: " + err.type;
-                btns.connect.disabled = false;
-            });
-        });
-
-        btns.disconnect.addEventListener('click', () => location.reload());
-
-        // Command Generators
-        const send = (type, payload = {}) => {
-            if (conn && conn.open) {
-                conn.send({ type, ...payload });
-                navigator.vibrate(10);
-            }
-        };
-
-        // UI Handlers
-        btns.timerPlay.addEventListener('click', () => send('timer', { action: 'start' }));
-        btns.timerPause.addEventListener('click', () => send('timer', { action: 'stop' }));
-        btns.timerReset.addEventListener('click', () => send('timer', { action: 'reset' }));
-        btns.swap.addEventListener('click', () => send('swap'));
-
-        // Score Handlers
-        const setupScore = (team, type) => {
-            document.getElementById(`btnScore${type}${team}Plus`).addEventListener('click', () => send('score', { team, type: type === '' ? 'score' : 'score2', value: 1 }));
-            document.getElementById(`btnScore${type}${team}Minus`).addEventListener('click', () => send('score', { team, type: type === '' ? 'score' : 'score2', value: -1 }));
-        };
-        ['A', 'B'].forEach(t => { setupScore(t, ''); setupScore(t, '2'); });
-
-        // Name Inputs
-        ['A', 'B'].forEach(t => {
-            display[`name${t}`].addEventListener('change', (e) => {
-                send('updateName', { team: t, name: e.target.value });
-            });
-        });
-
-        // Data Handler
-        function handleData(data) {
-            if (data.type === 'UPDATE_STATE') {
-                // Timer
-                display.timer.textContent = data.timer;
-                if (data.isTimerRunning) {
-                    btns.timerPlay.classList.add('hidden');
-                    btns.timerPause.classList.remove('hidden');
-                } else {
-                    btns.timerPlay.classList.remove('hidden');
-                    btns.timerPause.classList.add('hidden');
+                console.error(err);
+                if (err.type === 'peer-unavailable') {
+                    alert("Host not found. Ensure PC is running and created the room.");
+                    document.getElementById('status-msg').textContent = "Host offline";
                 }
+            });
+        }
 
-                // Teams
-                const teamA = data.teamA;
-                const teamB = data.teamB;
+        function sendCmd(type, val, action, name) {
+            if (conn && conn.open) conn.send({ type, val, action, name });
+        }
 
-                display.scoreA.textContent = teamA.score;
-                display.scoreB.textContent = teamB.score;
-                display.score2A.textContent = teamA.score2;
-                display.score2B.textContent = teamB.score2;
+        function sendScore(team, delta, isSub = false) {
+            if (conn && conn.open) conn.send({ type: 'score', team, delta, isSub });
+        }
 
-                if (document.activeElement !== display.nameA) display.nameA.value = teamA.name;
-                if (document.activeElement !== display.nameB) display.nameB.value = teamB.name;
+        function updateTeam(team) {
+            const name = document.getElementById(team === 'A' ? 'name-a' : 'name-b').value;
+            const color1 = document.getElementById(team === 'A' ? 'color-a' : 'color-b').value;
+            const color2 = document.getElementById(team === 'A' ? 'color-a-2' : 'color-b-2').value;
+            if (conn && conn.open) conn.send({ type: 'updateTeam', team, name, color1, color2 });
+        }
 
-                // Colors
-                document.getElementById('cardTeamA').style.borderLeftColor = teamA.color1;
-                document.getElementById('cardTeamB').style.borderLeftColor = teamB.color1;
+        function updateUI(data) {
+            document.getElementById('score-a').textContent = data.teamA.score;
+            document.getElementById('score-b').textContent = data.teamB.score;
+            document.getElementById('score2-a').textContent = data.teamA.score2;
+            document.getElementById('score2-b').textContent = data.teamB.score2;
+            document.getElementById('name-a').value = data.teamA.name;
+            document.getElementById('name-b').value = data.teamB.name;
 
-                // Visibility (Sync with PC)
-                if (data.visibility) {
-                    const s2A = document.getElementById('score2ControlsA');
-                    const s2B = document.getElementById('score2ControlsB');
-                    if (data.visibility.score2) { s2A.classList.remove('hidden'); s2B.classList.remove('hidden'); }
-                    else { s2A.classList.add('hidden'); s2B.classList.add('hidden'); }
+            // Safety checks for inputs
+            const colorA = document.getElementById('color-a');
+            if (colorA && data.teamA.color) colorA.value = data.teamA.color;
+
+            const colorB = document.getElementById('color-b');
+            if (colorB && data.teamB.color) colorB.value = data.teamB.color;
+
+            const colorA2 = document.getElementById('color-a-2');
+            if (colorA2 && data.teamA.color2) colorA2.value = data.teamA.color2;
+
+            const colorB2 = document.getElementById('color-b-2');
+            if (colorB2 && data.teamB.color2) colorB2.value = data.teamB.color2;
+
+            document.getElementById('timer-text').textContent = data.timer;
+            document.getElementById('half-text').textContent = data.half;
+
+            const matchIdEl = document.getElementById('current-match-id');
+            if (matchIdEl) matchIdEl.textContent = data.matchId;
+
+            const grid = document.getElementById('action-grid');
+            if (grid) {
+                grid.innerHTML = '';
+                if (data.actions && Array.isArray(data.actions) && data.actions.length > 0) {
+                    data.actions.forEach(act => {
+                        const btn = document.createElement('button');
+                        btn.className = "bg-gray-700 p-3 rounded text-xs font-bold text-white shadow-sm btn-push overflow-hidden text-ellipsis whitespace-nowrap";
+                        btn.textContent = act.name;
+                        const colors = ['#22c55e', '#f97316', '#3b82f6'];
+                        if (act.index) btn.style.backgroundColor = colors[(act.index - 1) % 3];
+                        btn.onclick = () => { if (conn && conn.open) conn.send({ type: 'actionBtn', index: act.index }); };
+                        grid.appendChild(btn);
+                    });
+                } else {
+                    const empty = document.createElement('div');
+                    empty.className = "col-span-3 text-center text-gray-500 text-xs italic";
+                    empty.textContent = "No actions";
+                    const retryBtn = document.createElement('button');
+                    retryBtn.textContent = 'Retry';
+                    retryBtn.className = 'col-span-3 text-xs text-blue-500 underline mt-1';
+                    retryBtn.onclick = () => conn.send({ type: 'requestState' });
+                    grid.appendChild(empty);
+                    grid.appendChild(retryBtn);
                 }
             }
         }
-
-        // Helper
-        function switchScreen(id) {
-            Object.values(screens).forEach(s => s.classList.add('hidden'));
-            screens[id].classList.remove('hidden');
+        function openMatchPopup() {
+            let curr = document.getElementById('current-match-id').textContent;
+            document.getElementById('popup-match-val').textContent = curr;
+            document.getElementById('match-popup').style.display = 'flex';
+        }
+        function closeMatchPopup() {
+            document.getElementById('match-popup').style.display = 'none';
+        }
+        function adjustMatchId(delta) {
+            let el = document.getElementById('popup-match-val');
+            let val = parseInt(el.textContent) || 1;
+            val += delta;
+            if (val < 1) val = 1;
+            el.textContent = val;
+        }
+        function confirmMatchId() {
+            let val = document.getElementById('popup-match-val').textContent;
+            document.getElementById('current-match-id').textContent = val;
+            sendCmd('loadMatch', val);
+            closeMatchPopup();
+        }
+        function openHelpPopup() {
+            document.getElementById('help-popup').style.display = 'flex';
+        }
+        function closeHelpPopup() {
+            document.getElementById('help-popup').style.display = 'none';
         }
     </script>
+
+    <!-- Help Popup Modal -->
+    <div id="help-popup"
+        class="fixed inset-0 z-[70] bg-black bg-opacity-90 hidden flex items-center justify-center p-6">
+        <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-600 shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-bold text-white mb-4"><i class="fas fa-info-circle text-blue-400"></i> วิธีการใช้งาน
+                OBS Control</h3>
+            <div class="space-y-4 text-gray-300 text-sm">
+                <div>
+                    <strong class="text-purple-400">Save Replay</strong>
+                    <p>บันทึก Replay Buffer ใน OBS</p>
+                </div>
+                <div>
+                    <strong class="text-indigo-400">Scene Replay</strong>
+                    <p>เปลี่ยนฉากเป็น <code>SceneReplay</code></p>
+                </div>
+                <div>
+                    <strong class="text-teal-400">Main Scene</strong>
+                    <p>เปลี่ยนฉากเป็น <code>MainScene</code></p>
+                </div>
+            </div>
+            <button onclick="closeHelpPopup()"
+                class="mt-6 w-full bg-gray-700 p-3 rounded-lg font-bold text-white">ปิด</button>
+        </div>
+    </div>
 </body>
 
 </html>
