@@ -600,6 +600,46 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
+        /* UI Improvements Batch CSS */
+        .card {
+            margin-bottom: 20px;
+            /* Spacing between groups */
+            padding: 16px;
+            /* Increased padding */
+        }
+
+        .btn-create-source {
+            padding: 2px 8px !important;
+            font-size: 0.75rem !important;
+            border-radius: 4px;
+        }
+
+        #timerText {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+        }
+
+        #halfText {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        #halfText .half-ordinal {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        #halfText .half-label {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-left: 4px;
+            opacity: 0.8;
+            color: var(--accent-color);
+        }
+
         .team-row .color-picker:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
@@ -1933,58 +1973,81 @@
 
     <!-- Welcome Screen Overlay -->
     <!-- Welcome Screen Overlay (V2.9 Style Restored) -->
-    <div id="welcomeScreen">
-        <div class="welcome-content">
-            <div class="welcome-title">Dock UI : OBSScore</div>
-            <div class="welcome-subtitle">Control Panel</div>
+    <!-- Welcome Screen Overlay (Redesigned) -->
+    <div id="welcomeScreen"
+        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); z-index: 99999; transition: opacity 0.5s;">
+        <div class="welcome-card"
+            style="background: rgba(15, 23, 42, 0.6); padding: 40px; border-radius: 24px; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); max-width: 90%; width: 480px; position: relative; overflow: hidden;">
 
-            <!-- Identity Inputs -->
+            <!-- Decorative Blur -->
             <div
-                style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 16px; backdrop-filter: blur(10px); display: inline-block; text-align: left; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);">
-                <div style="margin-bottom: 15px;">
-                    <div
-                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
-                        Name / ชื่อของคุณ</div>
-                    <input type="text" id="visitorName" placeholder="Enter name" maxlength="30"
-                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <div
-                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
-                        Country / ประเทศ</div>
-                    <input type="text" id="visitorCountry" value="Thailand"
-                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white;">
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <div
-                        style="margin-bottom: 6px; color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
-                        Province / จังหวัด</div>
+                style="position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background: var(--accent-color); border-radius: 50%; filter: blur(80px); opacity: 0.3;">
+            </div>
+            <div
+                style="position: absolute; bottom: -50px; right: -50px; width: 150px; height: 150px; background: var(--secondary-color, #8b5cf6); border-radius: 50%; filter: blur(80px); opacity: 0.3;">
+            </div>
+
+            <h1
+                style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 5px 0; letter-spacing: -1px;">
+                Dock UI</h1>
+            <h2
+                style="font-size: 1.25rem; color: var(--accent-color); margin: 0 0 30px 0; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
+                OBS Scoreboard Control</h2>
+
+            <div style="text-align: left; margin-bottom: 25px;">
+                <label
+                    style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px; font-weight: 500;">Name
+                    / ชื่อของคุณ</label>
+                <input type="text" id="visitorName" placeholder="Enter your name" maxlength="30"
+                    style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 14px; border-radius: 12px; color: white; font-size: 1rem; transition: border-color 0.3s;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+                <div style="text-align: left;">
+                    <label
+                        style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px; font-weight: 500;">Province
+                        / จังหวัด</label>
                     <select id="visitorProvince"
-                        style="width: 300px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; cursor: pointer;">
+                        style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; color: white; cursor: pointer; appearance: none; -webkit-appearance: none;">
                         <!-- Options populated by JS -->
                     </select>
                 </div>
+                <div style="text-align: left;">
+                    <label
+                        style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px; font-weight: 500;">Country
+                        / ประเทศ</label>
+                    <input type="text" id="visitorCountry" value="Thailand" readonly
+                        style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; color: #94a3b8; cursor: not-allowed;">
+                </div>
             </div>
-            <br>
-            <button class="welcome-btn" onclick="saveAndEnterApp()">START</button>
+
+            <button onclick="saveAndEnterApp()" class="welcome-btn"
+                style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span data-lang="start">START</span> <i class="fas fa-arrow-right"></i>
+            </button>
+            <div style="margin-top: 20px; font-size: 0.8rem; color: #64748b;">v2.9.1 • Developed by JamornzMedia</div>
         </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.1</div>
     </div>
 
     <!-- Online Users Popup -->
-    <div class="popup-overlay" id="onlineUsersPopup" style="display: none;">
-        <div class="popup-box" style="width: 600px; max-width: 90%;">
-            <button class="close-popup-btn" onclick="closeAllPopups()"><i class="fas fa-times"></i></button>
-            <h3><i class="fas fa-users"></i> Online Users</h3>
-            <div style="max-height: 400px; overflow-y: auto; margin-top: 15px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+    <div id="onlineUsersPopup" onclick="if(event.target===this)closeAllPopups()"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+        <div
+            style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; width: 350px; max-width: 90%; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 0.95rem;"><i class="fas fa-users"></i> Online Users</h3>
+                <button onclick="closeAllPopups()"
+                    style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; padding: 4px;"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
                     <thead>
-                        <tr style="border-bottom: 1px solid #444;">
-                            <th style="padding: 10px;">#</th>
-                            <th style="padding: 10px;">Name</th>
-                            <th style="padding: 10px;">Province</th>
-                            <th style="padding: 10px;">Country</th>
-                            <th style="padding: 10px;">Status</th>
+                        <tr style="border-bottom: 1px solid #334155;">
+                            <th style="padding: 6px;">#</th>
+                            <th style="padding: 6px;">Name</th>
+                            <th style="padding: 6px;">Province</th>
+                            <th style="padding: 6px;">Type</th>
                         </tr>
                     </thead>
                     <tbody id="onlineUsersTableBody">
@@ -2349,11 +2412,15 @@
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
                         onclick="insertTag('<TeamB>')">+ Team B</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<score_team_a>')">+ Score A</button>
+                        onclick="insertTag('<label1>')">+ Label 1</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<score_team_b>')">+ Score B</button>
+                        onclick="insertTag('<label2>')">+ Label 2</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<time_counter>')">+ Time</button>
+                        onclick="insertTag('<label3>')">+ Label 3</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<label4>')">+ Label 4</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<label5>')">+ Label 5</button>
                 </div>
             </div>
 
@@ -2460,21 +2527,82 @@
                 <div class="popup-divider" style="margin: 10px 0;"></div>
                 <h5 style="margin: 0 0 5px 0; color: var(--accent-color);" data-lang="visControlTitle">Timer Controls
                     Visibility</h5>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <label class="countdown-toggle">
-                        <input type="checkbox" id="visibility_plus_minus" checked>
+                <style>
+                    /* Toggle Switch CSS */
+                    .toggle-switch {
+                        position: relative;
+                        display: inline-block;
+                        width: 40px;
+                        height: 20px;
+                        margin-right: 8px;
+                        vertical-align: middle;
+                    }
+
+                    .toggle-switch input {
+                        opacity: 0;
+                        width: 0;
+                        height: 0;
+                    }
+
+                    .slider {
+                        position: absolute;
+                        cursor: pointer;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: #4b5563;
+                        transition: .4s;
+                        border-radius: 20px;
+                    }
+
+                    .slider:before {
+                        position: absolute;
+                        content: "";
+                        height: 16px;
+                        width: 16px;
+                        left: 2px;
+                        bottom: 2px;
+                        background-color: white;
+                        transition: .4s;
+                        border-radius: 50%;
+                    }
+
+                    input:checked+.slider {
+                        background-color: var(--accent-color);
+                    }
+
+                    input:checked+.slider:before {
+                        transform: translateX(20px);
+                    }
+                </style>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="visibility_plus_minus" checked>
+                            <span class="slider"></span>
+                        </div>
                         <span data-lang="visExtraTimeBtns">Extra Time Btns</span>
                     </label>
-                    <label class="countdown-toggle">
-                        <input type="checkbox" id="visibility_reset_start" checked>
+                    <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="visibility_reset_start" checked>
+                            <span class="slider"></span>
+                        </div>
                         <span data-lang="visResetToStart">Reset to Start</span>
                     </label>
-                    <label class="countdown-toggle">
-                        <input type="checkbox" id="visibility_edit_time" checked>
+                    <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="visibility_edit_time" checked>
+                            <span class="slider"></span>
+                        </div>
                         <span data-lang="visSetTimeBtn">Set Time Btn</span>
                     </label>
-                    <label class="countdown-toggle">
-                        <input type="checkbox" id="visibility_countdown" checked>
+                    <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="visibility_countdown" checked>
+                            <span class="slider"></span>
+                        </div>
                         <span data-lang="visCountdown">Countdown</span>
                     </label>
                 </div>
@@ -2573,35 +2701,46 @@
                 data-lang="understand"></button></div>
     </div>
 
-    <div id="donatePopup" class="popup-modal">
-        <h3 data-lang="donateTitle"></h3>
-        <div class="donate-section">
-            <h4 data-lang="donateThai"></h4>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
-                alt="QR Code" data-lang-alt="donateShopeeAlt">
-            <a href="https://easydonate.app/Jamornz" target="_blank">https://easydonate.app/Jamornz</a>
+    <div id="donatePopup" class="popup-modal" style="text-align: center; max-width: 450px;">
+        <h3 style="margin-bottom: 5px; font-size: 1.5rem;"><i class="fas fa-heart" style="color: #ef4444;"></i> <span
+                data-lang="donateTitle">Donate</span></h3>
+        <p style="color: #94a3b8; margin-bottom: 25px; font-size: 0.95rem;">Support the developer to keep this project
+            alive!</p>
+
+        <!-- Premium Donate Card -->
+        <div
+            style="background: linear-gradient(145deg, #1e293b, #0f172a); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); margin-bottom: 20px;">
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                    alt="Donate QR" style="border-radius: 12px; border: 4px solid white;">
+            </div>
+
+            <div style="display: grid; gap: 10px;">
+                <a href="https://easydonate.app/Jamornz" target="_blank" class="btn-primary"
+                    style="padding: 12px; border-radius: 8px; background: linear-gradient(90deg, #3b82f6, #2563eb); text-decoration: none; display: block; font-weight: 600;">
+                    <i class="fas fa-globe-asia"></i> EasyDonate (Thailand)
+                </a>
+                <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank" class="btn-warning"
+                    style="padding: 12px; border-radius: 8px; background: linear-gradient(90deg, #f97316, #ea580c); text-decoration: none; display: block; font-weight: 600;">
+                    <i class="fas fa-shopping-bag"></i> Shopee
+                </a>
+                <a href="https://ko-fi.com/jamornz" target="_blank" class="btn-secondary"
+                    style="padding: 12px; border-radius: 8px; background: #334155; text-decoration: none; display: block; font-weight: 600;">
+                    <i class="fas fa-coffee"></i> Ko-fi (International)
+                </a>
+            </div>
         </div>
-        <div class="popup-divider"></div>
-        <div class="donate-section">
-            <h4 data-lang="donateShopee"></h4>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L"
-                alt="QR Code" data-lang-alt="donateShopeeAlt">
-            <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank">https://s.shopee.co.th/4foTAYE21L</a>
+
+        <a href="https://sites.google.com/view/jamornzmedia" target="_blank"
+            style="color: #64748b; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; opacity: 0.7; transition: opacity 0.2s;">
+            <i class="fas fa-home"></i> Powered by Jamornz Media
+        </a>
+
+        <div class="row center" style="margin-top: 25px;">
+            <button id="closeDonateBtn" class="btn-secondary" style="width: 100%; border-radius: 8px;">
+                <span data-lang="close">Close</span>
+            </button>
         </div>
-        <div class="popup-divider"></div>
-        <div class="donate-section">
-            <h4 data-lang="donateForeign"></h4>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz"
-                alt="QR Code" data-lang-alt="donateShopeeAlt">
-            <a href="https://ko-fi.com/jamornz" target="_blank">https://ko-fi.com/jamornz</a>
-        </div>
-        <div class="popup-divider"></div>
-        <div class="all-docks-section">
-            <a href="https://sites.google.com/view/jamornzmedia" target="_blank"><i class="fas fa-home"></i> Jamornz
-                Media</a>
-        </div>
-        <div class="row center" style="margin-top: 20px;"><button id="closeDonateBtn" class="btn-primary"
-                data-lang="close"></button></div>
     </div>
 
     <div id="welcomeSponsorPopup" class="popup-modal">

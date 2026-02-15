@@ -224,14 +224,36 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
     try {
         const sceneData = await obs.call('GetCurrentProgramScene');
         const sceneName = sceneData.currentProgramSceneName;
-        await obs.call('CreateInput', {
+
+        // Settings: If text source, set 'text' to sourceName so it's not empty
+        const settings = {};
+        if (inputKind === 'text_gdiplus_v3' || inputKind === 'text_gdiplus_v2') {
+            settings.text = sourceName;
+        }
+
+        const response = await obs.call('CreateInput', {
             sceneName: sceneName,
             inputName: sourceName,
             inputKind: inputKind,
-            inputSettings: {},
+            inputSettings: settings,
             sceneItemEnabled: true
         });
-        showToast(`âœ… Created: ${sourceName}`, 'success');
+
+        // V2.9.1: Set Transform to Scale to inner bounds
+        // OBS WebSocket v5 returns sceneItemId in response
+        if (response && response.sceneItemId) {
+            await obs.call('SetSceneItemTransform', {
+                sceneName: sceneName,
+                sceneItemId: response.sceneItemId,
+                sceneItemTransform: {
+                    boundsType: 'OBS_BOUNDS_SCALE_INNER',
+                    boundsWidth: 400, // Default width
+                    boundsHeight: 100 // Default height
+                }
+            });
+        }
+
+        showToast(`✅ Created: ${sourceName}`, 'success');
         if (btnEl) {
             btnEl.innerHTML = '<i class="fas fa-check"></i>';
             btnEl.disabled = true;
@@ -242,7 +264,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
     } catch (err) {
         const errMsg = err.message || err.code || String(err);
         if (errMsg.includes('already exists') || (err.code === 601)) {
-            showToast(`âš ï¸ ${sourceName} already exists`, 'info');
+            showToast(`⚠️ ${sourceName} already exists`, 'info');
             if (btnEl) {
                 btnEl.innerHTML = '<i class="fas fa-check"></i>';
                 btnEl.disabled = true;
@@ -251,7 +273,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
             }
             return true;
         }
-        showToast(`âŒ Failed: ${sourceName} (${errMsg})`, 'error');
+        showToast(`❌ Failed: ${sourceName} (${errMsg})`, 'error');
         return false;
     }
 };
@@ -295,7 +317,10 @@ const closeAllPopups = () => {
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
     elements.welcomeSponsorPopup.style.display = 'none';
-    // NEW
+    // Online Users popup
+    const onlinePopup = document.getElementById('onlineUsersPopup');
+    if (onlinePopup) onlinePopup.style.display = 'none';
+    // Mobile Control popup
     if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
     // V2.9.1 Confirm dialog
     hideConfirmReset();
@@ -392,13 +417,19 @@ const populateTagsTable = (lang) => {
     const tags = trans.tagsList || [];
     const thead = `<thead><tr><th>Tag</th><th>${trans.detailsTitle}</th></tr></thead>`;
     let tbody = '<tbody>';
+
+    // Filter tags: only TeamA, TeamB, and labels 1-5
+    const allowedTags = ['{TeamA}', '{TeamB}', '{label1}', '{label2}', '{label3}', '{label4}', '{label5}'];
+
     tags.forEach(item => {
-        tbody += `
+        if (allowedTags.includes(item.code)) {
+            tbody += `
             <tr>
                 <td onclick="copyTag('${item.code}')">${item.code}</td>
                 <td>${item.desc}</td>
             </tr>
         `;
+        }
     });
     tbody += '</tbody>';
     elements.tagsTable.innerHTML = thead + tbody;
@@ -1254,14 +1285,22 @@ const saveAndUpdateTime = () => {
 const toggleHalf = () => {
     const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
     // Limit halves array based on maxHalves
-    const activeHalves = halves.slice(0, maxHalves);
+    // V2.9.1: Fix slice logic if maxHalves is undefined or logic slightly off
+    const limit = maxHalves || 2;
+    const activeHalves = halves.slice(0, limit);
 
     let currentIndex = activeHalves.indexOf(half);
     if (currentIndex === -1) currentIndex = 0;
 
     let nextIndex = (currentIndex + 1) % activeHalves.length;
     half = activeHalves[nextIndex];
-    elements.halfText.textContent = half;
+
+    // V2.9.1: Styled Half Text
+    // "1st" -> 1st <span class="half-label">Half</span>
+    const ordinal = half;
+    const html = `<span class="half-ordinal">${ordinal}</span><span class="half-label">Half</span>`;
+
+    elements.halfText.innerHTML = html;
     setText('half_text', half);
 };
 
@@ -1786,6 +1825,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.copyTag = copyTag;
 
+    // V2.9.1: Mobile Room Logic
+    const setupMobileRoomLogic = () => {
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const closeRoomBtn = document.getElementById('closeRoomBtn');
+        const roomNameInput = document.getElementById('remoteRoomName');
+        const roomIdInput = document.getElementById('remoteRoomId');
+        const remoteQrCode = document.getElementById('remoteQrCode');
+        const mobileLinkInput = document.getElementById('mobileLinkInput');
+        const remoteRoomIdContainer = document.getElementById('remoteRoomIdContainer');
+        const remoteConnectionUI = document.getElementById('remoteConnectionUI');
+        const remoteStatusText = document.getElementById('remoteStatusText');
+
+        let currentRoomRef = null;
+
+        if (createRoomBtn) {
+            createRoomBtn.addEventListener('click', () => {
+                const roomName = (roomNameInput && roomNameInput.value.trim()) || "My Scoreboard";
+                const newRoomRef = firebase.database().ref('obs_rooms_score').push();
+                const roomId = newRoomRef.key;
+
+                // Create initial room data
+                newRoomRef.set({
+                    name: roomName,
+                    created: firebase.database.ServerValue.TIMESTAMP,
+                    host_identity: window.userIdentity || { name: 'Host' }
+                });
+
+                currentRoomRef = newRoomRef;
+
+                // Update UI
+                if (roomIdInput) roomIdInput.value = roomId;
+                createRoomBtn.style.display = 'none';
+                if (closeRoomBtn) closeRoomBtn.style.display = 'block';
+                if (roomNameInput) roomNameInput.disabled = true;
+                if (remoteRoomIdContainer) remoteRoomIdContainer.style.display = 'flex';
+                if (remoteConnectionUI) remoteConnectionUI.style.display = 'block';
+
+                // Generate Link
+                // Assuming OBSScorePhone.html is in the same directory
+                let baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html';
+                // Hande if ending with slash or filename
+                if (window.location.href.endsWith('/')) baseUrl = window.location.href + 'OBSScorePhone.html';
+
+                // If running locally as file://, QR code api might not be able to link effectively for others, 
+                // but for local testing on same network it might work if they can access the file path (unlikely).
+                // Usually users use a web server.
+                // We will use the generated URL.
+
+                const fullUrl = `${baseUrl}?room=${roomId}`;
+
+                if (mobileLinkInput) mobileLinkInput.value = fullUrl;
+                if (remoteQrCode) remoteQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+
+                if (remoteStatusText) {
+                    remoteStatusText.textContent = "Room Created. Waiting for connection...";
+                    remoteStatusText.style.color = "var(--success-color)";
+                }
+            });
+        }
+
+        if (closeRoomBtn) {
+            closeRoomBtn.addEventListener('click', () => {
+                if (currentRoomRef) {
+                    currentRoomRef.remove();
+                    currentRoomRef = null;
+                }
+                if (createRoomBtn) createRoomBtn.style.display = 'block';
+                closeRoomBtn.style.display = 'none';
+                if (roomNameInput) roomNameInput.disabled = false;
+                if (remoteRoomIdContainer) remoteRoomIdContainer.style.display = 'none';
+                if (remoteConnectionUI) remoteConnectionUI.style.display = 'none';
+
+                if (remoteStatusText) remoteStatusText.textContent = "Waiting...";
+            });
+        }
+
+        // Copy Mobile Link
+        const copyMobileLinkBtn = document.getElementById('copyMobileLinkBtn');
+        if (copyMobileLinkBtn && mobileLinkInput) {
+            copyMobileLinkBtn.addEventListener('click', () => {
+                mobileLinkInput.select();
+                document.execCommand('copy'); // Fallback
+                if (navigator.clipboard) navigator.clipboard.writeText(mobileLinkInput.value);
+                showToast("Link Copied", "success");
+            });
+        }
+    };
+
     // --- V2.9.1: Loading State & Initialization ---
     const initApp = async () => {
         const startBtn = document.getElementById('closeWelcomeBtn');
@@ -1819,6 +1946,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     initApp();
+    setupMobileRoomLogic();
 
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');

@@ -161,9 +161,7 @@ window.initOnlinePresenceSystem = () => {
 // --- Popup Logic ---
 window.openOnlineUsersPopup = () => {
     const popup = document.getElementById('onlineUsersPopup');
-    const overlay = document.getElementById('popupOverlay');
-    if (popup) popup.style.display = 'block';
-    if (overlay) overlay.style.display = 'block';
+    if (popup) popup.style.display = 'flex';
     renderOnlineUsersList();
 };
 
@@ -182,23 +180,22 @@ window.renderOnlineUsersList = () => {
         const displayName = key.replace(/^(com_|phone_)/, '').replace(/_/g, ' ');
 
         const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.07)';
         if (isMe) row.style.background = 'rgba(74, 222, 128, 0.1)';
 
         const platformIcon = isPhone
-            ? '<i class="fas fa-mobile-alt" title="Phone"></i>'
-            : '<i class="fas fa-desktop" title="PC"></i>';
+            ? '<i class="fas fa-mobile-alt" style="color:#60a5fa;"></i>'
+            : '<i class="fas fa-desktop" style="color:#4ade80;"></i>';
 
         const typeLabel = isPhone ? 'Phone' : 'PC';
 
         row.innerHTML = `
-            <td style="padding: 10px;">${index++}</td>
-            <td style="padding: 10px; font-weight: bold; color: ${isMe ? '#4ade80' : 'white'};">
+            <td style="padding: 6px;">${index++}</td>
+            <td style="padding: 6px; font-weight: bold; color: ${isMe ? '#4ade80' : 'white'};">
                 ${displayName} ${isMe ? '(You)' : ''}
             </td>
-            <td style="padding: 10px;">${u.province || '-'}</td>
-            <td style="padding: 10px;">${u.country || '-'}</td>
-            <td style="padding: 10px;">${platformIcon} ${typeLabel}</td>
+            <td style="padding: 6px; color: #94a3b8;">${u.province || '-'}</td>
+            <td style="padding: 6px;">${platformIcon} ${typeLabel}</td>
         `;
         tbody.appendChild(row);
     });
