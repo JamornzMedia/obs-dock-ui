@@ -1107,6 +1107,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     setText(obsScoreSource, masterTeam.score);
     setText(obsScore2Source, masterTeam.score2);
     saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
+    if (window.broadcastToMobile) window.broadcastToMobile();
 };
 
 const applyMatch = () => {
@@ -1200,6 +1201,7 @@ const updateTimerDisplay = () => {
     const timeString = `${m}:${s}`;
     elements.timerText.textContent = timeString;
     setText('time_counter', timeString);
+    if (window.broadcastToMobile) window.broadcastToMobile();
 };
 
 const startTimer = () => {
@@ -1476,7 +1478,10 @@ const exitEditMode = (team, applyChanges) => {
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
     if (applyChanges) {
         const newName = nameInput.value.trim() || masterTeam.name;
-        updateTeamUI(team, newName, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+        // Only broadcast if changed
+        if (newName !== masterTeam.name) {
+            updateTeamUI(team, newName, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+        }
     }
     nameDiv.style.display = 'block';
     editBtn.style.display = 'inline-flex';
@@ -1836,8 +1841,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const remoteRoomIdContainer = document.getElementById('remoteRoomIdContainer');
         const remoteConnectionUI = document.getElementById('remoteConnectionUI');
         const remoteStatusText = document.getElementById('remoteStatusText');
+        const mobileBtn = document.getElementById('mobileControlBtn'); // Added
 
         let currentRoomRef = null;
+
+        // Open Popup Listener
+        if (mobileBtn) {
+            mobileBtn.addEventListener('click', () => {
+                const popup = document.getElementById('mobileControlPopup');
+                const overlay = document.getElementById('popupOverlay');
+                if (popup) {
+                    popup.style.display = 'block';
+                    setTimeout(() => popup.classList.add('active'), 10);
+                }
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+            });
+        }
 
         if (createRoomBtn) {
             createRoomBtn.addEventListener('click', () => {
@@ -1915,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- V2.9.1: Loading State & Initialization ---
     const initApp = async () => {
-        const startBtn = document.getElementById('closeWelcomeBtn');
+        let startBtn = document.getElementById('closeWelcomeBtn');
 
         // 1. Try OBS Connect (Wait max 2 seconds to not block UI too long if offline)
         try {
@@ -1935,13 +1957,39 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAnnouncement();
         setInterval(fetchAnnouncement, 3600000);
 
-        // 3. Enable Start Button
+        // 3. Enable Start Button & Fix Logic
         if (startBtn) {
+            // Remove old listeners (like closeWelcomePopup) to ensure "Start" behavior
+            const newBtn = startBtn.cloneNode(true);
+            startBtn.parentNode.replaceChild(newBtn, startBtn);
+            startBtn = newBtn; // Update reference
+
             startBtn.disabled = false;
             startBtn.style.opacity = '1';
             startBtn.style.cursor = 'pointer';
-            const trans = translations[currentLang] || translations.en;
-            startBtn.innerHTML = `<i class="fas fa-times"></i> ${trans.close || 'Close'}`;
+            // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
+
+            // Attach Save & Enter Logic
+            startBtn.addEventListener('click', () => {
+                const nameInput = document.getElementById('visitorName');
+                const provInput = document.getElementById('visitorProvince');
+                if (nameInput && nameInput.value.trim()) {
+                    const identity = {
+                        name: nameInput.value.trim(),
+                        province: provInput ? provInput.value : '',
+                        country: 'Thailand',
+                        platform: 'PC'
+                    };
+                    localStorage.setItem('userIdentity', JSON.stringify(identity));
+                    window.userIdentity = identity;
+                }
+
+                const welcomeScreen = document.getElementById('welcomeScreen');
+                if (welcomeScreen) {
+                    welcomeScreen.style.opacity = '0';
+                    setTimeout(() => welcomeScreen.style.display = 'none', 500);
+                }
+            });
         }
     };
 
@@ -2135,4 +2183,144 @@ window.copyDetails = () => {
 window.addEventListener('load', () => {
     if (window.initWelcomeScreen) window.initWelcomeScreen();
     if (window.updateUserIdentityUI) window.updateUserIdentityUI();
+    // Initialize Mobile Host
+    if (window.initMobileHost) window.initMobileHost();
 });
+
+// --- MOBILE HOST CONTROL (PEERJS) ---
+let hostPeer = null;
+let hostConn = [];
+
+window.initMobileHost = () => {
+    // Generate simple 6-digit Room ID
+    const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+    const peerId = `fcp-v2-host-${roomId}`;
+
+    // Update UI
+    const roomInput = document.getElementById('remoteRoomId');
+    if (roomInput) roomInput.value = roomId;
+
+    const qrImg = document.getElementById('remoteQrCode');
+    // Using a public QR API
+    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${roomId}`;
+
+    // Init Peer
+    if (!window.Peer) {
+        console.error("PeerJS not loaded");
+        return;
+    }
+
+    hostPeer = new Peer(peerId);
+
+    hostPeer.on('open', (id) => {
+        console.log('Host initialized with ID:', id);
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = "Ready to connect";
+            statusEl.style.color = "#22c55e"; // Green
+        }
+    });
+
+    hostPeer.on('connection', (conn) => {
+        console.log('New connection from:', conn.peer);
+        hostConn.push(conn);
+        setupConnection(conn);
+
+        // Send initial state
+        setTimeout(() => window.broadcastToMobile(), 500);
+
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = `Connected: ${hostConn.length} device(s)`;
+            statusEl.style.color = "#22c55e";
+        }
+    });
+
+    hostPeer.on('error', (err) => {
+        console.error('Peer error:', err);
+        if (err.type === 'unavailable-id') {
+            // Retry with new ID if collision (rare)
+            window.initMobileHost();
+        }
+    });
+};
+
+function setupConnection(conn) {
+    conn.on('data', (data) => {
+        console.log('Received data:', data);
+        handleMobileCommand(data);
+    });
+
+    conn.on('close', () => {
+        hostConn = hostConn.filter(c => c !== conn);
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = hostConn.length > 0 ? `Connected: ${hostConn.length} device(s)` : "Waiting...";
+            if (hostConn.length === 0) statusEl.style.color = "var(--warning-color)";
+        }
+    });
+}
+
+window.broadcastToMobile = () => {
+    if (!hostConn.length) return;
+
+    const state = {
+        type: 'UPDATE_STATE',
+        teamA: {
+            name: masterTeamA.name,
+            score: masterTeamA.score,
+            score2: masterTeamA.score2,
+            color1: masterTeamA.color1,
+            color2: masterTeamA.color2
+        },
+        teamB: {
+            name: masterTeamB.name,
+            score: masterTeamB.score,
+            score2: masterTeamB.score2,
+            color1: masterTeamB.color1,
+            color2: masterTeamB.color2
+        },
+        timer: elements.timerText.textContent,
+        half: elements.halfText.textContent,
+        injury: elements.injuryTimeDisplay.textContent,
+        isPaused: !interval
+    };
+
+    hostConn.forEach(conn => {
+        if (conn.open) conn.send(state);
+    });
+};
+
+function handleMobileCommand(data) {
+    switch (data.type) {
+        case 'SCORE':
+            if (data.target === 'score') changeScore(data.team, data.delta);
+            if (data.target === 'score2') changeScore2(data.team, data.delta);
+            break;
+        case 'TIMER':
+            if (data.action === 'toggle') {
+                if (interval) stopTimer(); else startTimer();
+            }
+            if (data.action === 'reset_start') resetToStartTime();
+            if (data.action === 'reset_zero') resetToZero();
+            break;
+        case 'HALF':
+            toggleHalf();
+            break;
+        case 'INJURY':
+            changeInjuryTime(data.delta);
+            break;
+        case 'SWAP':
+            swapTeams();
+            break;
+        case 'NAME':
+            // Update name
+            if (data.team === 'A') {
+                updateTeamUI('A', data.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+            } else {
+                updateTeamUI('B', data.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
+            }
+            break;
+    }
+}
+

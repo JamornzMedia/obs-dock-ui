@@ -566,10 +566,8 @@
         .team-row {
             display: flex;
             flex-direction: column !important;
-            /* Force vertical stack */
-            gap: 5px;
-            padding: 8px;
-            /* Reduced padding */
+            gap: 8px;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
         }
@@ -578,21 +576,23 @@
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            /* Space between colors and logo */
             width: 100%;
         }
 
         .team-row .color-picker-stack {
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            flex-direction: row;
+            /* Force Horizontal */
+            gap: 8px;
             flex-shrink: 0;
         }
 
         /* Bigger Colors for easier clicking */
         .team-row .color-picker {
-            width: 48px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             border-radius: 6px;
             cursor: pointer;
             border: 2px solid rgba(255, 255, 255, 0.15);
@@ -602,14 +602,15 @@
 
         /* UI Improvements Batch CSS */
         .card {
-            margin-bottom: 20px;
-            padding: 10px 4px;
+            margin-bottom: 10px;
+            /* Match Online Count Frame */
+            padding: 10px;
+            /* Match Online Count Frame */
         }
 
         .color-picker-stack {
             display: flex;
             flex-direction: row;
-            /* Horizontal alignment */
             gap: 5px;
         }
 
@@ -2014,43 +2015,78 @@
     <!-- Welcome Screen Overlay -->
     <!-- Welcome Screen Overlay (V2.9 Style Restored) -->
     <!-- Welcome Screen (Reverted to Simple Style) -->
+    <!-- Welcome Screen (Modern Aesthetic Logic) -->
     <div id="welcomeScreen" class="welcome-overlay"
-        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; backdrop-filter: blur(5px);">
+        style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.98)); z-index: 9999; backdrop-filter: blur(8px);">
+
         <div class="welcome-content"
-            style="background: rgba(30, 41, 59, 1); padding: 30px; border-radius: 16px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-            <div style="margin-bottom: 20px;">
-                <i class="fas fa-futbol" style="font-size: 3rem; color: var(--accent-color);"></i>
-            </div>
-            <h1 style="font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 5px;">OBS Scoreboard</h1>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 25px;">Control Panel V2.9.1</p>
+            style="position: relative; background: rgba(30, 41, 59, 0.7); padding: 40px; border-radius: 24px; text-align: center; max-width: 420px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); backdrop-filter: blur(16px); overflow: hidden;">
 
-            <div style="text-align: left; margin-bottom: 15px;">
-                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 5px;">Name /
-                    ชื่อ</label>
-                <input type="text" id="visitorName" placeholder="Enter Name"
-                    style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white;">
+            <!-- Decorative Elements -->
+            <div
+                style="position: absolute; top: -50px; left: -50px; width: 120px; height: 120px; background: var(--accent-color); opacity: 0.2; border-radius: 50%; filter: blur(50px);">
+            </div>
+            <div
+                style="position: absolute; bottom: -50px; right: -50px; width: 120px; height: 120px; background: #8b5cf6; opacity: 0.2; border-radius: 50%; filter: blur(50px);">
             </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+            <div style="margin-bottom: 25px; position: relative;">
+                <div
+                    style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);">
+                    <i class="fas fa-futbol"
+                        style="font-size: 3rem; color: var(--accent-color); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));"></i>
+                </div>
+            </div>
+
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 5px; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                OBS Scoreboard</h1>
+            <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 30px; font-weight: 500;">Control Panel <span
+                    style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">V2.9.1</span>
+            </p>
+
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label
+                    style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Your
+                    Name / ชื่อ</label>
+                <div style="position: relative;">
+                    <i class="fas fa-user"
+                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
+                    <input type="text" id="visitorName" placeholder="Enter your name"
+                        style="width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); color: white; outline: none; transition: border-color 0.3s, box-shadow 0.3s; font-size: 1rem;">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 30px;">
                 <div style="flex: 1; text-align: left;">
                     <label
-                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 5px;">Province</label>
-                    <select id="visitorProvince"
-                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; -webkit-appearance: none; appearance: none;">
-                        <!-- Options populated by JS -->
-                    </select>
+                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Province</label>
+                    <div style="position: relative;">
+                        <i class="fas fa-map-marker-alt"
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none;"></i>
+                        <select id="visitorProvince"
+                            style="width: 100%; padding: 14px 14px 14px 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); color: white; -webkit-appearance: none; appearance: none; outline: none; cursor: pointer;">
+                            <!-- Options populated by JS -->
+                        </select>
+                        <i class="fas fa-chevron-down"
+                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; font-size: 0.8rem;"></i>
+                    </div>
                 </div>
                 <div style="flex: 1; text-align: left;">
                     <label
-                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 5px;">Country</label>
-                    <input type="text" id="visitorCountry" value="Thailand" readonly
-                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #64748b; cursor: default;">
+                        style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 8px; font-weight: 600; margin-left: 5px;">Country</label>
+                    <div style="position: relative;">
+                        <i class="fas fa-globe-asia"
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
+                        <input type="text" id="visitorCountry" value="Thailand" readonly
+                            style="width: 100%; padding: 14px 14px 14px 45px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.3); color: #64748b; cursor: default; outline: none;">
+                    </div>
                 </div>
             </div>
 
             <button id="closeWelcomeBtn"
-                style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; background: var(--accent-color); color: white; border: none; cursor: pointer; transition: background 0.2s;">
-                Start Control Panel
+                style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, var(--accent-color), #2563eb); color: white; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 10px 15px -3px rgba(59, 130, 246, 0.3);">
+                Start Control Panel <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
             </button>
         </div>
     </div>
@@ -2894,6 +2930,7 @@
     </div>
 
 
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
 
