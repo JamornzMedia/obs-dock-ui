@@ -1881,19 +1881,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 2. Init PeerJS Host (invoking refined initMobileHost)
                 if (window.initMobileHost) window.initMobileHost(roomId);
 
-                // 3. Create Firebase Record: mobile_<Name>
-                // Sanitize name for key
-                const sanitizedName = roomName.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_').substring(0, 30);
-                const roomKey = `mobile_${sanitizedName}`;
+                // 3. Create Firebase Record: mobile_{roomId} for easy lookup
+                const roomKey = `mobile_${roomId}`;
                 const newRoomRef = firebase.database().ref('obs_rooms_score/' + roomKey);
 
                 // Create room data
                 newRoomRef.set({
                     name: roomName,
-                    roomId: roomId, // Store the 6-digit ID so we can theoretically find it
+                    roomId: roomId,
+                    hostPeerId: `fcp-v2-host-${roomId}`,
                     created: firebase.database.ServerValue.TIMESTAMP,
                     host_identity: window.userIdentity || { name: 'Host' },
-                    platform: 'Mobile'
+                    platform: 'PC'
                 });
 
                 currentRoomRef = newRoomRef;

@@ -35,71 +35,9 @@ const sanitizeKey = (name) => {
 const ROOMS_PATH = 'obs_rooms_score';
 
 window.initOnlinePresenceSystem = () => {
-    // Get user identity
-    let identity = window.userIdentity;
-    if (!identity) {
-        try { identity = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
-    }
-    if (!identity || !identity.name) {
-        console.log("No user identity yet, skipping presence system.");
-        return;
-    }
-
-    const sanitizedName = sanitizeKey(identity.name);
-    if (!sanitizedName) {
-        console.log("Invalid user name for presence key.");
-        return;
-    }
-
-    // Build room key: com_{name} for PC
-    const roomKey = `com_${sanitizedName}`;
-    const roomRef = firebase.database().ref(`${ROOMS_PATH}/${roomKey}`);
-
-    // Store ref globally for identification
-    window.myRoomKey = roomKey;
-    window.myRoomRef = roomRef;
-
-    const presenceData = {
-        name: identity.name.substring(0, 30),
-        province: identity.province || "Unknown",
-        platform: "PC",
-        roomId: window.currentRoomId || "000000", // Add roomId for mobile lookup
-        hostPeerId: window.myPeerId || `fcp-v2-host-${window.currentRoomId || '000000'}`, // Add hostPeerId for mobile connection
-        last_seen: firebase.database.ServerValue.TIMESTAMP
-    };
-
-    // Set onDisconnect first, then write data
-    roomRef.onDisconnect().remove();
-    roomRef.set(presenceData);
-
-    // Update function (called when identity changes)
-    window.updateOnlineStatus = () => {
-        let id = window.userIdentity;
-        if (!id) {
-            try { id = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
-        }
-        if (!id || !id.name) return;
-
-        // If name changed, we need to remove old key and create new one
-        const newKey = `com_${sanitizeKey(id.name)}`;
-        if (newKey !== window.myRoomKey) {
-            // Remove old
-            if (window.myRoomRef) window.myRoomRef.remove();
-            // Create new
-            window.myRoomKey = newKey;
-            window.myRoomRef = firebase.database().ref(`${ROOMS_PATH}/${newKey}`);
-            window.myRoomRef.onDisconnect().remove();
-        }
-
-        window.myRoomRef.set({
-            name: id.name.substring(0, 30),
-            province: id.province || "Unknown",
-            platform: "PC",
-            roomId: window.currentRoomId || "000000",
-            hostPeerId: window.myPeerId || `fcp-v2-host-${window.currentRoomId || '000000'}`,
-            last_seen: firebase.database.ServerValue.TIMESTAMP
-        });
-    };
+    // SIMPLIFIED: No longer create com_ rooms
+    // PC will create mobile_{roomId} rooms when Mobile Control is activated
+    // This saves Firebase space and simplifies connection logic
 
     // --- Monitor All Users in obs_rooms_score ---
     const allRoomsRef = firebase.database().ref(ROOMS_PATH);
