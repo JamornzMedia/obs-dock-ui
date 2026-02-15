@@ -2160,49 +2160,87 @@
     <!-- Mobile Control Popup -->
     <div id="mobileControlPopup"
         style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; max-width: 350px; width: 90%; z-index: 1001; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-        <div style="margin-bottom: 20px;">
-            <h3
-                style="margin: 0 0 8px 0; color: white; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-mobile-alt" style="color: #3b82f6;"></i>
-                ควบคุมผ่านมือถือ (OBSScore Remote)
-            </h3>
-            <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">สร้างห้องเพื่อควบคุมผ่านมือถือ</p>
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div>
+                <h3
+                    style="margin: 0 0 6px 0; color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-mobile-alt" style="color: #3b82f6;"></i>
+                    OBSScore Remote
+                </h3>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem;">ควบคุม Scoreboard ผ่านมือถือ</p>
+            </div>
+            <button onclick="closeAllPopups()"
+                style="background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 1.2rem; padding: 4px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; transition: background 0.2s;">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
-        <!-- Room Name Input -->
-        <div style="margin-bottom: 16px;">
-            <label style="display: block; color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px;">ชื่อห้อง</label>
-            <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
-                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 1rem;">
-        </div>
-
-        <!-- V2.9.1: OBS Scene Configuration -->
-        <div
-            style="margin-bottom: 16px; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
-            <div style="font-size: 0.85rem; color: #93c5fd; margin-bottom: 8px; font-weight: bold;">
-                <i class="fas fa-video"></i> OBS Control Settings
+        <!-- Initial View: Creation -->
+        <div id="mobileCreateUI">
+            <!-- Room Name (Unlocked / Editable) -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">ชื่อห้อง (Room
+                    Name)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
+                        style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 10px; color: #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                    <button
+                        onclick="navigator.clipboard.writeText(document.getElementById('remoteRoomName').value); window.showToast('Copied Room Name', 'success')"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; border-radius: 8px; padding: 0 12px; cursor: pointer; transition: all 0.2s;"
+                        title="Copy Name">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
             </div>
 
-            <label style="display: block; color: #cbd5e1; font-size: 0.8rem; margin-bottom: 4px;">Main Scene Name
-                (ฉากหลัก)</label>
-            <input type="text" id="obsMainSceneName" placeholder="MainScene" value="MainScene"
-                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: white; border-radius: 6px; font-size: 0.9rem; margin-bottom: 8px;">
+            <!-- Create Button -->
+            <button id="createRoomBtn"
+                style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; margin-bottom: 24px; box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.5); transition: transform 0.1s;">
+                <i class="fas fa-plus-circle"></i> สร้างห้อง (Create Room)
+            </button>
 
-            <label style="display: block; color: #cbd5e1; font-size: 0.8rem; margin-bottom: 4px;">Replay Scene Name
-                (ฉากรีเพลย์)</label>
-            <input type="text" id="obsReplaySceneName" placeholder="SceneReplay" value="SceneReplay"
-                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: white; border-radius: 6px; font-size: 0.9rem;">
+            <!-- OBS Settings (Styled Checkbox/Details) -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+                <div
+                    style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-cog"></i> OBS Control Config</span>
+                </div>
 
-            <p style="margin: 8px 0 0 0; font-size: 0.75rem; color: #64748b;">
-                * ตั้งชื่อ Scene ใน OBS ให้ตรงกับช่องนี้เพื่อให้ปุ่มบนมือถือใช้งานได้
-            </p>
+                <div
+                    style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                        <div>
+                            <label style="display: block; color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px;">Main
+                                Scene Name (ฉากหลัก)</label>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="obsMainSceneName" value="MainScene" readonly
+                                    style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 8px; color: #60a5fa; border-radius: 6px; font-size: 0.85rem; font-family: monospace; cursor: default; user-select: all;">
+                                <button
+                                    onclick="navigator.clipboard.writeText('MainScene'); window.showToast('Copied: MainScene', 'success')"
+                                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; border-radius: 6px; padding: 0 10px; cursor: pointer; transition: all 0.2s;"
+                                    title="Copy"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px;">Replay
+                                Scene Name (ฉากรีเพลย์)</label>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="obsReplaySceneName" value="SceneReplay" readonly
+                                    style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 8px; color: #60a5fa; border-radius: 6px; font-size: 0.85rem; font-family: monospace; cursor: default; user-select: all;">
+                                <button
+                                    onclick="navigator.clipboard.writeText('SceneReplay'); window.showToast('Copied: SceneReplay', 'success')"
+                                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; border-radius: 6px; padding: 0 10px; cursor: pointer; transition: all 0.2s;"
+                                    title="Copy"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <p style="margin: 4px 0 0 0; font-size: 0.7rem; color: #64748b;">* ตั้งชื่อ Scene ใน OBS
+                            ให้ตรงกับชื่อนี้เพื่อให้ปุ่มบนมือถือใช้งานได้</p>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <!-- Create Room Button -->
-        <button id="createRoomBtn"
-            style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; margin-bottom: 16px;">
-            <i class="fas fa-plus-circle"></i> สร้างห้อง
-        </button>
 
         <!-- Connection UI (Hidden initially) -->
         <div id="remoteConnectionUI" style="display: none;">
@@ -3033,57 +3071,7 @@
 
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
-    <!-- Mobile Control Popup (Added) -->
-    <div id="mobileControlPopup" class="popup-modal">
-        <h3><i class="fas fa-mobile-alt"></i> <span data-lang="mobileControlTitle">Mobile Room</span></h3>
-        <button id="closeMobilePopupBtn" class="btn-secondary"
-            style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.2rem; color: #fff; cursor: pointer;"><i
-                class="fas fa-times"></i></button>
-        <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">Control the scoreboard from your phone.</p>
-
-        <div class="row center">
-            <input type="text" id="remoteRoomName" placeholder="Room Name" value="My Scoreboard"
-                style="text-align: center; width: 100%;">
-        </div>
-
-        <div class="row center" style="margin-top: 15px;">
-            <button id="createRoomBtn" class="btn-primary" style="width: 100%;"><i class="fas fa-plus-circle"></i>
-                Create Room</button>
-            <button id="closeRoomBtn" class="btn-danger" style="display: none; width: 100%;"><i
-                    class="fas fa-power-off"></i> Close Room</button>
-        </div>
-
-        <div id="remoteConnectionUI"
-            style="display: none; margin-top: 20px; text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-            <div id="remoteRoomIdContainer"
-                style="display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 15px;">
-                <span style="color: #94a3b8; font-size: 0.8rem;">Room ID:</span>
-                <input type="text" id="remoteRoomId" readonly
-                    style="width: 150px; text-align: center; background: rgba(0,0,0,0.3); color: var(--accent-color); border: 1px solid rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">
-            </div>
-
-            <div
-                style="background: white; padding: 10px; display: inline-block; border-radius: 12px; margin-bottom: 15px;">
-                <img id="remoteQrCode" src="" alt="QR Code" style="display: block; border-radius: 4px;">
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="mobileLinkInput" readonly style="flex: 1; font-size: 0.8rem; padding: 8px;">
-                <button id="copyMobileLinkBtn" class="btn-secondary" style="padding: 8px 12px;"><i
-                        class="fas fa-copy"></i></button>
-            </div>
-
-            <p id="remoteStatusText"
-                style="margin-top: 15px; font-size: 0.9rem; font-weight: 500; color: var(--warning-color);">Waiting...
-            </p>
-        </div>
-
-        <div class="row center" style="margin-top: 25px;">
-            <button
-                onclick="document.getElementById('mobileControlPopup').classList.remove('active'); document.getElementById('mobileControlPopup').style.display='none'; document.getElementById('popupOverlay').classList.remove('active'); document.getElementById('popupOverlay').style.display='none';"
-                class="btn-secondary" style="width: 100%;">Close</button>
-        </div>
-    </div>
+    <!-- Duplicate Mobile Control Popup Removed (using the one at line ~2160) -->
 
     <!-- PC Match ID Popup -->
     <div id="pcMatchPopup" class="pc-match-overlay">

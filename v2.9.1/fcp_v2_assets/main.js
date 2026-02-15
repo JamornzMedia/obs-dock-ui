@@ -2424,19 +2424,16 @@ window.initMobileHost = (customRoomId) => {
     const mobileLinkInput = document.getElementById('mobileLinkInput');
     if (mobileLinkInput) mobileLinkInput.value = fullUrl;
 
-    // --- WRITE TO FIREBASE (Added for Mobile Connection) ---
+    // --- WRITE TO FIREBASE (Compliant with FIREBASE_GUIDELINE.md) ---
     if (userIdentity && userIdentity.name && window.firebase) {
         const key = `mobile_${sanitizeKey(userIdentity.name)}`;
         const roomData = {
-            roomId: roomId,
-            hostPeerId: peerId, // CRITICAL: Mobile Client needs this
-            name: userIdentity.name,
-            platform: "Mobile", // Preserving structure
-            host_identity: {
-                name: userIdentity.name,
-                province: userIdentity.province || "",
-                platform: "PC"
-            },
+            nameMobile: userIdentity.name,
+            platform: "Mobile",
+            ID: window.myUserID || userIdentity.ID || '',
+            roomID: roomId,
+            Mobile: "off",
+            hostPeerId: peerId,
             created: firebase.database.ServerValue.TIMESTAMP
         };
 
