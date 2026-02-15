@@ -2020,16 +2020,107 @@
         <div class="welcome-content">
             <div class="welcome-title">Dock UI : OBSScore</div>
             <div class="welcome-subtitle">Control Panel</div>
-            <!-- Identity Inputs Hidden/Integrated if needed, or just simplified check-in -->
-            <!-- We will inject the Name Input here because the user NEEDS to set a name for the connection logic -->
-            <div style="margin-bottom: 20px;">
-                <input type="text" id="visitorName" placeholder="Enter Name"
-                    style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px; color: white; border-radius: 8px; text-align: center;">
+
+            <!-- Identity Section -->
+            <div style="width: 100%; max-width: 400px; margin: 0 auto;">
+                <!-- ID Field with Edit/Confirm -->
+                <div style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px; text-align: left;">
+                        <i class="fas fa-id-badge"></i> ID Name
+                    </label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="visitorName" placeholder="Enter your ID name"
+                            style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 0.95rem;"
+                            disabled>
+                        <button id="editNameBtn" onclick="toggleNameEdit()"
+                            style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 10px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button id="confirmNameBtn" onclick="confirmNameEdit()"
+                            style="display: none; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 10px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;">
+                            <i class="fas fa-check"></i> OK
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Province Dropdown -->
+                <div style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px; text-align: left;">
+                        <i class="fas fa-map-marker-alt"></i> Province
+                    </label>
+                    <select id="visitorProvince"
+                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 0.95rem; cursor: pointer;">
+                        <option value="">Select Province</option>
+                    </select>
+                </div>
+
+                <!-- Custom Province Input (hidden by default) -->
+                <div id="provinceOtherContainer" style="display: none; margin-bottom: 15px;">
+                    <label
+                        style="display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px; text-align: left;">
+                        <i class="fas fa-edit"></i> Custom Province
+                    </label>
+                    <input type="text" id="visitorProvinceOther" placeholder="Enter province name"
+                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 0.95rem;">
+                </div>
             </div>
-            <button id="closeWelcomeBtn" class="welcome-btn">START</button>
+
+            <button id="closeWelcomeBtn" class="welcome-btn">START CONTROL PANEL</button>
         </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9</div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.1</div>
     </div>
+
+    <script>
+        // Toggle Name Edit Mode
+        window.toggleNameEdit = () => {
+            const nameInput = document.getElementById('visitorName');
+            const editBtn = document.getElementById('editNameBtn');
+            const confirmBtn = document.getElementById('confirmNameBtn');
+
+            if (nameInput.disabled) {
+                // Enter edit mode
+                nameInput.disabled = false;
+                nameInput.focus();
+                editBtn.style.display = 'none';
+                confirmBtn.style.display = 'inline-block';
+            }
+        };
+
+        // Confirm Name Edit
+        window.confirmNameEdit = () => {
+            const nameInput = document.getElementById('visitorName');
+            const editBtn = document.getElementById('editNameBtn');
+            const confirmBtn = document.getElementById('confirmNameBtn');
+
+            if (!nameInput.value.trim()) {
+                alert('Please enter a name / กรุณากรอกชื่อ');
+                return;
+            }
+
+            // Save and exit edit mode
+            nameInput.disabled = true;
+            editBtn.style.display = 'inline-block';
+            confirmBtn.style.display = 'none';
+        };
+
+        // Province Dropdown Change Handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const provinceSelect = document.getElementById('visitorProvince');
+            const provinceOtherContainer = document.getElementById('provinceOtherContainer');
+
+            if (provinceSelect) {
+                provinceSelect.addEventListener('change', (e) => {
+                    if (e.target.value === 'Other') {
+                        provinceOtherContainer.style.display = 'block';
+                    } else {
+                        provinceOtherContainer.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
 
     <!-- Online Users Popup -->
     <div id="onlineUsersPopup" onclick="if(event.target===this)closeAllPopups()"

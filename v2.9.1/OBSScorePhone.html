@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSScore Remote V2.8</title>
+    <title>OBSScore Remote V2.9.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -59,7 +59,7 @@
                 REMOTE
             </div>
         </div>
-        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.8</p>
+        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.9.1</p>
 
         <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700 shadow-lg space-y-4">
             <div>
@@ -319,37 +319,38 @@
             document.getElementById('status-msg').textContent = "Connecting...";
             document.getElementById('status-msg').classList.remove('hidden');
 
-            // Query by roomId (6 digits) - this matches what PC stores
-            database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
+            // Look for com_ rooms (PC creates com_ rooms)
+            database.ref('obs_rooms_score').once('value').then(snap => {
                 if (!snap.exists()) {
-                    // Fallback: try direct lookup with mobile_ prefix + rid
-                    database.ref('obs_rooms_score/mobile_' + rid).once('value').then(snap2 => {
-                        if (!snap2.exists()) {
-                            alert("Room not found! (Check ID)");
-                            document.getElementById('status-msg').textContent = "Room not found";
-                            return;
-                        }
-                        const roomData = snap2.val();
-                        const hostPeerId = roomData.hostPeerId;
-                        document.getElementById('room-name-display').textContent = roomData.name || 'Room';
-                        document.getElementById('room-id-display').textContent = 'ID: ' + rid;
-                        console.log("Found Room (fallback):", roomData.name, "HostID:", hostPeerId);
-                        startPeerConnection(rid, hostPeerId);
-                        setupPresence(rid, 'mobile_' + rid);
-                    });
+                    alert("No rooms available! Make sure PC is running.");
+                    document.getElementById('status-msg').textContent = "No rooms found";
                     return;
                 }
 
-                // Get the first match
-                const rooms = snap.val();
-                const roomKey = Object.keys(rooms)[0];
-                const roomData = rooms[roomKey];
+                const allRooms = snap.val();
+                let foundRoom = null;
+                let foundKey = null;
 
-                document.getElementById('room-name-display').textContent = roomData.name || 'Room';
+                // Search for room with matching roomId
+                Object.keys(allRooms).forEach(key => {
+                    const room = allRooms[key];
+                    if (room.roomId === rid) {
+                        foundRoom = room;
+                        foundKey = key;
+                    }
+                });
+
+                if (!foundRoom) {
+                    alert("Room not found! Check ID and ensure PC app is running.");
+                    document.getElementById('status-msg').textContent = "Room not found";
+                    return;
+                }
+
+                document.getElementById('room-name-display').textContent = foundRoom.name || 'Room';
                 document.getElementById('room-id-display').textContent = 'ID: ' + rid;
 
-                const hostPeerId = roomData.hostPeerId;
-                console.log("Found Room:", roomData.name, "HostID:", hostPeerId);
+                const hostPeerId = foundRoom.hostPeerId;
+                console.log("Found Room:", foundRoom.name, "HostID:", hostPeerId);
 
                 if (!hostPeerId) {
                     alert("Room found but Host Peer ID is missing. Make sure PC is running.");
@@ -357,7 +358,7 @@
                 }
 
                 startPeerConnection(rid, hostPeerId);
-                setupPresence(rid, roomKey);
+                setupPresence(rid, foundKey);
 
             }).catch(err => {
                 console.error(err);
@@ -367,7 +368,7 @@
 
         function setupPresence(rid, roomKey) {
             const uid = 'phone_' + Math.floor(Math.random() * 10000000);
-            
+
             if (!roomKey) {
                 database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
                     if (snap.exists()) {
@@ -402,7 +403,7 @@
                 hostPeerId = `fcp-v2-host-${rid}`;
                 console.log("Using generated PeerID:", hostPeerId);
             }
-            
+
             peer = new Peer(peerConfig);
             peer.on('open', (id) => {
                 // Connect to the specific Host Peer ID from Firebase

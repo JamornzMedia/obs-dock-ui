@@ -63,6 +63,8 @@ window.initOnlinePresenceSystem = () => {
         name: identity.name.substring(0, 30),
         province: identity.province || "Unknown",
         platform: "PC",
+        roomId: window.currentRoomId || "000000", // Add roomId for mobile lookup
+        hostPeerId: window.myPeerId || `fcp-v2-host-${window.currentRoomId || '000000'}`, // Add hostPeerId for mobile connection
         last_seen: firebase.database.ServerValue.TIMESTAMP
     };
 
@@ -93,6 +95,8 @@ window.initOnlinePresenceSystem = () => {
             name: id.name.substring(0, 30),
             province: id.province || "Unknown",
             platform: "PC",
+            roomId: window.currentRoomId || "000000",
+            hostPeerId: window.myPeerId || `fcp-v2-host-${window.currentRoomId || '000000'}`,
             last_seen: firebase.database.ServerValue.TIMESTAMP
         });
     };
