@@ -2118,6 +2118,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (mainSceneInput) mainSceneInput.value = localStorage.getItem('obsMainSceneName') || 'MainScene';
         if (replaySceneInput) replaySceneInput.value = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
+
+        // Reset View based on state
+        const createUI = document.getElementById('mobileCreateUI');
+        const connUI = document.getElementById('remoteConnectionUI');
+        if (createUI && connUI) {
+            if (window.hostPeer && window.hostPeer.open) {
+                createUI.style.display = 'none';
+                connUI.style.display = 'block';
+            } else {
+                createUI.style.display = 'block';
+                connUI.style.display = 'none';
+            }
+        }
     };
 
     const mobileBtn = document.getElementById('mobileControlBtn');
@@ -2135,16 +2148,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mainSceneInput) localStorage.setItem('obsMainSceneName', mainSceneInput.value.trim() || 'MainScene');
             if (replaySceneInput) localStorage.setItem('obsReplaySceneName', replaySceneInput.value.trim() || 'SceneReplay');
 
-            // Show Connection UI
+            // Switch UI
+            const createUI = document.getElementById('mobileCreateUI');
             const connUI = document.getElementById('remoteConnectionUI');
+            if (createUI) createUI.style.display = 'none';
             if (connUI) connUI.style.display = 'block';
 
-            // Optionally refresh host with new room name if needed
-            const roomNameInput = document.getElementById('remoteRoomName');
-            if (roomNameInput && roomNameInput.value) {
-                // Update Firebase name if we had logic for it, but for now just UI
+            // Initialize Host
+            if (window.setupMobileRoomLogic) window.setupMobileRoomLogic();
+        });
+    }
+
+    // Close Room Button
+    const closeRoomBtn = document.getElementById('closeRoomBtn');
+    if (closeRoomBtn) {
+        closeRoomBtn.addEventListener('click', () => {
+            // Destroy Peer
+            if (window.hostPeer) {
+                window.hostPeer.destroy();
+                window.hostPeer = null;
             }
-            createRoomBtn.style.display = 'none'; // Hide button after creating
+            window.hostConn = [];
+
+            // Reset UI
+            const createUI = document.getElementById('mobileCreateUI');
+            const connUI = document.getElementById('remoteConnectionUI');
+            if (createUI) createUI.style.display = 'block';
+            if (connUI) connUI.style.display = 'none';
+
+            const statusEl = document.getElementById('remoteStatusText');
+            if (statusEl) {
+                statusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> รอการเชื่อมต่อ...';
+                statusEl.style.color = '#94a3b8';
+            }
+
+            showToast('Room Closed', 'info');
         });
     }
 
@@ -2380,6 +2418,7 @@ window.initMobileHost = (customRoomId) => {
     const fullUrl = `${baseUrl}?room=${roomId}`;
 
     const qrImg = document.getElementById('remoteQrCode');
+    // Using simple img src for QR
     if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
 
     const mobileLinkInput = document.getElementById('mobileLinkInput');
