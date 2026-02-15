@@ -63,6 +63,7 @@ let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
+window.userIdentity = userIdentity;
 
 const thaiProvinces = [
     "à¸à¸£à¸¸à¸‡à¹€à¸—à¸žà¸¡à¸«à¸²à¸™à¸„à¸£", "à¸à¸£à¸°à¸šà¸µà¹ˆ", "à¸à¸²à¸à¸ˆà¸™à¸šà¸¸à¸£à¸µ", "à¸à¸²à¸¬à¸ªà¸´à¸™à¸˜à¸¸à¹Œ", "à¸à¸³à¹à¸žà¸‡à¹€à¸žà¸Šà¸£", "à¸‚à¸­à¸™à¹à¸à¹ˆà¸™", "à¸ˆà¸±à¸™à¸—à¸šà¸¸à¸£à¸µ", "à¸‰à¸°à¹€à¸Šà¸´à¸‡à¹€à¸—à¸£à¸²", "à¸Šà¸¥à¸šà¸¸à¸£à¸µ", "à¸Šà¸±à¸¢à¸™à¸²à¸—",
