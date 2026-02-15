@@ -1677,6 +1677,17 @@ const setupEventListeners = () => {
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
 
+    if (elements.copyExcelColumnsBtn) {
+        elements.copyExcelColumnsBtn.addEventListener('click', () => {
+            const copyText = document.getElementById("excelColumnList");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                window.showToast("Copied headers for Excel!", "success");
+            });
+        });
+    }
+
     // Expose closeAllPopups to window for inline onclicks
     window.closeAllPopups = closeAllPopups;
 
@@ -2052,6 +2063,41 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
     setupMobileRoomLogic();
 
+    // V2.9.1: Copy Table to Clipboard (For Excel)
+    window.copyTableToClipboard = (tableId) => {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        let txt = "";
+
+        // Headers
+        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+        txt += headers.join("\t") + "\n";
+
+        // Rows
+        const rows = table.querySelectorAll("tbody tr");
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll("td"));
+            const rowData = cells.map(td => {
+                // Check inputs/selects first
+                const input = td.querySelector("input, select");
+                if (input) {
+                    if (input.type === 'checkbox') return input.checked ? 'TRUE' : 'FALSE';
+                    return input.value;
+                }
+                return td.innerText.trim();
+            });
+            txt += rowData.join("\t") + "\n";
+        });
+
+        navigator.clipboard.writeText(txt).then(() => {
+            window.showToast("Table copied to clipboard! Paste in Excel.", "success");
+        }).catch(err => {
+            console.error("Failed to copy: ", err);
+            window.showToast("Failed to copy table.", "error");
+        });
+    };
+
     // Global function for HTML onclick
     window.openMobileControlPopup = () => {
         const popup = document.getElementById('mobileControlPopup');
@@ -2398,26 +2444,39 @@ function setupConnection(conn) {
 window.broadcastToMobile = () => {
     if (!hostConn.length) return;
 
+    // Get Actions for Mobile
+    const actionSettings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
+    const actions = actionSettings.map((btn, index) => ({
+        name: btn.name || `Action ${index + 1}`,
+        index: index + 1
+    })).filter(a => a.name);
+
+    // Get current Match ID
+    const matchIdEl = document.getElementById('matchID');
+    const currentMatchId = matchIdEl ? matchIdEl.textContent : "1";
+
     const state = {
-        type: 'UPDATE_STATE',
+        type: 'stateUpdate', // FIXED: Match OBSScorePhone.html
+        matchId: currentMatchId, // Added Match ID
         teamA: {
             name: masterTeamA.name,
             score: masterTeamA.score,
             score2: masterTeamA.score2,
-            color1: masterTeamA.color1,
+            color: masterTeamA.color1, // FIXED: Mobile expects 'color', not 'color1'
             color2: masterTeamA.color2
         },
         teamB: {
             name: masterTeamB.name,
             score: masterTeamB.score,
             score2: masterTeamB.score2,
-            color1: masterTeamB.color1,
+            color: masterTeamB.color1, // FIXED: Mobile expects 'color'
             color2: masterTeamB.color2
         },
         timer: elements.timerText.textContent,
         half: elements.halfText.textContent,
         injury: elements.injuryTimeDisplay.textContent,
-        isPaused: !interval
+        isPaused: !interval,
+        actions: actions // Added Actions List
     };
 
     hostConn.forEach(conn => {
@@ -2426,34 +2485,71 @@ window.broadcastToMobile = () => {
 };
 
 function handleMobileCommand(data) {
-    switch (data.type) {
-        case 'SCORE':
-            if (data.target === 'score') changeScore(data.team, data.delta);
-            if (data.target === 'score2') changeScore2(data.team, data.delta);
-            break;
-        case 'TIMER':
-            if (data.action === 'toggle') {
-                if (interval) stopTimer(); else startTimer();
-            }
-            if (data.action === 'reset_start') resetToStartTime();
-            if (data.action === 'reset_zero') resetToZero();
-            break;
-        case 'HALF':
-            toggleHalf();
-            break;
-        case 'INJURY':
-            changeInjuryTime(data.delta);
-            break;
-        case 'SWAP':
-            swapTeams();
-            break;
-        case 'NAME':
-            // Update name
-            if (data.team === 'A') {
-                updateTeamUI('A', data.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+    console.log("Mobile Command:", data);
+
+    // Normalize type to lowercase for safety
+    const type = (data.type || '').toLowerCase();
+
+    switch (type) {
+        case 'score':
+            // { type: 'score', team, delta, isSub }
+            if (data.isSub) {
+                changeScore2(data.team, data.delta);
             } else {
-                updateTeamUI('B', data.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
+                changeScore(data.team, data.delta);
             }
+            break;
+
+        case 'timer':
+            // { type, val, action, name }
+            if (data.action === 'playpause') {
+                if (interval) stopTimer(); else startTimer();
+            } else if (data.action === 'reset') {
+                resetToStartTime(); // Or resetToZero depending on button? Mobile says 'undo' icon -> resetToStartTime usually
+            } else if (data.action === 'half') {
+                toggleHalf();
+            }
+            break;
+
+        case 'obs':
+            // { type: 'obs', action: 'saveReplay' | 'scene', name: 'SceneName' }
+            if (window.obs) {
+                if (data.action === 'saveReplay') {
+                    window.obs.call('SaveReplayBuffer').catch(err => console.error("Replay Error", err));
+                    showToast("Replay Saved!", "success");
+                } else if (data.action === 'scene' && data.name) {
+                    window.obs.call('SetCurrentProgramScene', { sceneName: data.name })
+                        .catch(err => console.error("Scene Error", err));
+                }
+            }
+            break;
+
+        case 'updateteam':
+            // { type: 'updateTeam', team, name, color1, color2 }
+            if (data.team === 'A') {
+                updateTeamUI('A', data.name, masterTeamA.logoFile, data.color1, data.color2);
+            } else if (data.team === 'B') {
+                updateTeamUI('B', data.name, masterTeamB.logoFile, data.color1, data.color2);
+            }
+            break;
+
+        case 'actionbtn':
+            // { type: 'actionBtn', index }
+            if (data.index) {
+                triggerAction(data.index);
+            }
+            break;
+
+        case 'loadminmatch': // loadMatch
+            if (data.val) {
+                // Implement load match logic if exists, or just update display
+                const matchIdEl = document.getElementById('matchID');
+                if (matchIdEl) matchIdEl.textContent = data.val;
+            }
+            break;
+
+        case 'requeststate':
+            broadcastToMobile();
             break;
     }
 }

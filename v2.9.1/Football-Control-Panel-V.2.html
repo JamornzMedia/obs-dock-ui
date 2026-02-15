@@ -104,8 +104,8 @@
             /* Reduced from 24px */
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            /* Reduced from 16px */
+            gap: 5px;
+            /* Reduced from 16px to 5px per user request */
             max-width: 900px;
             margin: 0 auto;
         }
@@ -2234,7 +2234,7 @@
     </div>
     <div class="container">
         <div class="card"
-            style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 10px;">
+            style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px;">
 
             <div style="display: flex; gap: 10px; align-items: center;">
                 <!-- Online Count: PC -->
@@ -2525,7 +2525,13 @@
             </div>
 
             <div class="item-list">
-                <h4 data-lang="tagsTitle"></h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0;" data-lang="tagsTitle"></h4>
+                    <button class="btn-secondary" onclick="copyTableToClipboard('tagsTable')" title="Copy to Excel"
+                        style="padding: 4px 8px; font-size: 0.8rem;">
+                        <i class="fas fa-copy"></i> Copy Table
+                    </button>
+                </div>
                 <table class="tags-table" id="tagsTable"></table>
             </div>
             <div class="row center" style="margin-top: 15px;">
@@ -2536,7 +2542,13 @@
 
         <!-- Tab 2: Action Buttons -->
         <div class="settings-tab-content" id="settingsTabActions">
-            <h4 style="margin: 0;"><i class="fas fa-cogs"></i> <span data-lang="actionSettingsTitle"></span></h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <h4 style="margin: 0;"><i class="fas fa-cogs"></i> <span data-lang="actionSettingsTitle"></span></h4>
+                <button class="btn-secondary" onclick="copyTableToClipboard('actionSettingsTable')"
+                    title="Copy to Excel" style="padding: 4px 8px; font-size: 0.8rem;">
+                    <i class="fas fa-copy"></i> Copy Table
+                </button>
+            </div>
             <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;"
                 data-lang="actionSettingsDesc"></p>
             <table class="action-settings-table" id="actionSettingsTable">
@@ -2558,7 +2570,13 @@
 
         <!-- Tab 3: Keybinds -->
         <div class="settings-tab-content" id="settingsTabKeybinds">
-            <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <h4 style="margin: 0;"><i class="fas fa-keyboard"></i> <span data-lang="keybindsTitle"></span></h4>
+                <button class="btn-secondary" onclick="copyTableToClipboard('keybindsTable')" title="Copy to Excel"
+                    style="padding: 4px 8px; font-size: 0.8rem;">
+                    <i class="fas fa-copy"></i> Copy Table
+                </button>
+            </div>
             <table class="keybind-table" id="keybindsTable">
                 <thead>
                     <tr>
@@ -2745,7 +2763,7 @@
                     <p data-lang-html="dsExcelGuide" style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 8px;"></p>
                     <div style="position: relative;">
                         <textarea id="excelColumnList" readonly
-                            style="width: 100%; height: 60px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-family: monospace; font-size: 0.8rem; resize: none;">Match ID, TeamA, TeamB, ColorA, ColorB, ColorA2, ColorB2, LogoA, LogoB, label1, label2, label3, label4, label5</textarea>
+                            style="width: 100%; height: 60px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; padding: 5px; font-family: monospace; font-size: 0.8rem; resize: none; white-space: pre;">Match ID	TeamA	TeamB	ColorA	ColorB	ColorA2	ColorB2	LogoA	LogoB	label1	label2	label3	label4	label5</textarea>
                         <button id="copyExcelColumnsBtn" class="btn-secondary"
                             style="position: absolute; right: 5px; top: 5px; padding: 2px 8px; font-size: 0.8rem;">
                             <i class="fas fa-copy"></i> <span data-lang="dsCopyColumns">Copy</span>
