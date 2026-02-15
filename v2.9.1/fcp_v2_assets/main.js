@@ -1294,10 +1294,7 @@ const toggleHalf = () => {
     half = activeHalves[nextIndex];
 
     // V2.9.1: Styled Half Text
-    // "1st" -> 1st <span class="half-label">Half</span>
-    const ordinal = half;
-    const html = `<span class="half-ordinal">${ordinal}</span><span class="half-label">Half</span>`;
-
+    const html = `<span class="half-ordinal">${half}</span>`;
     elements.halfText.innerHTML = html;
     setText('half_text', half);
 };
@@ -2057,7 +2054,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Set Initial Half Display Style
     if (elements.halfText) {
-        elements.halfText.innerHTML = `<span class="half-ordinal">${half}</span><span class="half-label">Half</span>`;
+        elements.halfText.innerHTML = `<span class="half-ordinal">${half}</span>`;
     }
 
     initApp();
@@ -2111,16 +2108,44 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => overlay.classList.add('active'), 10);
         }
 
-        // Pre-fill Name
+        // Pre-fill Name & Load Settings
         const roomNameInput = document.getElementById('remoteRoomName');
+        const mainSceneInput = document.getElementById('obsMainSceneName');
+        const replaySceneInput = document.getElementById('obsReplaySceneName');
+
         if (roomNameInput && window.userIdentity && window.userIdentity.name) {
             roomNameInput.value = window.userIdentity.name;
         }
+        if (mainSceneInput) mainSceneInput.value = localStorage.getItem('obsMainSceneName') || 'MainScene';
+        if (replaySceneInput) replaySceneInput.value = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
     };
 
     const mobileBtn = document.getElementById('mobileControlBtn');
     if (mobileBtn) {
         mobileBtn.addEventListener('click', window.openMobileControlPopup);
+    }
+
+    // V2.9.1: Create Room / Save Settings
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    if (createRoomBtn) {
+        createRoomBtn.addEventListener('click', () => {
+            // Save Scene Names
+            const mainSceneInput = document.getElementById('obsMainSceneName');
+            const replaySceneInput = document.getElementById('obsReplaySceneName');
+            if (mainSceneInput) localStorage.setItem('obsMainSceneName', mainSceneInput.value.trim() || 'MainScene');
+            if (replaySceneInput) localStorage.setItem('obsReplaySceneName', replaySceneInput.value.trim() || 'SceneReplay');
+
+            // Show Connection UI
+            const connUI = document.getElementById('remoteConnectionUI');
+            if (connUI) connUI.style.display = 'block';
+
+            // Optionally refresh host with new room name if needed
+            const roomNameInput = document.getElementById('remoteRoomName');
+            if (roomNameInput && roomNameInput.value) {
+                // Update Firebase name if we had logic for it, but for now just UI
+            }
+            createRoomBtn.style.display = 'none'; // Hide button after creating
+        });
     }
 
     const defaultButton = document.getElementById('defaultOpen');
@@ -2505,7 +2530,8 @@ function handleMobileCommand(data) {
             if (data.action === 'playpause') {
                 if (interval) stopTimer(); else startTimer();
             } else if (data.action === 'reset') {
-                resetToStartTime(); // Or resetToZero depending on button? Mobile says 'undo' icon -> resetToStartTime usually
+                // USER REQUEST: Reset to Zero, not Start Time
+                resetToZero();
             } else if (data.action === 'half') {
                 toggleHalf();
             }
@@ -2518,7 +2544,15 @@ function handleMobileCommand(data) {
                     window.obs.call('SaveReplayBuffer').catch(err => console.error("Replay Error", err));
                     showToast("Replay Saved!", "success");
                 } else if (data.action === 'scene' && data.name) {
-                    window.obs.call('SetCurrentProgramScene', { sceneName: data.name })
+                    // Map generic mobile names to Configured names
+                    let targetScene = data.name;
+                    if (data.name === 'MainScene') {
+                        targetScene = localStorage.getItem('obsMainSceneName') || 'MainScene';
+                    } else if (data.name === 'SceneReplay') {
+                        targetScene = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
+                    }
+
+                    window.obs.call('SetCurrentProgramScene', { sceneName: targetScene })
                         .catch(err => console.error("Scene Error", err));
                 }
             }
@@ -2554,3 +2588,52 @@ function handleMobileCommand(data) {
     }
 }
 
+
+
+// V2.9.1: Trigger Action from Mobile or PC
+window.triggerAction = async (index) => {
+    const settings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
+    const btn = settings[index - 1]; // Index is 1-based
+
+    if (!btn || !window.obs) return;
+
+    try {
+        if (btn.actionType === 'scene') {
+            await window.obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
+            showToast(`Switched to scene: ${btn.targetSource}`, 'success');
+        }
+        else if (btn.actionType === 'toggle' || btn.actionType === 'show' || btn.actionType === 'hide') {
+            // Get Current Scene
+            const currentScene = await window.obs.call('GetCurrentProgramScene');
+            const sceneName = currentScene.currentProgramSceneName;
+
+            // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
+            // Note: This might fail if source not in scene.
+            try {
+                const itemIdResp = await window.obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
+                const sceneItemId = itemIdResp.sceneItemId;
+
+                let enabled = true;
+                if (btn.actionType === 'show') enabled = true;
+                else if (btn.actionType === 'hide') enabled = false;
+                else if (btn.actionType === 'toggle') {
+                    const itemState = await window.obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
+                    enabled = !itemState.sceneItemEnabled;
+                }
+
+                await window.obs.call('SetSceneItemEnabled', {
+                    sceneName,
+                    sceneItemId,
+                    sceneItemEnabled: enabled
+                });
+                showToast(`${btn.actionType} source: ${btn.targetSource}`, 'success');
+            } catch (itemIdErr) {
+                console.error("Item ID Error", itemIdErr);
+                showToast(`Source not found in current scene`, 'error');
+            }
+        }
+    } catch (err) {
+        console.error("Action Error:", err);
+        showToast(`Action Failed: ${err.message || err.error}`, 'error');
+    }
+};

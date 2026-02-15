@@ -2159,7 +2159,7 @@
 
     <!-- Mobile Control Popup -->
     <div id="mobileControlPopup"
-        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; z-index: 1001; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; max-width: 350px; width: 90%; z-index: 1001; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
         <div style="margin-bottom: 20px;">
             <h3
                 style="margin: 0 0 8px 0; color: white; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
@@ -2174,6 +2174,28 @@
             <label style="display: block; color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px;">ชื่อห้อง</label>
             <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
                 style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 12px; color: white; border-radius: 8px; font-size: 1rem;">
+        </div>
+
+        <!-- V2.9.1: OBS Scene Configuration -->
+        <div
+            style="margin-bottom: 16px; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            <div style="font-size: 0.85rem; color: #93c5fd; margin-bottom: 8px; font-weight: bold;">
+                <i class="fas fa-video"></i> OBS Control Settings
+            </div>
+
+            <label style="display: block; color: #cbd5e1; font-size: 0.8rem; margin-bottom: 4px;">Main Scene Name
+                (ฉากหลัก)</label>
+            <input type="text" id="obsMainSceneName" placeholder="MainScene" value="MainScene"
+                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: white; border-radius: 6px; font-size: 0.9rem; margin-bottom: 8px;">
+
+            <label style="display: block; color: #cbd5e1; font-size: 0.8rem; margin-bottom: 4px;">Replay Scene Name
+                (ฉากรีเพลย์)</label>
+            <input type="text" id="obsReplaySceneName" placeholder="SceneReplay" value="SceneReplay"
+                style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: white; border-radius: 6px; font-size: 0.9rem;">
+
+            <p style="margin: 8px 0 0 0; font-size: 0.75rem; color: #64748b;">
+                * ตั้งชื่อ Scene ใน OBS ให้ตรงกับช่องนี้เพื่อให้ปุ่มบนมือถือใช้งานได้
+            </p>
         </div>
 
         <!-- Create Room Button -->
