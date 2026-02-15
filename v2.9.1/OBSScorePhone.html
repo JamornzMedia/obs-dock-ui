@@ -4,293 +4,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSScore Remote V2</title>
+    <title>OBS Scoreboard Remote</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
+            font-family: 'Inter', sans-serif;
             background-color: #0f172a;
             color: white;
             touch-action: manipulation;
+        }
+
+        .btn-active:active {
+            transform: scale(0.95);
+        }
+
+        .no-select {
             user-select: none;
+            -webkit-user-select: none;
         }
 
-        .btn-control {
-            @apply active:scale-95 transition-transform shadow-lg flex items-center justify-center rounded-xl font-bold;
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #22c55e;
         }
 
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: flex;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #3b82f6;
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #22c55e;
         }
     </style>
 </head>
 
-<body class="h-screen w-screen overflow-hidden flex flex-col">
+<body class="h-screen flex flex-col overflow-hidden">
 
     <!-- LOGIN SCREEN -->
-    <div id="loginPage" class="page active flex-col items-center justify-center h-full p-6 space-y-6">
-        <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-            OBSScore Remote
-        </h1>
-
-        <div class="w-full max-w-sm bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-            <label class="block text-slate-400 text-sm mb-2">Room ID (from Desktop)</label>
-            <input type="number" id="roomIdInput" placeholder="Enter 6-digit ID"
-                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-2xl text-center tracking-widest text-white mb-4 placeholder-slate-600">
-
-            <button onclick="connectToHost()" id="connectBtn"
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all">
-                CONNECT
-            </button>
-            <p id="statusMsg" class="text-center mt-3 text-slate-500 text-sm h-5"></p>
+    <div id="loginScreen" class="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-white mb-2">OBS Remote</h1>
+            <p class="text-slate-400">Enter Room ID from PC</p>
         </div>
+
+        <div class="w-full max-w-xs space-y-4">
+            <input type="text" id="roomIdInput" placeholder="Room ID (6 Digits)" maxlength="6"
+                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-center text-2xl font-bold tracking-widest focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-600"
+                pattern="[0-9]*" inputmode="numeric">
+
+            <button id="connectBtn"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-blue-900/20 transition-all btn-active">
+                Connect
+            </button>
+        </div>
+
+        <div id="connectionStatus" class="text-sm text-slate-500 h-6"></div>
     </div>
 
     <!-- CONTROL PANEL -->
-    <div id="controlPage" class="page flex-col h-full bg-slate-900">
-        <!-- HEADER -->
-        <div class="h-16 bg-slate-800 flex items-center justify-between px-4 border-b border-slate-700">
-            <div class="text-xs text-slate-400">
-                <div id="connStatus" class="flex items-center gap-1 text-green-400">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div> Connected
-                </div>
+    <div id="controlPanel" class="hidden flex-1 flex flex-col bg-slate-900">
+        <!-- Header -->
+        <div class="bg-slate-800 p-3 flex justify-between items-center shadow-md z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span id="roomNameDisplay" class="font-semibold text-sm text-slate-300">Room</span>
             </div>
-            <div class="text-xl font-mono font-bold text-yellow-500" id="timerDisplay">00:00</div>
-            <button onclick="disconnect()" class="text-red-400 hover:text-red-300 p-2"><i
-                    class="fas fa-power-off"></i></button>
+            <button id="disconnectBtn"
+                class="text-red-400 text-xs px-2 py-1 bg-red-500/10 rounded border border-red-500/20">
+                Disconnect
+            </button>
         </div>
 
-        <!-- TEAMS -->
-        <div class="flex-1 overflow-y-auto p-2 space-y-2">
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
 
-            <!-- TEAM A -->
-            <div class="bg-slate-800 rounded-xl p-3 border-l-4" id="teamABorder" style="border-color: #fff;">
-                <div class="flex justify-between items-center mb-2">
-                    <input type="text" id="nameA" onchange="updateName('A', this.value)"
-                        class="bg-transparent text-lg font-bold w-3/4 truncate focus:bg-slate-700 rounded px-1"
-                        value="Team A">
-                    <div class="flex space-x-1">
-                        <div class="w-4 h-4 rounded-full" id="colorA1"></div>
-                        <div class="w-4 h-4 rounded-full" id="colorA2"></div>
-                    </div>
+            <!-- TIMER -->
+            <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Timer</span>
+                    <span id="timerDisplay" class="text-3xl font-mono font-bold text-white tabular-nums">00:00</span>
                 </div>
-                <div class="grid grid-cols-4 gap-2 h-16">
-                    <button onclick="sendScore('A', -1, 'score')"
-                        class="btn-control bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg text-xl"><i
-                            class="fas fa-minus"></i></button>
-                    <div class="col-span-2 flex items-center justify-center bg-slate-900 rounded-lg text-4xl font-bold font-mono"
-                        id="scoreA">0</div>
-                    <button onclick="sendScore('A', 1, 'score')"
-                        class="btn-control bg-green-500/20 text-green-500 border border-green-500/50 rounded-lg text-xl"><i
-                            class="fas fa-plus"></i></button>
-                </div>
-                <!-- Yellow Cards -->
-                <div class="grid grid-cols-4 gap-2 mt-2 h-10">
-                    <div class="col-span-1 flex items-center justify-end text-xs text-yellow-500 pr-2">Cards:</div>
-                    <button onclick="sendScore('A', -1, 'score2')"
-                        class="btn-control bg-slate-700 text-slate-300 rounded">-</button>
-                    <div class="flex items-center justify-center bg-slate-900 rounded font-mono font-bold text-yellow-500"
-                        id="score2A">0</div>
-                    <button onclick="sendScore('A', 1, 'score2')"
-                        class="btn-control bg-slate-700 text-slate-300 rounded">+</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btnTimerPlay"
+                        class="bg-green-600/20 text-green-400 border border-green-600/30 hover:bg-green-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button id="btnTimerPause"
+                        class="bg-yellow-600/20 text-yellow-400 border border-yellow-600/30 hover:bg-yellow-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active hidden">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button id="btnTimerReset"
+                        class="bg-slate-700 text-slate-300 hover:bg-slate-600 py-3 rounded-xl font-bold btn-active">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
                 </div>
             </div>
 
-            <!-- TEAM B -->
-            <div class="bg-slate-800 rounded-xl p-3 border-l-4" id="teamBBorder" style="border-color: #fff;">
-                <div class="flex justify-between items-center mb-2">
-                    <input type="text" id="nameB" onchange="updateName('B', this.value)"
-                        class="bg-transparent text-lg font-bold w-3/4 truncate focus:bg-slate-700 rounded px-1"
-                        value="Team B">
-                    <div class="flex space-x-1">
-                        <div class="w-4 h-4 rounded-full" id="colorB1"></div>
-                        <div class="w-4 h-4 rounded-full" id="colorB2"></div>
+            <!-- TEAMS SCORE -->
+            <div class="space-y-4">
+                <!-- TEAM A -->
+                <div class="bg-slate-800 rounded-2xl p-1 border-l-4 border-l-transparent transition-all" id="cardTeamA">
+                    <div class="p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <input type="text" id="nameTeamA"
+                                class="bg-transparent font-bold text-lg text-white w-full focus:outline-none focus:bg-slate-700/50 rounded px-1"
+                                value="Team A">
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button id="btnScoreAMinus"
+                                class="w-12 h-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center text-xl font-bold border border-red-500/30 btn-active"><i
+                                    class="fas fa-minus"></i></button>
+                            <div id="scoreTeamA"
+                                class="flex-1 text-center text-5xl font-bold text-white bg-slate-900/50 rounded-xl py-2 tabular-nums">
+                                0</div>
+                            <button id="btnScoreAPlus"
+                                class="w-12 h-12 bg-green-500/20 text-green-400 rounded-xl flex items-center justify-center text-xl font-bold border border-green-500/30 btn-active"><i
+                                    class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <!-- Extra Controls A -->
+                    <div class="bg-slate-900/30 p-2 rounded-b-xl flex gap-2 justify-center" id="score2ControlsA">
+                        <span class="text-xs text-slate-500 self-center mr-2">Score 2</span>
+                        <button id="btnScore2AMinus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
+                                class="fas fa-minus"></i></button>
+                        <span id="score2TeamA" class="w-8 text-center font-bold text-slate-300 self-center">0</span>
+                        <button id="btnScore2APlus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
+                                class="fas fa-plus"></i></button>
                     </div>
                 </div>
-                <div class="grid grid-cols-4 gap-2 h-16">
-                    <button onclick="sendScore('B', -1, 'score')"
-                        class="btn-control bg-red-500/20 text-red-500 border border-red-500/50 rounded-lg text-xl"><i
-                            class="fas fa-minus"></i></button>
-                    <div class="col-span-2 flex items-center justify-center bg-slate-900 rounded-lg text-4xl font-bold font-mono"
-                        id="scoreB">0</div>
-                    <button onclick="sendScore('B', 1, 'score')"
-                        class="btn-control bg-green-500/20 text-green-500 border border-green-500/50 rounded-lg text-xl"><i
-                            class="fas fa-plus"></i></button>
-                </div>
-                <!-- Yellow Cards -->
-                <div class="grid grid-cols-4 gap-2 mt-2 h-10">
-                    <div class="col-span-1 flex items-center justify-end text-xs text-yellow-500 pr-2">Cards:</div>
-                    <button onclick="sendScore('B', -1, 'score2')"
-                        class="btn-control bg-slate-700 text-slate-300 rounded">-</button>
-                    <div class="flex items-center justify-center bg-slate-900 rounded font-mono font-bold text-yellow-500"
-                        id="score2B">0</div>
-                    <button onclick="sendScore('B', 1, 'score2')"
-                        class="btn-control bg-slate-700 text-slate-300 rounded">+</button>
+
+                <!-- TEAM B -->
+                <div class="bg-slate-800 rounded-2xl p-1 border-l-4 border-l-transparent transition-all" id="cardTeamB">
+                    <div class="p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <input type="text" id="nameTeamB"
+                                class="bg-transparent font-bold text-lg text-white w-full focus:outline-none focus:bg-slate-700/50 rounded px-1"
+                                value="Team B">
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button id="btnScoreBMinus"
+                                class="w-12 h-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center text-xl font-bold border border-red-500/30 btn-active"><i
+                                    class="fas fa-minus"></i></button>
+                            <div id="scoreTeamB"
+                                class="flex-1 text-center text-5xl font-bold text-white bg-slate-900/50 rounded-xl py-2 tabular-nums">
+                                0</div>
+                            <button id="btnScoreBPlus"
+                                class="w-12 h-12 bg-green-500/20 text-green-400 rounded-xl flex items-center justify-center text-xl font-bold border border-green-500/30 btn-active"><i
+                                    class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <!-- Extra Controls B -->
+                    <div class="bg-slate-900/30 p-2 rounded-b-xl flex gap-2 justify-center" id="score2ControlsB">
+                        <span class="text-xs text-slate-500 self-center mr-2">Score 2</span>
+                        <button id="btnScore2BMinus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
+                                class="fas fa-minus"></i></button>
+                        <span id="score2TeamB" class="w-8 text-center font-bold text-slate-300 self-center">0</span>
+                        <button id="btnScore2BPlus" class="w-8 h-8 bg-slate-700 rounded text-slate-300 btn-active"><i
+                                class="fas fa-plus"></i></button>
+                    </div>
                 </div>
             </div>
 
             <!-- ACTIONS -->
-            <div class="grid grid-cols-2 gap-2 mt-4">
-                <button onclick="sendTimer('toggle')" id="playPauseBtn" class="btn-control bg-blue-600 h-14 text-xl"><i
-                        class="fas fa-play"></i></button>
-                <button onclick="sendCommand('SWAP')"
-                    class="btn-control bg-purple-600 h-14 text-white font-bold text-sm">SWAP SIDES</button>
-                <button onclick="sendCommand('INJURY', {delta: 1})"
-                    class="btn-control bg-slate-700 h-10 text-sm text-green-400">+1 Injury</button>
-                <button onclick="sendTimer('reset_start')"
-                    class="btn-control bg-slate-700 h-10 text-sm text-yellow-400">Reset Time</button>
-            </div>
-
-            <div class="mt-4 text-center">
-                <button onclick="sendCommand('HALF')"
-                    class="bg-slate-800 px-4 py-2 rounded-lg text-slate-400 text-sm border border-slate-700"
-                    id="halfDisplay">1st Half</button>
+            <div id="actionsPanel" class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-700/50">
+                <button id="btnSwap"
+                    class="col-span-2 bg-purple-600/20 text-purple-400 border border-purple-600/30 hover:bg-purple-600/30 py-3 rounded-xl font-bold flex justify-center items-center gap-2 btn-active">
+                    <i class="fas fa-exchange-alt"></i> Swap Teams
+                </button>
             </div>
 
         </div>
     </div>
 
+    <!-- SCRIPT -->
     <script>
+        // DOM Elements
+        const screens = { login: document.getElementById('loginScreen'), control: document.getElementById('controlPanel') };
+        const inputs = { room: document.getElementById('roomIdInput') };
+        const status = document.getElementById('connectionStatus');
+        const btns = {
+            connect: document.getElementById('connectBtn'),
+            disconnect: document.getElementById('disconnectBtn'),
+            timerPlay: document.getElementById('btnTimerPlay'),
+            timerPause: document.getElementById('btnTimerPause'),
+            timerReset: document.getElementById('btnTimerReset'),
+            swap: document.getElementById('btnSwap')
+        };
+        const display = {
+            roomName: document.getElementById('roomNameDisplay'),
+            timer: document.getElementById('timerDisplay'),
+            scoreA: document.getElementById('scoreTeamA'),
+            scoreB: document.getElementById('scoreTeamB'),
+            nameA: document.getElementById('nameTeamA'),
+            nameB: document.getElementById('nameTeamB'),
+            score2A: document.getElementById('score2TeamA'),
+            score2B: document.getElementById('score2TeamB')
+        };
+
+        // State
         let peer = null;
         let conn = null;
-        let reconnectInterval = null;
+        let isTimerRunning = false;
 
-        // Auto-connect from URL param
+        // Init
+        // Check URL params for room
         const urlParams = new URLSearchParams(window.location.search);
-        const urlRoomId = urlParams.get('room');
-        if (urlRoomId) {
-            document.getElementById('roomIdInput').value = urlRoomId;
-        }
+        const roomHash = urlParams.get('room');
+        if (roomHash) { inputs.room.value = roomHash; }
 
-        function connectToHost() {
-            const roomId = document.getElementById('roomIdInput').value.trim();
-            if (roomId.length !== 6) {
-                showStatus("Invalid ID (must be 6 digits)", true);
-                return;
-            }
+        // Connect Handler
+        btns.connect.addEventListener('click', () => {
+            const roomId = inputs.room.value.trim();
+            if (roomId.length !== 6) { alert('Invalid Room ID'); return; }
 
-            showStatus("Connecting...", false);
-            document.getElementById('connectBtn').disabled = true;
-            document.getElementById('connectBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            if (peer) peer.destroy();
+            status.textContent = "Connecting...";
+            btns.connect.disabled = true;
 
             peer = new Peer();
+
             peer.on('open', (id) => {
                 const hostId = `fcp-v2-host-${roomId}`;
-                console.log('My ID:', id, 'Connecting to:', hostId);
                 conn = peer.connect(hostId);
-                setupConnection();
+
+                conn.on('open', () => {
+                    status.textContent = "Connected!";
+                    switchScreen('control');
+                    navigator.vibrate(50);
+                });
+
+                conn.on('data', (data) => {
+                    console.log('Received:', data);
+                    handleData(data);
+                });
+
+                conn.on('close', () => {
+                    alert('Disconnected from Host');
+                    location.reload();
+                });
+
+                conn.on('error', (err) => {
+                    status.textContent = "Connection Error";
+                    btns.connect.disabled = false;
+                });
             });
 
             peer.on('error', (err) => {
-                console.error(err);
-                if (err.type === 'peer-unavailable') {
-                    showStatus("Room not found!", true);
+                status.textContent = "Peer Error: " + err.type;
+                btns.connect.disabled = false;
+            });
+        });
+
+        btns.disconnect.addEventListener('click', () => location.reload());
+
+        // Command Generators
+        const send = (type, payload = {}) => {
+            if (conn && conn.open) {
+                conn.send({ type, ...payload });
+                navigator.vibrate(10);
+            }
+        };
+
+        // UI Handlers
+        btns.timerPlay.addEventListener('click', () => send('timer', { action: 'start' }));
+        btns.timerPause.addEventListener('click', () => send('timer', { action: 'stop' }));
+        btns.timerReset.addEventListener('click', () => send('timer', { action: 'reset' }));
+        btns.swap.addEventListener('click', () => send('swap'));
+
+        // Score Handlers
+        const setupScore = (team, type) => {
+            document.getElementById(`btnScore${type}${team}Plus`).addEventListener('click', () => send('score', { team, type: type === '' ? 'score' : 'score2', value: 1 }));
+            document.getElementById(`btnScore${type}${team}Minus`).addEventListener('click', () => send('score', { team, type: type === '' ? 'score' : 'score2', value: -1 }));
+        };
+        ['A', 'B'].forEach(t => { setupScore(t, ''); setupScore(t, '2'); });
+
+        // Name Inputs
+        ['A', 'B'].forEach(t => {
+            display[`name${t}`].addEventListener('change', (e) => {
+                send('updateName', { team: t, name: e.target.value });
+            });
+        });
+
+        // Data Handler
+        function handleData(data) {
+            if (data.type === 'UPDATE_STATE') {
+                // Timer
+                display.timer.textContent = data.timer;
+                if (data.isTimerRunning) {
+                    btns.timerPlay.classList.add('hidden');
+                    btns.timerPause.classList.remove('hidden');
                 } else {
-                    showStatus("Connection Error", true);
+                    btns.timerPlay.classList.remove('hidden');
+                    btns.timerPause.classList.add('hidden');
                 }
-                resetBtn();
-            });
-        }
 
-        function setupConnection() {
-            conn.on('open', () => {
-                console.log('Connected!');
-                document.getElementById('loginPage').classList.remove('active');
-                document.getElementById('controlPage').classList.add('active');
-            });
+                // Teams
+                const teamA = data.teamA;
+                const teamB = data.teamB;
 
-            conn.on('data', (data) => {
-                console.log('Received:', data);
-                if (data.type === 'UPDATE_STATE') {
-                    updateUI(data);
-                }
-            });
+                display.scoreA.textContent = teamA.score;
+                display.scoreB.textContent = teamB.score;
+                display.score2A.textContent = teamA.score2;
+                display.score2B.textContent = teamB.score2;
 
-            conn.on('close', () => {
-                alert('Disconnected from Host');
-                disconnect();
-            });
-        }
+                if (document.activeElement !== display.nameA) display.nameA.value = teamA.name;
+                if (document.activeElement !== display.nameB) display.nameB.value = teamB.name;
 
-        function updateUI(state) {
-            // Team A
-            document.getElementById('nameA').value = state.teamA.name;
-            document.getElementById('scoreA').textContent = state.teamA.score;
-            document.getElementById('score2A').textContent = state.teamA.score2;
-            document.getElementById('colorA1').style.backgroundColor = state.teamA.color1;
-            document.getElementById('colorA2').style.backgroundColor = state.teamA.color2;
-            document.getElementById('teamABorder').style.borderColor = state.teamA.color1;
+                // Colors
+                document.getElementById('cardTeamA').style.borderLeftColor = teamA.color1;
+                document.getElementById('cardTeamB').style.borderLeftColor = teamB.color1;
 
-            // Team B
-            document.getElementById('nameB').value = state.teamB.name;
-            document.getElementById('scoreB').textContent = state.teamB.score;
-            document.getElementById('score2B').textContent = state.teamB.score2;
-            document.getElementById('colorB1').style.backgroundColor = state.teamB.color1;
-            document.getElementById('colorB2').style.backgroundColor = state.teamB.color2;
-            document.getElementById('teamBBorder').style.borderColor = state.teamB.color1;
-
-            // Global
-            document.getElementById('timerDisplay').textContent = state.timer;
-            if (state.timer.includes(':')) {
-                if (state.isPaused) {
-                    document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
-                    document.getElementById('playPauseBtn').classList.remove('bg-yellow-600');
-                    document.getElementById('playPauseBtn').classList.add('bg-blue-600');
-                } else {
-                    document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
-                    document.getElementById('playPauseBtn').classList.remove('bg-blue-600');
-                    document.getElementById('playPauseBtn').classList.add('bg-yellow-600');
+                // Visibility (Sync with PC)
+                if (data.visibility) {
+                    const s2A = document.getElementById('score2ControlsA');
+                    const s2B = document.getElementById('score2ControlsB');
+                    if (data.visibility.score2) { s2A.classList.remove('hidden'); s2B.classList.remove('hidden'); }
+                    else { s2A.classList.add('hidden'); s2B.classList.add('hidden'); }
                 }
             }
-
-            document.getElementById('halfDisplay').textContent = state.halfName || "Half"; // simplified
         }
 
-        function sendScore(team, delta, target) {
-            if (navigator.vibrate) navigator.vibrate(50);
-            conn.send({ type: 'SCORE', team, delta, target });
-        }
-
-        function sendTimer(action) {
-            if (navigator.vibrate) navigator.vibrate(50);
-            conn.send({ type: 'TIMER', action });
-        }
-
-        function sendCommand(type, payload = {}) {
-            if (navigator.vibrate) navigator.vibrate(50);
-            conn.send({ type, ...payload });
-        }
-
-        function updateName(team, name) {
-            conn.send({ type: 'NAME', team, name });
-        }
-
-        function disconnect() {
-            if (peer) peer.destroy();
-            location.reload();
-        }
-
-        function showStatus(msg, isError) {
-            const el = document.getElementById('statusMsg');
-            el.textContent = msg;
-            el.className = isError ? "text-center mt-3 text-red-500 text-sm font-bold" : "text-center mt-3 text-slate-500 text-sm";
-        }
-
-        function resetBtn() {
-            document.getElementById('connectBtn').disabled = false;
-            document.getElementById('connectBtn').textContent = "CONNECT";
+        // Helper
+        function switchScreen(id) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[id].classList.remove('hidden');
         }
     </script>
 </body>

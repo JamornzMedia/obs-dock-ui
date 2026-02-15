@@ -2019,6 +2019,12 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.style.display = 'block';
             setTimeout(() => overlay.classList.add('active'), 10);
         }
+
+        // Pre-fill Name
+        const roomNameInput = document.getElementById('remoteRoomName');
+        if (roomNameInput && window.userIdentity && window.userIdentity.name) {
+            roomNameInput.value = window.userIdentity.name;
+        }
     };
 
     const mobileBtn = document.getElementById('mobileControlBtn');

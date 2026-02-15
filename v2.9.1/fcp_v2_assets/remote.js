@@ -168,33 +168,66 @@ window.renderOnlineUsersList = () => {
     if (!tbody || !window.onlineUsersSnapshot) return;
 
     tbody.innerHTML = '';
-    const users = window.onlineUsersSnapshot.val() || {};
-    let index = 1;
+    const rawUsers = window.onlineUsersSnapshot.val() || {};
 
-    Object.keys(users).forEach(key => {
-        const u = users[key];
-        const isMe = (key === window.myRoomKey);
-        const isPhone = key.startsWith('phone_') || key.startsWith('mobile_');
-        const displayName = key.replace(/^(com_|phone_|mobile_)/, '').replace(/_/g, ' ');
+    // Group users by Name
+    const groupedUsers = {};
+
+    Object.keys(rawUsers).forEach(key => {
+        const isPC = key.startsWith('com_');
+        const isMobile = key.startsWith('mobile_') || key.startsWith('phone_');
+        const name = key.replace(/^(com_|mobile_|phone_)/, '').replace(/_/g, ' ');
+
+        if (!groupedUsers[name]) {
+            groupedUsers[name] = {
+                name: name,
+                province: rawUsers[key].province || '-',
+                hasPC: false,
+                hasMobile: false,
+                isMe: false
+            };
+        }
+
+        if (isPC) groupedUsers[name].hasPC = true;
+        if (isMobile) groupedUsers[name].hasMobile = true;
+
+        // Check if "Me" (matches my sanitized name)
+        // We know myRoomKey is usually com_Name or mobile_Name
+        if (window.myRoomKey && window.myRoomKey.includes(key)) {
+            groupedUsers[name].isMe = true;
+        }
+        // Also check if I am the host of this name
+        if (window.userIdentity && window.userIdentity.name === name) {
+            groupedUsers[name].isMe = true;
+        }
+    });
+
+    let index = 1;
+    // Sort? Maybe by Name or IsMe first
+    const sortedNames = Object.keys(groupedUsers).sort((a, b) => {
+        if (groupedUsers[a].isMe) return -1;
+        if (groupedUsers[b].isMe) return 1;
+        return a.localeCompare(b);
+    });
+
+    sortedNames.forEach(name => {
+        const u = groupedUsers[name];
 
         const row = document.createElement('tr');
         row.style.borderBottom = '1px solid rgba(255,255,255,0.07)';
-        if (isMe) row.style.background = 'rgba(74, 222, 128, 0.1)';
+        if (u.isMe) row.style.background = 'rgba(74, 222, 128, 0.1)';
 
-        const platformIcon = isPhone
-            ? '<i class="fas fa-mobile-alt" style="color:#60a5fa;"></i>'
-            : '<i class="fas fa-desktop" style="color:#4ade80;"></i>';
-
-        // Type Label removed as per request
-        const typeLabel = '';
+        let icons = '';
+        if (u.hasPC) icons += '<i class="fas fa-desktop" style="color:#4ade80; margin-right:6px;" title="PC"></i>';
+        if (u.hasMobile) icons += '<i class="fas fa-mobile-alt" style="color:#60a5fa;" title="Mobile"></i>';
 
         row.innerHTML = `
             <td style="padding: 6px;">${index++}</td>
-            <td style="padding: 6px; font-weight: bold; color: ${isMe ? '#4ade80' : 'white'};">
-                ${displayName} ${isMe ? '(You)' : ''}
+            <td style="padding: 6px; font-weight: bold; color: ${u.isMe ? '#4ade80' : 'white'};">
+                ${u.name} ${u.isMe ? '(You)' : ''}
             </td>
-            <td style="padding: 6px; color: #94a3b8;">${u.province || '-'}</td>
-            <td style="padding: 6px; text-align: center;">${platformIcon}</td>
+            <td style="padding: 6px; color: #94a3b8;">${u.province}</td>
+            <td style="padding: 6px; text-align: center;">${icons}</td>
         `;
         tbody.appendChild(row);
     });
