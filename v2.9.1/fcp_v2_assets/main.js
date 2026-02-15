@@ -1861,7 +1861,7 @@ window.fcpAPI = {
 import './remote.js';
 
 // --- Welcome Screen Logic ---
-const initWelcomeScreen = () => {
+window.initWelcomeScreen = () => {
     const screen = $('welcomeScreen');
     const provinceSelect = $('visitorProvince');
     const nameInput = $('visitorName');
@@ -1980,6 +1980,6 @@ window.copyDetails = () => {
 
 // Call init on load
 window.addEventListener('load', () => {
-    initWelcomeScreen();
-    updateUserIdentityUI();
+    if (window.initWelcomeScreen) window.initWelcomeScreen();
+    if (window.updateUserIdentityUI) window.updateUserIdentityUI();
 });
