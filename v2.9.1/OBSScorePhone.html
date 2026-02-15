@@ -48,32 +48,30 @@
 
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <div id="login-screen" class="absolute inset-0 z-50 bg-neutral-900 flex flex-col justify-center p-6">
-        <div class="flex flex-col items-center justify-center py-6 bg-transparent mb-6">
-            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tighter leading-none"
-                style="font-family: Arial, sans-serif;">
-                OBSScore
-            </h1>
-            <div
-                class="mt-2 bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-1 rounded-full text-xl font-bold tracking-wide shadow-lg shadow-red-500/30">
-                REMOTE
-            </div>
+    <!-- Welcome Screen Style Login -->
+    <div id="login-screen" class="absolute inset-0 z-50 flex flex-col justify-center items-center p-6"
+        style="background: linear-gradient(135deg, #020617 0%, #0f172a 100%);">
+        <div class="text-center mb-8">
+            <div class="text-4xl font-bold text-white mb-2">Dock UI : OBSScore</div>
+            <div class="text-lg text-gray-400">Remote Control</div>
         </div>
-        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.9.1</p>
 
-        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700 shadow-lg space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Room ID (6 Digits)</label>
-                <input type="tel" id="room-input" maxlength="6"
-                    class="w-full bg-black border border-gray-600 rounded-lg p-3 text-center text-2xl font-mono tracking-widest text-white focus:border-blue-500 outline-none"
-                    placeholder="000000">
+        <!-- Compact Form -->
+        <div style="width: 100%; max-width: 280px; margin: 0 auto;">
+            <div class="mb-4">
+                <input type="tel" id="room-input" maxlength="6" placeholder="Room ID (6 หลัก)"
+                    style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 12px 16px; color: white; border-radius: 8px; font-size: 1.1rem; text-align: center; font-family: monospace; letter-spacing: 0.3em;">
             </div>
             <button onclick="connectToRoom()"
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg btn-push">
-                CONNECT
+                style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: all 0.2s;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(59,130,246,0.4)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                เชื่อมต่อ / Connect
             </button>
         </div>
-        <div id="status-msg" class="text-center mt-4 text-sm text-red-500 hidden"></div>
+
+        <div id="status-msg" class="text-center mt-6 text-sm text-red-400 hidden"></div>
+        <div class="absolute bottom-8 text-gray-500 text-sm">Developed by JamornzMedia - Version 2.9.1</div>
     </div>
 
     <div id="main-ui" class="hidden flex-1 flex flex-col p-3 space-y-3 h-full overflow-y-auto">
@@ -314,15 +312,15 @@
 
         function connectToRoom() {
             const rid = document.getElementById('room-input').value;
-            if (rid.length < 6) return alert("Invalid Room ID");
+            if (rid.length < 6) return alert("Invalid Room ID / กรุณากรอก Room ID 6 หลัก");
 
-            document.getElementById('status-msg').textContent = "Connecting...";
+            document.getElementById('status-msg').textContent = "กำลังค้นหาห้อง...";
             document.getElementById('status-msg').classList.remove('hidden');
 
-            // Look for com_ rooms (PC creates com_ rooms)
+            // Search for mobile_ rooms by roomID (6-digit)
             database.ref('obs_rooms_score').once('value').then(snap => {
                 if (!snap.exists()) {
-                    alert("No rooms available! Make sure PC is running.");
+                    alert("ไม่พบห้อง! กรุณาตรวจสอบว่าเปิด PC แล้ว / No rooms found!");
                     document.getElementById('status-msg').textContent = "No rooms found";
                     return;
                 }
@@ -331,55 +329,60 @@
                 let foundRoom = null;
                 let foundKey = null;
 
-                // Search for room with matching roomId
+                // Search for mobile_ room with matching roomID
                 Object.keys(allRooms).forEach(key => {
                     const room = allRooms[key];
-                    if (room.roomId === rid) {
+                    // Look for mobile_ rooms with matching roomID
+                    if (key.startsWith('mobile_') && room.roomID === rid) {
                         foundRoom = room;
                         foundKey = key;
                     }
                 });
 
                 if (!foundRoom) {
-                    alert("Room not found! Check ID and ensure PC app is running.");
+                    alert("ไม่พบห้อง! ตรวจสอบ ID / Room not found! Check ID");
                     document.getElementById('status-msg').textContent = "Room not found";
                     return;
                 }
 
-                document.getElementById('room-name-display').textContent = foundRoom.name || 'Room';
+                // Display nameMobile
+                document.getElementById('room-name-display').textContent = foundRoom.nameMobile || 'Room';
                 document.getElementById('room-id-display').textContent = 'ID: ' + rid;
 
                 const hostPeerId = foundRoom.hostPeerId;
-                console.log("Found Room:", foundRoom.name, "HostID:", hostPeerId);
+                console.log("Found Room:", foundRoom.nameMobile, "HostID:", hostPeerId);
 
                 if (!hostPeerId) {
-                    alert("Room found but Host Peer ID is missing. Make sure PC is running.");
+                    alert("พบห้องแต่ไม่มี Host Peer ID / Room found but no Host ID");
                     return;
                 }
 
+                // Start PeerJS connection
                 startPeerConnection(rid, hostPeerId);
+
+                // Update Mobile status to "on"
                 setupPresence(rid, foundKey);
 
             }).catch(err => {
                 console.error(err);
-                alert("Connection Error: " + err.message);
+                alert("เกิดข้อผิดพลาด / Connection Error: " + err.message);
             });
         }
 
         function setupPresence(rid, roomKey) {
-            const uid = 'phone_' + Math.floor(Math.random() * 10000000);
-
             if (!roomKey) {
-                database.ref('obs_rooms_score').orderByChild('roomId').equalTo(rid).once('value').then(snap => {
-                    if (snap.exists()) {
-                        const rooms = snap.val();
-                        roomKey = Object.keys(rooms)[0];
-                        setupPresenceForRoom(rid, roomKey, uid);
-                    }
-                });
-            } else {
-                setupPresenceForRoom(rid, roomKey, uid);
+                console.warn("No roomKey provided for presence");
+                return;
             }
+
+            // Update Mobile status to "on"
+            const mobileStatusRef = database.ref(`obs_rooms_score/${roomKey}/Mobile`);
+            mobileStatusRef.set('on');
+
+            // Set to "off" on disconnect
+            mobileStatusRef.onDisconnect().set('off');
+
+            console.log(`Updated Mobile status to 'on' for ${roomKey}`);
         }
 
         function setupPresenceForRoom(rid, roomKey, uid) {

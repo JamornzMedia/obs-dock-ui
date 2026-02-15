@@ -1875,24 +1875,35 @@ document.addEventListener('DOMContentLoaded', () => {
             createRoomBtn.addEventListener('click', () => {
                 const roomName = (roomNameInput && roomNameInput.value.trim()) || "My Scoreboard";
 
-                // 1. Generate 6-digit ID
-                const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+                // Get user's 8-digit ID
+                const userIdentity = window.userIdentity || JSON.parse(localStorage.getItem('userIdentity') || '{}');
+                const userID = userIdentity.ID || window.myUserID;
 
-                // 2. Init PeerJS Host (invoking refined initMobileHost)
-                if (window.initMobileHost) window.initMobileHost(roomId);
+                if (!userID) {
+                    alert('Please restart the app to generate user ID');
+                    return;
+                }
 
-                // 3. Create Firebase Record: mobile_{roomId} for easy lookup
-                const roomKey = `mobile_${roomId}`;
+                // Generate 6-digit roomID for mobile connection
+                const roomID = Math.floor(100000 + Math.random() * 900000).toString();
+
+                // Init PeerJS Host
+                if (window.initMobileHost) window.initMobileHost(roomID);
+
+                // Create Firebase Record: mobile_{nameID}
+                const sanitizedName = sanitizeKey(userIdentity.name || 'user');
+                const roomKey = `mobile_${sanitizedName}`;
                 const newRoomRef = firebase.database().ref('obs_rooms_score/' + roomKey);
 
                 // Create room data
                 newRoomRef.set({
-                    name: roomName,
-                    roomId: roomId,
-                    hostPeerId: `fcp-v2-host-${roomId}`,
-                    created: firebase.database.ServerValue.TIMESTAMP,
-                    host_identity: window.userIdentity || { name: 'Host' },
-                    platform: 'PC'
+                    nameMobile: roomName,
+                    platform: 'Mobile',
+                    ID: userID, // Same 8-digit ID as com_
+                    roomID: roomID, // 6-digit for connection
+                    Mobile: 'off', // Start as off
+                    hostPeerId: `fcp-v2-host-${roomID}`,
+                    created: firebase.database.ServerValue.TIMESTAMP
                 });
 
                 currentRoomRef = newRoomRef;
@@ -1900,6 +1911,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRoomRef.onDisconnect().remove();
 
                 // Update UI
+                if (roomIdInput) roomIdInput.value = roomID;
+                if (mobileLinkInput) mobileLinkInput.value = `${window.location.origin}/OBSScorePhone.html?room=${roomID}`;
+                if (remoteQrCode) {
+                    remoteQrCode.innerHTML = '';
+                    new QRCode(remoteQrCode, {
+                        text: mobileLinkInput.value,
+                        width: 150,
+                        height: 150
+                    });
+                }
+
                 createRoomBtn.style.display = 'none';
                 if (closeRoomBtn) closeRoomBtn.style.display = 'block';
                 if (roomNameInput) roomNameInput.disabled = true;
@@ -1979,14 +2001,34 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.addEventListener('click', () => {
                 const nameInput = document.getElementById('visitorName');
                 const provInput = document.getElementById('visitorProvince');
+                const provOtherInput = document.getElementById('visitorProvinceOther');
+
                 if (nameInput && nameInput.value.trim()) {
+                    // Generate 8-digit ID for this user
+                    const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+                    let province = '';
+                    if (provInput) {
+                        province = provInput.value;
+                        if (province === 'Other' && provOtherInput) {
+                            province = provOtherInput.value.trim() || 'Unknown';
+                        }
+                    }
+
                     const identity = {
                         name: nameInput.value.trim(),
-                        province: provInput ? (provInput.value === 'Other' ? (document.getElementById('visitorProvinceOther').value || 'Unknown') : provInput.value) : '',
-                        platform: 'PC'
+                        province: province || 'Unknown',
+                        platform: 'PC',
+                        ID: userID
                     };
+
                     localStorage.setItem('userIdentity', JSON.stringify(identity));
                     window.userIdentity = identity;
+
+                    // Create com_ room in Firebase
+                    if (window.initOnlinePresenceSystem) {
+                        window.initOnlinePresenceSystem();
+                    }
                 }
 
                 const welcomeScreen = document.getElementById('welcomeScreen');

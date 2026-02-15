@@ -35,9 +35,44 @@ const sanitizeKey = (name) => {
 const ROOMS_PATH = 'obs_rooms_score';
 
 window.initOnlinePresenceSystem = () => {
-    // SIMPLIFIED: No longer create com_ rooms
-    // PC will create mobile_{roomId} rooms when Mobile Control is activated
-    // This saves Firebase space and simplifies connection logic
+    // Get user identity with 8-digit ID
+    let identity = window.userIdentity;
+    if (!identity) {
+        try { identity = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
+    }
+    if (!identity || !identity.name || !identity.ID) {
+        console.log("No user identity or ID, skipping presence system.");
+        return;
+    }
+
+    const sanitizedName = sanitizeKey(identity.name);
+    if (!sanitizedName) {
+        console.log("Invalid user name for presence key.");
+        return;
+    }
+
+    // Build room key: com_{nameID}
+    const roomKey = `com_${sanitizedName}`;
+    const roomRef = firebase.database().ref(`${ROOMS_PATH}/${roomKey}`);
+
+    // Store ref globally
+    window.myRoomKey = roomKey;
+    window.myRoomRef = roomRef;
+    window.myUserID = identity.ID; // Store 8-digit ID globally
+
+    const presenceData = {
+        name: identity.name.substring(0, 30),
+        platform: "PC",
+        province: identity.province || "Unknown",
+        ID: identity.ID, // 8-digit ID
+        last_seen: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    // Set onDisconnect and write data
+    roomRef.onDisconnect().remove();
+    roomRef.set(presenceData);
+
+    console.log(`Created PC presence: ${roomKey} with ID: ${identity.ID}`);
 
     // --- Monitor All Users in obs_rooms_score ---
     const allRoomsRef = firebase.database().ref(ROOMS_PATH);
@@ -46,12 +81,19 @@ window.initOnlinePresenceSystem = () => {
         const users = snapshot.val() || {};
         const keys = Object.keys(users);
 
-        // Count by prefix
+        // Count by prefix and mobile status
         let pcCount = 0;
         let phoneCount = 0;
         keys.forEach(key => {
-            if (key.startsWith('com_')) pcCount++;
-            else if (key.startsWith('phone_') || key.startsWith('mobile_')) phoneCount++;
+            if (key.startsWith('com_')) {
+                pcCount++;
+            } else if (key.startsWith('mobile_')) {
+                // Only count if Mobile status is "on"
+                const mobileRoom = users[key];
+                if (mobileRoom && mobileRoom.Mobile === 'on') {
+                    phoneCount++;
+                }
+            }
         });
 
         // Update UI counts
@@ -112,67 +154,87 @@ window.renderOnlineUsersList = () => {
     tbody.innerHTML = '';
     const rawUsers = window.onlineUsersSnapshot.val() || {};
 
-    // Group users by Name
-    const groupedUsers = {};
+    // Separate com_ and mobile_ rooms
+    const comRooms = {};
+    const mobileRooms = {};
 
     Object.keys(rawUsers).forEach(key => {
-        const isPC = key.startsWith('com_');
-        const isMobile = key.startsWith('mobile_') || key.startsWith('phone_');
-        const name = key.replace(/^(com_|mobile_|phone_)/, '').replace(/_/g, ' ');
-
-        if (!groupedUsers[name]) {
-            groupedUsers[name] = {
-                name: name,
-                province: rawUsers[key].province || '-',
-                hasPC: false,
-                hasMobile: false,
-                isMe: false
-            };
-        }
-
-        if (isPC) groupedUsers[name].hasPC = true;
-        if (isMobile) groupedUsers[name].hasMobile = true;
-
-        // Check if "Me" (matches my sanitized name)
-        // We know myRoomKey is usually com_Name or mobile_Name
-        if (window.myRoomKey && window.myRoomKey.includes(key)) {
-            groupedUsers[name].isMe = true;
-        }
-        // Also check if I am the host of this name
-        if (window.userIdentity && window.userIdentity.name === name) {
-            groupedUsers[name].isMe = true;
+        if (key.startsWith('com_')) {
+            comRooms[key] = rawUsers[key];
+        } else if (key.startsWith('mobile_')) {
+            mobileRooms[key] = rawUsers[key];
         }
     });
 
+    // Display com_ users and match with mobile_
     let index = 1;
-    // Sort? Maybe by Name or IsMe first
-    const sortedNames = Object.keys(groupedUsers).sort((a, b) => {
-        if (groupedUsers[a].isMe) return -1;
-        if (groupedUsers[b].isMe) return 1;
-        return a.localeCompare(b);
-    });
+    Object.keys(comRooms).forEach(key => {
+        const user = comRooms[key];
 
-    sortedNames.forEach(name => {
-        const u = groupedUsers[name];
+        // Find matching mobile room by ID
+        let matchedMobile = null;
+        Object.keys(mobileRooms).forEach(mKey => {
+            const mRoom = mobileRooms[mKey];
+            if (mRoom.ID === user.ID) {
+                matchedMobile = mRoom;
+            }
+        });
 
         const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid rgba(255,255,255,0.07)';
-        if (u.isMe) row.style.background = 'rgba(74, 222, 128, 0.1)';
+        row.style.borderBottom = '1px solid #334155';
 
-        let icons = '';
-        if (u.hasPC) icons += '<i class="fas fa-desktop" style="color:#4ade80; margin-right:6px;" title="PC"></i>';
-        if (u.hasMobile) icons += '<i class="fas fa-mobile-alt" style="color:#60a5fa;" title="Mobile"></i>';
+        // Index
+        const cellIndex = document.createElement('td');
+        cellIndex.style.padding = '8px 6px';
+        cellIndex.textContent = index++;
+        row.appendChild(cellIndex);
 
-        row.innerHTML = `
-            <td style="padding: 6px;">${index++}</td>
-            <td style="padding: 6px; font-weight: bold; color: ${u.isMe ? '#4ade80' : 'white'};">
-                ${u.name} ${u.isMe ? '(You)' : ''}
-            </td>
-            <td style="padding: 6px; color: #94a3b8;">${u.province}</td>
-            <td style="padding: 6px; text-align: center;">${icons}</td>
-        `;
+        // Name
+        const cellName = document.createElement('td');
+        cellName.style.padding = '8px 6px';
+        cellName.textContent = user.name || 'Unknown';
+        row.appendChild(cellName);
+
+        // Province
+        const cellProvince = document.createElement('td');
+        cellProvince.style.padding = '8px 6px';
+        cellProvince.textContent = user.province || '-';
+        row.appendChild(cellProvince);
+
+        // Type (PC icon + Mobile icon if connected)
+        const cellType = document.createElement('td');
+        cellType.style.padding = '8px 6px';
+
+        // PC icon
+        const pcIcon = document.createElement('i');
+        pcIcon.className = 'fas fa-desktop';
+        pcIcon.style.color = '#60a5fa';
+        pcIcon.style.marginRight = '6px';
+        cellType.appendChild(pcIcon);
+
+        // Mobile icon (only if Mobile: "on")
+        if (matchedMobile && matchedMobile.Mobile === 'on') {
+            const mobileIcon = document.createElement('i');
+            mobileIcon.className = 'fas fa-mobile-alt';
+            mobileIcon.style.color = '#4ade80';
+            cellType.appendChild(mobileIcon);
+        }
+
+        row.appendChild(cellType);
         tbody.appendChild(row);
     });
+
+    if (Object.keys(comRooms).length === 0) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 4;
+        cell.style.padding = '12px';
+        cell.style.textAlign = 'center';
+        cell.style.color = '#64748b';
+        cell.textContent = 'No users online';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
 };
 
 // --- Start System ---
