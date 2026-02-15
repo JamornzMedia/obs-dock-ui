@@ -1,1 +1,1 @@
-[UPDATE V2.9.1] 1. UI Refreshed (Cleaner Look) 2. Mobile Room Fixed 3. Performance Improved 4. New Scoreboard Features
+ยินดีต้อนรับสู่ OBS Control Panel V.2.9.1 | ระบบใหม่: สร้างห้องควบคุมผ่านมือถือได้แล้ว! | Welcome to OBS Control Panel V.2.9.1 | New Feature: Mobile Remote Control is now available!

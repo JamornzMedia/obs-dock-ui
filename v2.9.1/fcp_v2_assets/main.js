@@ -1893,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     roomId: roomId, // Store the 6-digit ID so we can theoretically find it
                     created: firebase.database.ServerValue.TIMESTAMP,
                     host_identity: window.userIdentity || { name: 'Host' },
-                    platform: 'PC'
+                    platform: 'Mobile'
                 });
 
                 currentRoomRef = newRoomRef;

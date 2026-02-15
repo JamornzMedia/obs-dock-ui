@@ -109,7 +109,7 @@ window.initOnlinePresenceSystem = () => {
         let phoneCount = 0;
         keys.forEach(key => {
             if (key.startsWith('com_')) pcCount++;
-            else if (key.startsWith('phone_')) phoneCount++;
+            else if (key.startsWith('phone_') || key.startsWith('mobile_')) phoneCount++;
         });
 
         // Update UI counts
@@ -174,8 +174,8 @@ window.renderOnlineUsersList = () => {
     Object.keys(users).forEach(key => {
         const u = users[key];
         const isMe = (key === window.myRoomKey);
-        const isPhone = key.startsWith('phone_');
-        const displayName = key.replace(/^(com_|phone_)/, '').replace(/_/g, ' ');
+        const isPhone = key.startsWith('phone_') || key.startsWith('mobile_');
+        const displayName = key.replace(/^(com_|phone_|mobile_)/, '').replace(/_/g, ' ');
 
         const row = document.createElement('tr');
         row.style.borderBottom = '1px solid rgba(255,255,255,0.07)';
@@ -185,7 +185,8 @@ window.renderOnlineUsersList = () => {
             ? '<i class="fas fa-mobile-alt" style="color:#60a5fa;"></i>'
             : '<i class="fas fa-desktop" style="color:#4ade80;"></i>';
 
-        const typeLabel = isPhone ? 'Phone' : 'PC';
+        // Type Label removed as per request
+        const typeLabel = '';
 
         row.innerHTML = `
             <td style="padding: 6px;">${index++}</td>
@@ -193,7 +194,7 @@ window.renderOnlineUsersList = () => {
                 ${displayName} ${isMe ? '(You)' : ''}
             </td>
             <td style="padding: 6px; color: #94a3b8;">${u.province || '-'}</td>
-            <td style="padding: 6px;">${platformIcon} ${typeLabel}</td>
+            <td style="padding: 6px; text-align: center;">${platformIcon}</td>
         `;
         tbody.appendChild(row);
     });
