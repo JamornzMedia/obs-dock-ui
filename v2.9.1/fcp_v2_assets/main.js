@@ -1862,47 +1862,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     overlay.style.display = 'block';
                     setTimeout(() => overlay.classList.add('active'), 10);
                 }
+
+                // Pre-fill Name
+                const roomNameInput = document.getElementById('remoteRoomName');
+                if (roomNameInput && window.userIdentity && window.userIdentity.name) {
+                    roomNameInput.value = window.userIdentity.name;
+                }
             });
         }
 
         if (createRoomBtn) {
             createRoomBtn.addEventListener('click', () => {
                 const roomName = (roomNameInput && roomNameInput.value.trim()) || "My Scoreboard";
-                const newRoomRef = firebase.database().ref('obs_rooms_score').push();
-                const roomId = newRoomRef.key;
 
-                // Create initial room data
+                // 1. Generate 6-digit ID
+                const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+
+                // 2. Init PeerJS Host (invoking refined initMobileHost)
+                if (window.initMobileHost) window.initMobileHost(roomId);
+
+                // 3. Create Firebase Record: mobile_<Name>
+                // Sanitize name for key
+                const sanitizedName = roomName.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_').substring(0, 30);
+                const roomKey = `mobile_${sanitizedName}`;
+                const newRoomRef = firebase.database().ref('obs_rooms_score/' + roomKey);
+
+                // Create room data
                 newRoomRef.set({
                     name: roomName,
+                    roomId: roomId, // Store the 6-digit ID so we can theoretically find it
                     created: firebase.database.ServerValue.TIMESTAMP,
-                    host_identity: window.userIdentity || { name: 'Host' }
+                    host_identity: window.userIdentity || { name: 'Host' },
+                    platform: 'PC'
                 });
 
                 currentRoomRef = newRoomRef;
+                // Remove on disconnect
+                newRoomRef.onDisconnect().remove();
 
                 // Update UI
-                if (roomIdInput) roomIdInput.value = roomId;
                 createRoomBtn.style.display = 'none';
                 if (closeRoomBtn) closeRoomBtn.style.display = 'block';
                 if (roomNameInput) roomNameInput.disabled = true;
                 if (remoteRoomIdContainer) remoteRoomIdContainer.style.display = 'flex';
                 if (remoteConnectionUI) remoteConnectionUI.style.display = 'block';
-
-                // Generate Link
-                // Assuming OBSScorePhone.html is in the same directory
-                let baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html';
-                // Hande if ending with slash or filename
-                if (window.location.href.endsWith('/')) baseUrl = window.location.href + 'OBSScorePhone.html';
-
-                // If running locally as file://, QR code api might not be able to link effectively for others, 
-                // but for local testing on same network it might work if they can access the file path (unlikely).
-                // Usually users use a web server.
-                // We will use the generated URL.
-
-                const fullUrl = `${baseUrl}?room=${roomId}`;
-
-                if (mobileLinkInput) mobileLinkInput.value = fullUrl;
-                if (remoteQrCode) remoteQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
 
                 if (remoteStatusText) {
                     remoteStatusText.textContent = "Room Created. Waiting for connection...";
@@ -2214,32 +2217,43 @@ window.copyDetails = () => {
 window.addEventListener('load', () => {
     if (window.initWelcomeScreen) window.initWelcomeScreen();
     if (window.updateUserIdentityUI) window.updateUserIdentityUI();
-    // Initialize Mobile Host
-    if (window.initMobileHost) window.initMobileHost();
+    // Mobile Host initialized via Popup Button now
 });
 
 // --- MOBILE HOST CONTROL (PEERJS) ---
 let hostPeer = null;
 let hostConn = [];
 
-window.initMobileHost = () => {
-    // Generate simple 6-digit Room ID
-    const roomId = Math.floor(100000 + Math.random() * 900000).toString();
+// Integrated into setupMobileRoomLogic
+window.initMobileHost = (customRoomId) => {
+    // Generate simple 6-digit Room ID if not provided
+    const roomId = customRoomId || Math.floor(100000 + Math.random() * 900000).toString();
     const peerId = `fcp-v2-host-${roomId}`;
 
     // Update UI
     const roomInput = document.getElementById('remoteRoomId');
     if (roomInput) roomInput.value = roomId;
 
+    // Generate Link
+    let baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html';
+    if (window.location.href.endsWith('/')) baseUrl = window.location.href + 'OBSScorePhone.html';
+    const fullUrl = `${baseUrl}?room=${roomId}`;
+
     const qrImg = document.getElementById('remoteQrCode');
     // Using a public QR API
-    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${roomId}`;
+    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+
+    const mobileLinkInput = document.getElementById('mobileLinkInput');
+    if (mobileLinkInput) mobileLinkInput.value = fullUrl;
 
     // Init Peer
     if (!window.Peer) {
         console.error("PeerJS not loaded");
         return;
     }
+
+    // Destroy existing if any
+    if (hostPeer) hostPeer.destroy();
 
     hostPeer = new Peer(peerId);
 
@@ -2269,10 +2283,7 @@ window.initMobileHost = () => {
 
     hostPeer.on('error', (err) => {
         console.error('Peer error:', err);
-        if (err.type === 'unavailable-id') {
-            // Retry with new ID if collision (rare)
-            window.initMobileHost();
-        }
+        // Handle ID collision if strict
     });
 };
 
