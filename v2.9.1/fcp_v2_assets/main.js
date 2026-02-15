@@ -1912,7 +1912,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Update UI
                 if (roomIdInput) roomIdInput.value = roomID;
-                if (mobileLinkInput) mobileLinkInput.value = `${window.location.origin}/OBSScorePhone.html?room=${roomID}`;
+                // Generate Dynamic Link
+                const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+                const mobileUrl = `${window.location.origin}${currentPath}/OBSScorePhone.html?room=${roomID}`;
+
+                if (mobileLinkInput) mobileLinkInput.value = mobileUrl;
                 if (remoteQrCode) {
                     remoteQrCode.innerHTML = '';
                     new QRCode(remoteQrCode, {

@@ -2203,8 +2203,14 @@
             <div style="margin-bottom: 16px;">
                 <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 4px;">Link
                     สำหรับมือถือ</label>
-                <input type="text" id="mobileLinkInput" readonly
-                    style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: #94a3b8; border-radius: 6px; font-size: 0.85rem;">
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="mobileLinkInput" readonly
+                        style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: #94a3b8; border-radius: 6px; font-size: 0.85rem;">
+                    <button id="copyMobileLinkBtn"
+                        style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 0 12px; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Status Text -->
