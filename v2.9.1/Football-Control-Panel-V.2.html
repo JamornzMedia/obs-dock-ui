@@ -1936,6 +1936,64 @@
 </head>
 
 <body>
+
+    <!-- Welcome Screen Overlay -->
+    <div id="welcomeScreen" class="welcome-overlay"
+        style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
+        <div class="welcome-card"
+            style="background: #2a2a2a; padding: 40px; border-radius: 16px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h2 style="margin-bottom: 20px; color: #f97316;">Welcome to OBSScore</h2>
+            <p style="margin-bottom: 30px; color: #aaa;">Please Setup Your Identity</p>
+
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Name / ชื่อของคุณ</label>
+                <input type="text" id="visitorName" placeholder="Enter your name"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Country / ประเทศ</label>
+                <input type="text" id="visitorCountry" value="Thailand"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 5px; color: #ccc;">Province / จังหวัด</label>
+                <select id="visitorProvince"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: white;"></select>
+            </div>
+
+            <button onclick="saveAndEnterApp()"
+                style="width: 100%; padding: 12px; border-radius: 6px; border: none; background: #f97316; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.3s;">
+                START
+            </button>
+        </div>
+    </div>
+
+    <!-- Online Users Popup -->
+    <div class="popup-overlay" id="onlineUsersPopup" style="display: none;">
+        <div class="popup-box" style="width: 600px; max-width: 90%;">
+            <button class="close-popup-btn" onclick="closeAllPopups()"><i class="fas fa-times"></i></button>
+            <h3><i class="fas fa-users"></i> Online Users</h3>
+            <div style="max-height: 400px; overflow-y: auto; margin-top: 15px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #444;">
+                            <th style="padding: 10px;">#</th>
+                            <th style="padding: 10px;">Name</th>
+                            <th style="padding: 10px;">Province</th>
+                            <th style="padding: 10px;">Country</th>
+                            <th style="padding: 10px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="onlineUsersTableBody">
+                        <!-- Rows rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="welcomeScreen">
         <div class="welcome-content">
             <div class="welcome-title">Dock UI : OBSScore</div>
@@ -1962,9 +2020,36 @@
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
     <div class="container">
-        <div class="announcement-container">
-            <div id="online-count-display"><i class="fas fa-users"></i> <span id="onlineCountVal">0</span></div>
-            <div id="announcement-text"></div>
+        <div class="announcement-container"
+            style="display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.7); padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.08);">
+
+            <!-- Visitor Identity Slot -->
+            <div class="status-item" id="visitorIdentitySlot" style="display: flex; align-items: center; gap: 8px;">
+                <div
+                    style="width: 32px; height: 32px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: #f97316;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div style="display: flex; flex-direction: column; line-height: 1.2;">
+                    <span id="visitorNameDisplay" style="font-weight: bold; font-size: 0.9rem;">Guest</span>
+                    <span id="visitorLocationDisplay" style="font-size: 0.75rem; color: #94a3b8;">(Thailand)</span>
+                </div>
+                <button onclick="document.getElementById('welcomeScreen').style.display='flex'"
+                    style="background:none; border:none; color:#64748b; cursor:pointer; margin-left:5px; padding: 5px;"
+                    title="Edit Profile">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- Online Count -->
+                <div id="onlineUserCount" title="Click to view Online Users"
+                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #4ade80; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(74, 222, 128, 0.2);">
+                    <i class="fas fa-users"></i> <span id="onlineCountVal">1</span>
+                </div>
+
+                <!-- Settings Trigger (Moved here for better access if needed, or kept existing) -->
+                <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
+            </div>
         </div>
         <div class="card">
             <div class="row space-between">
@@ -2269,7 +2354,28 @@
         <!-- Tab 1: General / Announce -->
         <div class="settings-tab-content active" id="settingsTabGeneral">
             <p data-lang="detailsDesc"></p>
-            <textarea id="detailsText"></textarea>
+            <textarea id="detailsText" rows="4" style="margin-bottom: 5px;"></textarea>
+
+            <!-- Quick Add Tags Area -->
+            <div
+                style="margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <span
+                    style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Quick
+                    Insert:</span>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<TeamA>')">+ Team A</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<TeamB>')">+ Team B</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<score_team_a>')">+ Score A</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<score_team_b>')">+ Score B</button>
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
+                        onclick="insertTag('<time_counter>')">+ Time</button>
+                </div>
+            </div>
+
             <div class="item-list">
                 <h4 data-lang="tagsTitle"></h4>
                 <table class="tags-table" id="tagsTable"></table>
@@ -2655,6 +2761,7 @@
         }
     </script>
 
+    <script src="fcp_v2_assets/main_append.js"></script>
     <script type="module" src="fcp_v2_assets/main.js"></script>
 
     <!-- PC Match ID Popup -->

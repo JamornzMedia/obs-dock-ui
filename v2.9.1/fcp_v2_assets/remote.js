@@ -356,38 +356,90 @@ window.addEventListener('load', () => {
 });
 
 // --- ONLINE PRESENCE SYSTEM (SEPARATED) ---
-const ONLINE_ROOM_KEY = "obs_online_room_id";
+const ONLINE_ROOM_KEY = "obs_online_room_id"; // Kept for reference but likely unused in new logic
+
+// Helper to re-send data if user updates profile
+window.updateOnlineStatus = () => {
+    if (window.myOnlineUserRef) {
+        const presenceData = {
+            online: true,
+            last_seen: firebase.database.ServerValue.TIMESTAMP,
+            name: (userIdentity && userIdentity.name) ? userIdentity.name : "Guest",
+            province: (userIdentity && userIdentity.province) ? userIdentity.province : "Unknown",
+            country: (userIdentity && userIdentity.country) ? userIdentity.country : "Thailand",
+            userAgent: navigator.userAgent
+        };
+        window.myOnlineUserRef.set(presenceData);
+    }
+};
 
 function initOnlinePresenceSystem() {
-    // 1. Auto-Create "Online Room" on Load
-    // Fixed Room ID as per request to aggregate all users.
-    const onlineRoomId = "UserCounter";
+    // Reference to 'online_users' node
+    const onlineRef = firebase.database().ref('online_users');
 
-    // 2. Connect to Firebase Presence for THIS room
-    const presenceRef = database.ref(`obs_rooms_presence/${onlineRoomId}`);
+    // Create a unique key for this user (session)
+    window.myOnlineUserRef = onlineRef.push();
 
-    // Self-register (I am online)
-    const myRef = presenceRef.push();
-    myRef.onDisconnect().remove();
-    myRef.set({
-        type: 'host',
-        timestamp: firebase.database.ServerValue.TIMESTAMP
+    // Data to store
+    const getPresenceData = () => ({
+        online: true,
+        last_seen: firebase.database.ServerValue.TIMESTAMP,
+        name: (userIdentity && userIdentity.name) ? userIdentity.name : "Guest",
+        province: (userIdentity && userIdentity.province) ? userIdentity.province : "Unknown",
+        country: (userIdentity && userIdentity.country) ? userIdentity.country : "Thailand",
+        userAgent: navigator.userAgent
     });
 
-    // Listen for count
-    presenceRef.on('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const count = Object.keys(users).length;
-        if (document.getElementById('onlineCountVal')) {
-            document.getElementById('onlineCountVal').innerText = count;
+    // On connect, set data
+    const connectedRef = firebase.database().ref('.info/connected');
+    connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+            // When connected, set my user data
+            window.myOnlineUserRef.set(getPresenceData());
+            // Remove on disconnect
+            window.myOnlineUserRef.onDisconnect().remove();
         }
     });
 
-    // We do NOT couple this with the Mobile Remote PeerJS anymore.
-    // This is purely Firebase Realtime Database presence.
-    console.log("Online Presence Started:", onlineRoomId);
+    // Monitor online count
+    onlineRef.on('value', (snap) => {
+        const count = snap.numChildren();
+        updateOnlineCountUI(count);
+        window.onlineUsersSnapshot = snap;
+    });
+
+    // Monitor for New Users (Notification)
+    let initialLoad = true;
+    onlineRef.limitToLast(1).on('child_added', (snap) => {
+        if (initialLoad) return;
+
+        const key = snap.key;
+        if (key === window.myOnlineUserRef.key) return; // Ignore self
+
+        const val = snap.val();
+        if (val && val.name) {
+            const msg = `ผู้ใช้ ${val.name} จาก ${val.province} เข้ามาแล้ว`;
+            if (typeof showToast === 'function') showToast(msg, 'info', 10000);
+        }
+    });
+
+    onlineRef.once('value', () => {
+        initialLoad = false;
+    });
 }
-// Import logic (ensure this runs on load)
+
+const updateOnlineCountUI = (count) => {
+    const el = document.getElementById('onlineUserCount'); // This might be 'onlineCountVal' in old code, let's support both
+    if (el) {
+        el.innerHTML = `<i class="fas fa-users"></i> ${count}`;
+        el.style.cursor = 'pointer';
+        el.onclick = () => { if (window.openOnlineUsersPopup) window.openOnlineUsersPopup(); };
+    }
+    const oldEl = document.getElementById('onlineCountVal');
+    if (oldEl) oldEl.innerText = count;
+};
+
+// Start Presence
 window.addEventListener('load', () => {
     initOnlinePresenceSystem();
 });
