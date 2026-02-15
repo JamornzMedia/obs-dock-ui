@@ -343,7 +343,10 @@
                     document.getElementById('room-name-display').textContent = roomData.name;
                     document.getElementById('room-id-display').textContent = 'ID: ' + rid;
 
-                    startPeerConnection(rid);
+                    const hostPeerId = roomData.hostPeerId;
+                    console.log("Found Room:", roomData.name, "HostID:", hostPeerId);
+
+                    startPeerConnection(rid, hostPeerId);
                     setupPresence(rid);
 
                 });
@@ -385,12 +388,15 @@
             });
         }
 
-        function startPeerConnection(rid) {
+        function startPeerConnection(rid, hostPeerId) {
+            if (!hostPeerId) {
+                alert("Host Peer ID not found in room data.");
+                return;
+            }
             peer = new Peer(peerConfig);
             peer.on('open', (id) => {
-                // Host ID is formatted as:
-                const hostId = `obsscore-host-${rid}`;
-                conn = peer.connect(hostId);
+                // Connect to the specific Host Peer ID from Firebase
+                conn = peer.connect(hostPeerId);
 
                 conn.on('open', () => {
                     document.getElementById('login-screen').classList.add('hidden');
