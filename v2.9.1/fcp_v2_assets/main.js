@@ -1842,124 +1842,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.copyTag = copyTag;
 
-    // V2.9.1: Mobile Room Logic
+    // V2.9.1: Mobile Room Logic (Copy Link Handler Only — popup/create/close handled by outer DOMContentLoaded)
     const setupMobileRoomLogic = () => {
-        const createRoomBtn = document.getElementById('createRoomBtn');
-        const closeRoomBtn = document.getElementById('closeRoomBtn');
-        const roomNameInput = document.getElementById('remoteRoomName');
-        const roomIdInput = document.getElementById('remoteRoomId');
-        const remoteQrCode = document.getElementById('remoteQrCode');
         const mobileLinkInput = document.getElementById('mobileLinkInput');
-        const remoteRoomIdContainer = document.getElementById('remoteRoomIdContainer');
-        const remoteConnectionUI = document.getElementById('remoteConnectionUI');
-        const remoteStatusText = document.getElementById('remoteStatusText');
-        const mobileBtn = document.getElementById('mobileControlBtn'); // Added
-
-        let currentRoomRef = null;
-
-        // Open Popup Listener
-        if (mobileBtn) {
-            mobileBtn.addEventListener('click', () => {
-                const popup = document.getElementById('mobileControlPopup');
-                const overlay = document.getElementById('popupOverlay');
-                if (popup) {
-                    popup.style.display = 'block';
-                    setTimeout(() => popup.classList.add('active'), 10);
-                }
-                if (overlay) {
-                    overlay.style.display = 'block';
-                    setTimeout(() => overlay.classList.add('active'), 10);
-                }
-
-                // Pre-fill Name
-                const roomNameInput = document.getElementById('remoteRoomName');
-                if (roomNameInput && window.userIdentity && window.userIdentity.name) {
-                    roomNameInput.value = window.userIdentity.name;
-                }
-            });
-        }
-
-        if (createRoomBtn) {
-            createRoomBtn.addEventListener('click', () => {
-                const roomName = (roomNameInput && roomNameInput.value.trim()) || "My Scoreboard";
-
-                // Get user's 8-digit ID
-                const userIdentity = window.userIdentity || JSON.parse(localStorage.getItem('userIdentity') || '{}');
-                const userID = userIdentity.ID || window.myUserID;
-
-                if (!userID) {
-                    alert('Please restart the app to generate user ID');
-                    return;
-                }
-
-                // Generate 6-digit roomID for mobile connection
-                const roomID = Math.floor(100000 + Math.random() * 900000).toString();
-
-                // Init PeerJS Host
-                if (window.initMobileHost) window.initMobileHost(roomID);
-
-                // Create Firebase Record: mobile_{nameID}
-                const sanitizedName = sanitizeKey(userIdentity.name || 'user');
-                const roomKey = `mobile_${sanitizedName}`;
-                const newRoomRef = firebase.database().ref('obs_rooms_score/' + roomKey);
-
-                // Create room data
-                newRoomRef.set({
-                    nameMobile: roomName,
-                    platform: 'Mobile',
-                    ID: userID, // Same 8-digit ID as com_
-                    roomID: roomID, // 6-digit for connection
-                    Mobile: 'off' // Start as off
-                });
-
-                currentRoomRef = newRoomRef;
-                // Remove on disconnect
-                newRoomRef.onDisconnect().remove();
-
-                // Update UI
-                if (roomIdInput) roomIdInput.value = roomID;
-                // Generate Dynamic Link
-                const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                const mobileUrl = `${window.location.origin}${currentPath}/OBSScorePhone.html?room=${roomID}`;
-
-                if (mobileLinkInput) mobileLinkInput.value = mobileUrl;
-                if (remoteQrCode) {
-                    remoteQrCode.innerHTML = '';
-                    new QRCode(remoteQrCode, {
-                        text: mobileLinkInput.value,
-                        width: 150,
-                        height: 150
-                    });
-                }
-
-                createRoomBtn.style.display = 'none';
-                if (closeRoomBtn) closeRoomBtn.style.display = 'block';
-                if (roomNameInput) roomNameInput.disabled = true;
-                if (remoteRoomIdContainer) remoteRoomIdContainer.style.display = 'flex';
-                if (remoteConnectionUI) remoteConnectionUI.style.display = 'block';
-
-                if (remoteStatusText) {
-                    remoteStatusText.textContent = "Room Created. Waiting for connection...";
-                    remoteStatusText.style.color = "var(--success-color)";
-                }
-            });
-        }
-
-        if (closeRoomBtn) {
-            closeRoomBtn.addEventListener('click', () => {
-                if (currentRoomRef) {
-                    currentRoomRef.remove();
-                    currentRoomRef = null;
-                }
-                if (createRoomBtn) createRoomBtn.style.display = 'block';
-                closeRoomBtn.style.display = 'none';
-                if (roomNameInput) roomNameInput.disabled = false;
-                if (remoteRoomIdContainer) remoteRoomIdContainer.style.display = 'none';
-                if (remoteConnectionUI) remoteConnectionUI.style.display = 'none';
-
-                if (remoteStatusText) remoteStatusText.textContent = "Waiting...";
-            });
-        }
 
         // Copy Mobile Link
         const copyMobileLinkBtn = document.getElementById('copyMobileLinkBtn');
@@ -2182,11 +2067,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             window.hostConn = [];
 
+            // Clean up Firebase mobile_ entry
+            if (window.userIdentity && window.userIdentity.name && window.firebase) {
+                const key = `mobile_${sanitizeKey(window.userIdentity.name)}`;
+                firebase.database().ref(`obs_rooms_score/${key}`).remove()
+                    .catch(() => { });
+            }
+
             // Reset UI
             const createUI = document.getElementById('mobileCreateUI');
             const connUI = document.getElementById('remoteConnectionUI');
             if (createUI) createUI.style.display = 'block';
             if (connUI) connUI.style.display = 'none';
+
+            // Re-enable room name input
+            const roomNameInput = document.getElementById('remoteRoomName');
+            if (roomNameInput) roomNameInput.disabled = false;
 
             const statusEl = document.getElementById('remoteStatusText');
             if (statusEl) {
@@ -2404,14 +2300,9 @@ const sanitizeKey = (name) => {
 window.setupMobileRoomLogic = () => {
     if (!userIdentity || !userIdentity.name) return;
 
-    // Reuse existing Room ID if possible
-    let savedRoomId = localStorage.getItem('myRoomId');
-    if (!savedRoomId) {
-        savedRoomId = Math.floor(100000 + Math.random() * 900000).toString();
-        localStorage.setItem('myRoomId', savedRoomId);
-    }
-
-    window.initMobileHost(savedRoomId);
+    // Always generate a NEW random roomID (never cache — prevents ID collision between users)
+    const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
+    window.initMobileHost(newRoomId);
 };
 
 window.initMobileHost = (customRoomId) => {
@@ -2604,10 +2495,14 @@ function handleMobileCommand(data) {
 
         case 'obs':
             // { type: 'obs', action: 'saveReplay' | 'scene', name: 'SceneName' }
-            if (window.obs) {
+            if (obs) {
                 if (data.action === 'saveReplay') {
-                    window.obs.call('SaveReplayBuffer').catch(err => console.error("Replay Error", err));
-                    showToast("Replay Saved!", "success");
+                    obs.call('SaveReplayBuffer')
+                        .then(() => showToast("📹 Replay Saved! (from Mobile)", "success"))
+                        .catch(err => {
+                            console.error("Replay Error", err);
+                            showToast("Save Replay Failed", "error");
+                        });
                 } else if (data.action === 'scene' && data.name) {
                     // Map generic mobile names to Configured names
                     let targetScene = data.name;
@@ -2617,8 +2512,12 @@ function handleMobileCommand(data) {
                         targetScene = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
                     }
 
-                    window.obs.call('SetCurrentProgramScene', { sceneName: targetScene })
-                        .catch(err => console.error("Scene Error", err));
+                    obs.call('SetCurrentProgramScene', { sceneName: targetScene })
+                        .then(() => showToast(`🎬 Switched to ${targetScene} (from Mobile)`, "success"))
+                        .catch(err => {
+                            console.error("Scene Error", err);
+                            showToast("Switch Scene Failed", "error");
+                        });
                 }
             }
             break;
@@ -2641,19 +2540,26 @@ function handleMobileCommand(data) {
 
         case 'loadmatch': // loadMatch from mobile
             if (data.val) {
-                // Update match display and trigger load
+                // Update match ID input value (applyMatch reads .value)
+                if (elements.matchID) elements.matchID.value = data.val;
+                // Also update display text
                 const matchIdEl = document.getElementById('matchID');
                 if (matchIdEl) matchIdEl.textContent = data.val;
-                // Also trigger the PC Match popup button
                 const pcMatchBtn = document.getElementById('pcMatchIdBtn');
                 if (pcMatchBtn) pcMatchBtn.textContent = data.val;
+                // Actually load the match data
+                applyMatch();
             }
             break;
 
         case 'requeststate':
+            // Already broadcasts, no need to broadcast again below
             broadcastToMobile();
-            break;
+            return; // Return early to skip the broadcast below
     }
+
+    // Broadcast updated state back to mobile after handling any command
+    setTimeout(() => { if (window.broadcastToMobile) window.broadcastToMobile(); }, 200);
 }
 
 
@@ -2663,35 +2569,35 @@ window.triggerAction = async (index) => {
     const settings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
     const btn = settings[index - 1]; // Index is 1-based
 
-    if (!btn || !window.obs) return;
+    if (!btn || !obs) return;
 
     // Normalize actionType to lowercase for case-insensitive matching
     const actionType = (btn.actionType || '').toLowerCase();
 
     try {
         if (actionType === 'scene') {
-            await window.obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
+            await obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
             // Get Current Scene
-            const currentScene = await window.obs.call('GetCurrentProgramScene');
+            const currentScene = await obs.call('GetCurrentProgramScene');
             const sceneName = currentScene.currentProgramSceneName;
 
             // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
             try {
-                const itemIdResp = await window.obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
+                const itemIdResp = await obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
                 const sceneItemId = itemIdResp.sceneItemId;
 
                 let enabled = true;
                 if (actionType === 'show') enabled = true;
                 else if (actionType === 'hide') enabled = false;
                 else if (actionType === 'toggle') {
-                    const itemState = await window.obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
+                    const itemState = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
                     enabled = !itemState.sceneItemEnabled;
                 }
 
-                await window.obs.call('SetSceneItemEnabled', {
+                await obs.call('SetSceneItemEnabled', {
                     sceneName,
                     sceneItemId,
                     sceneItemEnabled: enabled
