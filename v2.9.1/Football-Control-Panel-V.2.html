@@ -2182,16 +2182,8 @@
             <div style="margin-bottom: 16px;">
                 <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 6px;">ชื่อห้อง (Room
                     Name)</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
-                        style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 10px; color: #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-                    <button
-                        onclick="navigator.clipboard.writeText(document.getElementById('remoteRoomName').value); window.showToast('Copied Room Name', 'success')"
-                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; border-radius: 8px; padding: 0 12px; cursor: pointer; transition: all 0.2s;"
-                        title="Copy Name">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
+                <input type="text" id="remoteRoomName" placeholder="ชื่อห้อง"
+                    style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 10px; color: #e2e8f0; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;">
             </div>
 
             <!-- Create Button -->
@@ -2253,6 +2245,11 @@
                     style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px; color: #60a5fa; border-radius: 6px; font-size: 1.2rem; text-align: center; font-family: monospace; letter-spacing: 0.3em;">
             </div>
 
+            <!-- Room Name Display -->
+            <div id="remoteRoomNameDisplay"
+                style="text-align: center; margin-bottom: 12px; font-size: 1rem; color: #e2e8f0; font-weight: 600;">
+            </div>
+
             <!-- QR Code -->
             <div style="text-align: center; margin-bottom: 16px;">
                 <div id="remoteQrCode"
@@ -2286,11 +2283,7 @@
             <i class="fas fa-times-circle"></i> ปิดห้อง
         </button>
 
-        <!-- Close Popup Button -->
-        <button onclick="closeMobileControlPopup()"
-            style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: none; color: #94a3b8; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-times"></i>
-        </button>
+
     </div>
     <div class="container">
         <div class="card"

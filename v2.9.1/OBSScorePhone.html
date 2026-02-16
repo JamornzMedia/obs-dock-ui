@@ -349,13 +349,9 @@
                 document.getElementById('room-name-display').textContent = foundRoom.nameMobile || 'Room';
                 document.getElementById('room-id-display').textContent = 'ID: ' + rid;
 
-                const hostPeerId = foundRoom.hostPeerId;
-                console.log("Found Room:", foundRoom.nameMobile, "HostID:", hostPeerId);
-
-                if (!hostPeerId) {
-                    alert("พบห้องแต่ไม่มี Host Peer ID / Room found but no Host ID");
-                    return;
-                }
+                // Construct PeerJS ID deterministically from roomID (no hostPeerId needed)
+                const hostPeerId = `fcp-v2-host-${rid}`;
+                console.log("Found Room:", foundRoom.nameMobile, "Connecting to PeerID:", hostPeerId);
 
                 // Start PeerJS connection
                 startPeerConnection(rid, hostPeerId);

@@ -13,17 +13,14 @@ obs_rooms_score/
 │   ├── name: string       # ชื่อผู้ใช้
 │   ├── platform: "PC"     # แพลตฟอร์ม
 │   ├── province: string   # จังหวัด
-│   ├── ID: string         # 8-digit unique ID
-│   └── last_seen: timestamp
+│   └── ID: string         # 8-digit unique ID
 │
 └── mobile_{nameID}/       # Mobile Control Room
     ├── nameMobile: string # ชื่อห้อง
     ├── platform: "Mobile" # แพลตฟอร์ม
     ├── ID: string         # 8-digit ID (same as com_)
     ├── roomID: string     # 6-digit connection ID
-    ├── Mobile: "off"|"on" # สถานะการเชื่อมต่อ
-    ├── hostPeerId: string # PeerJS connection ID
-    └── created: timestamp
+    └── Mobile: "off"|"on" # สถานะการเชื่อมต่อ
 ```
 
 ---
@@ -46,7 +43,6 @@ obs_rooms_score/
 | `platform` | string | `"PC"` | ระบุว่าเป็น PC |
 | `province` | string | จังหวัดที่เลือก | จาก dropdown หรือ custom |
 | `ID` | string | 8-digit random | สุ่มเมื่อกด Start |
-| `last_seen` | timestamp | Firebase ServerValue | อัพเดทอัตโนมัติ |
 
 ### Key Naming
 ```javascript
@@ -81,8 +77,6 @@ const roomKey = `com_${sanitizedName}`;
 | `ID` | string | 8-digit (same as com_) | **ใช้ ID เดียวกับ com_ เพื่อจับคู่** |
 | `roomID` | string | 6-digit random | ID สำหรับมือถือพิมพ์เชื่อมต่อ |
 | `Mobile` | string | `"off"` → `"on"` | สถานะการเชื่อมต่อ |
-| `hostPeerId` | string | `fcp-v2-host-{roomID}` | PeerJS connection ID |
-| `created` | timestamp | Firebase ServerValue | เวลาสร้างห้อง |
 
 ### Key Naming
 ```javascript
@@ -164,7 +158,7 @@ flowchart LR
     A[เปิด OBSScorePhone.html] --> B[Login Screen]
     B --> C[กรอก roomID 6 หลัก]
     C --> D[ค้นหา mobile_ ที่มี roomID ตรงกัน]
-    D --> E[ดึง hostPeerId]
+    D --> E[สร้าง PeerID: fcp-v2-host-roomID]
     E --> F[เชื่อมต่อผ่าน PeerJS]
     F --> G[อัพเดท Mobile: on]
     G --> H[แสดง nameMobile]
@@ -220,17 +214,14 @@ for (let room in allRooms) {
       "name": "JamornzMedia",
       "platform": "PC",
       "province": "กรุงเทพมหานคร",
-      "ID": "87654321",
-      "last_seen": 1739631234567
+      "ID": "87654321"
     },
     "mobile_JamornzMedia": {
       "nameMobile": "My Scoreboard",
       "platform": "Mobile",
       "ID": "87654321",
       "roomID": "123456",
-      "Mobile": "on",
-      "hostPeerId": "fcp-v2-host-123456",
-      "created": 1739631234567
+      "Mobile": "on"
     }
   }
 }
@@ -240,6 +231,7 @@ for (let room in allRooms) {
 - ✅ `com_` และ `mobile_` มี ID เดียวกัน (`87654321`)
 - ✅ Online Users จะแสดง **PC icon + Phone icon**
 - ✅ มือถือเชื่อมต่อด้วย roomID `123456`
+- ✅ PeerJS ID สร้างจาก roomID: `fcp-v2-host-123456`
 
 ---
 
@@ -262,5 +254,5 @@ for (let room in allRooms) {
 
 ---
 
-**อัพเดทล่าสุด**: 15 ก.พ. 2026  
+**อัพเดทล่าสุด**: 16 ก.พ. 2026  
 **เวอร์ชัน**: 2.9.1

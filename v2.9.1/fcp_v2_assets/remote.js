@@ -64,8 +64,7 @@ window.initOnlinePresenceSystem = () => {
         name: identity.name.substring(0, 30),
         platform: "PC",
         province: identity.province || "Unknown",
-        ID: identity.ID, // 8-digit ID
-        last_seen: firebase.database.ServerValue.TIMESTAMP
+        ID: identity.ID // 8-digit ID
     };
 
     // Set onDisconnect and write data
@@ -237,12 +236,39 @@ window.renderOnlineUsersList = () => {
     }
 };
 
-// --- Start System ---
-// Wait for identity to be ready before initializing
+// --- Stale Entry Cleanup ---
+// On refresh/reload, check if old com_ and mobile_ entries exist and remove them
+window.cleanupStaleEntries = () => {
+    let identity = window.userIdentity;
+    if (!identity) {
+        try { identity = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
+    }
+    if (!identity || !identity.name) return;
+
+    const sanitizedName = sanitizeKey(identity.name);
+    if (!sanitizedName) return;
+
+    const comKey = `com_${sanitizedName}`;
+    const mobileKey = `mobile_${sanitizedName}`;
+
+    // Remove stale com_ entry
+    firebase.database().ref(`${ROOMS_PATH}/${comKey}`).remove()
+        .then(() => console.log(`Cleaned up stale entry: ${comKey}`))
+        .catch(() => { });
+
+    // Remove stale mobile_ entry
+    firebase.database().ref(`${ROOMS_PATH}/${mobileKey}`).remove()
+        .then(() => console.log(`Cleaned up stale entry: ${mobileKey}`))
+        .catch(() => { });
+};
+
+// --- NO auto-init on load ---
+// Firebase presence is ONLY created when user presses Start button
+// Cleanup stale entries on page load instead
 if (document.readyState === 'complete') {
-    setTimeout(() => { if (window.initOnlinePresenceSystem) window.initOnlinePresenceSystem(); }, 500);
+    setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
 } else {
     window.addEventListener('load', () => {
-        setTimeout(() => { if (window.initOnlinePresenceSystem) window.initOnlinePresenceSystem(); }, 500);
+        setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
     });
 }

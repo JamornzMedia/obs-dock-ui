@@ -1909,9 +1909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     platform: 'Mobile',
                     ID: userID, // Same 8-digit ID as com_
                     roomID: roomID, // 6-digit for connection
-                    Mobile: 'off', // Start as off
-                    hostPeerId: `fcp-v2-host-${roomID}`,
-                    created: firebase.database.ServerValue.TIMESTAMP
+                    Mobile: 'off' // Start as off
                 });
 
                 currentRoomRef = newRoomRef;
@@ -2153,6 +2151,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const connUI = document.getElementById('remoteConnectionUI');
             if (createUI) createUI.style.display = 'none';
             if (connUI) connUI.style.display = 'block';
+
+            // Show Room ID container and close room button
+            const roomIdContainer = document.getElementById('remoteRoomIdContainer');
+            if (roomIdContainer) roomIdContainer.style.display = 'block';
+            const closeRoomBtn2 = document.getElementById('closeRoomBtn');
+            if (closeRoomBtn2) closeRoomBtn2.style.display = 'block';
+
+            // Set Room Name display in QR section
+            const roomNameInput = document.getElementById('remoteRoomName');
+            const roomNameDisplay = document.getElementById('remoteRoomNameDisplay');
+            if (roomNameDisplay && roomNameInput) {
+                const roomName = roomNameInput.value.trim() || 'Room';
+                roomNameDisplay.textContent = `🏠 ${roomName}`;
+            }
 
             // Initialize Host
             if (window.setupMobileRoomLogic) window.setupMobileRoomLogic();
@@ -2417,9 +2429,28 @@ window.initMobileHost = (customRoomId) => {
     if (window.location.href.endsWith('/')) baseUrl = window.location.href + 'OBSScorePhone.html';
     const fullUrl = `${baseUrl}?room=${roomId}`;
 
-    const qrImg = document.getElementById('remoteQrCode');
-    // Using simple img src for QR
-    if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+    const qrContainer = document.getElementById('remoteQrCode');
+    // Generate QR code using QRCode library or fallback to API
+    if (qrContainer) {
+        qrContainer.innerHTML = '';
+        if (window.QRCode) {
+            new QRCode(qrContainer, {
+                text: fullUrl,
+                width: 150,
+                height: 150,
+                colorDark: '#000000',
+                colorLight: '#ffffff'
+            });
+        } else {
+            // Fallback: API-based QR code as <img>
+            const img = document.createElement('img');
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+            img.alt = 'QR Code';
+            img.width = 150;
+            img.height = 150;
+            qrContainer.appendChild(img);
+        }
+    }
 
     const mobileLinkInput = document.getElementById('mobileLinkInput');
     if (mobileLinkInput) mobileLinkInput.value = fullUrl;
@@ -2432,9 +2463,7 @@ window.initMobileHost = (customRoomId) => {
             platform: "Mobile",
             ID: window.myUserID || userIdentity.ID || '',
             roomID: roomId,
-            Mobile: "off",
-            hostPeerId: peerId,
-            created: firebase.database.ServerValue.TIMESTAMP
+            Mobile: "off"
         };
 
         firebase.database().ref(`obs_rooms_score/${key}`).set(roomData)
@@ -2610,11 +2639,14 @@ function handleMobileCommand(data) {
             }
             break;
 
-        case 'loadminmatch': // loadMatch
+        case 'loadmatch': // loadMatch from mobile
             if (data.val) {
-                // Implement load match logic if exists, or just update display
+                // Update match display and trigger load
                 const matchIdEl = document.getElementById('matchID');
                 if (matchIdEl) matchIdEl.textContent = data.val;
+                // Also trigger the PC Match popup button
+                const pcMatchBtn = document.getElementById('pcMatchIdBtn');
+                if (pcMatchBtn) pcMatchBtn.textContent = data.val;
             }
             break;
 
@@ -2633,26 +2665,28 @@ window.triggerAction = async (index) => {
 
     if (!btn || !window.obs) return;
 
+    // Normalize actionType to lowercase for case-insensitive matching
+    const actionType = (btn.actionType || '').toLowerCase();
+
     try {
-        if (btn.actionType === 'scene') {
+        if (actionType === 'scene') {
             await window.obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
-        else if (btn.actionType === 'toggle' || btn.actionType === 'show' || btn.actionType === 'hide') {
+        else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
             // Get Current Scene
             const currentScene = await window.obs.call('GetCurrentProgramScene');
             const sceneName = currentScene.currentProgramSceneName;
 
             // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
-            // Note: This might fail if source not in scene.
             try {
                 const itemIdResp = await window.obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
                 const sceneItemId = itemIdResp.sceneItemId;
 
                 let enabled = true;
-                if (btn.actionType === 'show') enabled = true;
-                else if (btn.actionType === 'hide') enabled = false;
-                else if (btn.actionType === 'toggle') {
+                if (actionType === 'show') enabled = true;
+                else if (actionType === 'hide') enabled = false;
+                else if (actionType === 'toggle') {
                     const itemState = await window.obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
                     enabled = !itemState.sceneItemEnabled;
                 }
