@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSScore Remote V2.8</title>
+    <title>OBSScore Remote V2.9.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -48,32 +48,30 @@
 
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <div id="login-screen" class="absolute inset-0 z-50 bg-neutral-900 flex flex-col justify-center p-6">
-        <div class="flex flex-col items-center justify-center py-6 bg-transparent mb-6">
-            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tighter leading-none"
-                style="font-family: Arial, sans-serif;">
-                OBSScore
-            </h1>
-            <div
-                class="mt-2 bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-1 rounded-full text-xl font-bold tracking-wide shadow-lg shadow-red-500/30">
-                REMOTE
-            </div>
+    <!-- Welcome Screen Style Login -->
+    <div id="login-screen" class="absolute inset-0 z-50 flex flex-col justify-center items-center p-6"
+        style="background: linear-gradient(135deg, #020617 0%, #0f172a 100%);">
+        <div class="text-center mb-8">
+            <div class="text-4xl font-bold text-white mb-2">Dock UI : OBSScore</div>
+            <div class="text-lg text-gray-400">Remote Control</div>
         </div>
-        <p class="text-center text-gray-500 mb-6 text-sm">Control Panel V2.8</p>
 
-        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700 shadow-lg space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Room ID (6 Digits)</label>
-                <input type="tel" id="room-input" maxlength="6"
-                    class="w-full bg-black border border-gray-600 rounded-lg p-3 text-center text-2xl font-mono tracking-widest text-white focus:border-blue-500 outline-none"
-                    placeholder="000000">
+        <!-- Compact Form -->
+        <div style="width: 100%; max-width: 280px; margin: 0 auto;">
+            <div class="mb-4">
+                <input type="tel" id="room-input" maxlength="6" placeholder="Room ID (6 หลัก)"
+                    style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 12px 16px; color: white; border-radius: 8px; font-size: 1.1rem; text-align: center; font-family: monospace; letter-spacing: 0.3em;">
             </div>
             <button onclick="connectToRoom()"
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg btn-push">
-                CONNECT
+                style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: all 0.2s;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(59,130,246,0.4)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                เชื่อมต่อ / Connect
             </button>
         </div>
-        <div id="status-msg" class="text-center mt-4 text-sm text-red-500 hidden"></div>
+
+        <div id="status-msg" class="text-center mt-6 text-sm text-red-400 hidden"></div>
+        <div class="absolute bottom-8 text-gray-500 text-sm">Developed by JamornzMedia - Version 2.9.1</div>
     </div>
 
     <div id="main-ui" class="hidden flex-1 flex flex-col p-3 space-y-3 h-full overflow-y-auto">
@@ -256,7 +254,7 @@
     </div>
 
     <script>
-        // ⚠️ ใส่ค่า Config ของ Firebase ของคุณที่นี่
+        // Use the Firebase Config from the original files or remote.js
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
             authDomain: "obscam-p2p.firebaseapp.com",
@@ -267,13 +265,10 @@
             appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
 
-        if (firebaseConfig.apiKey === "YOUR_API_KEY" || firebaseConfig.apiKey.includes("YOUR_")) {
-            alert("⚠️ Firebase Config is missing!\nPlease open 'OBSScorePhone.html' to enter your Firebase API Keys.");
-        }
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // Standard PeerJS Config
         const peerConfig = {
             config: {
                 iceServers: [
@@ -284,11 +279,12 @@
         };
 
         let peer, conn;
+        // Parse URL params if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomUrl = urlParams.get('room');
 
         window.onload = () => {
             if (roomUrl) document.getElementById('room-input').value = roomUrl;
-
-            // Setup Debounced Listeners
             setupDebouncedListeners();
         };
 
@@ -302,15 +298,13 @@
         }
 
         function setupDebouncedListeners() {
-            const debouncedUpdateA = debounce(() => updateTeam('A'), 500); // 500ms delay
+            const debouncedUpdateA = debounce(() => updateTeam('A'), 500);
             const debouncedUpdateB = debounce(() => updateTeam('B'), 500);
 
-            // Team A
             document.getElementById('color-a').addEventListener('input', debouncedUpdateA);
             document.getElementById('color-a-2').addEventListener('input', debouncedUpdateA);
             document.getElementById('name-a').addEventListener('input', debouncedUpdateA);
 
-            // Team B
             document.getElementById('color-b').addEventListener('input', debouncedUpdateB);
             document.getElementById('color-b-2').addEventListener('input', debouncedUpdateB);
             document.getElementById('name-b').addEventListener('input', debouncedUpdateB);
@@ -318,56 +312,105 @@
 
         function connectToRoom() {
             const rid = document.getElementById('room-input').value;
-            if (rid.length < 6) return alert("Invalid Room ID");
+            if (rid.length < 6) return alert("Invalid Room ID / กรุณากรอก Room ID 6 หลัก");
 
-            document.getElementById('status-msg').textContent = "Connecting...";
+            document.getElementById('status-msg').textContent = "กำลังค้นหาห้อง...";
             document.getElementById('status-msg').classList.remove('hidden');
 
-            // 1. Check Firebase for Room Name (Optional check)
-            database.ref('obs_rooms/' + rid).once('value').then(snapshot => {
-                if (!snapshot.exists()) {
-                    alert("Room not found!");
+            // Search for mobile_ rooms by roomID (6-digit)
+            database.ref('obs_rooms_score').once('value').then(snap => {
+                if (!snap.exists()) {
+                    alert("ไม่พบห้อง! กรุณาตรวจสอบว่าเปิด PC แล้ว / No rooms found!");
+                    document.getElementById('status-msg').textContent = "No rooms found";
                     return;
                 }
-                const roomData = snapshot.val();
-                document.getElementById('room-name-display').textContent = roomData.name;
-                document.getElementById('room-id-display').textContent = 'ID: ' + rid; // Show Room ID
 
-                // 2. Connect via PeerJS
-                startPeerConnection(rid);
+                const allRooms = snap.val();
+                let foundRoom = null;
+                let foundKey = null;
 
-                // 3. Register Presence (Online Count)
-                setupPresence(rid);
+                // Search for mobile_ room with matching roomID
+                Object.keys(allRooms).forEach(key => {
+                    const room = allRooms[key];
+                    // Look for mobile_ rooms with matching roomID
+                    if (key.startsWith('mobile_') && room.roomID === rid) {
+                        foundRoom = room;
+                        foundKey = key;
+                    }
+                });
+
+                if (!foundRoom) {
+                    alert("ไม่พบห้อง! ตรวจสอบ ID / Room not found! Check ID");
+                    document.getElementById('status-msg').textContent = "Room not found";
+                    return;
+                }
+
+                // Display nameMobile
+                document.getElementById('room-name-display').textContent = foundRoom.nameMobile || 'Room';
+                document.getElementById('room-id-display').textContent = 'ID: ' + rid;
+
+                // Construct PeerJS ID deterministically from roomID (no hostPeerId needed)
+                const hostPeerId = `fcp-v2-host-${rid}`;
+                console.log("Found Room:", foundRoom.nameMobile, "Connecting to PeerID:", hostPeerId);
+
+                // Start PeerJS connection
+                startPeerConnection(rid, hostPeerId);
+
+                // Update Mobile status to "on"
+                setupPresence(rid, foundKey);
 
             }).catch(err => {
                 console.error(err);
-                // Fallback: try connecting anyway even if Firebase fails
-                startPeerConnection(rid);
+                alert("เกิดข้อผิดพลาด / Connection Error: " + err.message);
             });
         }
 
-        function setupPresence(rid) {
-            const uid = 'mobile_' + Math.floor(Math.random() * 10000000);
-            const userRef = database.ref('obs_rooms_presence/' + rid + '/' + uid);
+        function setupPresence(rid, roomKey) {
+            if (!roomKey) {
+                console.warn("No roomKey provided for presence");
+                return;
+            }
+
+            // Update Mobile status to "on"
+            const mobileStatusRef = database.ref(`obs_rooms_score/${roomKey}/Mobile`);
+            mobileStatusRef.set('on');
+
+            // Set to "off" on disconnect
+            mobileStatusRef.onDisconnect().set('off');
+
+            console.log(`Updated Mobile status to 'on' for ${roomKey}`);
+        }
+
+        function setupPresenceForRoom(rid, roomKey, uid) {
+            const presenceRef = database.ref('obs_rooms_score/' + roomKey + '/onlineUsers/' + uid);
 
             database.ref('.info/connected').on('value', (snapshot) => {
                 if (snapshot.val() === true) {
-                    userRef.onDisconnect().remove();
-                    userRef.set(true);
+                    presenceRef.onDisconnect().remove();
+                    presenceRef.set({
+                        name: 'Mobile User',
+                        province: 'Earth',
+                        platform: 'Mobile'
+                    });
                 }
             });
         }
 
-        function startPeerConnection(rid) {
+        function startPeerConnection(rid, hostPeerId) {
+            // If no hostPeerId provided, try to construct it (fcp-v2-host-{roomId})
+            if (!hostPeerId) {
+                hostPeerId = `fcp-v2-host-${rid}`;
+                console.log("Using generated PeerID:", hostPeerId);
+            }
+
             peer = new Peer(peerConfig);
             peer.on('open', (id) => {
-                const hostId = `obsscore-host-${rid}`;
-                conn = peer.connect(hostId);
+                // Connect to the specific Host Peer ID from Firebase
+                conn = peer.connect(hostPeerId);
 
                 conn.on('open', () => {
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('main-ui').classList.remove('hidden');
-                    // Request current state
                     conn.send({ type: 'requestState' });
                 });
 
@@ -382,18 +425,23 @@
 
                 conn.on('error', (err) => alert("Connection Error: " + err));
             });
+
+            // Handle Peer Errors
+            peer.on('error', (err) => {
+                console.error(err);
+                if (err.type === 'peer-unavailable') {
+                    alert("Host not found. Ensure PC is running and created the room.");
+                    document.getElementById('status-msg').textContent = "Host offline";
+                }
+            });
         }
 
         function sendCmd(type, val, action, name) {
-            if (conn && conn.open) {
-                conn.send({ type, val, action, name });
-            }
+            if (conn && conn.open) conn.send({ type, val, action, name });
         }
 
         function sendScore(team, delta, isSub = false) {
-            if (conn && conn.open) {
-                conn.send({ type: 'score', team, delta, isSub });
-            }
+            if (conn && conn.open) conn.send({ type: 'score', team, delta, isSub });
         }
 
         function updateTeam(team) {
@@ -410,18 +458,26 @@
             document.getElementById('score2-b').textContent = data.teamB.score2;
             document.getElementById('name-a').value = data.teamA.name;
             document.getElementById('name-b').value = data.teamB.name;
-            if (data.teamA.color) document.getElementById('color-a').value = data.teamA.color;
-            if (data.teamB.color) document.getElementById('color-b').value = data.teamB.color;
-            if (data.teamA.color2) document.getElementById('color-a-2').value = data.teamA.color2;
-            if (data.teamB.color2) document.getElementById('color-b-2').value = data.teamB.color2;
+
+            // Safety checks for inputs
+            const colorA = document.getElementById('color-a');
+            if (colorA && data.teamA.color) colorA.value = data.teamA.color;
+
+            const colorB = document.getElementById('color-b');
+            if (colorB && data.teamB.color) colorB.value = data.teamB.color;
+
+            const colorA2 = document.getElementById('color-a-2');
+            if (colorA2 && data.teamA.color2) colorA2.value = data.teamA.color2;
+
+            const colorB2 = document.getElementById('color-b-2');
+            if (colorB2 && data.teamB.color2) colorB2.value = data.teamB.color2;
+
             document.getElementById('timer-text').textContent = data.timer;
             document.getElementById('half-text').textContent = data.half;
-            // CHECK: Safe update for Match ID
+
             const matchIdEl = document.getElementById('current-match-id');
             if (matchIdEl) matchIdEl.textContent = data.matchId;
-            else console.warn("Missing element: current-match-id");
 
-            // Render Actions
             const grid = document.getElementById('action-grid');
             if (grid) {
                 grid.innerHTML = '';
@@ -430,44 +486,32 @@
                         const btn = document.createElement('button');
                         btn.className = "bg-gray-700 p-3 rounded text-xs font-bold text-white shadow-sm btn-push overflow-hidden text-ellipsis whitespace-nowrap";
                         btn.textContent = act.name;
-
                         const colors = ['#22c55e', '#f97316', '#3b82f6'];
                         if (act.index) btn.style.backgroundColor = colors[(act.index - 1) % 3];
-
-                        btn.onclick = () => {
-                            if (conn && conn.open) {
-                                conn.send({ type: 'actionBtn', index: act.index });
-                            }
-                        };
+                        btn.onclick = () => { if (conn && conn.open) conn.send({ type: 'actionBtn', index: act.index }); };
                         grid.appendChild(btn);
                     });
                 } else {
                     const empty = document.createElement('div');
                     empty.className = "col-span-3 text-center text-gray-500 text-xs italic";
                     empty.textContent = "No actions";
-
-                    // Add Retry Button
                     const retryBtn = document.createElement('button');
                     retryBtn.textContent = 'Retry';
                     retryBtn.className = 'col-span-3 text-xs text-blue-500 underline mt-1';
                     retryBtn.onclick = () => conn.send({ type: 'requestState' });
-
                     grid.appendChild(empty);
                     grid.appendChild(retryBtn);
                 }
             }
         }
         function openMatchPopup() {
-            // Get current value
             let curr = document.getElementById('current-match-id').textContent;
             document.getElementById('popup-match-val').textContent = curr;
             document.getElementById('match-popup').style.display = 'flex';
         }
-
         function closeMatchPopup() {
             document.getElementById('match-popup').style.display = 'none';
         }
-
         function adjustMatchId(delta) {
             let el = document.getElementById('popup-match-val');
             let val = parseInt(el.textContent) || 1;
@@ -475,14 +519,12 @@
             if (val < 1) val = 1;
             el.textContent = val;
         }
-
         function confirmMatchId() {
             let val = document.getElementById('popup-match-val').textContent;
             document.getElementById('current-match-id').textContent = val;
             sendCmd('loadMatch', val);
             closeMatchPopup();
         }
-
         function openHelpPopup() {
             document.getElementById('help-popup').style.display = 'flex';
         }
@@ -500,15 +542,15 @@
             <div class="space-y-4 text-gray-300 text-sm">
                 <div>
                     <strong class="text-purple-400">Save Replay</strong>
-                    <p>บันทึก Replay Buffer ใน OBS (ต้องเปิด Replay Buffer ไว้ก่อน)</p>
+                    <p>บันทึก Replay Buffer ใน OBS</p>
                 </div>
                 <div>
                     <strong class="text-indigo-400">Scene Replay</strong>
-                    <p>เปลี่ยนฉาก OBS ไปที่ Scene ที่ชื่อว่า <code>SceneReplay</code></p>
+                    <p>เปลี่ยนฉากเป็น <code>SceneReplay</code></p>
                 </div>
                 <div>
                     <strong class="text-teal-400">Main Scene</strong>
-                    <p>เปลี่ยนฉาก OBS ไปที่ Scene ที่ชื่อว่า <code>MainScene</code></p>
+                    <p>เปลี่ยนฉากเป็น <code>MainScene</code></p>
                 </div>
             </div>
             <button onclick="closeHelpPopup()"

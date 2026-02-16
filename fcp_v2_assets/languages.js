@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.9 (OBSScore)", // Update Version
+        appTitle: "Football Scoreboard Controller - V2.9.1 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.9", // Update
+        changelog: "Update Version 2.9.1",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -82,7 +82,6 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'Team A Score 2 (Fouls/Counts)' },
             { code: '&lt;score2_team_b&gt;', desc: 'Team B Score 2 (Fouls/Counts)' },
             { code: '&lt;time_counter&gt;', desc: 'Current Time (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'Half (1st/2nd)' },
             { code: '&lt;label1&gt;', desc: 'Label 1 Text' },
             { code: '&lt;label2&gt;', desc: 'Label 2 Text' },
             { code: '&lt;label3&gt;', desc: 'Label 3 Text' },
@@ -90,14 +89,65 @@ export const translations = {
             { code: '&lt;label5&gt;', desc: 'Label 5 Text' },
         ],
         save: "Save",
+        // V2.9.1 Settings Tabs
+        settingsTabGeneral: "📝 Announce",
+        settingsTabActions: "🎮 Actions",
+        settingsTabKeybinds: "⌨️ Keys",
+        settingsTabVisibility: "👁️ Display",
+        settingsTabData: "📊 Data",
+        // V2.9.1 Confirm Dialog
+        confirmResetTitle: "Confirm Full Reset",
+        confirmResetMsg: "This will reset all scores, timer, half, and injury time. Are you sure?",
+        confirmYes: "Yes, Reset All",
+        confirmNo: "Cancel",
+        // V2.9.1 Color Count
+        colorCount: "Team Colors:",
+        colorCount1: "1 Color",
+        colorCount2: "2 Colors",
+        // V2.9.1 Timer State
+        timerRunning: "Running",
+        timerPaused: "Paused",
+        // V2.9.1 OBS Source Creation
+        createObsSources: "Auto-Create Sources in OBS",
+        createObsSourcesDesc: "Create all required text & color sources in the current OBS scene automatically.",
+        toastSourcesCreated: "All OBS sources created successfully!",
+        toastSourcesPartial: "Some sources already exist, others created.",
+        toastSourcesFailed: "Failed to create sources. Check OBS connection.",
+        // V2.9.1 Help
+        helpStep4: "4. Use the <i class='fas fa-cog'></i> Settings button to configure action buttons, keyboard shortcuts, display settings, and data sources.",
+        helpStep5: "5. Use the <i class='fas fa-mobile-alt'></i> Mobile button to control from a smartphone.",
+        helpStep6: "6. Click <strong>'Auto-Create Sources in OBS'</strong> below to generate all required sources automatically.",
+        // V2.9.1 Donate
+        donateShopee: "Shopee (Affiliate)",
+        donateDesc: "This program is free! Thank you for supporting the developer.",
+        donateShopeeDesc: "Support by shopping on Shopee via this affiliate link.",
+        donateEasyDonateDesc: "Alternative: Support via EasyDonate.",
+        donateSponsorTitle: "Support the Developer",
+        donateClose: "Close",
+        // V2.9.1 Visibility extras (translated labels)
+        visExtraTimeBtns: "Extra Time Buttons",
+        visResetToStart: "Reset to Start",
+        visSetTimeBtn: "Set Time Button",
+        visCountdown: "Countdown",
+        visControlTitle: "Timer Controls Visibility",
+        maxHalvesLabel: "Max Halves:",
         close: "Close",
         saveAndUpdate: "Save & Update",
         helpTitle: "How to Use",
+        helpWebSocket: "<strong>Prerequisite:</strong> Enable <strong>OBS WebSocket</strong> in OBS Studio (Tools > WebSocket Server Settings). <br>Set Port: <code>4455</code> | <strong>Uncheck 'Enable Authentication'</strong>.",
         helpStep1: "1. Click the <i class='fas fa-folder-open'></i> icon to set your logo folder path. The default is <code>C:/OBSAssets/logos</code>. **You need to click the Edit button inside the popup to change and save the path.**",
-        helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file.",
+        helpStep2: "2. Click <i class='fas fa-file-excel'></i> Excel button to select your data file (or use Google Sheets).",
         helpStep3: "3. Select the desired Match ID and click <i class='fas fa-check'></i> Load.",
         sourcesTitle: "Required OBS Sources (Click to Copy)",
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
+        selectMatchId: "Select Match ID",
+        loadBtn: "LOAD",
+        // V2.9.1 Welcome Sponsor
+        donateFreeMsg: "This program is free! Thank you for your support.",
+        donateShopeeMsg: "You can support me by shopping on Shopee via this Affiliate link.",
+        donateShopeeAlt: "QR Code for Jamornz's Shopee",
+        donateAltTitle: "Alternative Support Options",
+        donateEasyDonateMsg: "Support via EasyDonate",
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'Team A (Primary Color)' },
             { code: 'Color_Team_B', type: 'Color Source', desc: 'Team B (Primary Color)' },
@@ -134,16 +184,23 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.9</h5>
+                    <h5>Version 2.9.1</h5>
                     <ul>
-                        <li>**Core:** Online User Count (Firebase Presence), Performance Improvements (Debounce).</li>
-                        <li>**UI/UX:** Responsive Design (~400px), Button Renaming, Score Reset Position Optimization.</li>
-                        <li>**Settings:** Control Control Visibility (Extras), Label Count Dropdown.</li>
-                        <li>**Mobile:** Improved Color Picker Layout, Performance Fixes.</li>
-                        <li>**Previous:** Logo Cache (Drag & Drop), Secondary Colors, Google Sheets Support.</li>
+                        <li>**Settings:** Reorganized into Tabs (Announce, Actions, Keys, Display, Data) for easier access.</li>
+                        <li>**UI:** Bigger color pickers, 1 or 2 color display option, timer running/paused indicator.</li>
+                        <li>**UX:** Confirm dialog before full reset, Enter/Escape key for team name editing, tooltips.</li>
+                        <li>**OBS:** Auto-create all required sources in current scene via WebSocket.</li>
+                        <li>**Fix:** Popup blur in OBS Dock, CSS syntax errors, viewport meta, toast positioning.</li>
+                        <li>**Donate:** Cleaner sponsor/donate popup layout.</li>
                     </ul>
                 </li>
-            </ul > `,
+                <li>
+                    <h5>Version 2.9</h5>
+                    <ul>
+                        <li>Online User Count, Responsive Design, Visibility Controls, Logo Cache, Google Sheets.</li>
+                    </ul>
+                </li>
+            </ul> `,
         toastLoadFileFirst: "Please upload a file first",
         toastMatchNotFound: "Match ID not found:",
         toastLoaded: "Loaded ID:",
@@ -200,10 +257,15 @@ export const translations = {
         toastGoogleSheetSuccess: "Google Sheet Loaded Successfully!",
         toastGoogleSheetError: "Failed to load Google Sheet. Check URL or permission.",
         loadFromGoogleSheet: "Fetch / Reload GS",
+        labelCount: "Label Count:",
+        dsExcelGuide: "<strong>Excel Guide:</strong> Ensure your file uses these columns logic. You can copy the headers below. (Unwanted columns can be deleted)",
+        dsColumnList: "MatchID, LogoA, TeamA, LogoB, TeamB, label1, label2, label3, label4, label5",
+        dsCopyColumns: "Copy Columns",
+        dsGoogleSheetGuide: "<strong>Google Sheets Guide:</strong><br>1. Click <strong>Share</strong> > General Access > <strong>Anyone with the link</strong>.<br>2. Click <strong>Copy link</strong>.<br>3. Paste the link below.<br>4. Go back to main screen > Click <strong>Load/Fetch</strong> > Select Match ID.",
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9 (OBSScore)", // Update Version
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.1 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -240,7 +302,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.9", // Update
+        changelog: "อัปเดตเวอร์ชัน 2.9.1",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -279,7 +341,6 @@ export const translations = {
             { code: '&lt;score2_team_a&gt;', desc: 'คะแนน 2 ทีม A (ฟาวล์/แต้ม)' },
             { code: '&lt;score2_team_b&gt;', desc: 'คะแนน 2 ทีม B (ฟาวล์/แต้ม)' },
             { code: '&lt;time_counter&gt;', desc: 'เวลาปัจจุบัน (MM:SS)' },
-            { code: '&lt;half_text&gt;', desc: 'ครึ่งเวลา (1st/2nd)' },
             { code: '&lt;label1&gt;', desc: 'ข้อความ Label 1' },
             { code: '&lt;label2&gt;', desc: 'ข้อความ Label 2' },
             { code: '&lt;label3&gt;', desc: 'ข้อความ Label 3' },
@@ -287,14 +348,68 @@ export const translations = {
             { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' },
         ],
         save: "บันทึก",
+        // V2.9.1 Settings Tabs
+        settingsTabGeneral: "📝 ประกาศ",
+        settingsTabActions: "🎮 ปุ่ม",
+        settingsTabKeybinds: "⌨️ คีย์ลัด",
+        settingsTabVisibility: "👁️ แสดงผล",
+        settingsTabData: "📊 ข้อมูล",
+        // V2.9.1 Confirm Dialog
+        confirmResetTitle: "ยืนยันการรีเซ็ตทั้งหมด",
+        confirmResetMsg: "จะรีเซ็ตคะแนน, เวลา, ครึ่ง, ทดเวลา ทั้งหมด คุณแน่ใจหรือไม่?",
+        confirmYes: "ใช่ รีเซ็ตทั้งหมด",
+        confirmNo: "ยกเลิก",
+        // V2.9.1 Color Count
+        colorCount: "จำนวนสีทีม:",
+        colorCount1: "1 สี",
+        colorCount2: "2 สี",
+        // V2.9.1 Timer State
+        timerRunning: "กำลังเดิน",
+        timerPaused: "หยุด",
+        // V2.9.1 OBS Source Creation
+        createObsSources: "สร้าง Source อัตโนมัติใน OBS",
+        createObsSourcesDesc: "สร้าง Text & Color sources ที่จำเป็นทั้งหมดใน Scene ปัจจุบันของ OBS โดยอัตโนมัติ",
+        toastSourcesCreated: "สร้าง OBS sources ทั้งหมดสำเร็จ!",
+        toastSourcesPartial: "บาง source มีอยู่แล้ว สร้างที่เหลือสำเร็จ",
+        toastSourcesFailed: "สร้าง sources ไม่สำเร็จ ตรวจสอบการเชื่อมต่อ OBS",
+        // V2.9.1 Help
+        helpStep4: "4. ใช้ปุ่ม <i class='fas fa-cog'></i> ตั้งค่า เพื่อปรับ action buttons, คีย์ลัด, การแสดงผล, และแหล่งข้อมูล",
+        helpStep5: "5. ใช้ปุ่ม <i class='fas fa-mobile-alt'></i> มือถือ เพื่อควบคุมผ่านสมาร์ทโฟน",
+        helpStep6: "6. คลิกปุ่ม <strong>'สร้าง Source อัตโนมัติ'</strong> ด้านล่างเพื่อสร้าง sources ทั้งหมดใน OBS อัตโนมัติ",
+        // V2.9.1 Donate
+        donateShopee: "Shopee (Affiliate)",
+        donateDesc: "โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน",
+        donateShopeeDesc: "สนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้",
+        donateEasyDonateDesc: "ทางเลือกอื่น: สนับสนุนผ่าน EasyDonate",
+        donateSponsorTitle: "สนับสนุนผู้พัฒนา",
+        donateClose: "ปิด",
+        // V2.9.1 Visibility extras
+        visExtraTimeBtns: "ปุ่มทดเวลา",
+        visResetToStart: "รีเซ็ตไปเวลาเริ่มต้น",
+        visSetTimeBtn: "ปุ่มตั้งเวลา",
+        visCountdown: "นับถอยหลัง",
+        visControlTitle: "แสดง/ซ่อนปุ่มเวลา",
+        maxHalvesLabel: "จำนวนครึ่งเวลาสูงสุด:",
         close: "ปิด",
         saveAndUpdate: "บันทึกและอัปเดต",
         helpTitle: "วิธีการใช้งาน",
+        helpWebSocket: "<strong>การเตรียมความพร้อม:</strong> เปิดใช้งาน <strong>OBS WebSocket</strong> ในโปรแกรม OBS (Tools > WebSocket Server Settings) <br>ตั้งค่า Port: <code>4455</code> | <strong>นำติ๊กถูกออกที่ 'Enable Authentication'</strong>",
         helpStep1: "1. กดปุ่ม <i class='fas fa-folder-open'></i> เพื่อตั้งค่าที่อยู่โฟลเดอร์โลโก้ (ค่าเริ่มต้นคือ <code>C:/OBSAssets/logos</code>) **คุณต้องกดปุ่ม แก้ไข ใน Popup เพื่อเปลี่ยนและบันทึกที่อยู่**",
-        helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel เพื่อเลือกไฟล์ข้อมูล",
+        helpStep2: "2. กดปุ่ม <i class='fas fa-file-excel'></i> Excel หรือ Google Sheet เพื่อเลือกแหล่งข้อมูล",
         helpStep3: "3. เลือก Match ID ที่ต้องการ แล้วกด <i class='fas fa-check'></i> Load",
         sourcesTitle: "OBS Sources ที่ต้องมี (คลิกเพื่อคัดลอก)",
-        sourcesTableHeaders: ["ชื่อ Source", "ประเภท Source", "รายละเอียด"],
+        selectMatchId: "เลือก Match ID",
+        loadBtn: "โหลดข้อมูล",
+        // V2.9.1 Welcome Sponsor
+        donateFreeMsg: "โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน",
+        donateShopeeMsg: "คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้",
+        donateShopeeAlt: "QR Code สำหรับ Shopee ของ Jamornz",
+        donateAltTitle: "ทางเลือกอื่นในการสนับสนุน",
+        donateEasyDonateMsg: "สนับสนุนผ่าน EasyDonate",
+        dsExcelGuide: "<strong>คำแนะนำ Excel:</strong> ตรวจสอบว่าไฟล์มีคอลัมน์ตามนี้ (สามารถคัดลอกไปวางได้ / คอลัมน์ที่ไม่ใช้ลบออกได้)",
+        dsColumnList: "MatchID, LogoA, TeamA, LogoB, TeamB, label1, label2, label3, label4, label5",
+        dsCopyColumns: "คัดลอกชื่อคอลัมน์",
+        dsGoogleSheetGuide: "<strong>คำแนะนำ Google Sheets:</strong><br>1. กดปุ่ม <strong>แชร์ (Share)</strong> > การเข้าถึงทั่วไป > เลือก <strong>ทุกคนที่มีลิ้งค์ (Anyone with the link)</strong><br>2. กด <strong>คัดลอกลิ้งค์ (Copy link)</strong><br>3. นำลิ้งค์มาวางในช่องด้านล่าง<br>4. กลับไปหน้าหลัก > กดปุ่ม <strong>โหลดข้อมูล</strong> > เลือก Match ID",
         sourcesList: [
             { code: 'Color_Team_A', type: 'Color Source', desc: 'สีทีม A (สีหลัก)' },
             { code: 'Color_Team_B', type: 'Color Source', desc: 'สีทีม B (สีหลัก)' },
@@ -331,16 +446,23 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.9 (รวมอัปเดตล่าสุด)</h5>
+                    <h5>เวอร์ชัน 2.9.1</h5>
                     <ul>
-                        <li>**ระบบใหม่:** แสดงจำนวนคนออนไลน์ (Online Count), ปรับปรุงประสิทธิภาพ (Debounce).</li>
-                        <li>**หน้าตา (UI):** รองรับจอมือถือ/จอเล็ก (~400px), ปรับย้ายปุ่มรีเซ็ต, เปลี่ยนชื่อปุ่ม.</li>
-                        <li>**ตั้งค่า:** ซ่อน/แสดงปุ่มเสริม (เวลา/นับถอยหลัง) ได้, เปลี่ยนตัวเลือกจำนวนป้ายเป็น Dropdown.</li>
-                        <li>**มือถือ:** แยกปุ่มเลือกสีออกมาจัดเรียงใหม่เพื่อความสะดวก.</li>
-                        <li>**ก่อนหน้า:** Logo Cache, สีรอง (Secondary Color), Google Sheets.</li>
+                        <li>**ตั้งค่า:** จัดเรียงเป็นแท็บ (ประกาศ, ปุ่ม, คีย์ลัด, แสดงผล, ข้อมูล) เข้าถึงง่ายขึ้น</li>
+                        <li>**UI:** ปุ่มสีใหญ่ขึ้น, เลือกแสดง 1 หรือ 2 สี, สถานะ timer (เดิน/หยุด)</li>
+                        <li>**UX:** ยืนยันก่อน full reset, Enter/Escape แก้ชื่อทีม, tooltips</li>
+                        <li>**OBS:** สร้าง sources อัตโนมัติใน scene ปัจจุบันผ่าน WebSocket</li>
+                        <li>**แก้บั๊ก:** Popup มัวใน OBS Dock, CSS syntax error, viewport meta, toast</li>
+                        <li>**สนับสนุน:** หน้า donate/sponsor ออกแบบใหม่</li>
                     </ul>
                 </li>
-            </ul > `,
+                <li>
+                    <h5>เวอร์ชัน 2.9</h5>
+                    <ul>
+                        <li>จำนวนคนออนไลน์, Responsive, ซ่อน/แสดงปุ่มเสริม, Logo Cache, Google Sheets</li>
+                    </ul>
+                </li>
+            </ul> `,
         toastLoadFileFirst: "โปรด Upload ไฟล์ก่อน",
         toastMatchNotFound: "ไม่พบ Match ID:",
         toastLoaded: "โหลด ID สำเร็จ:",
@@ -397,5 +519,6 @@ export const translations = {
         toastGoogleSheetSuccess: "ดึงข้อมูลจาก Google Sheet สำเร็จ!",
         toastGoogleSheetError: "ดึงข้อมูลไม่สำเร็จ ตรวจสอบ URL หรือการแชร์",
         loadFromGoogleSheet: "ดึงข้อมูล GS",
+        labelCount: "จำนวนป้าย:",
     },
 };

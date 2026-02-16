@@ -15,379 +15,260 @@ const firebaseConfig = {
 try {
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
+        console.log("Firebase Initialized");
     }
 } catch (e) {
-    console.error("Firebase Init Error: Please check firebaseConfig in remote.js", e);
+    console.error("Firebase Init Error:", e);
 }
 
-const database = firebase.database();
-
-// --- VARIABLES ---
-let peer = null;
-let conn = null;
-let currentRoomId = null;
-
-// PeerJS Config (Google STUN)
-const peerConfig = {
-    config: {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-    }
+// --- Helper: Sanitize name for use as Firebase key ---
+const sanitizeKey = (name) => {
+    // Remove characters not allowed in Firebase keys: . $ # [ ] /
+    // Also trim and replace spaces with underscores for cleaner keys
+    return name.trim()
+        .replace(/[.#$\[\]\/]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 30);
 };
 
-// --- DOM ELEMENTS ---
-const $ = id => document.getElementById(id);
-const els = {
-    btn: $('mobileControlBtn'),
-    popup: $('mobileControlPopup'),
-    closeBtn: $('closeMobilePopupBtn'),
-    createBtn: $('createRoomBtn'),
-    genBtn: $('genRoomIdBtn'),
-    roomName: $('remoteRoomName'),
-    roomId: $('remoteRoomId'),
-    connectionUI: $('remoteConnectionUI'),
-    qrCode: $('remoteQrCode'),
-    linkText: $('mobileLinkInput'), // Changed ID
-    copyLinkBtn: $('copyMobileLinkBtn'), // New Button
-    statusText: $('remoteStatusText'),
-    closeRoomBtn: $('closeRoomBtn'), // New Button
-    roomIdContainer: $('remoteRoomIdContainer') // New Container
-};
+// --- New Room System: obs_rooms_score ---
+const ROOMS_PATH = 'obs_rooms_score';
 
-// --- FUNCTIONS ---
-
-function generateRoomId() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function initRemote() {
-    // Clear ID initially
-    if (els.roomId) els.roomId.value = "";
-
-    if (els.btn) {
-        els.btn.addEventListener('click', () => {
-            document.getElementById('popupOverlay').style.display = 'block';
-            els.popup.style.display = 'block';
-        });
+window.initOnlinePresenceSystem = () => {
+    // Get user identity with 8-digit ID
+    let identity = window.userIdentity;
+    if (!identity) {
+        try { identity = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
     }
-
-    if (els.closeBtn) {
-        els.closeBtn.addEventListener('click', () => {
-            document.getElementById('popupOverlay').style.display = 'none';
-            els.popup.style.display = 'none';
-        });
-    }
-
-    // Hide Gen Button as we generate on create
-    if (els.genBtn) {
-        els.genBtn.style.display = 'none';
-    }
-
-    if (els.createBtn) {
-        els.createBtn.addEventListener('click', startHosting);
-    }
-
-    if (els.closeRoomBtn) {
-        els.closeRoomBtn.addEventListener('click', closeRoom);
-    }
-
-    if (els.copyLinkBtn) {
-        els.copyLinkBtn.addEventListener('click', copyLink);
-    }
-
-    // Load persisted name
-    const savedName = localStorage.getItem('remoteRoomName');
-    if (savedName && els.roomName) {
-        els.roomName.value = savedName;
-    }
-}
-
-function startHosting() {
-    // 0. Config Check
-    if (firebaseConfig.apiKey === "YOUR_API_KEY" || firebaseConfig.apiKey.includes("YOUR_")) {
-        alert("⚠️ Firebase Config is missing!\nPlease configure 'fcp_v2_assets/remote.js' and 'OBSScorePhone.html'.");
+    if (!identity || !identity.name || !identity.ID) {
+        console.log("No user identity or ID, skipping presence system.");
         return;
     }
 
-    // 1. Validation
-    const rname = els.roomName.value.trim();
-    if (!rname) {
-        alert("Please enter a Room Name (max 50 chars).");
-        els.roomName.focus();
+    const sanitizedName = sanitizeKey(identity.name);
+    if (!sanitizedName) {
+        console.log("Invalid user name for presence key.");
         return;
     }
 
-    // 2. Generate ID
-    const rid = generateRoomId();
-    els.roomId.value = rid;
-    currentRoomId = rid;
+    // Build room key: com_{nameID}
+    const roomKey = `com_${sanitizedName}`;
+    const roomRef = firebase.database().ref(`${ROOMS_PATH}/${roomKey}`);
 
-    // UI Updates
-    els.createBtn.disabled = true;
-    els.createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    // Store ref globally
+    window.myRoomKey = roomKey;
+    window.myRoomRef = roomRef;
+    window.myUserID = identity.ID; // Store 8-digit ID globally
 
-    // Save Name
-    localStorage.setItem('remoteRoomName', rname);
-
-    // 4. Setup PeerJS
-    const myPeerId = `obsscore-host-${rid}`;
-
-    if (peer) peer.destroy();
-
-    peer = new Peer(myPeerId, peerConfig);
-
-    peer.on('open', (id) => {
-        console.log('My peer ID is: ' + id);
-
-        // 4. Register Room in Firebase
-        const roomRef = database.ref('obs_rooms/' + rid);
-        roomRef.set({
-            name: rname,
-            hostId: myPeerId,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            // Success
-            showConnectionUI(rid);
-            els.createBtn.style.display = 'none'; // Hide Create
-            els.closeRoomBtn.style.display = 'inline-block'; // Show Close
-            els.roomIdContainer.style.display = 'flex'; // Show ID Row
-
-            els.statusText.textContent = "Waiting for mobile...";
-            els.statusText.style.color = "#f97316";
-
-            roomRef.onDisconnect().remove();
-        }).catch(err => {
-            console.error("Firebase Error:", err);
-            alert("Firebase Error: " + err.message);
-            els.createBtn.disabled = false;
-            els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
-        });
-
-        // 5. Setup Presence (Online Count)
-        setupPresence(rid);
-
-    });
-
-    peer.on('connection', (connection) => {
-        conn = connection;
-        handleConnection();
-    });
-
-    peer.on('error', (err) => {
-        console.error(err);
-        alert("PeerJS Error: " + err.type);
-        els.createBtn.disabled = false;
-        els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
-    });
-}
-
-function showConnectionUI(rid) {
-    els.connectionUI.style.display = 'block';
-    // URL to Mobile App
-    // const mobileUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html?room=' + rid;
-    const mobileUrl = 'https://jamornzmedia.github.io/obs-dock-ui/OBSScorePhone.html?room=' + rid;
-
-    els.linkText.value = mobileUrl; // Use value for input
-    els.qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(mobileUrl)}`;
-}
-
-function closeRoom() {
-    if (peer) {
-        peer.destroy();
-        peer = null;
-    }
-
-    if (currentRoomId) {
-        database.ref('obs_rooms/' + currentRoomId).remove().catch(e => console.error(e));
-        currentRoomId = null;
-    }
-
-    // Reset UI
-    els.connectionUI.style.display = 'none';
-    els.createBtn.style.display = 'inline-block';
-    els.createBtn.disabled = false;
-    els.createBtn.innerHTML = '<i class="fas fa-broadcast-tower"></i> Create Room';
-
-    els.closeRoomBtn.style.display = 'none';
-    els.roomIdContainer.style.display = 'none';
-    els.roomId.value = "";
-
-    els.statusText.textContent = "Waiting...";
-    els.statusText.style.color = "var(--warning-color)";
-}
-
-function copyLink() {
-    if (!els.linkText.value) return;
-    els.linkText.select();
-    document.execCommand('copy');
-    // Using simple alert or if main.js showToast is available (it is not directly imported here but available in global scope if loaded)
-    if (typeof showToast === 'function') {
-        showToast("Link Copied!", "success");
-    } else {
-        alert("Link Copied!");
-    }
-}
-
-function handleConnection() {
-    if (!conn) return;
-
-    conn.on('open', () => {
-        els.statusText.textContent = "Connected!";
-        els.statusText.style.color = "#22c55e";
-
-        // Send Initial State to Mobile
-        sendFullState();
-    });
-
-    conn.on('data', (data) => {
-        console.log("Received from mobile:", data);
-        processCommand(data);
-    });
-
-    conn.on('close', () => {
-        els.statusText.textContent = "Mobile Disconnected";
-        els.statusText.style.color = "#ef4444";
-        conn = null;
-    });
-}
-
-// --- COMMAND PROCESSING ---
-function processCommand(cmd) {
-    if (!window.fcpAPI) return;
-
-    switch (cmd.type) {
-        case 'loadMatch':
-            const matchIdInput = document.getElementById('matchID');
-            if (matchIdInput) {
-                matchIdInput.value = cmd.val;
-                window.fcpAPI.applyMatch();
-            }
-            break;
-        case 'score':
-            if (cmd.isSub) {
-                window.fcpAPI.changeScore2(cmd.team, cmd.delta);
-            } else {
-                window.fcpAPI.changeScore(cmd.team, cmd.delta);
-            }
-            break;
-        case 'timer':
-            if (cmd.action === 'playpause') document.getElementById('playBtn').click();
-            if (cmd.action === 'stop') window.fcpAPI.stopTimer();
-            if (cmd.action === 'reset') window.fcpAPI.resetToStartTime();
-            if (cmd.action === 'half') window.fcpAPI.toggleHalf(); // Handle Half Toggle
-            break;
-        case 'obs': // New OBS Command Handler
-            if (cmd.action === 'saveReplay') window.fcpAPI.obs_saveReplay();
-            if (cmd.action === 'scene') window.fcpAPI.obs_setCurrentScene(cmd.name);
-            break;
-        case 'actionBtn':
-            const btn = document.getElementById(`actionBtn${cmd.index}`);
-            if (btn) btn.click();
-            break;
-        case 'updateTeam':
-            if (cmd.team === 'A') {
-                window.fcpAPI.updateTeamFromInputs('A', cmd.name, cmd.color1, cmd.color2);
-            } else {
-                window.fcpAPI.updateTeamFromInputs('B', cmd.name, cmd.color1, cmd.color2);
-            }
-            break;
-        case 'requestState':
-            sendFullState();
-            break;
-    }
-}
-
-// --- STATE SYNC (TO MOBILE) ---
-function sendFullState() {
-    if (!conn || !conn.open) return;
-
-    const state = {
-        type: 'stateUpdate',
-        teamA: {
-            name: document.getElementById('nameA').innerText,
-            score: document.getElementById('scoreA').innerText,
-            score2: document.getElementById('score2A').innerText,
-            color: document.getElementById('colorA').value,
-            color2: document.getElementById('colorA2').value
-        },
-        teamB: {
-            name: document.getElementById('nameB').innerText,
-            score: document.getElementById('scoreB').innerText,
-            score2: document.getElementById('score2B').innerText,
-            color: document.getElementById('colorB').value,
-            color2: document.getElementById('colorB2').value
-        },
-        timer: document.getElementById('timerText').innerText,
-        half: document.getElementById('halfText').innerText,
-        matchId: document.getElementById('matchID').value,
-        actions: []
+    const presenceData = {
+        name: identity.name.substring(0, 30),
+        platform: "PC",
+        province: identity.province || "Unknown",
+        ID: identity.ID // 8-digit ID
     };
 
-    for (let i = 1; i <= 6; i++) {
-        const btn = document.getElementById(`actionBtn${i}`);
-        state.actions.push({
-            index: i,
-            name: btn ? btn.innerText : `Action ${i}`
-        });
-    }
+    // Set onDisconnect and write data
+    roomRef.onDisconnect().remove();
+    roomRef.set(presenceData);
 
-    conn.send(state);
-}
+    console.log(`Created PC presence: ${roomKey} with ID: ${identity.ID}`);
 
-// --- LISTENER FOR DOM CHANGES ---
-const observer = new MutationObserver((mutations) => {
-    sendFullState();
-});
+    // --- Monitor All Users in obs_rooms_score ---
+    const allRoomsRef = firebase.database().ref(ROOMS_PATH);
 
-const observeTargets = [
-    'scoreA', 'scoreB', 'score2A', 'score2B', 'timerText', 'halfText', 'nameA', 'nameB'
-];
-
-// Initialize when DOM is ready (called via main.js import, so window load is safe)
-window.addEventListener('load', () => {
-    initRemote();
-
-    observeTargets.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) observer.observe(el, { childList: true, characterData: true, subtree: true });
-    });
-});
-
-// --- ONLINE PRESENCE SYSTEM (SEPARATED) ---
-const ONLINE_ROOM_KEY = "obs_online_room_id";
-
-function initOnlinePresenceSystem() {
-    // 1. Auto-Create "Online Room" on Load
-    // Fixed Room ID as per request to aggregate all users.
-    const onlineRoomId = "UserCounter";
-
-    // 2. Connect to Firebase Presence for THIS room
-    const presenceRef = database.ref(`obs_rooms_presence/${onlineRoomId}`);
-
-    // Self-register (I am online)
-    const myRef = presenceRef.push();
-    myRef.onDisconnect().remove();
-    myRef.set({
-        type: 'host',
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    // Listen for count
-    presenceRef.on('value', (snapshot) => {
+    allRoomsRef.on('value', (snapshot) => {
         const users = snapshot.val() || {};
-        const count = Object.keys(users).length;
-        if (document.getElementById('onlineCountVal')) {
-            document.getElementById('onlineCountVal').innerText = count;
+        const keys = Object.keys(users);
+
+        // Count by prefix and mobile status
+        let pcCount = 0;
+        let phoneCount = 0;
+        keys.forEach(key => {
+            if (key.startsWith('com_')) {
+                pcCount++;
+            } else if (key.startsWith('mobile_')) {
+                // Only count if Mobile status is "on"
+                const mobileRoom = users[key];
+                if (mobileRoom && mobileRoom.Mobile === 'on') {
+                    phoneCount++;
+                }
+            }
+        });
+
+        // Update UI counts
+        const countEl = document.getElementById('onlineCountVal');
+        if (countEl) countEl.innerText = pcCount;
+
+        const phoneCountEl = document.getElementById('onlinePhoneCountVal');
+        if (phoneCountEl) phoneCountEl.innerText = phoneCount;
+
+        // Store snapshot for popup
+        window.onlineUsersSnapshot = snapshot;
+
+        // Update popup if open
+        const popup = document.getElementById('onlineUsersPopup');
+        if (popup && popup.style.display !== 'none') {
+            renderOnlineUsersList();
         }
     });
 
-    // We do NOT couple this with the Mobile Remote PeerJS anymore.
-    // This is purely Firebase Realtime Database presence.
-    console.log("Online Presence Started:", onlineRoomId);
+    // --- New User Notification ---
+    let initialLoad = true;
+    allRoomsRef.limitToLast(1).on('child_added', (snapshot) => {
+        if (initialLoad) return;
+
+        const key = snapshot.key;
+        if (key === window.myRoomKey) return; // Ignore self
+
+        const val = snapshot.val();
+        if (val && val.name) {
+            // Determine type from key prefix
+            const isPhone = key.startsWith('phone_');
+            const platformIcon = isPhone
+                ? '<i class="fas fa-mobile-alt"></i>'
+                : '<i class="fas fa-desktop"></i>';
+            const displayName = key.replace(/^(com_|phone_)/, '').replace(/_/g, ' ');
+            const msg = `${platformIcon} ${displayName} เข้ามาแล้ว`;
+            if (typeof window.showToast === 'function') {
+                window.showToast(msg, 'info', 5000);
+            }
+        }
+    });
+
+    // Disable initial load flag after first sync
+    allRoomsRef.once('value', () => { initialLoad = false; });
+};
+
+// --- Popup Logic ---
+window.openOnlineUsersPopup = () => {
+    const popup = document.getElementById('onlineUsersPopup');
+    if (popup) popup.style.display = 'flex';
+    renderOnlineUsersList();
+};
+
+window.renderOnlineUsersList = () => {
+    const tbody = document.getElementById('onlineUsersTableBody');
+    if (!tbody || !window.onlineUsersSnapshot) return;
+
+    tbody.innerHTML = '';
+    const rawUsers = window.onlineUsersSnapshot.val() || {};
+
+    // Separate com_ and mobile_ rooms
+    const comRooms = {};
+    const mobileRooms = {};
+
+    Object.keys(rawUsers).forEach(key => {
+        if (key.startsWith('com_')) {
+            comRooms[key] = rawUsers[key];
+        } else if (key.startsWith('mobile_')) {
+            mobileRooms[key] = rawUsers[key];
+        }
+    });
+
+    // Display com_ users and match with mobile_
+    let index = 1;
+    Object.keys(comRooms).forEach(key => {
+        const user = comRooms[key];
+
+        // Find matching mobile room by ID
+        let matchedMobile = null;
+        Object.keys(mobileRooms).forEach(mKey => {
+            const mRoom = mobileRooms[mKey];
+            if (mRoom.ID === user.ID) {
+                matchedMobile = mRoom;
+            }
+        });
+
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid #334155';
+
+        // Index
+        const cellIndex = document.createElement('td');
+        cellIndex.style.padding = '8px 6px';
+        cellIndex.textContent = index++;
+        row.appendChild(cellIndex);
+
+        // Name
+        const cellName = document.createElement('td');
+        cellName.style.padding = '8px 6px';
+        cellName.textContent = user.name || 'Unknown';
+        row.appendChild(cellName);
+
+        // Province
+        const cellProvince = document.createElement('td');
+        cellProvince.style.padding = '8px 6px';
+        cellProvince.textContent = user.province || '-';
+        row.appendChild(cellProvince);
+
+        // Type (PC icon + Mobile icon if connected)
+        const cellType = document.createElement('td');
+        cellType.style.padding = '8px 6px';
+
+        // PC icon
+        const pcIcon = document.createElement('i');
+        pcIcon.className = 'fas fa-desktop';
+        pcIcon.style.color = '#60a5fa';
+        pcIcon.style.marginRight = '6px';
+        cellType.appendChild(pcIcon);
+
+        // Mobile icon (only if Mobile: "on")
+        if (matchedMobile && matchedMobile.Mobile === 'on') {
+            const mobileIcon = document.createElement('i');
+            mobileIcon.className = 'fas fa-mobile-alt';
+            mobileIcon.style.color = '#4ade80';
+            cellType.appendChild(mobileIcon);
+        }
+
+        row.appendChild(cellType);
+        tbody.appendChild(row);
+    });
+
+    if (Object.keys(comRooms).length === 0) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 4;
+        cell.style.padding = '12px';
+        cell.style.textAlign = 'center';
+        cell.style.color = '#64748b';
+        cell.textContent = 'No users online';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
+};
+
+// --- Stale Entry Cleanup ---
+// On refresh/reload, check if old com_ and mobile_ entries exist and remove them
+window.cleanupStaleEntries = () => {
+    let identity = window.userIdentity;
+    if (!identity) {
+        try { identity = JSON.parse(localStorage.getItem('userIdentity')); } catch (e) { }
+    }
+    if (!identity || !identity.name) return;
+
+    const sanitizedName = sanitizeKey(identity.name);
+    if (!sanitizedName) return;
+
+    const comKey = `com_${sanitizedName}`;
+    const mobileKey = `mobile_${sanitizedName}`;
+
+    // Remove stale com_ entry
+    firebase.database().ref(`${ROOMS_PATH}/${comKey}`).remove()
+        .then(() => console.log(`Cleaned up stale entry: ${comKey}`))
+        .catch(() => { });
+
+    // Remove stale mobile_ entry
+    firebase.database().ref(`${ROOMS_PATH}/${mobileKey}`).remove()
+        .then(() => console.log(`Cleaned up stale entry: ${mobileKey}`))
+        .catch(() => { });
+};
+
+// --- NO auto-init on load ---
+// Firebase presence is ONLY created when user presses Start button
+// Cleanup stale entries on page load instead
+if (document.readyState === 'complete') {
+    setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
+} else {
+    window.addEventListener('load', () => {
+        setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
+    });
 }
-// Import logic (ensure this runs on load)
-window.addEventListener('load', () => {
-    initOnlinePresenceSystem();
-});

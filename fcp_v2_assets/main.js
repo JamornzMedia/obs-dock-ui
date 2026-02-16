@@ -1,4 +1,4 @@
-// fcp_v2_assets/main.js
+﻿// fcp_v2_assets/main.js
 
 import { translations } from './languages.js';
 
@@ -35,7 +35,8 @@ const elements = [
     // NEW ELEMENT ID
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
     // NEW ELEMENT ID
-    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect",
+    "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect", "colorCountSelect",
+    "confirmOverlay", "confirmModal", "confirmYesBtn", "confirmNoBtn",
     // V2.8.1 NEW VISIBILITY INPUTS
     "visibility_plus_minus", "visibility_reset_time", "visibility_reset_start", "visibility_edit_time", "visibility_countdown",
     // Online Count
@@ -61,6 +62,19 @@ let logoFolderPath = 'C:/OBSAssets/logos';
 let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
+let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
+window.userIdentity = userIdentity;
+
+const thaiProvinces = [
+    "กรุงเทพมหานคร", "กระบี่", "กาญจนบุรี", "กาฬสินธุ์", "กำแพงเพชร", "ขอนแก่น", "จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ชัยนาท",
+    "ชัยภูมิ", "ชุมพร", "เชียงราย", "เชียงใหม่", "ตรัง", "ตราด", "ตาก", "นครนายก", "นครปฐม", "นครพนม", "นครราชสีมา",
+    "นครศรีธรรมราช", "นครสวรรค์", "นนทบุรี", "นราธิวาส", "น่าน", "บึงกาฬ", "บุรีรัมย์", "ปทุมธานี", "ประจวบคีรีขันธ์",
+    "ปราจีนบุรี", "ปัตตานี", "พระนครศรีอยุธยา", "พะเยา", "พังงา", "พัทลุง", "พิจิตร", "พิษณุโลก", "เพชรบุรี", "เพชรบูรณ์",
+    "แพร่", "ภูเก็ต", "มหาสารคาม", "มุกดาหาร", "แม่ฮ่องสอน", "ยโสธร", "ยะลา", "ร้อยเอ็ด", "ระนอง", "ระยอง", "ราชบุรี",
+    "ลพบุรี", "ลำปาง", "ลำพูน", "เลย", "ศรีสะเกษ", "สกลนคร", "สงขลา", "สตูล", "สมุทรปราการ", "สมุทรสงคราม", "สมุทรสาคร",
+    "สระแก้ว", "สระบุรี", "สิงห์บุรี", "สุโขทัย", "สุพรรณบุรี", "สุราษฎร์ธานี", "สุรินทร์", "หนองคาย", "หนองบัวลำภู",
+    "อ่างทอง", "อำนาจเจริญ", "อุดรธานี", "อุตรดิตถ์", "อุทัยธานี", "อุบลราชธานี"
+].sort((a, b) => a.localeCompare(b, 'th'));
 
 let masterTeamA = createDefaultTeam('A');
 let masterTeamB = createDefaultTeam('B');
@@ -163,6 +177,131 @@ const showToast = (message, type = 'info') => {
     setTimeout(() => toast.remove(), 5000);
 };
 
+// --- V2.9.1: Settings Tab Switching ---
+const switchSettingsTab = (tabName) => {
+    document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.settings-tab-btn').forEach(el => el.classList.remove('active'));
+    const targetPanel = document.getElementById(tabName);
+    if (targetPanel) targetPanel.classList.add('active');
+    const targetBtn = document.querySelector(`.settings-tab-btn[data-tab="${tabName}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+};
+
+// --- V2.9.1: Confirm Reset Dialog ---
+const showConfirmReset = () => {
+    if (elements.confirmOverlay) elements.confirmOverlay.style.display = 'block';
+    if (elements.confirmModal) elements.confirmModal.style.display = 'block';
+};
+
+const hideConfirmReset = () => {
+    if (elements.confirmOverlay) elements.confirmOverlay.style.display = 'none';
+    if (elements.confirmModal) elements.confirmModal.style.display = 'none';
+};
+
+// --- V2.9.1: Color Count ---
+const applyColorCount = () => {
+    const count = parseInt(localStorage.getItem('colorCount') || '2');
+    document.querySelectorAll('.color-picker-2').forEach(el => {
+        if (count === 1) el.classList.add('color-picker-hidden');
+        else el.classList.remove('color-picker-hidden');
+    });
+    if (elements.colorCountSelect) elements.colorCountSelect.value = count;
+};
+
+// --- V2.9.1: OBS Source Creation ---
+const OBS_INPUT_KIND_MAP = {
+    'Color Source': 'color_source_v3',
+    'Image Source': 'image_source',
+    'Text (GDI+)': 'text_gdiplus_v3',
+};
+
+const createObsSource = async (sourceName, sourceType, btnEl) => {
+    const inputKind = OBS_INPUT_KIND_MAP[sourceType];
+    if (!inputKind) {
+        showToast(`Unknown source type: ${sourceType}`, 'error');
+        return false;
+    }
+    try {
+        const sceneData = await obs.call('GetCurrentProgramScene');
+        const sceneName = sceneData.currentProgramSceneName;
+
+        // Settings: If text source, set 'text' to sourceName so it's not empty
+        const settings = {};
+        if (inputKind === 'text_gdiplus_v3' || inputKind === 'text_gdiplus_v2') {
+            settings.text = sourceName;
+        }
+
+        const response = await obs.call('CreateInput', {
+            sceneName: sceneName,
+            inputName: sourceName,
+            inputKind: inputKind,
+            inputSettings: settings,
+            sceneItemEnabled: true
+        });
+
+        // V2.9.1: Set Transform to Scale to inner bounds
+        // OBS WebSocket v5 returns sceneItemId in response
+        if (response && response.sceneItemId) {
+            await obs.call('SetSceneItemTransform', {
+                sceneName: sceneName,
+                sceneItemId: response.sceneItemId,
+                sceneItemTransform: {
+                    boundsType: 'OBS_BOUNDS_SCALE_INNER',
+                    boundsWidth: 400, // Default width
+                    boundsHeight: 100 // Default height
+                }
+            });
+        }
+
+        showToast(`✅ Created: ${sourceName}`, 'success');
+        if (btnEl) {
+            btnEl.innerHTML = '<i class="fas fa-check"></i>';
+            btnEl.disabled = true;
+            btnEl.classList.remove('btn-success');
+            btnEl.classList.add('btn-secondary');
+        }
+        return true;
+    } catch (err) {
+        const errMsg = err.message || err.code || String(err);
+        if (errMsg.includes('already exists') || (err.code === 601)) {
+            showToast(`⚠️ ${sourceName} already exists`, 'info');
+            if (btnEl) {
+                btnEl.innerHTML = '<i class="fas fa-check"></i>';
+                btnEl.disabled = true;
+                btnEl.classList.remove('btn-success');
+                btnEl.classList.add('btn-secondary');
+            }
+            return true;
+        }
+        showToast(`❌ Failed: ${sourceName} (${errMsg})`, 'error');
+        return false;
+    }
+};
+
+const createAllObsSources = async (btnEl) => {
+    const trans = translations[currentLang] || translations.en;
+    const sources = trans.sourcesList || [];
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    }
+    let failed = 0;
+    for (const item of sources) {
+        const rowBtn = document.getElementById(`create-src-${item.code}`);
+        const result = await createObsSource(item.code, item.type, rowBtn);
+        if (!result) failed++;
+    }
+    if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createObsSources">${trans.createObsSources}</span>`;
+    }
+    if (failed === 0) {
+        showToast(trans.toastSourcesCreated, 'success');
+    } else {
+        showToast(trans.toastSourcesFailed, 'error');
+    }
+};
+
 const openPopup = (popup) => {
     elements.popupOverlay.style.display = 'block';
     popup.style.display = 'block';
@@ -178,8 +317,13 @@ const closeAllPopups = () => {
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
     elements.welcomeSponsorPopup.style.display = 'none';
-    // NEW
+    // Online Users popup
+    const onlinePopup = document.getElementById('onlineUsersPopup');
+    if (onlinePopup) onlinePopup.style.display = 'none';
+    // Mobile Control popup
     if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
+    // V2.9.1 Confirm dialog
+    hideConfirmReset();
 };
 
 const showWelcomePopup = () => {
@@ -238,15 +382,33 @@ const populateHelpTable = (lang) => {
         <th>${headers[0]}</th>
         <th>${headers[1]}</th>
         <th>${headers[2]}</th>
+        <th></th>
     `;
     elements.sourcesTableBody.innerHTML = '';
     sources.forEach(item => {
         const row = elements.sourcesTableBody.insertRow();
+
+        // V2.9.1: Styling for Score vs Score2
+        if (item.code.startsWith('score2')) {
+            row.style.backgroundColor = 'rgba(255, 99, 71, 0.15)'; // Reddish tint for Secondary
+        } else if (item.code.startsWith('score')) {
+            row.style.backgroundColor = 'rgba(144, 238, 144, 0.15)'; // Greenish tint for Main
+        }
+
         const nameCell = row.insertCell();
         nameCell.textContent = item.code;
         nameCell.onclick = () => copySourceName(item.code);
         row.insertCell().textContent = item.type;
         row.insertCell().innerHTML = item.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // V2.9.1: Create button per source
+        const actionCell = row.insertCell();
+        const createBtn = document.createElement('button');
+        createBtn.id = `create-src-${item.code}`;
+        createBtn.className = 'btn-success btn-create-source';
+        createBtn.innerHTML = '<i class="fas fa-plus"></i>';
+        createBtn.title = `Create ${item.code}`;
+        createBtn.onclick = () => createObsSource(item.code, item.type, createBtn);
+        actionCell.appendChild(createBtn);
     });
 };
 
@@ -255,13 +417,15 @@ const populateTagsTable = (lang) => {
     const tags = trans.tagsList || [];
     const thead = `<thead><tr><th>Tag</th><th>${trans.detailsTitle}</th></tr></thead>`;
     let tbody = '<tbody>';
+
+    // Show all tags
     tags.forEach(item => {
         tbody += `
-            <tr>
-                <td onclick="copyTag('${item.code}')">${item.code}</td>
-                <td>${item.desc}</td>
-            </tr>
-        `;
+        <tr>
+            <td onclick="copyTag('${item.code}')">${item.code}</td>
+            <td>${item.desc}</td>
+        </tr>
+    `;
     });
     tbody += '</tbody>';
     elements.tagsTable.innerHTML = thead + tbody;
@@ -554,6 +718,7 @@ window.enterApp = () => {
         }, 500);
     }
 }
+window.createAllObsSources = createAllObsSources;
 
 
 const loadVisibilitySettings = () => {
@@ -938,6 +1103,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     setText(obsScoreSource, masterTeam.score);
     setText(obsScore2Source, masterTeam.score2);
     saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
+    if (window.broadcastToMobile) window.broadcastToMobile();
 };
 
 const applyMatch = () => {
@@ -1031,10 +1197,14 @@ const updateTimerDisplay = () => {
     const timeString = `${m}:${s}`;
     elements.timerText.textContent = timeString;
     setText('time_counter', timeString);
+    if (window.broadcastToMobile) window.broadcastToMobile();
 };
 
 const startTimer = () => {
     if (interval) return;
+    // V2.9.1: Timer state color
+    elements.timerText.classList.add('timer-running');
+    elements.timerText.classList.remove('timer-paused');
     interval = setInterval(() => {
         if (isCountdown) {
             if (timer > 0) timer--;
@@ -1046,7 +1216,13 @@ const startTimer = () => {
     }, 1000);
 };
 
-const stopTimer = () => { clearInterval(interval); interval = null; };
+const stopTimer = () => {
+    clearInterval(interval);
+    interval = null;
+    // V2.9.1: Timer state color
+    elements.timerText.classList.remove('timer-running');
+    elements.timerText.classList.add('timer-paused');
+};
 
 const resetToStartTime = () => {
     stopTimer();
@@ -1107,14 +1283,19 @@ const saveAndUpdateTime = () => {
 const toggleHalf = () => {
     const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
     // Limit halves array based on maxHalves
-    const activeHalves = halves.slice(0, maxHalves);
+    // V2.9.1: Fix slice logic if maxHalves is undefined or logic slightly off
+    const limit = maxHalves || 2;
+    const activeHalves = halves.slice(0, limit);
 
     let currentIndex = activeHalves.indexOf(half);
     if (currentIndex === -1) currentIndex = 0;
 
     let nextIndex = (currentIndex + 1) % activeHalves.length;
     half = activeHalves[nextIndex];
-    elements.halfText.textContent = half;
+
+    // V2.9.1: Styled Half Text
+    const html = `<span class="half-ordinal">${half}</span>`;
+    elements.halfText.innerHTML = html;
     setText('half_text', half);
 };
 
@@ -1206,19 +1387,36 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const gsheetSettings = document.getElementById('gsheetSettings');
+    const excelSettings = document.getElementById('excelSettings'); // V2.9.1
+
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
+    if (excelSettings) excelSettings.style.display = isGSheet ? 'none' : 'block'; // V2.9.1
 
     const btnSpan = elements.excelBtn.querySelector('span');
     const trans = translations[currentLang];
 
     if (isGSheet) {
-        btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
+        // btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
         btnSpan.setAttribute('data-lang', 'loadFromGoogleSheet');
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
     } else {
-        btnSpan.textContent = trans.excel;
+        // btnSpan.textContent = trans.excel;
         btnSpan.setAttribute('data-lang', 'excel');
         elements.excelBtn.innerHTML = `<i class="fas fa-file-excel"></i> <span data-lang="excel">${trans.excel}</span>`;
+    }
+};
+
+// V2.9.1: Copy Excel Column List
+window.copyExcelColumns = () => {
+    const list = document.getElementById('excelColumnList');
+    if (list) {
+        list.select();
+        list.setSelectionRange(0, 99999);
+        // Replace ", " with "\t" for Excel column pasting
+        const textToCopy = list.value.replace(/, /g, '\t');
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast(translations[currentLang].toastCopied, 'success');
+        });
     }
 };
 
@@ -1257,6 +1455,11 @@ const enterEditMode = (team) => {
     nameInput.style.display = 'block';
     okBtn.style.display = 'inline-flex';
     nameInput.focus();
+    // V2.9.1: Enter/Escape key support
+    nameInput.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); exitEditMode(team, true); }
+        else if (e.key === 'Escape') { e.preventDefault(); exitEditMode(team, false); }
+    };
 };
 
 const exitEditMode = (team, applyChanges) => {
@@ -1268,7 +1471,10 @@ const exitEditMode = (team, applyChanges) => {
     const okBtn = isA ? elements.okBtnA : elements.okBtnB;
     if (applyChanges) {
         const newName = nameInput.value.trim() || masterTeam.name;
-        updateTeamUI(team, newName, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+        // Only broadcast if changed
+        if (newName !== masterTeam.name) {
+            updateTeamUI(team, newName, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+        }
     }
     nameDiv.style.display = 'block';
     editBtn.style.display = 'inline-flex';
@@ -1319,7 +1525,7 @@ const setupEventListeners = () => {
                 case 'timer_playpause': if (interval) { stopTimer(); } else { startTimer(); }; break;
                 case 'timer_resetstart': resetToStartTime(); break;
                 case 'timer_togglehalf': toggleHalf(); break;
-                case 'full_reset': fullReset(); break;
+                case 'full_reset': showConfirmReset(); break;
                 default: return;
             }
         }
@@ -1356,8 +1562,8 @@ const setupEventListeners = () => {
         loadActionSettings().forEach((_, i) => toggleActionEditMode(i + 1, false));
         closeAllPopups();
     };
-    elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
-    elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
+    if (elements.closeDetailsBtnTop) elements.closeDetailsBtnTop.addEventListener('click', closeHandler);
+    if (elements.closeDetailsBtnBottom) elements.closeDetailsBtnBottom.addEventListener('click', closeHandler);
 
     elements.languageSelector.addEventListener('change', (e) => setLanguage(e.target.value));
     elements.excelBtn.addEventListener('click', handleDataSourceAction);
@@ -1384,7 +1590,11 @@ const setupEventListeners = () => {
         });
     }
     elements.loadBtn.addEventListener('click', applyMatch);
-    elements.fullResetBtn.addEventListener('click', fullReset);
+    elements.fullResetBtn.addEventListener('click', showConfirmReset);
+    // V2.9.1: Confirm dialog buttons
+    if (elements.confirmYesBtn) elements.confirmYesBtn.addEventListener('click', () => { fullReset(); hideConfirmReset(); });
+    if (elements.confirmNoBtn) elements.confirmNoBtn.addEventListener('click', hideConfirmReset);
+    if (elements.confirmOverlay) elements.confirmOverlay.addEventListener('click', hideConfirmReset);
     elements.swapBtn.addEventListener('click', swapTeams);
     elements.scoreAPlusBtn.addEventListener('click', () => changeScore('A', 1));
     elements.scoreAMinusBtn.addEventListener('click', () => changeScore('A', -1));
@@ -1428,12 +1638,24 @@ const setupEventListeners = () => {
     elements.resetToZeroBtn.addEventListener('click', resetToZero);
     elements.editTimeBtn.addEventListener('click', openTimeSettings);
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
+    // V2.9.1: Settings Tab click handlers
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
+    });
+    // V2.9.1: Color Count listener
+    if (elements.colorCountSelect) {
+        elements.colorCountSelect.addEventListener('change', (e) => {
+            localStorage.setItem('colorCount', e.target.value);
+            applyColorCount();
+        });
+    }
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
         if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
         populateActionSettingsTable(currentLang);
         populateKeybindsTable(currentLang);
         applyVisibilitySettings();
+        applyColorCount();
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
@@ -1451,6 +1673,25 @@ const setupEventListeners = () => {
 
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+
+    if (elements.copyExcelColumnsBtn) {
+        elements.copyExcelColumnsBtn.addEventListener('click', () => {
+            const copyText = document.getElementById("excelColumnList");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                window.showToast("Copied headers for Excel!", "success");
+            });
+        });
+    }
+
+    // Expose closeAllPopups to window for inline onclicks
+    window.closeAllPopups = closeAllPopups;
+
+    const closeMobileBtn = document.getElementById('closeMobilePopupBtn');
+    if (closeMobileBtn) {
+        closeMobileBtn.addEventListener('click', closeAllPopups);
+    }
 
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
     elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
@@ -1595,15 +1836,264 @@ document.addEventListener('DOMContentLoaded', () => {
     setLanguage(savedLang);
 
     applyVisibilitySettings();
+    applyColorCount();
     renderActionButtons();
     resetToZero();
 
     window.copyTag = copyTag;
 
-    obs.connect('ws://localhost:4455').catch(err => showToast(translations[currentLang].toastObsError, 'error'));
+    // V2.9.1: Mobile Room Logic (Copy Link Handler Only — popup/create/close handled by outer DOMContentLoaded)
+    const setupMobileRoomLogic = () => {
+        const mobileLinkInput = document.getElementById('mobileLinkInput');
 
-    fetchAnnouncement();
-    setInterval(fetchAnnouncement, 3600000);
+        // Copy Mobile Link
+        const copyMobileLinkBtn = document.getElementById('copyMobileLinkBtn');
+        if (copyMobileLinkBtn && mobileLinkInput) {
+            copyMobileLinkBtn.addEventListener('click', () => {
+                mobileLinkInput.select();
+                document.execCommand('copy'); // Fallback
+                if (navigator.clipboard) navigator.clipboard.writeText(mobileLinkInput.value);
+                showToast("Link Copied", "success");
+            });
+        }
+    };
+
+    // --- V2.9.1: Loading State & Initialization ---
+    const initApp = async () => {
+        let startBtn = document.getElementById('closeWelcomeBtn');
+
+        // 1. Try OBS Connect (Wait max 2 seconds to not block UI too long if offline)
+        try {
+            const obsPromise = obs.connect('ws://localhost:4455');
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject('timeout'), 2000));
+            await Promise.race([obsPromise, timeoutPromise]);
+            // Connected
+        } catch (err) {
+            if (err !== 'timeout') {
+                showToast(translations[currentLang].toastObsError, 'error');
+            } else {
+                console.log('OBS Connection timed out (continuing offline)');
+            }
+        }
+
+        // 2. Fetch Announcement
+        fetchAnnouncement();
+        setInterval(fetchAnnouncement, 3600000);
+
+        // 3. Enable Start Button & Fix Logic
+        if (startBtn) {
+            // Remove old listeners (like closeWelcomePopup) to ensure "Start" behavior
+            const newBtn = startBtn.cloneNode(true);
+            startBtn.parentNode.replaceChild(newBtn, startBtn);
+            startBtn = newBtn; // Update reference
+
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
+            // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
+
+            // Attach Save & Enter Logic
+            startBtn.addEventListener('click', () => {
+                const nameInput = document.getElementById('visitorName');
+                const provInput = document.getElementById('visitorProvince');
+                const provOtherInput = document.getElementById('visitorProvinceOther');
+
+                if (nameInput && nameInput.value.trim()) {
+                    // Generate 8-digit ID for this user
+                    const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+                    let province = '';
+                    if (provInput) {
+                        province = provInput.value;
+                        if (province === 'Other' && provOtherInput) {
+                            province = provOtherInput.value.trim() || 'Unknown';
+                        }
+                    }
+
+                    const identity = {
+                        name: nameInput.value.trim(),
+                        province: province || 'Unknown',
+                        platform: 'PC',
+                        ID: userID
+                    };
+
+                    localStorage.setItem('userIdentity', JSON.stringify(identity));
+                    userIdentity = identity; // Update module-level variable
+                    window.userIdentity = identity;
+
+                    // Create com_ room in Firebase
+                    if (window.initOnlinePresenceSystem) {
+                        window.initOnlinePresenceSystem();
+                    }
+                }
+
+                const welcomeScreen = document.getElementById('welcomeScreen');
+                if (welcomeScreen) {
+                    welcomeScreen.style.opacity = '0';
+                    setTimeout(() => welcomeScreen.style.display = 'none', 500);
+                }
+            });
+        }
+    };
+
+    // 4. Set Initial Half Display Style
+    if (elements.halfText) {
+        elements.halfText.innerHTML = `<span class="half-ordinal">${half}</span>`;
+    }
+
+    initApp();
+    setupMobileRoomLogic();
+
+    // V2.9.1: Copy Table to Clipboard (For Excel)
+    window.copyTableToClipboard = (tableId) => {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        let txt = "";
+
+        // Headers
+        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+        txt += headers.join("\t") + "\n";
+
+        // Rows
+        const rows = table.querySelectorAll("tbody tr");
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll("td"));
+            const rowData = cells.map(td => {
+                // Check inputs/selects first
+                const input = td.querySelector("input, select");
+                if (input) {
+                    if (input.type === 'checkbox') return input.checked ? 'TRUE' : 'FALSE';
+                    return input.value;
+                }
+                return td.innerText.trim();
+            });
+            txt += rowData.join("\t") + "\n";
+        });
+
+        navigator.clipboard.writeText(txt).then(() => {
+            window.showToast("Table copied to clipboard! Paste in Excel.", "success");
+        }).catch(err => {
+            console.error("Failed to copy: ", err);
+            window.showToast("Failed to copy table.", "error");
+        });
+    };
+
+    // Global function for HTML onclick
+    window.openMobileControlPopup = () => {
+        const popup = document.getElementById('mobileControlPopup');
+        const overlay = document.getElementById('popupOverlay');
+        if (popup) {
+            popup.style.display = 'block';
+            setTimeout(() => popup.classList.add('active'), 10);
+        }
+        if (overlay) {
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.classList.add('active'), 10);
+        }
+
+        // Pre-fill Name & Load Settings
+        const roomNameInput = document.getElementById('remoteRoomName');
+        const mainSceneInput = document.getElementById('obsMainSceneName');
+        const replaySceneInput = document.getElementById('obsReplaySceneName');
+
+        if (roomNameInput && window.userIdentity && window.userIdentity.name) {
+            roomNameInput.value = window.userIdentity.name;
+        }
+        if (mainSceneInput) mainSceneInput.value = localStorage.getItem('obsMainSceneName') || 'MainScene';
+        if (replaySceneInput) replaySceneInput.value = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
+
+        // Reset View based on state
+        const createUI = document.getElementById('mobileCreateUI');
+        const connUI = document.getElementById('remoteConnectionUI');
+        if (createUI && connUI) {
+            if (window.hostPeer && window.hostPeer.open) {
+                createUI.style.display = 'none';
+                connUI.style.display = 'block';
+            } else {
+                createUI.style.display = 'block';
+                connUI.style.display = 'none';
+            }
+        }
+    };
+
+    const mobileBtn = document.getElementById('mobileControlBtn');
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', window.openMobileControlPopup);
+    }
+
+    // V2.9.1: Create Room / Save Settings
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    if (createRoomBtn) {
+        createRoomBtn.addEventListener('click', () => {
+            // Save Scene Names
+            const mainSceneInput = document.getElementById('obsMainSceneName');
+            const replaySceneInput = document.getElementById('obsReplaySceneName');
+            if (mainSceneInput) localStorage.setItem('obsMainSceneName', mainSceneInput.value.trim() || 'MainScene');
+            if (replaySceneInput) localStorage.setItem('obsReplaySceneName', replaySceneInput.value.trim() || 'SceneReplay');
+
+            // Switch UI
+            const createUI = document.getElementById('mobileCreateUI');
+            const connUI = document.getElementById('remoteConnectionUI');
+            if (createUI) createUI.style.display = 'none';
+            if (connUI) connUI.style.display = 'block';
+
+            // Show Room ID container and close room button
+            const roomIdContainer = document.getElementById('remoteRoomIdContainer');
+            if (roomIdContainer) roomIdContainer.style.display = 'block';
+            const closeRoomBtn2 = document.getElementById('closeRoomBtn');
+            if (closeRoomBtn2) closeRoomBtn2.style.display = 'block';
+
+            // Set Room Name display in QR section
+            const roomNameInput = document.getElementById('remoteRoomName');
+            const roomNameDisplay = document.getElementById('remoteRoomNameDisplay');
+            if (roomNameDisplay && roomNameInput) {
+                const roomName = roomNameInput.value.trim() || 'Room';
+                roomNameDisplay.textContent = `🏠 ${roomName}`;
+            }
+
+            // Initialize Host
+            if (window.setupMobileRoomLogic) window.setupMobileRoomLogic();
+        });
+    }
+
+    // Close Room Button
+    const closeRoomBtn = document.getElementById('closeRoomBtn');
+    if (closeRoomBtn) {
+        closeRoomBtn.addEventListener('click', () => {
+            // Destroy Peer
+            if (window.hostPeer) {
+                window.hostPeer.destroy();
+                window.hostPeer = null;
+            }
+            window.hostConn = [];
+
+            // Clean up Firebase mobile_ entry
+            if (window.userIdentity && window.userIdentity.name && window.firebase) {
+                const key = `mobile_${sanitizeKey(window.userIdentity.name)}`;
+                firebase.database().ref(`obs_rooms_score/${key}`).remove()
+                    .catch(() => { });
+            }
+
+            // Reset UI
+            const createUI = document.getElementById('mobileCreateUI');
+            const connUI = document.getElementById('remoteConnectionUI');
+            if (createUI) createUI.style.display = 'block';
+            if (connUI) connUI.style.display = 'none';
+
+            // Re-enable room name input
+            const roomNameInput = document.getElementById('remoteRoomName');
+            if (roomNameInput) roomNameInput.disabled = false;
+
+            const statusEl = document.getElementById('remoteStatusText');
+            if (statusEl) {
+                statusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> รอการเชื่อมต่อ...';
+                statusEl.style.color = '#94a3b8';
+            }
+
+            showToast('Room Closed', 'info');
+        });
+    }
 
     const defaultButton = document.getElementById('defaultOpen');
     if (defaultButton) defaultButton.classList.add('active');
@@ -1645,3 +2135,499 @@ window.fcpAPI = {
 
 // Import Remote Logic
 import './remote.js';
+
+// --- Welcome Screen Logic ---
+window.initWelcomeScreen = () => {
+    const screen = $('welcomeScreen');
+    const provinceSelect = $('visitorProvince');
+    const provinceOtherInput = $('visitorProvinceOther');
+    const nameInput = $('visitorName');
+
+    // Populate Provinces
+    if (provinceSelect) {
+        thaiProvinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            provinceSelect.appendChild(opt);
+        });
+        // Add "Other" option
+        const otherOpt = document.createElement('option');
+        otherOpt.value = "Other";
+        otherOpt.textContent = "Other / อื่นๆ";
+        provinceSelect.appendChild(otherOpt);
+
+        provinceSelect.value = "กรุงเทพมหานคร"; // Default
+
+        // Listener for "Other"
+        provinceSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'Other') {
+                if (provinceOtherInput) {
+                    provinceOtherInput.style.display = 'block';
+                    provinceOtherInput.focus();
+                }
+            } else {
+                if (provinceOtherInput) provinceOtherInput.style.display = 'none';
+            }
+        });
+    }
+
+    if (userIdentity && userIdentity.name) {
+        if (nameInput) nameInput.value = userIdentity.name;
+        if (provinceSelect) {
+            // Check if province is in list
+            if (thaiProvinces.includes(userIdentity.province)) {
+                provinceSelect.value = userIdentity.province;
+            } else {
+                // Customized province
+                provinceSelect.value = "Other";
+                if (provinceOtherInput) {
+                    provinceOtherInput.style.display = 'block';
+                    provinceOtherInput.value = userIdentity.province;
+                }
+            }
+        }
+    }
+};
+
+window.saveAndEnterApp = () => {
+    const nameInput = $('visitorName');
+    const provinceSelect = $('visitorProvince');
+    const provinceOtherInput = $('visitorProvinceOther');
+
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert("Please enter your name / กรุณากรอกชื่อ");
+        return;
+    }
+
+    let province = provinceSelect.value;
+    if (province === 'Other' && provinceOtherInput) {
+        province = provinceOtherInput.value.trim() || "Unknown";
+    }
+
+    userIdentity = {
+        name: name,
+        province: province
+    };
+
+    localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
+    window.userIdentity = userIdentity; // Keep in sync
+    updateUserIdentityUI();
+
+    // Animate out
+    const screen = $('welcomeScreen');
+    if (screen) {
+        screen.style.opacity = '0';
+        setTimeout(() => {
+            screen.style.display = 'none';
+        }, 500);
+    }
+
+    // Create room in Firebase with new identity
+    if (window.initOnlinePresenceSystem) window.initOnlinePresenceSystem();
+};
+
+const updateUserIdentityUI = () => {
+    if (!userIdentity) return;
+    const nameDisplay = $('visitorNameDisplay');
+    const locationDisplay = $('visitorLocationDisplay');
+    if (nameDisplay) nameDisplay.textContent = userIdentity.name;
+    if (locationDisplay) locationDisplay.textContent = `${userIdentity.province}`;
+};
+
+// --- Quick Tag Logic ---
+window.insertTag = (tagCode) => {
+    const textarea = $('detailsText');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    textarea.value = before + tagCode + after;
+    textarea.selectionStart = textarea.selectionEnd = start + tagCode.length;
+    textarea.focus();
+
+    // Trigger save
+    localStorage.setItem('detailsText', textarea.value);
+};
+
+// Update copyDetails to include new tags
+const originalCopyDetails = copyDetails; // Backup if needed, but we will overwrite
+window.copyDetails = () => {
+    const template = localStorage.getItem('detailsText') || '';
+    if (!template.trim()) return showToast(translations[currentLang].toastNoTextToCopy, 'error');
+
+    let teamAName = masterTeamA.name.replace(/\//g, ' ');
+    let teamBName = masterTeamB.name.replace(/\//g, ' ');
+
+    const filled = template
+        .replace(/<TeamA>/gi, teamAName)
+        .replace(/<TeamB>/gi, teamBName)
+        .replace(/<label1>/gi, elements.label1.textContent)
+        .replace(/<label2>/gi, elements.label2.textContent)
+        .replace(/<label3>/gi, elements.label3.textContent)
+        .replace(/<label4>/gi, elements.label4.textContent)
+        .replace(/<label5>/gi, elements.label5.textContent)
+        .replace(/<score_team_a>/gi, masterTeamA.score)
+        .replace(/<score_team_b>/gi, masterTeamB.score)
+        .replace(/<score2_team_a>/gi, masterTeamA.score2)
+        .replace(/<score2_team_b>/gi, masterTeamB.score2)
+        .replace(/<time_counter>/gi, elements.timerText.textContent)
+        // Remove half_text logic or keep it but it's not in the list
+        .replace(/<half_text>/gi, elements.halfText.textContent);
+
+    navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
+};
+
+// Call init on load
+window.addEventListener('load', () => {
+    if (window.initWelcomeScreen) window.initWelcomeScreen();
+    if (window.updateUserIdentityUI) window.updateUserIdentityUI();
+    // Mobile Host initialized via Popup Button now
+});
+
+// --- MOBILE HOST CONTROL (PEERJS) ---
+let hostPeer = null;
+let hostConn = [];
+
+// Helper
+const sanitizeKey = (name) => {
+    return name.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_').substring(0, 30);
+};
+
+window.setupMobileRoomLogic = () => {
+    // Sync module-level userIdentity with window.userIdentity (welcome screen sets window version)
+    if (!userIdentity && window.userIdentity) {
+        userIdentity = window.userIdentity;
+    }
+    // Fallback: if still no userIdentity, try to build one from the room name input
+    if (!userIdentity || !userIdentity.name) {
+        const roomNameInput = document.getElementById('remoteRoomName');
+        const fallbackName = roomNameInput ? roomNameInput.value.trim() : '';
+        if (fallbackName) {
+            userIdentity = { name: fallbackName, province: 'Unknown' };
+            window.userIdentity = userIdentity;
+            localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
+        } else {
+            console.warn('setupMobileRoomLogic: No user identity or room name found');
+            return;
+        }
+    }
+
+    // Always generate a NEW random roomID (never cache — prevents ID collision between users)
+    const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
+    window.initMobileHost(newRoomId);
+};
+
+window.initMobileHost = (customRoomId) => {
+    // Generate simple 6-digit Room ID if not provided
+    const roomId = customRoomId || Math.floor(100000 + Math.random() * 900000).toString();
+    // Deterministic Peer ID
+    const peerId = `fcp-v2-host-${roomId}`;
+
+    // Update UI
+    const roomInput = document.getElementById('remoteRoomId');
+    if (roomInput) roomInput.value = roomId;
+
+    // Generate Link
+    let baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/OBSScorePhone.html';
+    if (window.location.href.endsWith('/')) baseUrl = window.location.href + 'OBSScorePhone.html';
+    const fullUrl = `${baseUrl}?room=${roomId}`;
+
+    const qrContainer = document.getElementById('remoteQrCode');
+    // Generate QR code using QRCode library or fallback to API
+    if (qrContainer) {
+        qrContainer.innerHTML = '';
+        if (window.QRCode) {
+            new QRCode(qrContainer, {
+                text: fullUrl,
+                width: 150,
+                height: 150,
+                colorDark: '#000000',
+                colorLight: '#ffffff'
+            });
+        } else {
+            // Fallback: API-based QR code as <img>
+            const img = document.createElement('img');
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+            img.alt = 'QR Code';
+            img.width = 150;
+            img.height = 150;
+            qrContainer.appendChild(img);
+        }
+    }
+
+    const mobileLinkInput = document.getElementById('mobileLinkInput');
+    if (mobileLinkInput) mobileLinkInput.value = fullUrl;
+
+    // --- WRITE TO FIREBASE (Compliant with FIREBASE_GUIDELINE.md) ---
+    if (userIdentity && userIdentity.name && window.firebase) {
+        const key = `mobile_${sanitizeKey(userIdentity.name)}`;
+        const roomData = {
+            nameMobile: userIdentity.name,
+            platform: "Mobile",
+            ID: window.myUserID || userIdentity.ID || '',
+            roomID: roomId,
+            Mobile: "off"
+        };
+
+        firebase.database().ref(`obs_rooms_score/${key}`).set(roomData)
+            .then(() => console.log("Room data saved to Firebase:", key))
+            .catch(err => console.error("Firebase save error:", err));
+
+        // Remove on disconnect
+        firebase.database().ref(`obs_rooms_score/${key}`).onDisconnect().remove();
+    }
+
+    // Init Peer
+    if (!window.Peer) {
+        console.error("PeerJS not loaded");
+        return;
+    }
+
+    // Destroy existing if any
+    if (hostPeer) hostPeer.destroy();
+
+    hostPeer = new Peer(peerId);
+
+    hostPeer.on('open', (id) => {
+        console.log('Host initialized with ID:', id);
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = "Ready to connect";
+            statusEl.style.color = "#22c55e"; // Green
+        }
+    });
+
+    hostPeer.on('connection', (conn) => {
+        console.log('New connection from:', conn.peer);
+        hostConn.push(conn);
+        setupConnection(conn);
+
+        // Send initial state
+        setTimeout(() => window.broadcastToMobile(), 500);
+
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = `Connected: ${hostConn.length} device(s)`;
+            statusEl.style.color = "#22c55e";
+        }
+    });
+
+    hostPeer.on('error', (err) => {
+        console.error('Peer error:', err);
+        // Handle ID collision if strict
+    });
+};
+
+function setupConnection(conn) {
+    conn.on('data', (data) => {
+        console.log('Received data:', data);
+        handleMobileCommand(data);
+    });
+
+    conn.on('close', () => {
+        hostConn = hostConn.filter(c => c !== conn);
+        const statusEl = document.getElementById('remoteStatusText');
+        if (statusEl) {
+            statusEl.innerText = hostConn.length > 0 ? `Connected: ${hostConn.length} device(s)` : "Waiting...";
+            if (hostConn.length === 0) statusEl.style.color = "var(--warning-color)";
+        }
+    });
+}
+
+window.broadcastToMobile = () => {
+    if (!hostConn.length) return;
+
+    // Get Actions for Mobile
+    const actionSettings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
+    const actions = actionSettings.map((btn, index) => ({
+        name: btn.name || `Action ${index + 1}`,
+        index: index + 1
+    })).filter(a => a.name);
+
+    // Get current Match ID
+    const matchIdEl = document.getElementById('matchID');
+    const currentMatchId = matchIdEl ? matchIdEl.textContent : "1";
+
+    const state = {
+        type: 'stateUpdate', // FIXED: Match OBSScorePhone.html
+        matchId: currentMatchId, // Added Match ID
+        teamA: {
+            name: masterTeamA.name,
+            score: masterTeamA.score,
+            score2: masterTeamA.score2,
+            color: masterTeamA.color1, // FIXED: Mobile expects 'color', not 'color1'
+            color2: masterTeamA.color2
+        },
+        teamB: {
+            name: masterTeamB.name,
+            score: masterTeamB.score,
+            score2: masterTeamB.score2,
+            color: masterTeamB.color1, // FIXED: Mobile expects 'color'
+            color2: masterTeamB.color2
+        },
+        timer: elements.timerText.textContent,
+        half: elements.halfText.textContent,
+        injury: elements.injuryTimeDisplay.textContent,
+        isPaused: !interval,
+        actions: actions // Added Actions List
+    };
+
+    hostConn.forEach(conn => {
+        if (conn.open) conn.send(state);
+    });
+};
+
+function handleMobileCommand(data) {
+    console.log("Mobile Command:", data);
+
+    // Normalize type to lowercase for safety
+    const type = (data.type || '').toLowerCase();
+
+    switch (type) {
+        case 'score':
+            // { type: 'score', team, delta, isSub }
+            if (data.isSub) {
+                changeScore2(data.team, data.delta);
+            } else {
+                changeScore(data.team, data.delta);
+            }
+            break;
+
+        case 'timer':
+            // { type, val, action, name }
+            if (data.action === 'playpause') {
+                if (interval) stopTimer(); else startTimer();
+            } else if (data.action === 'reset') {
+                // USER REQUEST: Reset to Zero, not Start Time
+                resetToZero();
+            } else if (data.action === 'half') {
+                toggleHalf();
+            }
+            break;
+
+        case 'obs':
+            // { type: 'obs', action: 'saveReplay' | 'scene', name: 'SceneName' }
+            if (obs) {
+                if (data.action === 'saveReplay') {
+                    obs.call('SaveReplayBuffer')
+                        .then(() => showToast("📹 Replay Saved! (from Mobile)", "success"))
+                        .catch(err => {
+                            console.error("Replay Error", err);
+                            showToast("Save Replay Failed", "error");
+                        });
+                } else if (data.action === 'scene' && data.name) {
+                    // Map generic mobile names to Configured names
+                    let targetScene = data.name;
+                    if (data.name === 'MainScene') {
+                        targetScene = localStorage.getItem('obsMainSceneName') || 'MainScene';
+                    } else if (data.name === 'SceneReplay') {
+                        targetScene = localStorage.getItem('obsReplaySceneName') || 'SceneReplay';
+                    }
+
+                    obs.call('SetCurrentProgramScene', { sceneName: targetScene })
+                        .then(() => showToast(`🎬 Switched to ${targetScene} (from Mobile)`, "success"))
+                        .catch(err => {
+                            console.error("Scene Error", err);
+                            showToast("Switch Scene Failed", "error");
+                        });
+                }
+            }
+            break;
+
+        case 'updateteam':
+            // { type: 'updateTeam', team, name, color1, color2 }
+            if (data.team === 'A') {
+                updateTeamUI('A', data.name, masterTeamA.logoFile, data.color1, data.color2);
+            } else if (data.team === 'B') {
+                updateTeamUI('B', data.name, masterTeamB.logoFile, data.color1, data.color2);
+            }
+            break;
+
+        case 'actionbtn':
+            // { type: 'actionBtn', index }
+            if (data.index) {
+                triggerAction(data.index);
+            }
+            break;
+
+        case 'loadmatch': // loadMatch from mobile
+            if (data.val) {
+                // Update match ID input value (applyMatch reads .value)
+                if (elements.matchID) elements.matchID.value = data.val;
+                // Also update display text
+                const matchIdEl = document.getElementById('matchID');
+                if (matchIdEl) matchIdEl.textContent = data.val;
+                const pcMatchBtn = document.getElementById('pcMatchIdBtn');
+                if (pcMatchBtn) pcMatchBtn.textContent = data.val;
+                // Actually load the match data
+                applyMatch();
+            }
+            break;
+
+        case 'requeststate':
+            // Already broadcasts, no need to broadcast again below
+            broadcastToMobile();
+            return; // Return early to skip the broadcast below
+    }
+
+    // Broadcast updated state back to mobile after handling any command
+    setTimeout(() => { if (window.broadcastToMobile) window.broadcastToMobile(); }, 200);
+}
+
+
+
+// V2.9.1: Trigger Action from Mobile or PC
+window.triggerAction = async (index) => {
+    const settings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
+    const btn = settings[index - 1]; // Index is 1-based
+
+    if (!btn || !obs) return;
+
+    // Normalize actionType to lowercase for case-insensitive matching
+    const actionType = (btn.actionType || '').toLowerCase();
+
+    try {
+        if (actionType === 'scene') {
+            await obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
+            showToast(`Switched to scene: ${btn.targetSource}`, 'success');
+        }
+        else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
+            // Get Current Scene
+            const currentScene = await obs.call('GetCurrentProgramScene');
+            const sceneName = currentScene.currentProgramSceneName;
+
+            // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
+            try {
+                const itemIdResp = await obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
+                const sceneItemId = itemIdResp.sceneItemId;
+
+                let enabled = true;
+                if (actionType === 'show') enabled = true;
+                else if (actionType === 'hide') enabled = false;
+                else if (actionType === 'toggle') {
+                    const itemState = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
+                    enabled = !itemState.sceneItemEnabled;
+                }
+
+                await obs.call('SetSceneItemEnabled', {
+                    sceneName,
+                    sceneItemId,
+                    sceneItemEnabled: enabled
+                });
+                showToast(`${btn.actionType} source: ${btn.targetSource}`, 'success');
+            } catch (itemIdErr) {
+                console.error("Item ID Error", itemIdErr);
+                showToast(`Source not found in current scene`, 'error');
+            }
+        }
+    } catch (err) {
+        console.error("Action Error:", err);
+        showToast(`Action Failed: ${err.message || err.error}`, 'error');
+    }
+};
