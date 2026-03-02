@@ -142,6 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             this.inputs['soft-reset-btn'].addEventListener('click', this.softReset.bind(this));
 
+            // OBS WebSocket
+            const obsBtn = this.inputs['create-obs-sources-btn'];
+            if (obsBtn) obsBtn.addEventListener('click', this.createOBSSources.bind(this));
+
             this.inputs['name-list-1'].addEventListener('input', this.updateNameCounts.bind(this));
             this.inputs['name-list-2'].addEventListener('input', this.updateNameCounts.bind(this));
             this.inputs['sort-history'].addEventListener('change', this.renderHistory.bind(this));
@@ -249,6 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         updateNames(wheelNum) {
+            // Clear any pending winner when names are updated to prevent stale data
+            StateManager.remove('pendingWinner');
+
             const isWheel1 = wheelNum === 1;
             const list = (isWheel1 ? this.inputs['name-list-1'].value : this.inputs['name-list-2'].value)
                 .split('\n')
@@ -544,6 +551,75 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
+        async createOBSSources() {
+            const statusEl = document.getElementById('obs-status');
+            const btn = this.inputs['create-obs-sources-btn'];
+            if (!statusEl || !btn) return;
+
+            btn.disabled = true;
+            statusEl.textContent = '⏳ กำลังเชื่อมต่อ OBS...';
+            statusEl.className = 'obs-status connecting';
+
+            try {
+                // Check if OBSWebSocket is available
+                if (typeof OBSWebSocket === 'undefined') {
+                    throw new Error('ไม่พบ obs-websocket-js library กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                }
+
+                const obs = new OBSWebSocket();
+                await obs.connect('ws://127.0.0.1:4455');
+                statusEl.textContent = '✅ เชื่อมต่อ OBS สำเร็จ กำลังสร้าง Source...';
+
+                // Get current scene
+                const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene');
+
+                // Determine base URL for the HTML files
+                const baseUrl = window.location.href.replace(/\/[^/]*$/, '');
+
+                const sources = [
+                    { name: 'RandomWheel - Wheels', file: 'wheels.html' },
+                    { name: 'RandomWheel - Winner', file: 'winner.html' },
+                    { name: 'RandomWheel - Groups', file: 'groups.html' },
+                ];
+
+                const results = [];
+                for (const src of sources) {
+                    try {
+                        await obs.call('CreateInput', {
+                            sceneName: currentProgramSceneName,
+                            inputName: src.name,
+                            inputKind: 'browser_source',
+                            inputSettings: {
+                                url: `${baseUrl}/${src.file}`,
+                                width: 1920,
+                                height: 1080,
+                                css: '',
+                            },
+                            sceneItemEnabled: true
+                        });
+                        results.push(`✅ ${src.name}`);
+                    } catch (err) {
+                        if (err.message && err.message.includes('already exists')) {
+                            results.push(`⚠️ ${src.name} (มีอยู่แล้ว)`);
+                        } else {
+                            results.push(`❌ ${src.name}: ${err.message}`);
+                        }
+                    }
+                }
+
+                await obs.disconnect();
+                statusEl.innerHTML = results.join('<br>') + `<br><small>Scene: ${currentProgramSceneName}</small>`;
+                statusEl.className = 'obs-status success';
+
+            } catch (err) {
+                statusEl.textContent = `❌ ${err.message || 'ไม่สามารถเชื่อมต่อ OBS ได้'}`;
+                statusEl.className = 'obs-status error';
+                console.error('OBS WebSocket Error:', err);
+            } finally {
+                btn.disabled = false;
+            }
+        },
+
         initialSetup(forceReset = false) {
             this.populateSelect(this.inputs['palette-select-1'], Config.palettes);
             this.populateSelect(this.inputs['palette-select-2'], Config.palettes);
@@ -586,6 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const GraphicsManager = {
         rotation1: 0,
         rotation2: 0,
+        spinTimer: null,
 
         init() {
             this.syncState();
@@ -613,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleRespin() {
             const overlay = document.getElementById('winner-overlay');
             if (overlay) overlay.classList.remove('show');
+            clearTimeout(this.spinTimer);
 
             if (page === 'Wheels Display') {
                 this.spinWheels();
@@ -631,31 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.style.opacity = '1';
         },
 
-        confirmAndProcessWinner() {
-            const pendingWinner = StateManager.load('pendingWinner') || {};
-            if (!pendingWinner.val1) return;
 
-            const currentHistory = StateManager.load('wheelHistory') || [];
-            currentHistory.push({
-                val1: pendingWinner.val1,
-                val2: pendingWinner.val2,
-                timestamp: new Date().toISOString()
-            });
-            StateManager.save('wheelHistory', currentHistory);
-
-            const allInputs = document.querySelectorAll('input, select, textarea, button');
-            if (allInputs.length > 0) { // On controls page
-                this.updateButtonState();
-                this.renderHistory();
-                this.updateNameCounts();
-                document.getElementById('similar-warning').style.display = 'none';
-                this.inputs['confirm-winner-btn'].style.display = 'none';
-                this.inputs['respin-btn'].style.display = 'none';
-            }
-
-            StateManager.remove('pendingWinner');
-            StateManager.triggerUpdate();
-        },
 
         applySettings() {
             const settings = StateManager.load('wheelSettings') || {};
@@ -853,7 +907,8 @@ document.addEventListener('DOMContentLoaded', () => {
             canvas2.style.transform = `rotate(${this.rotation2}deg)`;
 
             // After spin completes, determine winner from actual rotation
-            setTimeout(() => {
+            clearTimeout(this.spinTimer);
+            this.spinTimer = setTimeout(() => {
                 const winnerIndex1 = getWinnerIndex(this.rotation1, names1.length);
                 const winnerIndex2 = getWinnerIndex(this.rotation2, names2.length);
 

@@ -629,3 +629,60 @@ hr {
     color: #f8f9fa;
     border: 1px solid #6c757d;
 }
+
+/* OBS WebSocket Section */
+.action-btn.obs-create {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-size: 16px;
+    padding: 14px 20px;
+}
+
+.action-btn.obs-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+}
+
+.action-btn.obs-create:disabled {
+    background: linear-gradient(135deg, #7f8c8d 0%, #6c7a89 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.obs-hint {
+    display: block;
+    color: #95a5a6;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.obs-status {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+    display: none;
+}
+
+.obs-status.connecting {
+    display: block;
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #5dade2;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.obs-status.success {
+    display: block;
+    background-color: rgba(39, 174, 96, 0.15);
+    color: #58d68d;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.obs-status.error {
+    display: block;
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #ec7063;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}

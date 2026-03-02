@@ -195,6 +195,18 @@
                     </div>
                 </div>
 
+                <!-- OBS WebSocket -->
+                <div class="settings-section">
+                    <h3>🔌 OBS Browser Source</h3>
+                    <small class="obs-hint">สร้าง Browser Source อัตโนมัติใน Scene ปัจจุบัน (1920×1080)<br>ผ่าน
+                        WebSocket port 4455 แบบไม่ใส่รหัส</small>
+                    <div class="setting-row" style="margin-top:10px;">
+                        <button class="action-btn obs-create full-width" id="create-obs-sources-btn">🚀 สร้าง Browser
+                            Source ทั้ง 3 อัน</button>
+                    </div>
+                    <div id="obs-status" class="obs-status"></div>
+                </div>
+
                 <!-- Graphics and Reset -->
                 <div class="settings-section">
                     <h3>ตั้งค่ากราฟิกและรีเซ็ต</h3>
@@ -216,6 +228,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5/dist/obs-ws.min.js"></script>
     <script src="script.js"></script>
 </body>
 
