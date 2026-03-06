@@ -929,9 +929,14 @@
             if (savedCfg) {
                 const parsed = JSON.parse(savedCfg);
                 appData.config = { ...DEFAULTS, ...parsed };
+                // Ensure all nested objects from DEFAULTS exist
                 Object.keys(DEFAULTS).forEach(k => {
-                    if (typeof DEFAULTS[k] === 'object') appData.config[k] = { ...DEFAULTS[k], ...(parsed[k] || {}) };
+                    if (typeof DEFAULTS[k] === 'object') {
+                        appData.config[k] = { ...DEFAULTS[k], ...(parsed[k] || {}) };
+                    }
                 });
+            } else {
+                appData.config = JSON.parse(JSON.stringify(DEFAULTS));
             }
             try { const db = await openDB(); appData.images = await loadImagesFromDB(db); } catch (e) { }
 
@@ -1055,7 +1060,7 @@
             if (mode === 'display') mode = appData.config.mode;
 
             const images = appData.images;
-            const cfg = appData.config[mode];
+            const cfg = appData.config[mode] || DEFAULTS[mode];
             if (!images.length || !cfg) return;
 
             const getStyle = () => `height:${cfg.size}px; border-radius:${cfg.radius}px; filter:drop-shadow(0 2px 4px rgba(0,0,0,${cfg.shadow}));`;
@@ -1212,10 +1217,10 @@
                             setTimeout(() => {
                                 img.style.transition = `transform ${cfg.speedFloat}ms ease-in-out`;
                                 img.style.transform = `translateY(${y}px)`;
-                            }, i * 200);
+                            }, i * 150);
                         });
                     };
-                    updateFloat(); activeIntervals.push(setInterval(updateFloat, cfg.speedFloat));
+                    updateFloat(); activeIntervals.push(setInterval(updateFloat, Math.max(10, cfg.speedFloat || 2000)));
                 } else if (mode === 'swing') {
                     let a = 0;
                     wrap.querySelectorAll('img').forEach(img => img.style.transformOrigin = 'top center');
@@ -1223,12 +1228,12 @@
                         a = a === 20 ? -20 : 20;
                         wrap.querySelectorAll('img').forEach((img, i) => {
                             setTimeout(() => {
-                                img.style.transition = `transform ${cfg.speedSwing}ms ease-in-out`;
+                                img.style.transition = `transform ${cfg.speedSwing || 2000}ms ease-in-out`;
                                 img.style.transform = `rotate(${a}deg)`;
-                            }, i * 200);
+                            }, i * 150);
                         });
                     };
-                    updateSwing(); activeIntervals.push(setInterval(updateSwing, cfg.speedSwing));
+                    updateSwing(); activeIntervals.push(setInterval(updateSwing, Math.max(10, cfg.speedSwing || 2000)));
                 }
             }
         }
