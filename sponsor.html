@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Sponsor Manager V1.0</title>
+    <title>OBS Sponsor Manager V1.1</title>
+    <!-- Include OBS WebSocket JS -->
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.4/dist/obs-ws.min.js"></script>
     <style>
         /* ================== CORE & RESET ================== */
         :root {
@@ -16,149 +19,558 @@
             --danger: #cc3333;
             --success: #44aa44;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background: transparent; }
-        
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        input,
+        textarea {
+            user-select: auto;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: transparent;
+        }
+
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #777; }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
 
         /* ================== DISPLAY CONTAINER ================== */
         #display-container {
-            width: 100vw; height: 100vh; position: relative; overflow: hidden; display: none;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: none;
         }
-        
+
         /* --- MODE: GRID --- */
         .mode-grid {
-            display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end;
-            position: absolute; bottom: 0; left: 0; right: 0; padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
         }
-        .mode-grid img { position: relative; }
+
+        .mode-grid img {
+            position: relative;
+        }
 
         /* --- MODE: ROTATOR (Fixed Safe Zone) --- */
-        .mode-rotator { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; pointer-events: none; overflow: hidden;
+        .mode-rotator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            pointer-events: none;
+            overflow: hidden;
         }
-        .rotator-inner { 
-            position: relative; display: flex; justify-content: center; align-items: center;
+
+        .rotator-inner {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .rotator-inner img { 
-            position: absolute; opacity: 0; transition: opacity 0.5s; 
-            max-width: 100%; max-height: 100%; object-fit: contain;
+
+        .rotator-inner img {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.5s;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
-        .rotator-inner img.active { opacity: 1; position: relative; }
-        
+
+        .rotator-inner img.active {
+            opacity: 1;
+            position: relative;
+        }
+
         /* Rotator Effects */
-        .eff-fade img { transform: scale(1); transition: opacity 0.5s; }
-        .eff-zoom img { transform: scale(0.5); transition: opacity 0.5s, transform 0.5s; }
-        .eff-zoom img.active { transform: scale(1); }
-        .eff-slide img { transform: translateY(20px); transition: opacity 0.5s, transform 0.5s; }
-        .eff-slide img.active { transform: translateY(0); }
+        .eff-fade img {
+            transform: scale(1);
+            transition: opacity 0.5s;
+        }
+
+        .eff-zoom img {
+            transform: scale(0.5);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .eff-zoom img.active {
+            transform: scale(1);
+        }
+
+        .eff-slide img {
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .eff-slide img.active {
+            transform: translateY(0);
+        }
 
         /* --- MODE: TICKER --- */
-        .mode-ticker { position: absolute; left: 0; width: 100%; white-space: nowrap; overflow: hidden; }
-        .ticker-track { display: inline-flex; animation: ticker-anim linear infinite; }
-        @keyframes ticker-anim { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .mode-ticker {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .ticker-track {
+            display: inline-flex;
+            animation: ticker-anim linear infinite;
+        }
+
+        @keyframes ticker-anim {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
 
         /* --- MODE: 3D --- */
         .mode-3d {
-            position: absolute; bottom: 50px; left: 0; right: 0; height: 300px;
-            display: flex; justify-content: center; align-items: center; perspective: 1000px;
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
         }
-        .card-3d { position: absolute; transition: all 0.6s ease-out; backface-visibility: hidden; }
+
+        .card-3d {
+            position: absolute;
+            transition: all 0.6s ease-out;
+            backface-visibility: hidden;
+        }
 
         /* --- MODE: BOUNCE (DVD) --- */
-        .mode-bounce img { position: absolute; transition: none; will-change: transform; }
+        .mode-bounce img {
+            position: absolute;
+            transition: none;
+            will-change: transform;
+        }
 
         /* --- MODE: RAIN --- */
-        .mode-rain img { position: absolute; top: -200px; }
+        .mode-rain img {
+            position: absolute;
+            top: -200px;
+        }
 
         /* ================== CONTROL PANEL UI ================== */
         #control-panel {
-            background: var(--bg-color); color: var(--text-main); height: 100vh; 
-            padding: 15px; overflow-y: auto; display: none; position: relative;
+            background: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            padding: 15px;
+            overflow-y: auto;
+            display: none;
+            position: relative;
         }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .brand h1 { font-size: 18px; color: var(--accent); margin: 0; }
-        .brand span { font-size: 10px; color: #666; }
-        .lang-switch { cursor: pointer; font-size: 12px; background: #333; padding: 4px 8px; border-radius: 4px; color: #fff; }
-        .lang-switch:hover { background: #444; }
 
-        .section { background: var(--panel-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        h2 { font-size: 14px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
 
-        label { display: block; margin-top: 10px; font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
-        input[type="range"] { width: 100%; cursor: pointer; height: 6px; background: #444; border-radius: 3px; outline: none; appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        
-        select { width: 100%; padding: 8px; background: #3a3a3a; color: #fff; border: 1px solid #555; border-radius: 4px; font-size: 13px; }
-        select:focus { border-color: var(--accent); outline: none; }
+        .brand h1 {
+            font-size: 18px;
+            color: var(--accent);
+            margin: 0;
+        }
 
-        .btn { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; margin-top: 5px; font-size: 12px; }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-primary { background: var(--accent); }
-        .btn-danger { background: var(--danger); }
-        .btn-success { background: var(--success); }
-        .btn-outline { background: transparent; border: 1px solid #555; color: #ccc; }
-        .btn-outline:hover { background: #333; }
-        
-        .row { display: flex; gap: 10px; }
-        .col { flex: 1; }
-        .hidden { display: none !important; }
+        .brand span {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .lang-switch {
+            cursor: pointer;
+            font-size: 12px;
+            background: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .lang-switch:hover {
+            background: #444;
+        }
+
+        .section {
+            background: var(--panel-bg);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-size: 14px;
+            color: #fff;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        select:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #555;
+            color: #ccc;
+        }
+
+        .btn-outline:hover {
+            background: #333;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
 
         #drop-zone {
-            border: 2px dashed #555; border-radius: 8px; padding: 20px;
-            text-align: center; color: #777; cursor: pointer; transition: 0.3s;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;
+            border: 2px dashed #555;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #777;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
         }
-        #drop-zone:hover { border-color: var(--accent); background: rgba(0, 170, 255, 0.05); color: #fff; }
-        #file-count { margin-top: 5px; font-weight: bold; font-size: 13px; color: var(--accent); }
-        .menu-bar { display: flex; gap: 10px; margin-top: 20px; }
+
+        #drop-zone:hover {
+            border-color: var(--accent);
+            background: rgba(0, 170, 255, 0.05);
+            color: #fff;
+        }
+
+        #file-count {
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        .menu-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
 
         /* ================== MODALS ================== */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 1000;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: 0.3s;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
         }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .modal {
-            background: #252525; width: 90%; max-width: 500px; max-height: 85vh;
-            border-radius: 10px; padding: 20px; position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-y: auto;
-            border: 1px solid #444; color: #ddd; transform: translateY(20px); transition: 0.3s;
+            background: #252525;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            border: 1px solid #444;
+            color: #ddd;
+            transform: translateY(20px);
+            transition: 0.3s;
         }
-        .modal-overlay.open .modal { transform: translateY(0); }
-        .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
-        .modal-close:hover { color: #fff; }
-        
-        .url-gen-item { background: #1a1a1a; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .url-code { font-family: monospace; color: var(--accent); font-size: 11px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 4px; margin-right: 10px; word-break: break-all; }
-        .sponsor-grid { display: grid; grid-template-columns: 1fr; gap: 15px; text-align: center; }
-        .sponsor-item { background: #333; padding: 15px; border-radius: 8px; }
-        .qr-box { background: #fff; padding: 5px; display: inline-block; border-radius: 4px; margin: 10px 0; }
-        .qr-box img { display: block; width: 120px; height: 120px; }
-        .sponsor-link { display: block; color: var(--accent); text-decoration: none; font-size: 12px; margin-top: 5px; word-break: break-all; }
-        
+
+        .modal-overlay.open .modal {
+            transform: translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .url-gen-item {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input.url-code {
+            font-family: monospace;
+            color: var(--accent);
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            width: 100%;
+            cursor: text;
+            user-select: text;
+        }
+
+        input.url-code:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .sponsor-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .sponsor-item {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .qr-box {
+            background: #fff;
+            padding: 5px;
+            display: inline-block;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .qr-box img {
+            display: block;
+            width: 120px;
+            height: 120px;
+        }
+
+        .sponsor-link {
+            display: block;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 12px;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+
         /* Toast Notification */
         #toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 170, 255, 0.95); color: white; padding: 10px 20px;
-            border-radius: 20px; font-size: 14px; font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 2000;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 170, 255, 0.95);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 2000;
         }
-        #toast.show { opacity: 1; bottom: 40px; }
 
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:#111; color:var(--accent); z-index:9999; display:flex; justify-content:center; align-items:center; font-size:1.2rem; }
+        #toast.show {
+            opacity: 1;
+            bottom: 40px;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            color: var(--accent);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+
+        #obs-status {
+            font-size: 11px;
+            padding: 5px;
+            margin-top: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .obs-disconnected {
+            background: #4a2020;
+            color: #ff9999;
+        }
+
+        .obs-connected {
+            background: #204a20;
+            color: #99ff99;
+        }
     </style>
 </head>
+
 <body>
 
     <div id="loading">Loading...</div>
@@ -171,7 +583,7 @@
         <div class="header">
             <div class="brand">
                 <h1>Sponsor Manager</h1>
-                <span>Dock UI OBS - Sponsor Version 1.0</span>
+                <span>Dock UI OBS - Sponsor Version 1.1</span>
             </div>
             <div class="lang-switch" onclick="toggleLang()">EN / TH</div>
         </div>
@@ -190,21 +602,24 @@
         <div class="section">
             <h2 data-t="txt_mode">Display Mode</h2>
             <select id="mode-select" onchange="changeModeUI()">
-                <option value="grid">Grid (Bottom Row)</option>
-                <option value="rotator">Rotator (Single Loop)</option>
-                <option value="ticker">Ticker (Scrolling)</option>
-                <option value="bounce">Bounce (DVD Saver)</option>
-                <option value="rain">Rain (Falling)</option>
-                <option value="3d">3D Cover Flow</option>
+                <option value="grid" data-t="mode_grid">Grid (Bottom Row)</option>
+                <option value="rotator" data-t="mode_rotator">Rotator (Single Loop)</option>
+                <option value="ticker" data-t="mode_ticker">Ticker (Scrolling)</option>
+                <option value="bounce" data-t="mode_bounce">Bounce (DVD Saver)</option>
+                <option value="rain" data-t="mode_rain">Rain (Falling)</option>
+                <option value="3d" data-t="mode_3d">3D Cover Flow</option>
+                <option value="pulse" data-t="mode_pulse">Pulse (Heartbeat)</option>
+                <option value="spin" data-t="mode_spin">Spin (Rotating)</option>
+                <option value="wiggle" data-t="mode_wiggle">Wiggle (Shaking)</option>
             </select>
         </div>
 
         <div class="section" id="settings-area">
             <h2 data-t="txt_settings">Settings</h2>
-            
+
             <label data-t="lbl_size">Size (px)</label>
             <input type="range" id="inp-size" min="50" max="800" oninput="updateConfig('size', this.value)">
-            
+
             <div class="row">
                 <div class="col">
                     <label data-t="lbl_radius">Radius</label>
@@ -212,7 +627,8 @@
                 </div>
                 <div class="col">
                     <label data-t="lbl_shadow">Shadow</label>
-                    <input type="range" id="inp-shadow" min="0" max="1" step="0.1" oninput="updateConfig('shadow', this.value)">
+                    <input type="range" id="inp-shadow" min="0" max="1" step="0.1"
+                        oninput="updateConfig('shadow', this.value)">
                 </div>
             </div>
 
@@ -225,15 +641,30 @@
 
             <div id="sets-rotator" class="mode-sets hidden">
                 <div class="row">
-                    <div class="col"><label>Horz</label><select id="inp-pos-x" onchange="updateConfig('posX', this.value)"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></div>
-                    <div class="col"><label>Vert</label><select id="inp-pos-y" onchange="updateConfig('posY', this.value)"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></div>
+                    <div class="col"><label>Horz</label><select id="inp-pos-x"
+                            onchange="updateConfig('posX', this.value)">
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select></div>
+                    <div class="col"><label>Vert</label><select id="inp-pos-y"
+                            onchange="updateConfig('posY', this.value)">
+                            <option value="top">Top</option>
+                            <option value="center">Center</option>
+                            <option value="bottom">Bottom</option>
+                        </select></div>
                 </div>
                 <label data-t="lbl_margin">Margin (Distance from edge)</label>
                 <input type="range" id="inp-margin" min="0" max="200" oninput="updateConfig('margin', this.value)">
                 <label data-t="lbl_duration">Duration (sec)</label>
-                <input type="range" id="inp-stay" min="0.5" max="10" step="0.5" oninput="updateConfig('stayTime', this.value)">
+                <input type="range" id="inp-stay" min="0.5" max="10" step="0.5"
+                    oninput="updateConfig('stayTime', this.value)">
                 <label data-t="lbl_effect">Effect</label>
-                <select id="inp-effect" onchange="updateConfig('effect', this.value)"><option value="fade">Fade</option><option value="slide">Slide Up</option><option value="zoom">Zoom</option></select>
+                <select id="inp-effect" onchange="updateConfig('effect', this.value)">
+                    <option value="fade">Fade</option>
+                    <option value="slide">Slide Up</option>
+                    <option value="zoom">Zoom</option>
+                </select>
             </div>
 
             <div id="sets-ticker" class="mode-sets hidden">
@@ -246,20 +677,48 @@
             </div>
 
             <div id="sets-bounce" class="mode-sets hidden">
-                 <label data-t="lbl_speed">Speed</label>
-                 <input type="range" id="inp-bounce-speed" min="1" max="20" oninput="updateConfig('bounceSpeed', this.value)">
+                <label data-t="lbl_speed">Speed</label>
+                <input type="range" id="inp-bounce-speed" min="1" max="20"
+                    oninput="updateConfig('bounceSpeed', this.value)">
             </div>
-            
+
             <div id="sets-rain" class="mode-sets hidden">
-                 <label data-t="lbl_speed">Fall Speed</label>
-                 <input type="range" id="inp-rain-speed" min="1" max="20" oninput="updateConfig('rainSpeed', this.value)">
-                 <label data-t="lbl_density">Density</label>
-                 <input type="range" id="inp-rain-density" min="1" max="10" oninput="updateConfig('rainDensity', this.value)">
+                <label data-t="lbl_speed">Fall Speed</label>
+                <input type="range" id="inp-rain-speed" min="1" max="20"
+                    oninput="updateConfig('rainSpeed', this.value)">
+                <label data-t="lbl_density">Density</label>
+                <input type="range" id="inp-rain-density" min="1" max="10"
+                    oninput="updateConfig('rainDensity', this.value)">
             </div>
 
             <div id="sets-3d" class="mode-sets hidden">
                 <label data-t="lbl_speed">Rotation Speed</label>
-                <input type="range" id="inp-3d-speed" min="500" max="5000" step="100" oninput="updateConfig('speed3d', this.value)">
+                <input type="range" id="inp-3d-speed" min="500" max="5000" step="100"
+                    oninput="updateConfig('speed3d', this.value)">
+            </div>
+
+            <div id="sets-pulse" class="mode-sets hidden">
+                <label data-t="lbl_speed">Pulse Speed (ms)</label>
+                <input type="range" id="inp-pulse-speed" min="200" max="3000" step="100"
+                    oninput="updateConfig('speedPulse', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-pulse-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
+            </div>
+
+            <div id="sets-spin" class="mode-sets hidden">
+                <label data-t="lbl_speed">Spin Speed (ms)</label>
+                <input type="range" id="inp-spin-speed" min="500" max="5000" step="100"
+                    oninput="updateConfig('speedSpin', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-spin-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
+            </div>
+
+            <div id="sets-wiggle" class="mode-sets hidden">
+                <label data-t="lbl_speed">Wiggle Speed (ms)</label>
+                <input type="range" id="inp-wiggle-speed" min="100" max="2000" step="100"
+                    oninput="updateConfig('speedWiggle', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-wiggle-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
             </div>
         </div>
 
@@ -268,8 +727,10 @@
         </div>
 
         <div class="menu-bar">
-            <button class="btn btn-outline" onclick="openModal('modal-help')">❓ <span data-t="btn_help">How to Use</span></button>
-            <button class="btn btn-outline" onclick="openModal('modal-sponsor')">🎁 <span data-t="btn_sponsor">Sponsor</span></button>
+            <button class="btn btn-outline" onclick="openModal('modal-help')">❓ <span data-t="btn_help">How to
+                    Use</span></button>
+            <button class="btn btn-outline" onclick="openModal('modal-sponsor')">🎁 <span
+                    data-t="btn_sponsor">Sponsor</span></button>
         </div>
     </div>
 
@@ -277,8 +738,24 @@
         <div class="modal">
             <button class="modal-close" onclick="closeModal(null, 'modal-help')">&times;</button>
             <h2 data-t="modal_help_title">How to Use (URL Generator)</h2>
-            <p style="font-size:12px; color:#aaa; margin-bottom:15px;" data-t="modal_help_desc">Copy these URLs into OBS Browser Source.</p>
+            <p style="font-size:12px; color:#aaa; margin-bottom:15px;" data-t="modal_help_desc">OBS Browser Source
+                Setup:<br>1. Create a Browser Source in the current Scene (Size: 1920x1080).<br>2. Copy the full URL
+                below and paste it into the URL field.<br>3. Important: Requires OBS WebSocket on Port 4455 (No
+                password).</p>
             <div id="url-list"></div>
+
+            <hr style="border:0; border-top:1px dashed #444; margin:15px 0;">
+            <div style="font-size: 11px; color: #aaa;">
+                <label>OBS WebSocket Port (Default: 4455)</label>
+                <div style="display:flex; gap: 5px;">
+                    <input type="text" id="obs-ws-port" value="4455"
+                        style="background:#111; border:1px solid #555; color:#fff; padding:5px; border-radius:4px; width: 60px; text-align: center;" />
+                    <input type="password" id="obs-ws-pass" placeholder="(No password)"
+                        style="background:#111; border:1px solid #555; color:#fff; padding:5px; border-radius:4px; flex: 1;" />
+                </div>
+                <div id="obs-status" class="obs-disconnected">OBS Websocket connection is used to automatically add the
+                    URL to the current scene.</div>
+            </div>
         </div>
     </div>
 
@@ -289,23 +766,31 @@
             <div class="sponsor-grid">
                 <div class="sponsor-item">
                     <span style="color:#fff; font-weight:bold;">Thai Bank / PromptPay</span>
-                    <div class="qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz" alt="QR"></div>
-                    <a href="https://easydonate.app/Jamornz" target="_blank" class="sponsor-link">easydonate.app/Jamornz</a>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://easydonate.app/Jamornz"
+                            alt="QR"></div>
+                    <a href="https://easydonate.app/Jamornz" target="_blank"
+                        class="sponsor-link">easydonate.app/Jamornz</a>
                 </div>
                 <div class="sponsor-item">
                     <span style="color:#fff; font-weight:bold;">Shopee Affiliate</span>
-                    <div class="qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L" alt="QR"></div>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://s.shopee.co.th/4foTAYE21L"
+                            alt="QR"></div>
                     <a href="https://s.shopee.co.th/4foTAYE21L" target="_blank" class="sponsor-link">Shopee Link</a>
                 </div>
                 <div class="sponsor-item">
                     <span style="color:#fff; font-weight:bold;">International (Ko-fi)</span>
-                    <div class="qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz" alt="QR"></div>
+                    <div class="qr-box"><img
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ko-fi.com/jamornz"
+                            alt="QR"></div>
                     <a href="https://ko-fi.com/jamornz" target="_blank" class="sponsor-link">ko-fi.com/jamornz</a>
                 </div>
             </div>
             <div style="text-align:center; margin-top:20px; font-size:11px; color:#666;">
                 Developed by <b>JamornzMedia</b><br>
-                <a href="https://sites.google.com/view/jamornzmedia" target="_blank" style="color:#555;">Visit Website</a>
+                <a href="https://sites.google.com/view/jamornzmedia" target="_blank" style="color:#555;">Visit
+                    Website</a>
             </div>
         </div>
     </div>
@@ -313,7 +798,7 @@
     <script type="text/javascript">
         var sc_project = 13147874; var sc_invisible = 0; var sc_security = "550e33c0";
         var scJsHost = "https://";
-        document.write("<sc"+"ript src='" + scJsHost + "statcounter.com/counter/counter.js'></"+"script>");
+        document.write("<sc" + "ript src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
     </script>
 
     <script>
@@ -325,8 +810,9 @@
                 lbl_size: "Size", lbl_radius: "Radius", lbl_shadow: "Shadow",
                 lbl_gap: "Gap", lbl_margin: "Margin", lbl_duration: "Duration", lbl_effect: "Effect",
                 lbl_speed: "Speed", lbl_pos_y: "Position Y", lbl_density: "Density",
-                modal_help_title: "How to Use", modal_help_desc: "Click Copy button and paste into OBS Browser Source URL.",
-                modal_sponsor_title: "Support Creator"
+                modal_help_title: "How to Use", modal_help_desc: "OBS Browser Source Setup:<br>1. Create a Browser Source in the current Scene (Size: 1920x1080).<br>2. Copy the full URL below and paste it into the URL field.<br>3. Important: Requires OBS WebSocket on Port 4455 (No password).",
+                modal_sponsor_title: "Support Creator",
+                mode_grid: "Grid (Bottom Row)", mode_rotator: "Rotator (Single Loop)", mode_ticker: "Ticker (Scrolling)", mode_bounce: "Bounce (DVD Saver)", mode_rain: "Rain (Falling)", mode_3d: "3D Cover Flow", mode_pulse: "Pulse (Heartbeat)", mode_spin: "Spin (Rotating)", mode_wiggle: "Wiggle (Shaking)", mode_display: "Auto (Panel Synchronized)"
             },
             th: {
                 txt_images: "จัดการรูปภาพ", txt_drop: "ลากรูปภาพมาวางที่นี่", btn_reset: "ล้างข้อมูลทั้งหมด",
@@ -335,8 +821,10 @@
                 lbl_size: "ขนาดรูป", lbl_radius: "ความมน", lbl_shadow: "เงา",
                 lbl_gap: "ระยะห่าง", lbl_margin: "ระยะขอบ", lbl_duration: "แสดงนาน (วิ)", lbl_effect: "เอฟเฟกต์",
                 lbl_speed: "ความเร็ว", lbl_pos_y: "ตำแหน่งแกน Y", lbl_density: "ความหนาแน่น",
-                modal_help_title: "วิธีใช้งาน (URL Generator)", modal_help_desc: "กดปุ่ม Copy แล้วนำไปใส่ในช่อง URL ของ Browser Source ใน OBS",
-                modal_sponsor_title: "ร่วมสนับสนุนนักพัฒนา"
+                modal_help_title: "วิธีใช้งาน (URL Generator)", modal_help_desc: "การตั้งค่า Browser Source ใน OBS:<br>1. สร้าง Browser Source ใน Scene ปัจจุบัน ตั้งขนาดเป็น 1920x1080<br>2. ท่านสามารถกด Copy หรือลากคลุมดำลิงก์ด้านล่างเพื่อก๊อบปี้ไปใส่ในช่อง URL<br>3. จำเป็นต้องเชื่อมต่อด้วย WebSocket Port 4455 และไม่ต้องใส่รหัสผ่าน",
+                modal_sponsor_title: "ร่วมสนับสนุนนักพัฒนา",
+                mode_grid: "แบบตาราง (เรียงด้านล่าง)", mode_rotator: "แบบหมุนวน (ลูปทีละภาพ)", mode_ticker: "แบบตัววิ่ง (เลื่อนซ้าย)", mode_bounce: "แบบขยับเด้ง (DVD Saver)", mode_rain: "แบบฝนตก (หล่นจากฟ้า)", mode_3d: "แบบ 3D (คัฟเวอร์โฟลว์)", mode_pulse: "แบบชีพจร (กระเพื่อม)", mode_spin: "แบบหมุน (ควงสว่าน)", mode_wiggle: "แบบสั่น (ดุ๊กดิ๊ก)", mode_display: "อัตโนมัติ (ตามการตั้งค่า Control Panel)",
+                btn_create: "เพิ่มลงคิว OBS ทันที"
             }
         };
 
@@ -346,15 +834,18 @@
             const t = LANG_DATA[currentLang];
             document.querySelectorAll('[data-t]').forEach(el => {
                 const key = el.getAttribute('data-t');
-                if(t[key]) el.innerText = t[key];
+                if (t[key]) el.innerHTML = t[key];
             });
+            if (document.getElementById('url-list')) {
+                generateUrlList();
+            }
         }
 
         const DB_NAME = 'OBSSponsorUltimateDB';
         const STORE_NAME = 'imgs';
         const CONFIG_KEY = 'obs_sponsor_ultimate_cfg';
         const CHANNEL = new BroadcastChannel('obs_ultimate_ch');
-        
+
         const DEFAULTS = {
             mode: 'grid', lang: 'th',
             grid: { size: 150, radius: 0, shadow: 0.5, gap: 20 },
@@ -363,7 +854,10 @@
             ticker: { size: 100, radius: 0, shadow: 0.5, speed: 30, gap: 50, tickerY: 0 },
             bounce: { size: 150, radius: 50, shadow: 0.5, bounceSpeed: 5 },
             rain: { size: 80, radius: 0, shadow: 0.2, rainSpeed: 5, rainDensity: 3 },
-            '3d': { size: 200, radius: 10, shadow: 0.8, speed3d: 2000 }
+            '3d': { size: 200, radius: 10, shadow: 0.8, speed3d: 2000 },
+            pulse: { size: 150, radius: 10, shadow: 0.5, speedPulse: 1000, gap: 20 },
+            spin: { size: 150, radius: 10, shadow: 0.5, speedSpin: 2000, gap: 20 },
+            wiggle: { size: 150, radius: 10, shadow: 0.5, speedWiggle: 500, gap: 20 }
         };
 
         let appData = { images: [], config: JSON.parse(JSON.stringify(DEFAULTS)) };
@@ -371,17 +865,17 @@
         async function init() {
             document.getElementById('loading').style.display = 'flex';
             const savedCfg = localStorage.getItem(CONFIG_KEY);
-            if(savedCfg) {
+            if (savedCfg) {
                 const parsed = JSON.parse(savedCfg);
                 appData.config = { ...DEFAULTS, ...parsed };
                 Object.keys(DEFAULTS).forEach(k => {
-                    if(typeof DEFAULTS[k] === 'object') appData.config[k] = { ...DEFAULTS[k], ...(parsed[k] || {}) };
+                    if (typeof DEFAULTS[k] === 'object') appData.config[k] = { ...DEFAULTS[k], ...(parsed[k] || {}) };
                 });
             }
-            try { const db = await openDB(); appData.images = await loadImagesFromDB(db); } catch(e) {}
+            try { const db = await openDB(); appData.images = await loadImagesFromDB(db); } catch (e) { }
 
             const urlParams = new URLSearchParams(location.search);
-            if(urlParams.get('mode') === 'control') {
+            if (urlParams.get('mode') === 'control') {
                 document.getElementById('control-panel').style.display = 'block';
                 document.body.style.background = '#1e1e1e';
                 currentLang = appData.config.lang || 'th'; applyLang(); initController();
@@ -395,7 +889,7 @@
         function openDB() {
             return new Promise((res, rej) => {
                 const req = indexedDB.open(DB_NAME, 1);
-                req.onupgradeneeded = e => { if(!e.target.result.objectStoreNames.contains(STORE_NAME)) e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true }); };
+                req.onupgradeneeded = e => { if (!e.target.result.objectStoreNames.contains(STORE_NAME)) e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true }); };
                 req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error);
             });
         }
@@ -414,7 +908,7 @@
             });
         }
         async function clearAllData() {
-            if(!confirm('CONFIRM RESET / ยืนยันการล้างข้อมูล?')) return;
+            if (!confirm('CONFIRM RESET / ยืนยันการล้างข้อมูล?')) return;
             localStorage.removeItem(CONFIG_KEY);
             const db = await openDB();
             const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -434,15 +928,15 @@
             inp.onchange = e => processFiles(e.target.files);
         }
         function processFiles(files) {
-            if(!files.length) return;
+            if (!files.length) return;
             let processed = 0;
             Array.from(files).forEach(f => {
-                if(!f.type.startsWith('image/')) return;
+                if (!f.type.startsWith('image/')) return;
                 const fr = new FileReader();
                 fr.onload = e => {
                     appData.images.push(e.target.result);
                     processed++;
-                    if(processed >= files.length) saveImagesToDB(appData.images).then(() => { updateFileCount(); forceSync(); });
+                    if (processed >= files.length) saveImagesToDB(appData.images).then(() => { updateFileCount(); forceSync(); });
                 };
                 fr.readAsDataURL(f);
             });
@@ -452,24 +946,27 @@
             const mode = document.getElementById('mode-select').value;
             appData.config.mode = mode; saveConfig();
             document.querySelectorAll('.mode-sets').forEach(el => el.classList.add('hidden'));
-            if(document.getElementById(`sets-${mode}`)) document.getElementById(`sets-${mode}`).classList.remove('hidden');
+            if (document.getElementById(`sets-${mode}`)) document.getElementById(`sets-${mode}`).classList.remove('hidden');
             const cfg = appData.config[mode];
-            if(cfg) {
+            if (cfg) {
                 setVal('inp-size', cfg.size); setVal('inp-radius', cfg.radius); setVal('inp-shadow', cfg.shadow);
-                if(mode === 'grid') setVal('inp-gap', cfg.gap);
-                if(mode === 'rotator') { setVal('inp-pos-x', cfg.posX); setVal('inp-pos-y', cfg.posY); setVal('inp-margin', cfg.margin); setVal('inp-stay', cfg.stayTime); setVal('inp-effect', cfg.effect); }
+                if (mode === 'grid') setVal('inp-gap', cfg.gap);
+                if (mode === 'rotator') { setVal('inp-pos-x', cfg.posX); setVal('inp-pos-y', cfg.posY); setVal('inp-margin', cfg.margin); setVal('inp-stay', cfg.stayTime); setVal('inp-effect', cfg.effect); }
                 // TICKER SETVAL
-                if(mode === 'ticker') { setVal('inp-speed', cfg.speed); setVal('inp-ticker-gap', cfg.gap); setVal('inp-ticker-y', cfg.tickerY); }
-                if(mode === 'bounce') { setVal('inp-bounce-speed', cfg.bounceSpeed); }
-                if(mode === 'rain') { setVal('inp-rain-speed', cfg.rainSpeed); setVal('inp-rain-density', cfg.rainDensity); }
-                if(mode === '3d') { setVal('inp-3d-speed', cfg.speed3d); }
+                if (mode === 'ticker') { setVal('inp-speed', cfg.speed); setVal('inp-ticker-gap', cfg.gap); setVal('inp-ticker-y', cfg.tickerY); }
+                if (mode === 'bounce') { setVal('inp-bounce-speed', cfg.bounceSpeed); }
+                if (mode === 'rain') { setVal('inp-rain-speed', cfg.rainSpeed); setVal('inp-rain-density', cfg.rainDensity); }
+                if (mode === '3d') { setVal('inp-3d-speed', cfg.speed3d); }
+                if (mode === 'pulse') { setVal('inp-pulse-speed', cfg.speedPulse); setVal('inp-pulse-gap', cfg.gap); }
+                if (mode === 'spin') { setVal('inp-spin-speed', cfg.speedSpin); setVal('inp-spin-gap', cfg.gap); }
+                if (mode === 'wiggle') { setVal('inp-wiggle-speed', cfg.speedWiggle); setVal('inp-wiggle-gap', cfg.gap); }
             }
             forceSync();
         }
-        function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val !== undefined ? val : 0; }
+        function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : 0; }
         function updateConfig(key, val) {
             const mode = appData.config.mode;
-            if(!['posX','posY','effect'].includes(key)) val = parseFloat(val);
+            if (!['posX', 'posY', 'effect'].includes(key)) val = parseFloat(val);
             appData.config[mode][key] = val; saveConfig(); forceSync();
         }
         function saveConfig() { appData.config.lang = currentLang; localStorage.setItem(CONFIG_KEY, JSON.stringify(appData.config)); }
@@ -479,7 +976,7 @@
         let activeIntervals = [];
 
         function initDisplay() {
-            render(); CHANNEL.onmessage = e => { if(e.data) { appData = e.data; render(); } };
+            render(); CHANNEL.onmessage = e => { if (e.data) { appData = e.data; render(); } };
         }
 
         function render() {
@@ -491,16 +988,16 @@
             const mode = urlParams.get('force') || appData.config.mode;
             const images = appData.images;
             const cfg = appData.config[mode];
-            if(!images.length || !cfg) return;
+            if (!images.length || !cfg) return;
 
             const getStyle = () => `height:${cfg.size}px; border-radius:${cfg.radius}px; filter:drop-shadow(0 2px 4px rgba(0,0,0,${cfg.shadow}));`;
 
-            if(mode === 'grid') {
+            if (mode === 'grid') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-grid'; wrap.style.gap = `${cfg.gap}px`;
                 images.forEach(src => { const img = document.createElement('img'); img.src = src; img.style = getStyle(); wrap.appendChild(img); });
                 container.appendChild(wrap);
             }
-            else if(mode === 'rotator') {
+            else if (mode === 'rotator') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-rotator';
                 wrap.style.justifyContent = cfg.posX === 'left' ? 'flex-start' : (cfg.posX === 'right' ? 'flex-end' : 'center');
                 wrap.style.alignItems = cfg.posY === 'top' ? 'flex-start' : (cfg.posY === 'bottom' ? 'flex-end' : 'center');
@@ -509,29 +1006,29 @@
                 inner.style.maxWidth = '100%'; inner.style.maxHeight = '100%';
                 images.forEach((src, i) => {
                     const img = document.createElement('img'); img.src = src; img.style.height = `${cfg.size}px`; img.style.borderRadius = `${cfg.radius}px`;
-                    img.style.filter = `drop-shadow(0 2px 4px rgba(0,0,0,${cfg.shadow}))`; if(i===0) img.classList.add('active'); inner.appendChild(img);
+                    img.style.filter = `drop-shadow(0 2px 4px rgba(0,0,0,${cfg.shadow}))`; if (i === 0) img.classList.add('active'); inner.appendChild(img);
                 });
                 wrap.appendChild(inner); container.appendChild(wrap);
                 let idx = 0; const imgs = inner.querySelectorAll('img');
-                if(imgs.length > 1) { activeIntervals.push(setInterval(() => { imgs[idx].classList.remove('active'); idx = (idx + 1) % imgs.length; imgs[idx].classList.add('active'); }, cfg.stayTime * 1000)); }
+                if (imgs.length > 1) { activeIntervals.push(setInterval(() => { imgs[idx].classList.remove('active'); idx = (idx + 1) % imgs.length; imgs[idx].classList.add('active'); }, cfg.stayTime * 1000)); }
             }
-            else if(mode === 'ticker') {
+            else if (mode === 'ticker') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-ticker'; wrap.style.top = `${cfg.tickerY}px`;
                 const track = document.createElement('div'); track.className = 'ticker-track';
-                [...images, ...images, ...images, ...images].forEach(src => { 
-                    const img = document.createElement('img'); 
-                    img.src = src; img.style = getStyle(); 
+                [...images, ...images, ...images, ...images].forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src; img.style = getStyle();
                     // GAP CONFIG
-                    img.style.marginRight = `${cfg.gap}px`; 
-                    track.appendChild(img); 
+                    img.style.marginRight = `${cfg.gap}px`;
+                    track.appendChild(img);
                 });
                 track.style.animationDuration = `${2000 / cfg.speed}s`; wrap.appendChild(track); container.appendChild(wrap);
             }
-            else if(mode === 'bounce') {
+            else if (mode === 'bounce') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-bounce';
                 wrap.style.width = '100%'; wrap.style.height = '100%';
                 const img = document.createElement('img'); img.src = images[0]; img.style = getStyle();
-                
+
                 // Initialize at safe 0,0
                 let x = 0; let y = 0;
                 img.style.left = '0px'; img.style.top = '0px';
@@ -551,33 +1048,33 @@
 
                     // Clamp & Bounce
                     let hit = false;
-                    if(x >= maxX) { x = maxX; dx = -Math.abs(dx); hit = true; }
-                    else if(x <= 0) { x = 0; dx = Math.abs(dx); hit = true; }
+                    if (x >= maxX) { x = maxX; dx = -Math.abs(dx); hit = true; }
+                    else if (x <= 0) { x = 0; dx = Math.abs(dx); hit = true; }
 
-                    if(y >= maxY) { y = maxY; dy = -Math.abs(dy); hit = true; }
-                    else if(y <= 0) { y = 0; dy = Math.abs(dy); hit = true; }
+                    if (y >= maxY) { y = maxY; dy = -Math.abs(dy); hit = true; }
+                    else if (y <= 0) { y = 0; dy = Math.abs(dy); hit = true; }
 
-                    if(hit && images.length > 1) {
-                         currentImgIdx = (currentImgIdx + 1) % images.length;
-                         img.src = images[currentImgIdx];
+                    if (hit && images.length > 1) {
+                        currentImgIdx = (currentImgIdx + 1) % images.length;
+                        img.src = images[currentImgIdx];
                     }
-                    
+
                     img.style.transform = `translate(${x}px, ${y}px)`;
                     animFrame = requestAnimationFrame(updateBounce);
                 };
                 requestAnimationFrame(updateBounce);
             }
-            else if(mode === 'rain') {
+            else if (mode === 'rain') {
                 const wrap = document.createElement('div'); wrap.className = 'mode-rain'; wrap.style.width = '100%'; wrap.style.height = '100%'; container.appendChild(wrap);
                 const spawn = () => {
-                   const img = document.createElement('img'); img.src = images[Math.floor(Math.random() * images.length)];
-                   const size = cfg.size * (0.8 + Math.random() * 0.4);
-                   img.style.height = `${size}px`; img.style.borderRadius = `${cfg.radius}px`;
-                   img.style.left = `${Math.random() * 100}vw`; img.style.opacity = Math.random() * 0.5 + 0.5;
-                   wrap.appendChild(img);
-                   let y = -200; const speed = cfg.rainSpeed * (0.8 + Math.random() * 0.5);
-                   const fall = () => { y += speed; img.style.top = `${y}px`; if(y > window.innerHeight) { img.remove(); } else { requestAnimationFrame(fall); } };
-                   requestAnimationFrame(fall);
+                    const img = document.createElement('img'); img.src = images[Math.floor(Math.random() * images.length)];
+                    const size = cfg.size * (0.8 + Math.random() * 0.4);
+                    img.style.height = `${size}px`; img.style.borderRadius = `${cfg.radius}px`;
+                    img.style.left = `${Math.random() * 100}vw`; img.style.opacity = Math.random() * 0.5 + 0.5;
+                    wrap.appendChild(img);
+                    let y = -200; const speed = cfg.rainSpeed * (0.8 + Math.random() * 0.5);
+                    const fall = () => { y += speed; img.style.top = `${y}px`; if (y > window.innerHeight) { img.remove(); } else { requestAnimationFrame(fall); } };
+                    requestAnimationFrame(fall);
                 };
                 activeIntervals.push(setInterval(spawn, 2000 / cfg.rainDensity));
             }
@@ -587,17 +1084,58 @@
                 container.appendChild(wrap);
                 let centerIdx = 0;
                 const update3D = () => {
-                   const imgs = Array.from(wrap.querySelectorAll('.card-3d'));
-                   imgs.forEach((img, i) => {
-                       let diff = i - centerIdx;
-                       if (diff > imgs.length / 2) diff -= imgs.length; if (diff < -imgs.length / 2) diff += imgs.length;
-                       if (diff === 0) { img.style.opacity = '1'; img.style.transform = 'translateX(0) translateZ(0) scale(1.2)'; img.style.zIndex = 10; } 
-                       else if (Math.abs(diff) === 1) { img.style.opacity = '0.7'; img.style.transform = `translateX(${diff * 120}%) translateZ(-100px) rotateY(${diff * -25}deg)`; img.style.zIndex = 5; } 
-                       else { img.style.opacity = '0'; img.style.transform = `translateX(${diff * 120}%) translateZ(-200px)`; img.style.zIndex = 0; }
-                   });
-                   centerIdx = (centerIdx + 1) % images.length;
+                    const imgs = Array.from(wrap.querySelectorAll('.card-3d'));
+                    imgs.forEach((img, i) => {
+                        let diff = i - centerIdx;
+                        if (diff > imgs.length / 2) diff -= imgs.length; if (diff < -imgs.length / 2) diff += imgs.length;
+                        if (diff === 0) { img.style.opacity = '1'; img.style.transform = 'translateX(0) translateZ(0) scale(1.2)'; img.style.zIndex = 10; }
+                        else if (Math.abs(diff) === 1) { img.style.opacity = '0.7'; img.style.transform = `translateX(${diff * 120}%) translateZ(-100px) rotateY(${diff * -25}deg)`; img.style.zIndex = 5; }
+                        else { img.style.opacity = '0'; img.style.transform = `translateX(${diff * 120}%) translateZ(-200px)`; img.style.zIndex = 0; }
+                    });
+                    centerIdx = (centerIdx + 1) % images.length;
                 };
                 update3D(); activeIntervals.push(setInterval(update3D, cfg.speed3d));
+            }
+            else if (mode === 'pulse' || mode === 'spin' || mode === 'wiggle') {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex'; wrap.style.flexWrap = 'wrap';
+                wrap.style.justifyContent = 'center'; wrap.style.alignItems = 'center';
+                wrap.style.width = '100%'; wrap.style.height = '100%'; wrap.style.gap = `${cfg.gap}px`;
+                container.appendChild(wrap);
+                images.forEach((src) => {
+                    const img = document.createElement('img'); img.src = src; img.style = getStyle();
+                    img.style.transition = 'transform 0.3s ease-in-out';
+                    wrap.appendChild(img);
+                });
+
+                if (mode === 'pulse') {
+                    let scale = 1;
+                    const updatePulse = () => {
+                        scale = scale === 1 ? 1.1 : 1;
+                        wrap.querySelectorAll('img').forEach(img => img.style.transform = `scale(${scale})`);
+                    };
+                    updatePulse(); activeIntervals.push(setInterval(updatePulse, cfg.speedPulse));
+                } else if (mode === 'spin') {
+                    let rot = 0;
+                    const updateSpin = () => {
+                        rot += 180;
+                        wrap.querySelectorAll('img').forEach(img => {
+                            img.style.transition = `transform ${cfg.speedSpin}ms linear`;
+                            img.style.transform = `rotate(${rot}deg)`;
+                        });
+                    };
+                    setTimeout(updateSpin, 50); activeIntervals.push(setInterval(updateSpin, cfg.speedSpin));
+                } else if (mode === 'wiggle') {
+                    let w = 0;
+                    const updateWiggle = () => {
+                        w = w === 15 ? -15 : 15;
+                        wrap.querySelectorAll('img').forEach(img => {
+                            img.style.transition = `transform ${cfg.speedWiggle}ms ease-in-out`;
+                            img.style.transform = `rotate(${w}deg)`;
+                        });
+                    };
+                    updateWiggle(); activeIntervals.push(setInterval(updateWiggle, cfg.speedWiggle));
+                }
             }
         }
 
@@ -610,35 +1148,121 @@
         }
 
         function openModal(id) { document.getElementById(id).classList.add('open'); }
-        function closeModal(e, id) { if(e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
-        
+        function closeModal(e, id) { if (e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('open'); }
+
         function generateUrlList() {
-            const list = document.getElementById('url-list'); 
-            const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui/sponsor.html"; 
-            const modes = [ 
-                {id:'grid',n:'Grid Mode'}, 
-                {id:'rotator',n:'Rotator Mode'}, 
-                {id:'ticker',n:'Ticker Mode'}, 
-                {id:'bounce',n:'Bounce Mode'}, 
-                {id:'rain',n:'Rain Mode'}, 
-                {id:'3d',n:'3D Cover Flow'}, // ADDED
-                {id:'display',n:'Auto (Panel)'} 
+            const t = LANG_DATA[currentLang] || LANG_DATA['th'];
+            const list = document.getElementById('url-list');
+            if (!list) return;
+            const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui/sponsor.html";
+            const modes = [
+                { id: 'grid', n: t.mode_grid },
+                { id: 'rotator', n: t.mode_rotator },
+                { id: 'ticker', n: t.mode_ticker },
+                { id: 'bounce', n: t.mode_bounce },
+                { id: 'rain', n: t.mode_rain },
+                { id: '3d', n: t.mode_3d },
+                { id: 'pulse', n: t.mode_pulse },
+                { id: 'spin', n: t.mode_spin },
+                { id: 'wiggle', n: t.mode_wiggle },
+                { id: 'display', n: t.mode_display }
             ];
             list.innerHTML = modes.map(m => {
                 let params = m.id === 'display' ? '?mode=display' : `?mode=display&force=${m.id}`;
-                return `<div class="url-gen-item"><div><strong style="color:#fff;">${m.n}</strong><br><span class="url-code">${params}</span></div><button class="btn btn-primary" style="width:auto; padding:5px 10px;" onclick="copyToClip('${baseUrl}${params}')">Copy</button></div>`;
+                let fullUrl = `${baseUrl}${params}`;
+                let btnCreateText = currentLang === 'th' ? 'เพิ่มลง OBS' : 'Create';
+                return `<div class="url-gen-item">
+                    <strong style="color:#fff;">${m.n}</strong>
+                    <div style="display:flex; width:100%; gap:10px; align-items:center;">
+                        <input type="text" value="${fullUrl}" class="url-code" readonly onclick="this.select()" />
+                        <button class="btn btn-primary" style="width:70px; padding:8px; margin:0; font-size:11px;" onclick="copyToClip('${fullUrl}')">Copy</button>
+                        <button class="btn btn-success" style="width:100px; padding:8px; margin:0; font-size:11px; white-space:nowrap;" onclick="createObsSource('${m.id}', '${m.n}', '${fullUrl}')">${btnCreateText}</button>
+                    </div>
+                </div>`;
             }).join('');
         }
-        
-        function copyToClip(str) { 
+
+        async function createObsSource(sourceId, sourceName, url) {
+            const obs = new OBSWebSocket();
+            const port = document.getElementById('obs-ws-port').value || '4455';
+            const pass = document.getElementById('obs-ws-pass').value || undefined;
+            const statusEl = document.getElementById('obs-status');
+
+            try {
+                statusEl.innerText = "Connecting to OBS...";
+                statusEl.className = "obs-disconnected";
+                statusEl.style.color = "#ffdd99";
+
+                await obs.connect(`ws://127.0.0.1:${port}`, pass);
+                statusEl.innerText = "Connected! Creating source...";
+                statusEl.className = "obs-connected";
+                statusEl.style.color = "#99ff99";
+
+                // Get current Program Scene
+                const currentSceneResp = await obs.call('GetCurrentProgramScene');
+                const currentScene = currentSceneResp.currentProgramSceneName;
+
+                // Construct a unique source name
+                const baseName = `Sponsor - ${sourceName}`;
+                let finalName = baseName;
+
+                // Check if exists
+                try {
+                    const sceneItems = await obs.call('GetSceneItemList', { sceneName: currentScene });
+                    let count = 1;
+                    while (sceneItems.sceneItems.some(i => i.sourceName === finalName)) {
+                        finalName = `${baseName} (${count})`;
+                        count++;
+                    }
+                } catch (e) { }
+
+                // Add the Browser Source
+                await obs.call('CreateInput', {
+                    sceneName: currentScene,
+                    inputName: finalName,
+                    inputKind: 'browser_source',
+                    inputSettings: {
+                        url: url,
+                        width: 1920,
+                        height: 1080,
+                        fps: 60,
+                        fps_custom: true,
+                        routing: true // Control audio via OBS optionally
+                    }
+                });
+
+                const msg = currentLang === 'th' ? `สร้าง Source ใน Scene "${currentScene}" แล้ว!` : `Created in Scene "${currentScene}"!`;
+                showToast(msg);
+                statusEl.innerText = msg;
+                obs.disconnect();
+
+            } catch (err) {
+                console.error("OBS Connection Error:", err);
+                statusEl.className = "obs-disconnected";
+                statusEl.style.color = "#ff9999";
+                if (err.code === 4009) {
+                    statusEl.innerText = "Authentication failed. Password wrong?";
+                } else if (!pass) {
+                    statusEl.innerText = "Failed to connect. Is OBS WebSocket enabled on port 4455?";
+                } else {
+                    statusEl.innerText = "Connection failed: " + (err.message || err.error || "Unknown error");
+                }
+
+                const failMsg = currentLang === 'th' ? "เชื่อต่อล้มเหลว ตรวจสอบ WebSocket" : "Connection failed!";
+                showToast(failMsg);
+            }
+        }
+
+        function copyToClip(str) {
             navigator.clipboard.writeText(str).then(() => {
                 // Show Toast instead of Alert
                 const msg = currentLang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!';
                 showToast(msg);
-            }); 
+            });
         }
-        
+
         init();
     </script>
 </body>
+
 </html>
