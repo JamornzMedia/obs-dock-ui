@@ -140,6 +140,42 @@
             transform: translateY(0);
         }
 
+        .eff-flip img {
+            transform: rotateY(90deg);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .eff-flip img.active {
+            transform: rotateY(0);
+        }
+
+        .eff-drop img {
+            transform: translateY(-100px) scale(1.5);
+            transition: opacity 0.5s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .eff-drop img.active {
+            transform: translateY(0) scale(1);
+        }
+
+        .eff-spin-in img {
+            transform: rotateZ(-180deg) scale(0.2);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .eff-spin-in img.active {
+            transform: rotateZ(0) scale(1);
+        }
+
+        .eff-blur img {
+            filter: blur(20px);
+            transition: opacity 0.5s, filter 0.5s;
+        }
+
+        .eff-blur img.active {
+            filter: blur(0);
+        }
+
         /* --- MODE: TICKER --- */
         .mode-ticker {
             position: absolute;
@@ -611,6 +647,8 @@
                 <option value="pulse" data-t="mode_pulse">Pulse (Heartbeat)</option>
                 <option value="spin" data-t="mode_spin">Spin (Rotating)</option>
                 <option value="wiggle" data-t="mode_wiggle">Wiggle (Shaking)</option>
+                <option value="float" data-t="mode_float">Float (Hovering)</option>
+                <option value="swing" data-t="mode_swing">Swing (Pendulum)</option>
             </select>
         </div>
 
@@ -664,6 +702,10 @@
                     <option value="fade">Fade</option>
                     <option value="slide">Slide Up</option>
                     <option value="zoom">Zoom</option>
+                    <option value="flip">Flip 3D</option>
+                    <option value="drop">Drop Bounce</option>
+                    <option value="spin-in">Spin In</option>
+                    <option value="blur">Blur Fade</option>
                 </select>
             </div>
 
@@ -719,6 +761,22 @@
                     oninput="updateConfig('speedWiggle', this.value)">
                 <label data-t="lbl_gap">Gap (Spacing)</label>
                 <input type="range" id="inp-wiggle-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
+            </div>
+
+            <div id="sets-float" class="mode-sets hidden">
+                <label data-t="lbl_speed">Float Speed (ms)</label>
+                <input type="range" id="inp-float-speed" min="500" max="4000" step="100"
+                    oninput="updateConfig('speedFloat', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-float-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
+            </div>
+
+            <div id="sets-swing" class="mode-sets hidden">
+                <label data-t="lbl_speed">Swing Speed (ms)</label>
+                <input type="range" id="inp-swing-speed" min="500" max="4000" step="100"
+                    oninput="updateConfig('speedSwing', this.value)">
+                <label data-t="lbl_gap">Gap (Spacing)</label>
+                <input type="range" id="inp-swing-gap" min="0" max="100" oninput="updateConfig('gap', this.value)">
             </div>
         </div>
 
@@ -812,7 +870,8 @@
                 lbl_speed: "Speed", lbl_pos_y: "Position Y", lbl_density: "Density",
                 modal_help_title: "How to Use", modal_help_desc: "OBS Browser Source Setup:<br>1. Create a Browser Source in the current Scene (Size: 1920x1080).<br>2. Copy the full URL below and paste it into the URL field.<br>3. Important: Requires OBS WebSocket on Port 4455 (No password).",
                 modal_sponsor_title: "Support Creator",
-                mode_grid: "Grid (Bottom Row)", mode_rotator: "Rotator (Single Loop)", mode_ticker: "Ticker (Scrolling)", mode_bounce: "Bounce (DVD Saver)", mode_rain: "Rain (Falling)", mode_3d: "3D Cover Flow", mode_pulse: "Pulse (Heartbeat)", mode_spin: "Spin (Rotating)", mode_wiggle: "Wiggle (Shaking)", mode_display: "Auto (Panel Synchronized)"
+                mode_grid: "Grid (Bottom Row)", mode_rotator: "Rotator (Single Loop)", mode_ticker: "Ticker (Scrolling)", mode_bounce: "Bounce (DVD Saver)", mode_rain: "Rain (Falling)", mode_3d: "3D Cover Flow", mode_pulse: "Pulse (Heartbeat)", mode_spin: "Spin (Rotating)", mode_wiggle: "Wiggle (Shaking)", mode_float: "Float (Hovering)", mode_swing: "Swing (Pendulum)", mode_display: "Auto (Panel Synchronized)",
+                btn_create: "Create in OBS"
             },
             th: {
                 txt_images: "จัดการรูปภาพ", txt_drop: "ลากรูปภาพมาวางที่นี่", btn_reset: "ล้างข้อมูลทั้งหมด",
@@ -823,7 +882,7 @@
                 lbl_speed: "ความเร็ว", lbl_pos_y: "ตำแหน่งแกน Y", lbl_density: "ความหนาแน่น",
                 modal_help_title: "วิธีใช้งาน (URL Generator)", modal_help_desc: "การตั้งค่า Browser Source ใน OBS:<br>1. สร้าง Browser Source ใน Scene ปัจจุบัน ตั้งขนาดเป็น 1920x1080<br>2. ท่านสามารถกด Copy หรือลากคลุมดำลิงก์ด้านล่างเพื่อก๊อบปี้ไปใส่ในช่อง URL<br>3. จำเป็นต้องเชื่อมต่อด้วย WebSocket Port 4455 และไม่ต้องใส่รหัสผ่าน",
                 modal_sponsor_title: "ร่วมสนับสนุนนักพัฒนา",
-                mode_grid: "แบบตาราง (เรียงด้านล่าง)", mode_rotator: "แบบหมุนวน (ลูปทีละภาพ)", mode_ticker: "แบบตัววิ่ง (เลื่อนซ้าย)", mode_bounce: "แบบขยับเด้ง (DVD Saver)", mode_rain: "แบบฝนตก (หล่นจากฟ้า)", mode_3d: "แบบ 3D (คัฟเวอร์โฟลว์)", mode_pulse: "แบบชีพจร (กระเพื่อม)", mode_spin: "แบบหมุน (ควงสว่าน)", mode_wiggle: "แบบสั่น (ดุ๊กดิ๊ก)", mode_display: "อัตโนมัติ (ตามการตั้งค่า Control Panel)",
+                mode_grid: "แบบตาราง (เรียงด้านล่าง)", mode_rotator: "แบบหมุนวน (ลูปทีละภาพ)", mode_ticker: "แบบตัววิ่ง (เลื่อนซ้าย)", mode_bounce: "แบบขยับเด้ง (DVD Saver)", mode_rain: "แบบฝนตก (หล่นจากฟ้า)", mode_3d: "แบบ 3D (คัฟเวอร์โฟลว์)", mode_pulse: "แบบชีพจร (กระเพื่อม)", mode_spin: "แบบหมุน (ควงสว่าน)", mode_wiggle: "แบบสั่น (ดุ๊กดิ๊ก)", mode_float: "แบบลอยตัว (Hovering)", mode_swing: "แบบแกว่ง (ลูกตุ้ม)", mode_display: "อัตโนมัติ (ตามการตั้งค่า Control Panel)",
                 btn_create: "เพิ่มลงคิว OBS ทันที"
             }
         };
@@ -857,7 +916,9 @@
             '3d': { size: 200, radius: 10, shadow: 0.8, speed3d: 2000 },
             pulse: { size: 150, radius: 10, shadow: 0.5, speedPulse: 1000, gap: 20 },
             spin: { size: 150, radius: 10, shadow: 0.5, speedSpin: 2000, gap: 20 },
-            wiggle: { size: 150, radius: 10, shadow: 0.5, speedWiggle: 500, gap: 20 }
+            wiggle: { size: 150, radius: 10, shadow: 0.5, speedWiggle: 500, gap: 20 },
+            float: { size: 150, radius: 10, shadow: 0.5, speedFloat: 2000, gap: 20 },
+            swing: { size: 150, radius: 10, shadow: 0.5, speedSwing: 2000, gap: 20 }
         };
 
         let appData = { images: [], config: JSON.parse(JSON.stringify(DEFAULTS)) };
@@ -960,6 +1021,8 @@
                 if (mode === 'pulse') { setVal('inp-pulse-speed', cfg.speedPulse); setVal('inp-pulse-gap', cfg.gap); }
                 if (mode === 'spin') { setVal('inp-spin-speed', cfg.speedSpin); setVal('inp-spin-gap', cfg.gap); }
                 if (mode === 'wiggle') { setVal('inp-wiggle-speed', cfg.speedWiggle); setVal('inp-wiggle-gap', cfg.gap); }
+                if (mode === 'float') { setVal('inp-float-speed', cfg.speedFloat); setVal('inp-float-gap', cfg.gap); }
+                if (mode === 'swing') { setVal('inp-swing-speed', cfg.speedSwing); setVal('inp-swing-gap', cfg.gap); }
             }
             forceSync();
         }
@@ -985,7 +1048,12 @@
             activeIntervals.forEach(clearInterval); activeIntervals = []; cancelAnimationFrame(animFrame);
 
             const urlParams = new URLSearchParams(location.search);
-            const mode = urlParams.get('force') || appData.config.mode;
+            const forceMode = urlParams.get('force');
+            let mode = forceMode || appData.config.mode;
+
+            // Check if mode is 'display' and use the config mode instead
+            if (mode === 'display') mode = appData.config.mode;
+
             const images = appData.images;
             const cfg = appData.config[mode];
             if (!images.length || !cfg) return;
@@ -1096,7 +1164,7 @@
                 };
                 update3D(); activeIntervals.push(setInterval(update3D, cfg.speed3d));
             }
-            else if (mode === 'pulse' || mode === 'spin' || mode === 'wiggle') {
+            else if (mode === 'pulse' || mode === 'spin' || mode === 'wiggle' || mode === 'float' || mode === 'swing') {
                 const wrap = document.createElement('div');
                 wrap.style.display = 'flex'; wrap.style.flexWrap = 'wrap';
                 wrap.style.justifyContent = 'center'; wrap.style.alignItems = 'center';
@@ -1135,6 +1203,32 @@
                         });
                     };
                     updateWiggle(); activeIntervals.push(setInterval(updateWiggle, cfg.speedWiggle));
+                } else if (mode === 'float') {
+                    let y = 0;
+                    const updateFloat = () => {
+                        y = y === 20 ? -20 : 20;
+                        wrap.querySelectorAll('img').forEach((img, i) => {
+                            // slight offset for each image
+                            setTimeout(() => {
+                                img.style.transition = `transform ${cfg.speedFloat}ms ease-in-out`;
+                                img.style.transform = `translateY(${y}px)`;
+                            }, i * 200);
+                        });
+                    };
+                    updateFloat(); activeIntervals.push(setInterval(updateFloat, cfg.speedFloat));
+                } else if (mode === 'swing') {
+                    let a = 0;
+                    wrap.querySelectorAll('img').forEach(img => img.style.transformOrigin = 'top center');
+                    const updateSwing = () => {
+                        a = a === 20 ? -20 : 20;
+                        wrap.querySelectorAll('img').forEach((img, i) => {
+                            setTimeout(() => {
+                                img.style.transition = `transform ${cfg.speedSwing}ms ease-in-out`;
+                                img.style.transform = `rotate(${a}deg)`;
+                            }, i * 200);
+                        });
+                    };
+                    updateSwing(); activeIntervals.push(setInterval(updateSwing, cfg.speedSwing));
                 }
             }
         }
@@ -1165,10 +1259,12 @@
                 { id: 'pulse', n: t.mode_pulse },
                 { id: 'spin', n: t.mode_spin },
                 { id: 'wiggle', n: t.mode_wiggle },
+                { id: 'float', n: t.mode_float },
+                { id: 'swing', n: t.mode_swing },
                 { id: 'display', n: t.mode_display }
             ];
             list.innerHTML = modes.map(m => {
-                let params = m.id === 'display' ? '?mode=display' : `?mode=display&force=${m.id}`;
+                let params = (m.id === 'display' || m.id === 'auto') ? '?mode=display' : `?mode=display&force=${m.id}`;
                 let fullUrl = `${baseUrl}${params}`;
                 let btnCreateText = currentLang === 'th' ? 'เพิ่มลง OBS' : 'Create';
                 return `<div class="url-gen-item">
