@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Stinger Pro v1.0 - Jamornz Media</title>
+    <style>
+        :root {
+            --primary: #45a29e;
+            --secondary: #66fcf1;
+            --bg-dark: #0b0c10;
+            --panel-bg: #1f2833;
+            --border: #2c3643;
+            --text-main: #c5c6c7;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .topbar {
+            height: 60px;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .dev-logo {
+            height: 40px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+
+        .dev-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dev-info h1 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--secondary);
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .dev-info span {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Layout */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 340px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 25px 20px;
+            gap: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #171f28 0%, var(--bg-dark) 100%);
+            position: relative;
+        }
+
+        /* App Header styling (Cool Description) */
+        .app-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .app-header h2 {
+            font-size: 32px;
+            margin: 0 0 5px 0;
+            color: var(--secondary);
+            text-shadow: 0 0 10px rgba(102, 252, 241, 0.3);
+        }
+
+        .app-header p {
+            margin: 0;
+            color: #8b96a5;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Controls Panel */
+        .control-group {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-title {
+            font-size: 13px;
+            color: var(--secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+        }
+
+        /* UI Elements */
+        label {
+            font-size: 13px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        input[type="file"] {
+            font-size: 12px;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
+            padding: 5px;
+            border: 1px dashed var(--primary);
+            width: 100%;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        /* Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            background: #0b0c10;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--secondary);
+            margin-top: -6px;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--secondary);
+        }
+
+        /* Checkbox Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #0b0c10;
+            transition: .3s;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-main);
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+            background-color: #fff;
+        }
+
+        /* Color Picker */
+        .color-picker-wrap {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        /* Circular Dial for Angle */
+        .dial-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px inset var(--border);
+            justify-content: center;
+        }
+
+        .dial {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid var(--border);
+            position: relative;
+            cursor: pointer;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05), #0b0c10);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8), 0 0 10px rgba(102, 252, 241, 0.1);
+        }
+
+        .dial-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 2px;
+            background: var(--secondary);
+            transform-origin: left center;
+            transform: translateY(-50%) rotate(15deg);
+            box-shadow: 0 0 5px var(--secondary);
+            pointer-events: none;
+        }
+
+        .dial-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--secondary);
+            width: 50px;
+            text-align: center;
+            text-shadow: 0 0 5px rgba(102, 252, 241, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--secondary);
+            border: 1px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        .btn:hover {
+            background: rgba(69, 162, 158, 0.2);
+            box-shadow: 0 0 15px rgba(69, 162, 158, 0.3);
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #d31027, #ea384d);
+            border: none;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(211, 16, 39, 0.4);
+        }
+
+        .btn-record:hover {
+            background: linear-gradient(135deg, #ea384d, #ff4b5c);
+            box-shadow: 0 6px 20px rgba(211, 16, 39, 0.6);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            background-color: #000;
+            /* ลายตารางหมากรุก Alpha Layer */
+            background-image: linear-gradient(45deg, #111 25%, transparent 25%),
+                linear-gradient(-45deg, #111 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #111 75%),
+                linear-gradient(-45deg, transparent 75%, #111 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(69, 162, 158, 0.2);
+        }
+
+        canvas {
+            width: 960px;
+            height: 540px;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <img src="https://jamornzmedia.github.io/obs-dock-ui/JAMORNzMEDIA-2025.png" alt="Jamornz Media Logo"
+            class="dev-logo"
+            onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg'; this.onerror=null;">
+        <div class="dev-info">
+            <h1>JAMORNZ MEDIA</h1>
+            <span>Stinger Developer v1.0</span>
+        </div>
+        <div style="margin-left: auto;">
+            <a href="https://ezdn.app/Jamornz" target="_blank" style="text-decoration:none;">
+                <button class="btn"
+                    style="padding: 8px 15px; border-color: #ffb84d; color: #ffb84d; font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                    <svg fill="currentColor" width="16" height="16" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                    สนับสนุนนักพัฒนา
+                </button>
+            </a>
+        </div>
+    </div>
+
+    <!-- Workspace Layout -->
+    <div class="workspace">
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <div class="control-group">
+                <div class="control-title">1. แหล่งโลโก้ตั้งต้น</div>
+                <input type="file" id="logoUpload" accept="image/*">
+                <label style="margin-top:5px;">ขนาดของโลโก้:
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="range" id="logoSize" min="10" max="150" value="35" style="width:120px;">
+                        <span id="logoSizeText" style="color:var(--secondary); font-weight:bold;">35%</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">2. เอฟเฟกต์แสงปาด (Alpha Matte)</div>
+                <label>
+                    <span style="font-size:12px; color:#aaa;">ปาดแสงเฉพาะส่วนที่เป็นเนื้อโลโก้เท่านั้น</span>
+                    <label class="switch">
+                        <input type="checkbox" id="enableSweep" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">3. ฉากสีปิดรอยต่อ (Curtain Panels)</div>
+                <label>
+                    <span style="font-size:12px; color:#aaa;">เปิดการใช้ฉากปิดแบล็คกราวรอบทิศทาง</span>
+                    <label class="switch">
+                        <input type="checkbox" id="enablePanels" checked>
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <div style="margin-top: 5px;">
+                    <label style="margin-bottom:8px;">สีฝั่งซ้าย / ขวา:</label>
+                    <div class="color-picker-wrap">
+                        <input type="color" id="bgColLeft" value="#ff0055" title="สีฉากฝั่งซ้าย">
+                        <input type="color" id="bgColRight" value="#00aaff" title="สีฉากฝั่งขวา">
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <label>ปรับองศาการเลื่อนฉากปิด (วงล้อระบุพิกัด):</label>
+                    <div class="dial-container">
+                        <div class="dial" id="angleDial" title="คลิกค้างแล้วหมุนเพื่อปรับองศา">
+                            <div class="dial-indicator" id="dialIndicator"></div>
+                        </div>
+                        <div class="dial-value"><span id="angleValue">90</span>°</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">4. โหมดดูตัวอย่าง (Preview Mode)</div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <label>
+                        <span style="font-size:12px; color:#aaa; margin-right: 10px;">เล่นวนซ้ำ (Loop)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="previewLoop">
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn" id="btnPreview">▶ เล่น / จำลอง</button>
+                <button class="btn btn-record" id="btnRecord">บันทึกวิดีโอ .WebM</button>
+            </div>
+        </div>
+
+        <!-- Main Preview Area -->
+        <div class="main-view">
+            <div class="app-header">
+                <h2>CineSync Transition Generator</h2>
+                <p>สร้างทรานซิชันสลับฉากระดับมืออาชีพ พร้อมระบบเช็ค Alpha Channel แบบสมบูรณ์แบบ (ความยาว 2.0 วินาที)</p>
+            </div>
+
+            <div class="canvas-container">
+                <!-- Canvas Buffer ขนาดเต็ม 1080p เพื่อใช้ Export Video -->
+                <canvas id="stingerCanvas" width="1920" height="1080"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // --- Shared Variables ---
+        var currentAngle = 90;
+        var dial = document.getElementById('angleDial');
+        var indicator = document.getElementById('dialIndicator');
+        var angleText = document.getElementById('angleValue');
+        var isDragging = false;
+
+        var canvas = document.getElementById('stingerCanvas');
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        var duration = 2000; // 2 วินาที (2000ms)
+        var imageObj = null;
+        var previewRaf = null;
+        var startTime = 0;
+        var isRecording = false;
+        var isPlaying = false;
+
+        // --- Dial Widget Logic ---
+        function setAngle(deg) {
+            currentAngle = deg;
+            indicator.style.transform = "translateY(-50%) rotate(" + deg + "deg)";
+            angleText.textContent = deg;
+            if (typeof liveUpdate === 'function') liveUpdate();
+        }
+
+        dial.addEventListener('mousedown', function (e) {
+            isDragging = true;
+            updateAngle(e);
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (isDragging) updateAngle(e);
+        });
+        window.addEventListener('mouseup', function () {
+            isDragging = false;
+        });
+
+        function updateAngle(e) {
+            var rect = dial.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            var rad = Math.atan2(e.clientY - cy, e.clientX - cx);
+            var deg = Math.round(rad * 180 / Math.PI);
+            setAngle(deg);
+        }
+
+        setAngle(90); // Initialize visual
+
+        // --- Video Engine Logic ---
+        function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+
+        function drawFrame(time) {
+            var w = canvas.width;
+            var h = canvas.height;
+
+            // 0. ล้างหน้าจอให้โปร่งใส 100%
+            ctx.clearRect(0, 0, w, h);
+
+            if (!imageObj) return;
+
+            var t = Math.min(Math.max(time / duration, 0), 1);
+            var scale = 1.0;
+            var opacity = 1.0;
+            var sweepProgress = -1;
+
+            // --- Timeline อนิเมชันโลโก้ ---
+            var p1 = 0.2;   // 0-0.4s: ซูมลงมาอยู่กลาง
+            var p2s = 0.25; // 0.5s: แสงเริ่มปาด
+            var p2e = 0.6;  // 1.2s: แสงปาดเสร็จ
+            var p3s = 0.65; // 1.3s: เริ่มซูมหนีแบบสุดแรง
+            var p3e = 0.85; // 1.7s: รูปซูมเต็มจอแล้ว
+            var p4e = 1.0;  // 2.0s: โลโก้ค่อยๆ เฟดจางหาย
+
+            if (t < p1) {
+                var progress1 = t / p1;
+                scale = 4.0 - (3.0 * easeOutCubic(progress1));
+            } else if (t < p3s) {
+                scale = 1.0;
+            } else if (t < p3e) {
+                var progress2 = (t - p3s) / (p3e - p3s);
+                scale = 1.0 + (150.0 * Math.pow(progress2, 5));
+            } else {
+                scale = 151.0;
+                var progress3 = (t - p3e) / (p4e - p3e);
+                opacity = 1.0 - progress3; // Fade Out Logo!
+            }
+
+            if (t >= p2s && t <= p2e) {
+                sweepProgress = (t - p2s) / (p2e - p2s);
+            }
+
+            // --- Timeline ผ้าม่านฉากปิดจอ ---
+            // ปิดตอนต้นคลิป, และไปเปิดค้างไว้ตอนที่ โลโก้เริ่ม Fade out
+            var pPanelsCloseEnd = 0.25;  // เข้ามาปิดมิดตอน 0.5s (เพื่อให้รับช่วงต่อจากการซูมได้แบบพอดี)
+            var pPanelsOpenStart = 0.70; // (ปรับใหม่จาก 0.85) เริ่มเปิดม่านเร็วขึ้นนิดนึง เพื่อให้มี 'เวลาเปิดออก' ลากยาวกว่าเดิม (สโลว์)
+
+            var panelProgress = 0; // 0 = เปิดโล้น, 1 = ปิดมิดหน้าจอ
+            if (t < pPanelsCloseEnd) {
+                var p4 = t / pPanelsCloseEnd;
+                panelProgress = easeOutCubic(p4); // เลื่อนเข้ามาปิด
+            } else if (t < pPanelsOpenStart) {
+                panelProgress = 1.0; // แช่ปิดหน้าจอเอาไว้
+            } else {
+                // ค่อยๆ เลื่อนม่านเปิดออกแบบช้าๆ จนหมดคลิป 
+                var p5 = (t - pPanelsOpenStart) / (1.0 - pPanelsOpenStart);
+
+                // ใช้การคำนวณแบบ InOutQuad หรือ Linear ง่ายๆ แทน Cubic ដើម្បីให้รู้สึกว่าเปิดสมูธและดึงระยะเวลาได้เต็ม 100%
+                var smoothOpen = p5 < 0.5 ? 2 * p5 * p5 : 1 - Math.pow(-2 * p5 + 2, 2) / 2;
+
+                panelProgress = 1.0 - smoothOpen; // ถอยผ้าม่านกลับ
+            }
+
+            // --- Render Phase ---
+
+            // Render โลโก้เป็นชั้นล่างสุด (เพื่อรองรับ Alpha Sweeping)
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            var logoSizePercent = parseInt(document.getElementById('logoSize').value) / 100;
+            var imgAspect = imageObj.width / imageObj.height;
+            var baseHeight = h * logoSizePercent;
+            var baseWidth = baseHeight * imgAspect;
+            var drawW = baseWidth * scale;
+            var drawH = baseHeight * scale;
+            var drawX = (w - drawW) / 2;
+            var drawY = (h - drawH) / 2;
+
+            ctx.globalCompositeOperation = 'source-over'; // โหมดปกติ
+            ctx.drawImage(imageObj, drawX, drawY, drawW, drawH);
+            ctx.restore();
+
+            // Render แสงปาดหน้า โดยเคลือบเงื่อนไข "วาดแสดงเฉพาะเนื้อสีโลโก้ที่ถูกวาดไปแล้วก่อนหน้า" !!
+            var isSweepEnabled = document.getElementById('enableSweep').checked;
+            if (isSweepEnabled && sweepProgress >= 0) {
+                ctx.save();
+                // Command พระเอก: ทับลงบนจุดที่มีพิกเซลเท่านั้น (Alpha Channel Composite)
+                ctx.globalCompositeOperation = 'source-atop';
+
+                var sweepX = w * (sweepProgress * 1.5 - 0.25);
+                var grad = ctx.createLinearGradient(-400, 0, 400, 0);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                ctx.fillStyle = grad;
+                ctx.translate(sweepX, h / 2);
+                ctx.rotate(25 * Math.PI / 180);
+                ctx.fillRect(-400, -h, 800, h * 2);
+                ctx.restore();
+            }
+
+            // Render ผ้าม่าน ให้ทำงานอยู่ "ด้านหลังสุดเสมอ" (กันไม่ให้แสงปาดหน้าไปโดน)
+            var isPanelsEnabled = document.getElementById('enablePanels').checked;
+            if (isPanelsEnabled && panelProgress > 0.001) {
+                ctx.save();
+                // นำฉากหลังไปวางซ้อนท้ายสุดของชั้นเลเยอร์การวาด! (เคล็ดลับความเนียน)
+                ctx.globalCompositeOperation = 'destination-over';
+
+                ctx.globalAlpha = 1.0;
+                var colLeft = document.getElementById('bgColLeft').value;
+                var colRight = document.getElementById('bgColRight').value;
+                // หักลบ 90 ให้ 90 องศาคือ Vertical Split เปิดแนวตั้ง
+                var bgAngleRad = (currentAngle - 90) * Math.PI / 180;
+
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate(bgAngleRad);
+
+                // ความยาวผ้าใบม่านแบบกะเผื่อกรอบหมุน 1.5 เท่า
+                var extVal = Math.max(w, h) * 1.5;
+                var offsetDistance = extVal * (1.0 - panelProgress);
+
+                // ม่านซ้าย
+                ctx.fillStyle = colLeft;
+                ctx.fillRect(-extVal - offsetDistance, -extVal, extVal, extVal * 2);
+
+                // ม่านขวา
+                ctx.fillStyle = colRight;
+                ctx.fillRect(offsetDistance, -extVal, extVal, extVal * 2);
+
+                ctx.restore();
+            }
+
+            // คืนค่า Context วาดรูปให้เป็นปกติ
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function playPreview() {
+            if (isRecording) return;
+
+            isPlaying = true;
+            startTime = performance.now();
+            if (previewRaf) cancelAnimationFrame(previewRaf);
+
+            function render(now) {
+                var elapsed = now - startTime;
+
+                drawFrame(elapsed);
+                if (elapsed < duration) {
+                    previewRaf = requestAnimationFrame(render);
+                } else {
+                    // เล่นจบแล้ว เช็คว่าเปิด Loop ไหม
+                    var isLooping = document.getElementById('previewLoop').checked;
+                    if (isLooping && !isRecording) {
+                        startTime = performance.now(); // รีเซ็ตเวลาแล้วเล่นใหม่
+                        previewRaf = requestAnimationFrame(render);
+                    } else {
+                        isPlaying = false;
+                    }
+                }
+            }
+            previewRaf = requestAnimationFrame(render);
+        }
+
+        // Live updating attributes - when range or colors change, invoke preview draw
+        function liveUpdate() {
+            if (isRecording) return;
+            // ถ้าภาพหยุดนิ่ง (ไม่ว่าเพิ่งเริ่มเปิดหน้าเว็บ หรือวิดีโอเล่นจบแล้ว) และมีการเลื่อนปรับค่า 
+            // ให้วาดเฟรม 1 วิ (ตรงกลาง) โชว์ขึ้นมาทันทีเพื่อให้เห็นว่าภาพเปลี่ยนไปอย่างไร
+            if (!isPlaying) {
+                drawFrame(1000);
+            }
+        }
+
+        document.getElementById('logoSize').addEventListener('input', function (e) {
+            document.getElementById('logoSizeText').textContent = e.target.value + '%';
+            liveUpdate();
+        });
+        document.getElementById('bgColLeft').addEventListener('input', liveUpdate);
+        document.getElementById('bgColRight').addEventListener('input', liveUpdate);
+        document.getElementById('enablePanels').addEventListener('change', liveUpdate);
+        document.getElementById('enableSweep').addEventListener('change', liveUpdate);
+
+        document.getElementById('previewLoop').addEventListener('change', function () {
+            if (this.checked) {
+                if (!isPlaying) playPreview();
+            }
+        });
+
+        var img = new Image();
+        img.onload = function () {
+            imageObj = img;
+            playPreview();
+        };
+        img.onerror = function () {
+            console.error("Failed to load initial image");
+        };
+        // ใช้ Base64 SVG เป็นค่าเริ่มต้นเพื่อหลีกเลี่ยงปัญหา CORS เมื่อเปิดไฟล์ .html ตรงๆ
+        img.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjgwIiBmaWxsPSIjNjZmY2YxIi8+PHRleHQgeD0iMTAwIiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjMwIiBmaWxsPSIjMGIwYzEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MT0dPPC90ZXh0Pjwvc3ZnPg==";
+
+        document.getElementById('logoUpload').addEventListener('change', function (e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    var newImg = new Image();
+                    newImg.onload = function () {
+                        imageObj = newImg;
+                        playPreview();
+                    };
+                    newImg.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('btnPreview').addEventListener('click', playPreview);
+
+        document.getElementById('btnRecord').addEventListener('click', function () {
+            if (isRecording || !imageObj) return;
+
+            // เช็คว่าบราวเซอร์รองรับการอัดวิดีโอหรือไม่ (IE ไม่รองรับ)
+            if (typeof MediaRecorder === 'undefined' || typeof canvas.captureStream === 'undefined') {
+                alert("เบราว์เซอร์ของคุณไม่รองรับการนำออกวิดีโอพรีวิว (MediaRecorder)\\nกรุณาใช้งานผ่าน Microsoft Edge, Google Chrome หรือเบราว์เซอร์รุ่นใหม่ๆ แทน Internet Explorer");
+                return;
+            }
+
+            isRecording = true;
+
+            var btn = document.getElementById('btnRecord');
+            btn.textContent = "กำลังเข้ารหัสวิดีโอ...";
+            btn.style.background = "#6c757d";
+            btn.style.boxShadow = "none";
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            var stream = canvas.captureStream(60);
+
+            var options = { mimeType: 'video/webm;codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm;codecs=vp8' };
+            }
+
+            var recorder = new MediaRecorder(stream, options);
+            var chunks = [];
+            recorder.ondataavailable = function (e) { chunks.push(e.data); };
+            recorder.onstop = function () {
+                var blob = new Blob(chunks, { type: 'video/webm' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'obs_stinger.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+
+                isRecording = false;
+                btn.textContent = "บันทึกวิดีโอ .WebM";
+                btn.style.background = "";
+                btn.style.boxShadow = "";
+            };
+
+            recorder.start();
+
+            // หน่วงรอกระบวนการ
+            setTimeout(function () {
+                var recordStart = performance.now();
+                function renderRecord(now) {
+                    var elapsed = now - recordStart;
+                    drawFrame(elapsed);
+                    if (elapsed < duration) {
+                        requestAnimationFrame(renderRecord);
+                    } else {
+                        drawFrame(duration);
+                        setTimeout(function () { recorder.stop(); }, 50);
+                    }
+                }
+                requestAnimationFrame(renderRecord);
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>
