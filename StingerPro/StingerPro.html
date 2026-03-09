@@ -2,6 +2,14 @@
 <html lang="th">
 
 <head>
+    <script type="text/javascript">
+        var sc_project = 13147874;
+        var sc_invisible = 0;
+        var sc_security = "550e33c0";
+        var scJsHost = "https://";
+        document.write("<sc" + "ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OBS Stinger Pro v1.0 - Jamornz Media</title>
@@ -72,13 +80,13 @@
         }
 
         .sidebar {
-            width: 340px;
+            width: 320px;
             background: var(--panel-bg);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 25px 20px;
-            gap: 20px;
+            padding: 15px 15px;
+            gap: 12px;
             overflow-y: auto;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
             z-index: 10;
@@ -96,22 +104,35 @@
 
         /* App Header styling (Cool Description) */
         .app-header {
-            text-align: center;
+            text-align: left;
             margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box;
         }
 
         .app-header h2 {
-            font-size: 32px;
-            margin: 0 0 5px 0;
+            font-size: 20px;
+            margin: 0 0 10px 0;
             color: var(--secondary);
             text-shadow: 0 0 10px rgba(102, 252, 241, 0.3);
         }
 
         .app-header p {
-            margin: 0;
-            color: #8b96a5;
-            font-size: 14px;
+            margin: 0 0 5px 0;
+            color: #d1d5db;
+            font-size: 13px;
             letter-spacing: 0.5px;
+            line-height: 1.5;
+        }
+
+        .app-header .step-title {
+            color: var(--primary);
+            font-weight: bold;
         }
 
         /* Controls Panel */
@@ -138,7 +159,7 @@
 
         /* UI Elements */
         label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-main);
             display: flex;
             align-items: center;
@@ -146,7 +167,7 @@
         }
 
         input[type="file"] {
-            font-size: 12px;
+            font-size: 11px;
             color: #fff;
             background: rgba(0, 0, 0, 0.4);
             border-radius: 4px;
@@ -264,9 +285,9 @@
         .dial-container {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
             background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
             border: 1px inset var(--border);
             justify-content: center;
@@ -310,10 +331,10 @@
             background: rgba(255, 255, 255, 0.05);
             color: var(--secondary);
             border: 1px solid var(--primary);
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.2s;
             text-transform: uppercase;
@@ -451,21 +472,29 @@
                 </div>
             </div>
 
+
+
             <div class="control-group">
-                <div class="control-title">4. โหมดดูตัวอย่าง (Preview Mode)</div>
+                <div class="control-title">5. ตั้งค่าวิดีโอ (Video Settings)</div>
                 <div style="display: flex; gap: 20px; align-items: center;">
-                    <label>
-                        <span style="font-size:12px; color:#aaa; margin-right: 10px;">เล่นวนซ้ำ (Loop)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="previewLoop">
-                            <span class="slider"></span>
-                        </label>
+                    <label style="width: 100%;">
+                        <span style="font-size:12px; color:#aaa; margin-right: 10px;">คุณภาพ / บิทเรท</span>
+                        <select id="videoBitrate"
+                            style="background: rgba(0, 0, 0, 0.4); color: white; border: 1px dashed var(--primary); padding: 5px; border-radius: 4px; flex: 1; cursor: pointer; font-size: 12px;">
+                            <option value="1000000">1 Mbps (ประหยัดพื้นที่)</option>
+                            <option value="2500000">2.5 Mbps (มาตรฐาน)</option>
+                            <option value="5000000" selected>5 Mbps (ชัด)</option>
+                            <option value="10000000">10 Mbps (ชัดมาก)</option>
+                            <option value="20000000">20 Mbps (ระดับสูงสุดปานกลาง)</option>
+                            <option value="40000000">40 Mbps (คมชัดพิเศษ)</option>
+                            <option value="50000000">50 Mbps (สตูดิโอ)</option>
+                            <option value="60000000">60 Mbps (สเกลภาพยนตร์)</option>
+                        </select>
                     </label>
                 </div>
             </div>
 
             <div class="btn-group">
-                <button class="btn" id="btnPreview">▶ เล่น / จำลอง</button>
                 <button class="btn btn-record" id="btnRecord">บันทึกวิดีโอ .WebM</button>
             </div>
         </div>
@@ -473,15 +502,54 @@
         <!-- Main Preview Area -->
         <div class="main-view">
             <div class="app-header">
-                <h2>CineSync Transition Generator</h2>
-                <p>สร้างทรานซิชันสลับฉากระดับมืออาชีพ พร้อมระบบเช็ค Alpha Channel แบบสมบูรณ์แบบ (ความยาว 2.0 วินาที)</p>
+                <h2>วิธีการใช้งาน Stinger Transition</h2>
+                <p><span class="step-title">ฝั่งสร้าง (UI):</span> 1. อัปโหลดโลโก้ > 2. ปรับขนาด > 3. เลือกสีฉาก > 4.
+                    เลือกความคมชัด > 5. กด "บันทึกวิดีโอ .WebM"</p>
+                <p><span class="step-title">ฝั่ง OBS:</span> 1. เพิ่ม Scene Transition แบบ Stinger > 2.
+                    เบราว์ไฟล์วิดีโอที่บันทึกไว้ > 3. ตั้งค่า Transition Point Type: <b>Time (milliseconds)</b> > 4.
+                    ตั้งค่า Transition Point: <b>1000</b></p>
             </div>
 
             <div class="canvas-container">
                 <!-- Canvas Buffer ขนาดเต็ม 1080p เพื่อใช้ Export Video -->
                 <canvas id="stingerCanvas" width="1920" height="1080"></canvas>
             </div>
+
+            <!-- Preview Controls (Under Canvas) -->
+            <div
+                style="margin-top: 20px; display: flex; gap: 20px; align-items: center; background: var(--panel-bg); padding: 15px 25px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <button class="btn" id="btnPreview" style="flex: none; padding: 10px 25px; min-width: 150px;">▶
+                    เล่นตัวอย่าง</button>
+
+                <div style="width: 1px; height: 30px; background: var(--border); margin: 0 10px;"></div>
+
+                <label style="cursor: pointer;">
+                    <span style="font-size:13px; color:var(--text-main); margin-right: 10px;">เล่นวนซ้ำ (Loop)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="previewLoop">
+                        <span class="slider"></span>
+                    </label>
+                </label>
+
+                <label style="cursor: pointer;">
+                    <span style="font-size:13px; color:var(--text-main); margin-right: 10px;">หยุดค้างที่ 1
+                        วินาที</span>
+                    <label class="switch">
+                        <input type="checkbox" id="pauseAtOne">
+                        <span class="slider"></span>
+                    </label>
+                </label>
+            </div>
         </div>
+    </div>
+
+    <!-- Counters -->
+    <div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; text-align: right; opacity: 0.5; transition: opacity 0.3s;"
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">
+        <script type="text/javascript" src="https://www.free-counters.org/count/jlha"></script><br>
+        <a href='https://www.acadoo.de/' style="color: #666; font-size: 10px; text-decoration: none;">acadoo</a>
+        <script type='text/javascript'
+            src='https://www.whomania.com/ctr?id=516e05dc05b23bc6bbf395c5b00c54eb3420b17f'></script>
     </div>
 
     <!-- Script Logic -->
@@ -654,9 +722,9 @@
                 var extVal = Math.max(w, h) * 1.5;
                 var offsetDistance = extVal * (1.0 - panelProgress);
 
-                // ม่านซ้าย
+                // ม่านซ้าย (ยืดเกินระยะกึ่งกลางนิดนึง เพื่อทับรอยต่อ)
                 ctx.fillStyle = colLeft;
-                ctx.fillRect(-extVal - offsetDistance, -extVal, extVal, extVal * 2);
+                ctx.fillRect(-extVal - offsetDistance, -extVal, extVal + 5, extVal * 2);
 
                 // ม่านขวา
                 ctx.fillStyle = colRight;
@@ -678,6 +746,13 @@
 
             function render(now) {
                 var elapsed = now - startTime;
+
+                var isPausingAtOne = document.getElementById('pauseAtOne').checked;
+                if (isPausingAtOne && elapsed >= 1000) {
+                    drawFrame(1000);
+                    isPlaying = false;
+                    return; // Pause the animation right here
+                }
 
                 drawFrame(elapsed);
                 if (elapsed < duration) {
@@ -769,9 +844,10 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             var stream = canvas.captureStream(60);
 
-            var options = { mimeType: 'video/webm;codecs=vp9' };
+            var selectedBitrate = parseInt(document.getElementById('videoBitrate').value, 10);
+            var options = { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: selectedBitrate };
             if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options = { mimeType: 'video/webm;codecs=vp8' };
+                options = { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: selectedBitrate };
             }
 
             var recorder = new MediaRecorder(stream, options);
