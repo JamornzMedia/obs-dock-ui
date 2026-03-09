@@ -619,6 +619,8 @@
             var opacity = 1.0;
             var sweepProgress = -1;
 
+            var logoSizePercent = parseInt(document.getElementById('logoSize').value) / 100;
+
             // --- Timeline อนิเมชันโลโก้ ---
             var p1 = 0.2;   // 0-0.4s: ซูมลงมาอยู่กลาง
             var p2s = 0.25; // 0.5s: แสงเริ่มปาด
@@ -629,7 +631,10 @@
 
             if (t < p1) {
                 var progress1 = t / p1;
-                scale = 4.0 - (3.0 * easeOutCubic(progress1));
+                // คำนวณสเกลโดยการบวกเพิ่ม (% ที่เกินมาจากขนาดตั้งต้น) ทำให้การซูมระยะสม่ำเสมอกว่าแบบคูณ 4
+                var zoomAdd = 2.0; // บวกไป 200% ของขนาดหน้าจอ
+                var startScale = (logoSizePercent + zoomAdd) / logoSizePercent;
+                scale = startScale - ((startScale - 1.0) * easeOutCubic(progress1));
             } else if (t < p3s) {
                 scale = 1.0;
             } else if (t < p3e) {
