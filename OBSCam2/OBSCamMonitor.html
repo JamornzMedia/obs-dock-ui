@@ -600,6 +600,9 @@
                     if (savedName) {
                         await db.ref(`OBSCam_rooms/${roomId}/config/roomName`).set(savedName);
                     }
+                    
+                    // Auto-update OBS if it's a fresh session (meaning user had OBS open from previous usage)
+                    autoUpdateExistingSources(roomId);
                 }
 
                 await db.ref(`OBSCam_rooms/${roomId}/active`).set(true);
@@ -700,13 +703,13 @@
             if(sourceListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
             
             const srcListener = (snap) => {
-                const isReady = snap.val();
+                const ts = snap.val();
                 const ob = document.getElementById(`badge-obs-${cIdx}`);
                 if (ob) {
-                    if (isReady) {
+                    if (ts) {
                         ob.className = "status-badge bg-green-600 text-white";
                         ob.innerHTML = '<i class="fas fa-desktop"></i> READY';
-                        ob.dataset.lastSeen = Date.now();
+                        ob.dataset.lastSeen = typeof ts === 'number' ? ts : Date.now();
                     } else {
                         ob.className = "status-badge bg-gray-800 text-gray-500";
                         ob.innerHTML = '<i class="fas fa-desktop"></i> OFF';
@@ -802,9 +805,9 @@
         async function startReceiver(rid, cIdx) {
             // Keep-alive for control panel to know this browser source is open
             const readyRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/source_ready`);
-            readyRef.set(true);
+            readyRef.set(Date.now());
             readyRef.onDisconnect().remove();
-            setInterval(() => readyRef.set(true), 10000);
+            setInterval(() => readyRef.set(Date.now()), 10000);
 
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
@@ -853,7 +856,6 @@
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
                 try {
-                    document.getElementById('waiting-screen').classList.add('hidden');
                     if (!pc.currentRemoteDescription) {
                         await pc.setRemoteDescription(new RTCSessionDescription(data));
                         const answer = await pc.createAnswer();
@@ -938,6 +940,15 @@
 
             const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
             
+            await autoUpdateExistingSources(newRoomId);
+
+            localStorage.setItem('obs_v2_room_id', newRoomId);
+            if (roomId) db.ref(`OBSCam_rooms/${roomId}`).remove();
+            
+            location.reload();
+        }
+
+        async function autoUpdateExistingSources(newRoomId) {
             try {
                 const obs = new OBSWebSocket();
                 await obs.connect('ws://localhost:4455');
@@ -956,11 +967,6 @@
             } catch(e) { 
                 console.log('[OBS WS] Not available, skipping auto-update URLs');
             }
-
-            localStorage.setItem('obs_v2_room_id', newRoomId);
-            if (roomId) db.ref(`OBSCam_rooms/${roomId}`).remove();
-            
-            location.reload();
         }
 
         // ============ Utility Functions ============

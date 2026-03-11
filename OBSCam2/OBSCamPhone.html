@@ -616,7 +616,7 @@
                 liveBitSel.value = customBitrateVal;
             } else { liveBitSel.value = currentBitrateSet; }
 
-            let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
+            let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal, min: (fpsVal > 30 ? 59 : 24) } };
             if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
 
             let audioConstraints = true;
@@ -626,7 +626,14 @@
 
             try {
                 try { myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); }
-                catch (err) { delete videoConstraints.facingMode; delete videoConstraints.deviceId; myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); }
+                catch (err) {
+                    videoConstraints.frameRate = { ideal: fpsVal }; // Fallback to ideal if strict min fails
+                    try { myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); }
+                    catch(err2) {
+                        delete videoConstraints.facingMode; delete videoConstraints.deviceId; 
+                        myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
+                    }
+                }
 
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
@@ -917,7 +924,7 @@
             try {
                 myStream.getVideoTracks().forEach(t => t.stop());
 
-                let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
+                let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal, min: (fpsVal > 30 ? 59 : 24) } };
                 if (deviceId) {
                     videoConstraints.deviceId = { exact: deviceId };
                 } else if (videoTrack && videoTrack.getSettings().deviceId) {
@@ -926,10 +933,13 @@
                     videoConstraints.facingMode = 'environment';
                 }
 
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    audio: audioTrack && audioTrack.enabled,
-                    video: videoConstraints
-                });
+                let newStream;
+                try {
+                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
+                } catch(err) {
+                    videoConstraints.frameRate = { ideal: fpsVal };
+                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
+                }
                 const newVideoTrack = newStream.getVideoTracks()[0];
 
                 // Replace track in OBS PeerConnection
