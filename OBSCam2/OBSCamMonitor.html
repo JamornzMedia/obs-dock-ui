@@ -676,48 +676,70 @@
         function listenCamStats(cIdx) {
             // WebRTC DataChannel connection for Stats directly from Phone
             const monRef = db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/mon`);
-            
-            if (monitorPCs[cIdx]) monitorPCs[cIdx].close();
-            let mpc = new RTCPeerConnection(rtcConfig);
-            monitorPCs[cIdx] = mpc;
-
-            mpc.ondatachannel = e => {
-                if (e.channel.label === 'stats') {
-                    e.channel.onmessage = msg => {
-                        try {
-                            const data = JSON.parse(msg.data);
-                            const resEl = document.getElementById(`info-res-${cIdx}`);
-                            if (resEl) {
-                                resEl.innerText = `${data.r} ${data.f}fps`;
-                                document.getElementById(`info-data-${cIdx}`).innerText = `${data.d} MB`;
-                                document.getElementById(`info-bw-${cIdx}`).innerText = `${data.k}kbps`;
-                                document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.b}%`;
-
-                                const pb = document.getElementById(`badge-phone-${cIdx}`);
-                                if (pb) {
-                                    pb.className = "status-badge bg-green-600 text-white";
-                                    pb.innerHTML = '<i class="fas fa-mobile-alt"></i> LIVE';
-                                    pb.dataset.lastSeen = Date.now();
-                                }
-                                calculateTotalData();
-                            }
-                        } catch(err) {}
-                    };
-                }
-            };
-
             let pendingCandidates = [];
-            mpc.onicecandidate = event => {
-                if (event.candidate) {
-                    pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
-                } else if (pendingCandidates.length > 0) {
-                    monRef.child('calleeCandidates').set(pendingCandidates);
-                }
-            };
+            
+            function createMonitorPC() {
+                if (monitorPCs[cIdx]) monitorPCs[cIdx].close();
+                let mpc = new RTCPeerConnection(rtcConfig);
+                monitorPCs[cIdx] = mpc;
+                pendingCandidates = [];
+
+                mpc.ondatachannel = e => {
+                    if (e.channel.label === 'stats') {
+                        e.channel.onmessage = msg => {
+                            try {
+                                const data = JSON.parse(msg.data);
+                                const resEl = document.getElementById(`info-res-${cIdx}`);
+                                if (resEl) {
+                                    resEl.innerText = `${data.r} ${data.f}fps`;
+                                    document.getElementById(`info-data-${cIdx}`).innerText = `${data.d} MB`;
+                                    document.getElementById(`info-bw-${cIdx}`).innerText = `${data.k}kbps`;
+                                    document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.b}%`;
+
+                                    const pb = document.getElementById(`badge-phone-${cIdx}`);
+                                    if (pb && !pb.innerText.includes('LIVE')) {
+                                        pb.className = "status-badge bg-green-600 text-white";
+                                        pb.innerHTML = '<i class="fas fa-mobile-alt"></i> LIVE';
+                                    }
+                                    if (pb) pb.dataset.lastSeen = Date.now();
+                                    calculateTotalData();
+                                }
+                            } catch(err) {}
+                        };
+                    }
+                };
+
+                mpc.onicecandidate = event => {
+                    if (event.candidate) {
+                        pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
+                    } else if (pendingCandidates.length > 0) {
+                        monRef.child('calleeCandidates').set(pendingCandidates);
+                    }
+                };
+                return mpc;
+            }
+
+            let mpc = createMonitorPC();
 
             monRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); 
-                if (!data) return;
+                if (!data) {
+                    mpc = createMonitorPC();
+                    const pb = document.getElementById(`badge-phone-${cIdx}`);
+                    if (pb && pb.innerText.includes('CONNECTING')) {
+                        pb.className = "status-badge bg-gray-800 text-gray-500";
+                        pb.innerHTML = '<i class="fas fa-mobile-alt"></i> OFF';
+                    }
+                    return;
+                }
+                
+                const pb = document.getElementById(`badge-phone-${cIdx}`);
+                if (pb) {
+                    pb.className = "status-badge bg-yellow-600 text-white";
+                    pb.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CONNECTING';
+                    pb.dataset.lastSeen = Date.now();
+                }
+
                 try {
                     if (!mpc.currentRemoteDescription) {
                         await mpc.setRemoteDescription(new RTCSessionDescription(data));
@@ -904,33 +926,50 @@
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
-            pc = new RTCPeerConnection(rtcConfig);
-
             let pendingCandidates = [];
-            pc.onicecandidate = event => {
-                if (event.candidate) {
-                    pendingCandidates.push({
-                        c: event.candidate.candidate,
-                        m: event.candidate.sdpMid,
-                        i: event.candidate.sdpMLineIndex
-                    });
-                } else {
-                    if (pendingCandidates.length > 0) {
-                        roomRef.child('calleeCandidates').set(pendingCandidates);
-                    }
-                }
-            };
             
-            pc.ontrack = event => { 
-                document.getElementById('remote-video').srcObject = event.streams[0]; 
-                setTimeout(() => {
-                    document.getElementById('waiting-screen').classList.add('hidden');
-                }, 1000);
-            };
+            function createOBSPC() {
+                if (pc) pc.close();
+                pc = new RTCPeerConnection(rtcConfig);
+                pendingCandidates = [];
+
+                pc.onicecandidate = event => {
+                    if (event.candidate) {
+                        pendingCandidates.push({
+                            c: event.candidate.candidate,
+                            m: event.candidate.sdpMid,
+                            i: event.candidate.sdpMLineIndex
+                        });
+                    } else {
+                        if (pendingCandidates.length > 0) {
+                            roomRef.child('calleeCandidates').set(pendingCandidates);
+                        }
+                    }
+                };
+                
+                pc.ontrack = event => { 
+                    document.getElementById('remote-video').srcObject = event.streams[0]; 
+                    setTimeout(() => {
+                        document.getElementById('waiting-screen').classList.add('hidden');
+                    }, 1000);
+                };
+            }
+
+            createOBSPC();
 
             roomRef.child('offer').on('value', async snapshot => {
-                const data = snapshot.val(); if (!data) return;
+                const data = snapshot.val(); 
+                if (!data) {
+                    document.getElementById('remote-video').srcObject = null;
+                    document.getElementById('waiting-screen').innerText = 'Waiting for Camera...';
+                    document.getElementById('waiting-screen').classList.remove('hidden');
+                    createOBSPC();
+                    return;
+                }
                 try {
+                    document.getElementById('waiting-screen').innerText = 'Connecting...';
+                    document.getElementById('waiting-screen').classList.remove('hidden');
+
                     if (!pc.currentRemoteDescription) {
                         await pc.setRemoteDescription(new RTCSessionDescription(data));
                         const answer = await pc.createAnswer();
