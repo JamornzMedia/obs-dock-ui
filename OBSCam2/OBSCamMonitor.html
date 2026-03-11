@@ -670,34 +670,72 @@
             }, 2000);
         }
 
+        let monitorPCs = {};
+
         // Listen for stats and source readiness from Firebase
         function listenCamStats(cIdx) {
-            // Stats listener
-            if (statsListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).off('value', statsListeners[cIdx]);
+            // WebRTC DataChannel connection for Stats directly from Phone
+            const monRef = db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/mon`);
             
-            const statsListener = (snap) => {
-                const data = snap.val();
-                if (!data) return;
+            if (monitorPCs[cIdx]) monitorPCs[cIdx].close();
+            let mpc = new RTCPeerConnection(rtcConfig);
+            monitorPCs[cIdx] = mpc;
 
-                const resEl = document.getElementById(`info-res-${cIdx}`);
-                if (resEl) {
-                    resEl.innerText = `${data.res} ${data.fps}fps`;
-                    document.getElementById(`info-data-${cIdx}`).innerText = `${data.data} MB`;
-                    document.getElementById(`info-bw-${cIdx}`).innerText = `${data.kbps}kbps`;
-                    document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
+            mpc.ondatachannel = e => {
+                if (e.channel.label === 'stats') {
+                    e.channel.onmessage = msg => {
+                        try {
+                            const data = JSON.parse(msg.data);
+                            const resEl = document.getElementById(`info-res-${cIdx}`);
+                            if (resEl) {
+                                resEl.innerText = `${data.r} ${data.f}fps`;
+                                document.getElementById(`info-data-${cIdx}`).innerText = `${data.d} MB`;
+                                document.getElementById(`info-bw-${cIdx}`).innerText = `${data.k}kbps`;
+                                document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.b}%`;
 
-                    const pb = document.getElementById(`badge-phone-${cIdx}`);
-                    if (pb) {
-                        pb.className = "status-badge bg-green-600 text-white";
-                        pb.innerHTML = '<i class="fas fa-mobile-alt"></i> LIVE';
-                        pb.dataset.lastSeen = Date.now();
-                    }
-
-                    calculateTotalData();
+                                const pb = document.getElementById(`badge-phone-${cIdx}`);
+                                if (pb) {
+                                    pb.className = "status-badge bg-green-600 text-white";
+                                    pb.innerHTML = '<i class="fas fa-mobile-alt"></i> LIVE';
+                                    pb.dataset.lastSeen = Date.now();
+                                }
+                                calculateTotalData();
+                            }
+                        } catch(err) {}
+                    };
                 }
             };
-            statsListeners[cIdx] = statsListener;
-            db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).on('value', statsListener);
+
+            let pendingCandidates = [];
+            mpc.onicecandidate = event => {
+                if (event.candidate) {
+                    pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
+                } else if (pendingCandidates.length > 0) {
+                    monRef.child('calleeCandidates').set(pendingCandidates);
+                }
+            };
+
+            monRef.child('offer').on('value', async snapshot => {
+                const data = snapshot.val(); 
+                if (!data) return;
+                try {
+                    if (!mpc.currentRemoteDescription) {
+                        await mpc.setRemoteDescription(new RTCSessionDescription(data));
+                        const answer = await mpc.createAnswer();
+                        await mpc.setLocalDescription(answer);
+                        await monRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
+                    }
+                } catch (e) { }
+            });
+
+            monRef.child('callerCandidates').on('value', snapshot => {
+                const candidates = snapshot.val();
+                if (candidates && Array.isArray(candidates)) {
+                    candidates.forEach(c => { 
+                        if (c) mpc.addIceCandidate(new RTCIceCandidate({ candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i })).catch(e => { }); 
+                    });
+                }
+            });
 
             // OBS Source Check-in listener
             if(sourceListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
@@ -706,13 +744,20 @@
                 const ts = snap.val();
                 const ob = document.getElementById(`badge-obs-${cIdx}`);
                 if (ob) {
-                    if (ts) {
-                        ob.className = "status-badge bg-green-600 text-white";
+                    if (ts === 'sleep') {
+                        ob.className = "status-badge bg-purple-600 text-white cursor-pointer hover:bg-purple-500 transition";
+                        ob.innerHTML = '<i class="fas fa-moon"></i> SLEEP (WAKE)';
+                        ob.dataset.lastSeen = Date.now();
+                        ob.onclick = () => db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/wake`).set(true);
+                    } else if (ts) {
+                        ob.className = "status-badge bg-green-600 text-white cursor-default";
                         ob.innerHTML = '<i class="fas fa-desktop"></i> READY';
                         ob.dataset.lastSeen = typeof ts === 'number' ? ts : Date.now();
+                        ob.onclick = null;
                     } else {
-                        ob.className = "status-badge bg-gray-800 text-gray-500";
+                        ob.className = "status-badge bg-gray-800 text-gray-500 cursor-default";
                         ob.innerHTML = '<i class="fas fa-desktop"></i> OFF';
+                        ob.onclick = null;
                     }
                 }
             };
@@ -803,34 +848,63 @@
 
         // ============ OBS Receiver (mode=screen) ============
         async function startReceiver(rid, cIdx) {
-            // Keep-alive for control panel to know this browser source is open
             const readyRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/source_ready`);
+            const wakeRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/wake`);
             readyRef.set(Date.now());
             readyRef.onDisconnect().remove();
-            setInterval(() => readyRef.set(Date.now()), 10000);
+
+            let pcActive = false;
+            let lastVideoTime = Date.now();
+            let isSleep = false;
+
+            setInterval(() => {
+                if (pc && (pc.connectionState === 'connected' || pc.connectionState === 'completed')) {
+                    pcActive = true;
+                } else {
+                    pcActive = false;
+                }
+            }, 1000);
+
+            setInterval(() => {
+                if (pcActive) {
+                    lastVideoTime = Date.now();
+                    if (isSleep) {
+                        isSleep = false;
+                        document.getElementById('waiting-screen').innerText = 'Waiting for Camera...';
+                        document.getElementById('waiting-screen').classList.remove('hidden');
+                    }
+                    readyRef.set(Date.now());
+                } else {
+                    if (Date.now() - lastVideoTime > 180000) { // 3 mins
+                        if (!isSleep) {
+                            isSleep = true;
+                            readyRef.set('sleep');
+                            document.getElementById('waiting-screen').innerText = 'SLEEP MODE (WAKE UP FROM CONTROL PANEL)';
+                            document.getElementById('waiting-screen').classList.remove('hidden');
+                        }
+                    } else {
+                         readyRef.set(Date.now());
+                    }
+                }
+            }, 10000);
+
+            wakeRef.on('value', snap => {
+                if (snap.val()) {
+                    lastVideoTime = Date.now();
+                    if (isSleep) {
+                        isSleep = false;
+                        document.getElementById('waiting-screen').innerText = 'Waiting for Camera...';
+                        document.getElementById('waiting-screen').classList.remove('hidden');
+                        readyRef.set(Date.now());
+                    }
+                    wakeRef.remove();
+                }
+            });
 
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
             pc = new RTCPeerConnection(rtcConfig);
-
-            // Handle DataChannel stats relay
-            pc.ondatachannel = event => {
-                if(event.channel.label === 'stats') {
-                    event.channel.onmessage = e => {
-                        try {
-                            const data = JSON.parse(e.data);
-                            db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/stats`).set({
-                                res: data.r,
-                                fps: data.f,
-                                kbps: data.k,
-                                bat: data.b,
-                                data: data.d
-                            });
-                        } catch(err) {}
-                    };
-                }
-            };
 
             let pendingCandidates = [];
             pc.onicecandidate = event => {
@@ -843,14 +917,15 @@
                 } else {
                     if (pendingCandidates.length > 0) {
                         roomRef.child('calleeCandidates').set(pendingCandidates);
-                        console.log(`[ICE] obs-receiver: sent ${pendingCandidates.length} compressed callee candidates`);
                     }
                 }
             };
             
             pc.ontrack = event => { 
                 document.getElementById('remote-video').srcObject = event.streams[0]; 
-                document.getElementById('waiting-screen').classList.add('hidden');
+                setTimeout(() => {
+                    document.getElementById('waiting-screen').classList.add('hidden');
+                }, 1000);
             };
 
             roomRef.child('offer').on('value', async snapshot => {

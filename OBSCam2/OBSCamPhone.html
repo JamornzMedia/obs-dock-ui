@@ -413,6 +413,7 @@
         };
 
         let pc = null;
+        let monPc = null;
         let statsChannel = null;
         let myStream, videoTrack, audioTrack, qrStream;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
@@ -694,13 +695,16 @@
             if (myStream) myStream.getTracks().forEach(track => track.stop());
             if (statsChannel) statsChannel.close();
             if (pc) pc.close();
+            if (monPc) monPc.close();
             pc = null;
+            monPc = null;
             statsChannel = null;
             clearInterval(statsInterval);
 
             if (roomId && targetCamIndex) {
                 // Remove only the signaling data, not the whole cam so source_ready remains intact
                 db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/obs`).remove();
+                db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/mon`).remove();
             }
 
             document.getElementById('live-ui').classList.add('hidden');
@@ -732,10 +736,9 @@
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             pc = new RTCPeerConnection(rtcConfig);
 
-            // Create DataChannel for stats BEFORE offer
-            statsChannel = pc.createDataChannel('stats');
-
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
+
+            connectMonitor(rid, cIdx);
 
             // ICE Candidate Batching and Compression
             let pendingCandidates = [];
@@ -808,6 +811,42 @@
 
             const bps = getTargetBitrate() * 1000;
             setBitrate(pc, bps);
+        }
+
+        async function connectMonitor(rid, cIdx) {
+            const monRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/mon`);
+            await monRef.child('answer').remove(); 
+            await monRef.child('calleeCandidates').remove();
+            
+            monPc = new RTCPeerConnection(rtcConfig);
+            statsChannel = monPc.createDataChannel('stats');
+
+            let pendingCandidates = [];
+            monPc.onicecandidate = event => {
+                if (event.candidate) {
+                    pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
+                } else if (pendingCandidates.length > 0) {
+                    monRef.child('callerCandidates').set(pendingCandidates);
+                }
+            };
+
+            let offer = await monPc.createOffer();
+            await monPc.setLocalDescription(offer);
+            await monRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
+
+            monRef.child('answer').on('value', async snapshot => {
+                const data = snapshot.val(); if (!data) return;
+                if (!monPc.currentRemoteDescription) await monPc.setRemoteDescription(new RTCSessionDescription(data));
+            });
+
+            monRef.child('calleeCandidates').on('value', snapshot => {
+                const candidates = snapshot.val();
+                if (candidates && Array.isArray(candidates)) {
+                    candidates.forEach(c => { 
+                        if (c) monPc.addIceCandidate(new RTCIceCandidate({candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i})).catch(e => {}); 
+                    });
+                }
+            });
         }
 
         function setBitrate(targetPC, bitrate) {
