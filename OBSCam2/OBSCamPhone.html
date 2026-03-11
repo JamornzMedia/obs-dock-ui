@@ -351,7 +351,11 @@
                 </button>
             </div>
 
-            <div class="absolute bottom-6 right-24 pointer-events-auto">
+            <div class="absolute bottom-6 right-24 pointer-events-auto flex gap-2">
+                <select id="live-mic-select" onchange="switchMic(this.value)"
+                    class="bg-black/60 text-white text-[10px] h-10 px-3 rounded-lg border border-white/20 outline-none backdrop-blur shadow-lg">
+                    <option value="">Change Mic...</option>
+                </select>
                 <select id="live-cam-select" onchange="switchCamera(this.value)"
                     class="bg-black/60 text-white text-[10px] h-10 px-3 rounded-lg border border-white/20 outline-none backdrop-blur shadow-lg">
                     <option value="">Change Lens...</option>
@@ -432,10 +436,12 @@
 
                 const videoSelect = document.getElementById('camera-select');
                 const liveSelect = document.getElementById('live-cam-select');
+                const liveMicSelect = document.getElementById('live-mic-select');
                 const audioSelect = document.getElementById('audio-source');
 
                 videoSelect.innerHTML = '<option value="">Default (Rear/Auto)</option>';
                 liveSelect.innerHTML = '<option value="">Change Lens...</option>';
+                liveMicSelect.innerHTML = '<option value="">Change Mic...</option>';
                 audioSelect.innerHTML = '<option value="">Default (Auto)</option>';
 
                 let vCount = 1, aCount = 1;
@@ -449,6 +455,7 @@
                         const label = device.label || `Microphone ${aCount++}`;
                         const option = new Option(label, device.deviceId);
                         audioSelect.appendChild(option);
+                        liveMicSelect.appendChild(option.cloneNode(true));
                     }
                 });
             } catch (e) { console.log("Permission Error", e); }
@@ -940,9 +947,48 @@
                 document.getElementById('preview').srcObject = myStream;
                 checkZoomCapabilities();
                 updateLiveResDisplay();
-                if (deviceId) document.getElementById('live-cam-select').value = "";
+                if (deviceId) {
+                    document.getElementById('camera-select').value = deviceId;
+                    saveSettings();
+                    document.getElementById('live-cam-select').value = "";
+                }
 
             } catch (e) { alert("Switch/Apply Settings failed: " + e); }
+        }
+
+        async function switchMic(deviceId) {
+            if (!myStream) return;
+            try {
+                if (audioTrack) audioTrack.stop();
+                
+                let audioConstraints = true;
+                if (deviceId) audioConstraints = { deviceId: { exact: deviceId } };
+
+                const newStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                const newAudioTrack = newStream.getAudioTracks()[0];
+
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track.kind === 'audio');
+                    if (sender) sender.replaceTrack(newAudioTrack);
+                }
+
+                audioTrack = newAudioTrack;
+                
+                const micBtn = document.getElementById('mic-btn');
+                audioTrack.enabled = micBtn.classList.contains('bg-green-500');
+
+                let tracks = [videoTrack];
+                if (audioTrack) tracks.push(audioTrack);
+                myStream = new MediaStream(tracks);
+
+                document.getElementById('preview').srcObject = myStream;
+                if (deviceId) {
+                    document.getElementById('audio-source').value = deviceId;
+                    saveSettings();
+                    document.getElementById('live-mic-select').value = "";
+                }
+
+            } catch (e) { alert("Switch Mic failed: " + e); }
         }
 
         async function startQRScanner() {
