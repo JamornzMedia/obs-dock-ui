@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.5</title>
+    <title>OBSCam Control V2.5b</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -99,16 +99,9 @@
             border-radius: 4px;
             font-weight: bold;
             text-transform: uppercase;
-        }
-
-        .status-wait {
-            background: #374151;
-            color: #9ca3af;
-        }
-
-        .status-live {
-            background: #16a34a;
-            color: #dcfce7;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .simple-logo {
@@ -184,11 +177,28 @@
             background: rgba(0, 0, 0, 0.7);
             color: #fff;
         }
+        
+        .waiting-overlay {
+            position: absolute;
+            inset: 0;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            color: #666;
+        }
+        .waiting-overlay.hidden { display: none; }
     </style>
 </head>
 
 <body>
     <div id="mode-screen" class="hidden">
+        <div id="waiting-screen" class="waiting-overlay">
+            <i class="fas fa-video text-4xl mb-3 opacity-50"></i>
+            <p class="font-mono text-sm">WAITING FOR CAMERA...</p>
+        </div>
         <video id="remote-video" autoplay playsinline></video>
         <button onclick="window.location.reload()" class="reset-screen-btn">
             <i class="fas fa-sync"></i> Reset
@@ -221,7 +231,7 @@
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">Version 2.5</p>
+            <p class="text-[9px] text-gray-600">Version 2.5b</p>
         </div>
     </div>
 
@@ -343,7 +353,7 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.5</p>
+            <p class="text-[9px] text-gray-600">V2.5b</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -380,6 +390,7 @@
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
                 <p class="text-xs text-gray-400 mb-4">Create New Room?</p>
+                <div class="text-[10px] text-blue-400 mb-4 px-2">ถ้า OBS เปิดอยู่ ระบบจะอัปเดตลิ้งค์ของ Source เดิมให้เป็นห้องใหม่โดยอัตโนมัติ</div>
                 <button onclick="confirmNewRoom()"
                     class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes</button>
                 <button onclick="closeModal('new-room-modal')"
@@ -427,14 +438,19 @@
         let roomId, pc, totalBytesData = 0;
         let maxCams = 4;
         let statsListeners = {};
+        let sourceListeners = {};
 
         if (!mode) {
             checkExistingSession();
         } else if (mode === 'screen') {
             document.getElementById('mode-screen').classList.remove('hidden');
-            let foundRoom = params.get('room') || localStorage.getItem('obs_v2_room_id');
-            if (foundRoom) { roomId = foundRoom; startReceiver(roomId, camIndex); }
-            else { document.getElementById('mode-screen').innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found.</div>"; }
+            let foundRoom = params.get('room');
+            if (foundRoom) { 
+                roomId = foundRoom; 
+                startReceiver(roomId, camIndex); 
+            } else { 
+                document.getElementById('mode-screen').innerHTML = "<div class='text-white p-4 font-mono'>Error: Room ID not found in URL.</div>"; 
+            }
         }
 
         function checkExistingSession() {
@@ -457,7 +473,8 @@
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-xs font-bold text-gray-300">CAM ${i}</span>
-                                <span class="status-badge status-wait" id="badge-${i}">OFF</span>
+                                <span class="status-badge bg-gray-800 text-gray-500" id="badge-obs-${i}" title="OBS Browser Status"><i class="fas fa-desktop"></i> OFF</span>
+                                <span class="status-badge bg-gray-800 text-gray-500" id="badge-phone-${i}" title="Phone Stream Status"><i class="fas fa-mobile-alt"></i> OFF</span>
                                 <span class="text-[8px] text-yellow-500 font-mono ml-auto" id="bat-${i}"></span>
                             </div>
                             <div class="text-[8px] text-gray-400 font-mono flex gap-2">
@@ -618,7 +635,7 @@
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            // Listen for stats from each camera via Firebase
+            // Listen for stats and readiness from each camera
             for (let i = 1; i <= maxCams; i++) {
                 listenCamStats(i);
             }
@@ -627,27 +644,35 @@
             setInterval(() => {
                 const now = Date.now();
                 for (let i = 1; i <= maxCams; i++) {
-                    const badge = document.getElementById(`badge-${i}`);
-                    if (badge) {
-                        const lastSeen = badge.dataset.lastSeen || 0;
-                        if (badge.innerText === 'LIVE' && (now - lastSeen > 6000)) {
-                            badge.className = "status-badge status-wait"; badge.innerText = "OFF";
+                    const pb = document.getElementById(`badge-phone-${i}`);
+                    if (pb) {
+                        const lastSeen = pb.dataset.lastSeen || 0;
+                        if (pb.innerText.includes('LIVE') && (now - lastSeen > 6000)) {
+                            pb.className = "status-badge bg-gray-800 text-gray-500";
+                            pb.innerHTML = '<i class="fas fa-mobile-alt"></i> OFF';
                             const bwEl = document.getElementById(`info-bw-${i}`);
                             if (bwEl) bwEl.innerText = "0kbps";
+                        }
+                    }
+                    
+                    const ob = document.getElementById(`badge-obs-${i}`);
+                    if (ob) {
+                        const lastObs = ob.dataset.lastSeen || 0;
+                        if (ob.innerText.includes('READY') && (now - lastObs > 15000)) {
+                            ob.className = "status-badge bg-gray-800 text-gray-500";
+                            ob.innerHTML = '<i class="fas fa-desktop"></i> OFF';
                         }
                     }
                 }
             }, 2000);
         }
 
-        // Listen for stats from phone via Firebase (replaces monitor PeerConnection)
+        // Listen for stats and source readiness from Firebase
         function listenCamStats(cIdx) {
-            // Detach previous listener if exists
-            if (statsListeners[cIdx]) {
-                db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).off('value', statsListeners[cIdx]);
-            }
-
-            const listener = (snap) => {
+            // Stats listener
+            if (statsListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).off('value', statsListeners[cIdx]);
+            
+            const statsListener = (snap) => {
                 const data = snap.val();
                 if (!data) return;
 
@@ -658,17 +683,38 @@
                     document.getElementById(`info-bw-${cIdx}`).innerText = `${data.kbps}kbps`;
                     document.getElementById(`bat-${cIdx}`).innerHTML = `<i class="fas fa-bolt"></i> ${data.bat}%`;
 
-                    const badge = document.getElementById(`badge-${cIdx}`);
-                    badge.className = "status-badge status-live";
-                    badge.innerText = "LIVE";
-                    badge.dataset.lastSeen = Date.now();
+                    const pb = document.getElementById(`badge-phone-${cIdx}`);
+                    if (pb) {
+                        pb.className = "status-badge bg-green-600 text-white";
+                        pb.innerHTML = '<i class="fas fa-mobile-alt"></i> LIVE';
+                        pb.dataset.lastSeen = Date.now();
+                    }
 
                     calculateTotalData();
                 }
             };
+            statsListeners[cIdx] = statsListener;
+            db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).on('value', statsListener);
 
-            statsListeners[cIdx] = listener;
-            db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/stats`).on('value', listener);
+            // OBS Source Check-in listener
+            if(sourceListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
+            
+            const srcListener = (snap) => {
+                const isReady = snap.val();
+                const ob = document.getElementById(`badge-obs-${cIdx}`);
+                if (ob) {
+                    if (isReady) {
+                        ob.className = "status-badge bg-blue-600 text-white";
+                        ob.innerHTML = '<i class="fas fa-desktop"></i> READY';
+                        ob.dataset.lastSeen = Date.now();
+                    } else {
+                        ob.className = "status-badge bg-gray-800 text-gray-500";
+                        ob.innerHTML = '<i class="fas fa-desktop"></i> OFF';
+                    }
+                }
+            };
+            sourceListeners[cIdx] = srcListener;
+            db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).on('value', srcListener);
         }
 
         function waitForFirebaseConnection(timeout) {
@@ -754,27 +800,60 @@
 
         // ============ OBS Receiver (mode=screen) ============
         async function startReceiver(rid, cIdx) {
+            // Keep-alive for control panel to know this browser source is open
+            const readyRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/source_ready`);
+            readyRef.set(true);
+            readyRef.onDisconnect().remove();
+            setInterval(() => readyRef.set(true), 10000);
+
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
 
             pc = new RTCPeerConnection(rtcConfig);
 
+            // Handle DataChannel stats relay
+            pc.ondatachannel = event => {
+                if(event.channel.label === 'stats') {
+                    event.channel.onmessage = e => {
+                        try {
+                            const data = JSON.parse(e.data);
+                            db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/stats`).set({
+                                res: data.r,
+                                fps: data.f,
+                                kbps: data.k,
+                                bat: data.b,
+                                data: data.d
+                            });
+                        } catch(err) {}
+                    };
+                }
+            };
+
             let pendingCandidates = [];
             pc.onicecandidate = event => {
                 if (event.candidate) {
-                    pendingCandidates.push(event.candidate.toJSON());
+                    pendingCandidates.push({
+                        c: event.candidate.candidate,
+                        m: event.candidate.sdpMid,
+                        i: event.candidate.sdpMLineIndex
+                    });
                 } else {
                     if (pendingCandidates.length > 0) {
                         roomRef.child('calleeCandidates').set(pendingCandidates);
-                        console.log(`[ICE] obs-receiver: sent ${pendingCandidates.length} callee candidates (batched)`);
+                        console.log(`[ICE] obs-receiver: sent ${pendingCandidates.length} compressed callee candidates`);
                     }
                 }
             };
-            pc.ontrack = event => { document.getElementById('remote-video').srcObject = event.streams[0]; };
+            
+            pc.ontrack = event => { 
+                document.getElementById('remote-video').srcObject = event.streams[0]; 
+                document.getElementById('waiting-screen').classList.add('hidden');
+            };
 
             roomRef.child('offer').on('value', async snapshot => {
                 const data = snapshot.val(); if (!data) return;
                 try {
+                    document.getElementById('waiting-screen').classList.add('hidden');
                     if (!pc.currentRemoteDescription) {
                         await pc.setRemoteDescription(new RTCSessionDescription(data));
                         const answer = await pc.createAnswer();
@@ -783,15 +862,28 @@
                     }
                 } catch (e) { }
             });
+            
             roomRef.child('callerCandidates').on('value', snapshot => {
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
-                    candidates.forEach(c => { if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => { }); });
+                    candidates.forEach(c => { 
+                        if (c) pc.addIceCandidate(new RTCIceCandidate({ candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i })).catch(e => { }); 
+                    });
                 }
             });
         }
 
-        // ============ OBS WebSocket: Add Browser Source ============
+        // ============ OBS WebSocket ============
+        function openLinkModal() {
+            const container = document.getElementById('links-container');
+            container.innerHTML = '';
+            for (let i = 1; i <= maxCams; i++) {
+                const url = window.location.origin + window.location.pathname + `?mode=screen&cam=${i}&room=${roomId}`;
+                container.innerHTML += `<div class="mb-2"><label class="text-[9px] text-gray-500 uppercase">Camera ${i}</label><div class="flex gap-1"><div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700" id="link-cam${i}">${url}</div><button onclick="copyToClip('link-cam${i}')" class="bg-blue-600 px-3 rounded text-[10px] font-bold text-white">Copy</button><button onclick="addToOBS(${i})" class="bg-green-600 hover:bg-green-500 px-2 rounded text-[10px] font-bold text-white" title="Add to OBS via WebSocket"><i class="fas fa-plus"></i></button></div></div>`;
+            }
+            openModal('obs-link-modal');
+        }
+
         async function addToOBS(camNum) {
             const btn = event.target.closest('button');
             const originalHTML = btn.innerHTML;
@@ -839,6 +931,38 @@
             }, 2000);
         }
 
+        async function confirmNewRoom() {
+            const btn = document.querySelector('#new-room-modal .bg-red-600');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating OBS...';
+            btn.disabled = true;
+
+            const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            try {
+                const obs = new OBSWebSocket();
+                await obs.connect('ws://localhost:4455');
+                
+                for(let i=1; i<=maxCams; i++) {
+                    const newUrl = window.location.origin + window.location.pathname + `?mode=screen&cam=${i}&room=${newRoomId}`;
+                    try {
+                        await obs.call('SetInputSettings', {
+                            inputName: `OBSCam ${i}`,
+                            inputSettings: { url: newUrl }
+                        });
+                        console.log(`[OBS WS] Auto-updated URL for OBSCam ${i}`);
+                    } catch(e) { } // Ignore if source doesn't exist
+                }
+                await obs.disconnect();
+            } catch(e) { 
+                console.log('[OBS WS] Not available, skipping auto-update URLs');
+            }
+
+            localStorage.setItem('obs_v2_room_id', newRoomId);
+            if (roomId) db.ref(`OBSCam_rooms/${roomId}`).remove();
+            
+            location.reload();
+        }
+
         // ============ Utility Functions ============
         function calculateTotalData() {
             let total = 0.0;
@@ -863,20 +987,9 @@
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        function openLinkModal() {
-            const container = document.getElementById('links-container');
-            container.innerHTML = '';
-            for (let i = 1; i <= maxCams; i++) {
-                const url = window.location.origin + window.location.pathname + `?mode=screen&cam=${i}`;
-                container.innerHTML += `<div class="mb-2"><label class="text-[9px] text-gray-500 uppercase">Camera ${i}</label><div class="flex gap-1"><div class="bg-black p-2 rounded text-[9px] text-gray-400 font-mono overflow-hidden whitespace-nowrap flex-1 border border-gray-700" id="link-cam${i}">${url}</div><button onclick="copyToClip('link-cam${i}')" class="bg-blue-600 px-3 rounded text-[10px] font-bold text-white">Copy</button><button onclick="addToOBS(${i})" class="bg-green-600 hover:bg-green-500 px-2 rounded text-[10px] font-bold text-white" title="Add to OBS via WebSocket"><i class="fas fa-plus"></i></button></div></div>`;
-            }
-            openModal('obs-link-modal');
-        }
-
         function copyToClip(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); }
         function copyPhoneLink() { navigator.clipboard.writeText(document.getElementById('phone-url-input').value); }
         function openNewRoomModal() { openModal('new-room-modal'); }
-        function confirmNewRoom() { if (roomId) db.ref(`OBSCam_rooms/${roomId}`).remove(); location.reload(); }
     </script>
 </body>
 

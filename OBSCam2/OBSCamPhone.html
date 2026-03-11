@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OBSCam Sender V2.5</title>
+    <title>OBSCam Sender V2.5b</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -189,7 +189,7 @@
                 <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz"
                         target="_blank"
                         class="text-blue-400 font-bold hover:underline hover:text-blue-300">JamornzMedia</a></p>
-                <p class="text-[9px] text-gray-600">OBSCam V2.5</p>
+                <p class="text-[9px] text-gray-600">OBSCam V2.5b</p>
             </div>
         </div>
     </div>
@@ -302,22 +302,35 @@
                         class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-yellow-300 font-mono w-fit"><i
                             class="fas fa-bolt"></i> --%</div>
                     <div id="live-res-fps"
-                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-cyan-300 font-mono w-fit">
-                        <i class="fas fa-video mr-1"></i><span id="live-res-text">-- × -- --fps</span>
+                        class="bg-black/40 px-2 py-0.5 rounded text-[10px] text-cyan-300 font-mono w-fit flex items-center gap-1">
+                        <i class="fas fa-video"></i><span id="live-res-text">-- × -- --fps</span>
                     </div>
                 </div>
 
-                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
-                    class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur mt-1 w-24">
-                    <option value="2000">2.0 M</option>
-                    <option value="2500">2.5 M</option>
-                    <option value="3000">3.0 M</option>
-                    <option value="3500">3.5 M</option>
-                    <option value="4000">4.0 M</option>
-                    <option value="6000">6.0 M</option>
-                    <option value="8500">8.5 M</option>
-                    <option value="10000">10 M</option>
-                </select>
+                <div class="flex gap-1 mt-1">
+                    <select id="live-res" onchange="applyLiveSettings()"
+                        class="bg-black/60 text-cyan-300 text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-16">
+                        <option value="1080">1080p</option>
+                        <option value="720">720p</option>
+                        <option value="480">480p</option>
+                    </select>
+                    <select id="live-fps" onchange="applyLiveSettings()"
+                        class="bg-black/60 text-cyan-300 text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-14">
+                        <option value="60">60</option>
+                        <option value="30">30</option>
+                    </select>
+                    <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                        class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-20">
+                        <option value="2000">2.0 M</option>
+                        <option value="2500">2.5 M</option>
+                        <option value="3000">3.0 M</option>
+                        <option value="3500">3.5 M</option>
+                        <option value="4000">4.0 M</option>
+                        <option value="6000">6.0 M</option>
+                        <option value="8500">8.5 M</option>
+                        <option value="10000">10 M</option>
+                    </select>
+                </div>
             </div>
 
             <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
@@ -396,6 +409,7 @@
         };
 
         let pc = null;
+        let statsChannel = null;
         let myStream, videoTrack, audioTrack, qrStream;
         let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
@@ -458,6 +472,9 @@
             if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
             if (localStorage.getItem('obs_audio_id')) document.getElementById('audio-source').value = localStorage.getItem('obs_audio_id');
 
+            if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
+            if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
+
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
@@ -515,6 +532,8 @@
             localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
             localStorage.setItem('obs_camera_id', document.getElementById('camera-select').value);
             localStorage.setItem('obs_audio_id', document.getElementById('audio-source').value);
+            localStorage.setItem('obs_res', document.getElementById('res').value);
+            localStorage.setItem('obs_fps', document.getElementById('fps').value);
             if (document.getElementById('bitrate').value === 'custom') localStorage.setItem('obs_custom_bitrate', customBitrateVal);
         }
 
@@ -568,6 +587,10 @@
             const selectedAudioId = document.getElementById('audio-source').value;
             const startUnmuted = document.getElementById('audio-enable').value === 'true';
 
+            // Sync live dropdowns
+            document.getElementById('live-res').value = quality;
+            document.getElementById('live-fps').value = fpsVal;
+
             const micBtn = document.getElementById('mic-btn');
             if (startUnmuted) {
                 micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
@@ -578,8 +601,11 @@
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
             if (currentBitrateSet === 'custom') {
-                let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
-                liveBitSel.add(opt);
+                let existingOpt = Array.from(liveBitSel.options).find(o => o.value === customBitrateVal.toString());
+                if (!existingOpt) {
+                    let opt = new Option(`Custom (${customBitrateVal})`, customBitrateVal);
+                    liveBitSel.add(opt);
+                }
                 liveBitSel.value = customBitrateVal;
             } else { liveBitSel.value = currentBitrateSet; }
 
@@ -605,11 +631,9 @@
                 document.getElementById('live-ui').classList.remove('hidden');
                 checkZoomCapabilities();
 
-                db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().remove();
-
-                // Only connect OBS path (monitor removed to reduce phone load)
+                // Connect OBS path
                 connectOBS(roomId, targetCamIndex);
-                startUpdatingStats(quality, fpsVal);
+                startUpdatingStats();
 
             } catch (e) { alert('Camera/Mic Error: ' + e.message); }
         }
@@ -641,15 +665,28 @@
             if (pc) setBitrate(pc, parseInt(val) * 1000);
         }
 
+        function applyLiveSettings() {
+            const res = parseInt(document.getElementById('live-res').value);
+            const fps = parseInt(document.getElementById('live-fps').value);
+            const devId = document.getElementById('live-cam-select').value;
+            // Update main settings so they save
+            document.getElementById('res').value = res;
+            document.getElementById('fps').value = fps;
+            saveSettings();
+            switchCamera(devId ? devId : undefined, res, fps);
+        }
+
         function stopStreaming() {
             if (myStream) myStream.getTracks().forEach(track => track.stop());
+            if (statsChannel) statsChannel.close();
             if (pc) pc.close();
             pc = null;
+            statsChannel = null;
             clearInterval(statsInterval);
 
             if (roomId && targetCamIndex) {
-                db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}`).remove();
-                db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}`).onDisconnect().cancel();
+                // Remove only the signaling data, not the whole cam so source_ready remains intact
+                db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/obs`).remove();
             }
 
             document.getElementById('live-ui').classList.add('hidden');
@@ -681,17 +718,24 @@
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             pc = new RTCPeerConnection(rtcConfig);
 
+            // Create DataChannel for stats BEFORE offer
+            statsChannel = pc.createDataChannel('stats');
+
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
 
-            // ICE Candidate Batching
+            // ICE Candidate Batching and Compression
             let pendingCandidates = [];
             pc.onicecandidate = event => {
                 if (event.candidate) {
-                    pendingCandidates.push(event.candidate.toJSON());
+                    pendingCandidates.push({
+                        c: event.candidate.candidate,
+                        m: event.candidate.sdpMid,
+                        i: event.candidate.sdpMLineIndex
+                    });
                 } else {
                     if (pendingCandidates.length > 0) {
                         roomRef.child('callerCandidates').set(pendingCandidates);
-                        console.log(`[ICE] obs: sent ${pendingCandidates.length} candidates (batched)`);
+                        console.log(`[ICE] obs: sent ${pendingCandidates.length} compressed candidates (batched)`);
                     }
                 }
             };
@@ -732,10 +776,19 @@
                 if (!pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(data));
             });
 
+            // Decompress callee candidates
             roomRef.child('calleeCandidates').on('value', snapshot => {
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
-                    candidates.forEach(c => { if (c) pc.addIceCandidate(new RTCIceCandidate(c)).catch(e => { }); });
+                    candidates.forEach(c => { 
+                        if (c) {
+                            pc.addIceCandidate(new RTCIceCandidate({
+                                candidate: c.c,
+                                sdpMid: c.m,
+                                sdpMLineIndex: c.i
+                            })).catch(e => { });
+                        }
+                    });
                 }
             });
 
@@ -755,11 +808,10 @@
             }
         }
 
-        function startUpdatingStats(resH, fps) {
+        function startUpdatingStats() {
             lastBytes = 0;
             lastTime = Date.now();
             sessionTotalBytes = 0;
-            let statsWriteCounter = 0;
 
             // Show actual resolution/fps from video track
             updateLiveResDisplay();
@@ -797,17 +849,21 @@
                     document.getElementById('battery-stat').innerHTML = `<i class="fas fa-bolt"></i> ${batLevel}%`;
                 } catch (e) { }
 
-                // Write minimal stats to Firebase every 3 seconds (reduced frequency)
-                statsWriteCounter++;
-                if (statsWriteCounter >= 3 && roomId && targetCamIndex) {
-                    statsWriteCounter = 0;
-                    db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/stats`).set({
-                        res: resH + "p",
-                        fps: fps,
-                        kbps: mainKbps,
-                        bat: batLevel,
-                        data: (sessionTotalBytes / (1024 * 1024)).toFixed(1)
-                    });
+                // Send via DataChannel (cost-free, no Firebase periodic writes)
+                if (statsChannel && statsChannel.readyState === 'open') {
+                    const settings = videoTrack ? videoTrack.getSettings() : {};
+                    const currentRes = settings.height || document.getElementById('live-res').value;
+                    const currentFps = Math.round(settings.frameRate || document.getElementById('live-fps').value);
+                    const dataUsage = (sessionTotalBytes / (1024 * 1024)).toFixed(1);
+
+                    const payload = {
+                        r: currentRes + "p",
+                        f: currentFps,
+                        k: mainKbps,
+                        b: batLevel,
+                        d: dataUsage
+                    };
+                    statsChannel.send(JSON.stringify(payload));
                 }
 
             }, 1000);
@@ -846,16 +902,26 @@
         function toggleGrid() { document.getElementById('grid-layer').classList.toggle('hidden'); }
         function reconnectSignaling() { if (roomId) { stopStreaming(); setTimeout(startStreaming, 1000); } }
 
-        async function switchCamera(deviceId) {
-            if (!deviceId || !myStream) return;
+        async function switchCamera(deviceId, forceRes, forceFps) {
+            if (!myStream) return;
+            const quality = forceRes || parseInt(document.getElementById('live-res').value);
+            const fpsVal = forceFps || parseInt(document.getElementById('live-fps').value);
+
             try {
                 myStream.getVideoTracks().forEach(t => t.stop());
-                const quality = parseInt(document.getElementById('res').value);
-                const fpsVal = parseInt(document.getElementById('fps').value);
+
+                let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } };
+                if (deviceId) {
+                    videoConstraints.deviceId = { exact: deviceId };
+                } else if (videoTrack && videoTrack.getSettings().deviceId) {
+                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId };
+                } else {
+                    videoConstraints.facingMode = 'environment';
+                }
 
                 const newStream = await navigator.mediaDevices.getUserMedia({
                     audio: audioTrack && audioTrack.enabled,
-                    video: { deviceId: { exact: deviceId }, width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal } }
+                    video: videoConstraints
                 });
                 const newVideoTrack = newStream.getVideoTracks()[0];
 
@@ -874,9 +940,9 @@
                 document.getElementById('preview').srcObject = myStream;
                 checkZoomCapabilities();
                 updateLiveResDisplay();
-                document.getElementById('live-cam-select').value = "";
+                if (deviceId) document.getElementById('live-cam-select').value = "";
 
-            } catch (e) { alert("Switch failed: " + e); }
+            } catch (e) { alert("Switch/Apply Settings failed: " + e); }
         }
 
         async function startQRScanner() {
