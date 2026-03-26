@@ -6,8 +6,15 @@
         var sc_project = 13147874;
         var sc_invisible = 0;
         var sc_security = "550e33c0";
-        var scJsHost = "https://";
-        document.write("<sc" + "ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
+        // โหลดแบบ async เพื่อไม่ให้บล็อกหน้าเว็บ
+        (function() {
+            var s = document.createElement('script');
+            s.type = 'text/javascript';
+            s.async = true;
+            s.src = 'https://statcounter.com/counter/counter.js';
+            var x = document.getElementsByTagName('script')[0];
+            x.parentNode.insertBefore(s, x);
+        })();
     </script>
 
     <meta charset="UTF-8">
@@ -81,6 +88,8 @@
 
         .sidebar {
             width: 320px;
+            min-width: 280px;
+            flex-shrink: 0;
             background: var(--panel-bg);
             border-right: 1px solid var(--border);
             display: flex;
@@ -94,12 +103,33 @@
 
         .main-view {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background: radial-gradient(circle at center, #171f28 0%, var(--bg-dark) 100%);
             position: relative;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        /* Responsive: เมื่อหน้าจอแคบ ให้ sidebar กับ main-view เรียงแนวตั้ง */
+        @media (max-width: 750px) {
+            .workspace {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                max-height: 45vh;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
         }
 
         /* App Header styling (Cool Description) */
@@ -403,7 +433,8 @@
             <h1>JAMORNZ MEDIA</h1>
             <span>Stinger Developer v1.0</span>
         </div>
-        <div style="margin-left: auto;">
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
+            <span id="exportCountBadge" style="font-size: 12px; color: var(--primary); letter-spacing: 0.5px;">Export แล้ว 0 ครั้ง</span>
             <a href="https://ezdn.app/Jamornz" target="_blank" style="text-decoration:none;">
                 <button class="btn"
                     style="padding: 8px 15px; border-color: #ffb84d; color: #ffb84d; font-size: 12px; display: flex; align-items: center; gap: 5px;">
@@ -483,14 +514,14 @@
                             style="background: rgba(0, 0, 0, 0.4); color: white; border: 1px dashed var(--primary); padding: 5px; border-radius: 4px; flex: 1; cursor: pointer; font-size: 12px;">
                             <option value="1000000">1 Mbps (ประหยัดพื้นที่)</option>
                             <option value="2500000">2.5 Mbps (มาตรฐาน)</option>
-                            <option value="5000000" selected>5 Mbps (ชัด)</option>
+                            <option value="5000000">5 Mbps (ชัด)</option>
                             <option value="10000000">10 Mbps (ชัดมาก)</option>
                             <option value="20000000">20 Mbps (ระดับสูงสุดปานกลาง)</option>
                             <option value="40000000">40 Mbps (คมชัดพิเศษ)</option>
                             <option value="50000000">50 Mbps (สตูดิโอ)</option>
                             <option value="60000000">60 Mbps (สเกลภาพยนตร์)</option>
                             <option value="80000000">80 Mbps (สเกลภาพยนตร์ 4K)</option>
-                            <option value="100000000">100 Mbps (ไร้การบีบอัดระดับมาสเตอร์)</option>
+                            <option value="100000000" selected>100 Mbps (ไร้การบีบอัดระดับมาสเตอร์)</option>
                         </select>
                     </label>
                 </div>
@@ -545,14 +576,35 @@
         </div>
     </div>
 
-    <!-- Counters -->
-    <div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; text-align: right; opacity: 0.5; transition: opacity 0.3s;"
-        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">
-        <script type="text/javascript" src="https://www.free-counters.org/count/jlha"></script><br>
-        <a href='https://www.acadoo.de/' style="color: #666; font-size: 10px; text-decoration: none;">acadoo</a>
-        <script type='text/javascript'
-            src='https://www.whomania.com/ctr?id=516e05dc05b23bc6bbf395c5b00c54eb3420b17f'></script>
-    </div>
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+        // --- Firebase Config ---
+        firebase.initializeApp({
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            storageBucket: "obscam-p2p.firebasestorage.app",
+            messagingSenderId: "531335072084",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
+        });
+        var exportCountRef = firebase.database().ref('StingerPro/exportCount');
+
+        // โหลดจำนวน Export แสดงบน Topbar
+        exportCountRef.on('value', function(snapshot) {
+            var count = snapshot.val() || 0;
+            document.getElementById('exportCountBadge').textContent = 'Export แล้ว ' + count.toLocaleString() + ' ครั้ง';
+        });
+
+        // ฟังก์ชันบวกเพิ่ม Export Count
+        function incrementExportCount() {
+            exportCountRef.transaction(function(current) {
+                return (current || 0) + 1;
+            });
+        }
+    </script>
 
     <!-- Script Logic -->
     <script>
@@ -868,6 +920,9 @@
                 a.download = 'obs_stinger.webm';
                 a.click();
                 URL.revokeObjectURL(url);
+
+                // บวกจำนวน Export ใน Firebase
+                if (typeof incrementExportCount === 'function') incrementExportCount();
 
                 isRecording = false;
                 btn.textContent = "บันทึกวิดีโอ .WebM";
