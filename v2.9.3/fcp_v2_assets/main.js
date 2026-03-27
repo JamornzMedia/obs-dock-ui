@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { translations } from './languages.js';
-import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime } from './usage-tracker.js';
+import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
@@ -1907,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
 
             // Attach Save & Enter Logic
-            startBtn.addEventListener('click', () => {
+            startBtn.addEventListener('click', async () => {
                 const nameInput = document.getElementById('visitorName');
                 const provInput = document.getElementById('visitorProvince');
                 const provOtherInput = document.getElementById('visitorProvinceOther');
@@ -1949,6 +1949,35 @@ document.addEventListener('DOMContentLoaded', () => {
                             return;
                         }
                     }
+                }
+
+                // V2.9.3: Duplicate name protection — check Firebase obs_id
+                try {
+                    startBtn.disabled = true;
+                    startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+                    const existingData = await fetchFirebaseUserData(nameInput.value.trim());
+                    if (existingData && existingData.totalMinutes) {
+                        // Restore accumulated minutes from Firebase
+                        const localData = getUsageData();
+                        if (existingData.totalMinutes > (localData.totalMinutes || 0)) {
+                            localStorage.setItem('usageTracker', JSON.stringify({
+                                totalMinutes: existingData.totalMinutes,
+                                lastUpdated: new Date().toISOString()
+                            }));
+                            console.log(`Restored ${existingData.totalMinutes} minutes from Firebase for ${nameInput.value.trim()}`);
+                            if (typeof showToast === 'function') {
+                                showToast(`ดึงข้อมูลเดิม: ${existingData.rank || 'Trainee'} (${Math.floor(existingData.totalMinutes/60)}h)`, 'info', 5000);
+                            }
+                        }
+                    }
+
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start';
+                } catch (err) {
+                    console.error('Firebase user check error:', err);
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start';
                 }
 
                 const identity = {

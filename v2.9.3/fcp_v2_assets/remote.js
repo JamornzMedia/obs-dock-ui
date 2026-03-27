@@ -1,6 +1,7 @@
 // fcp_v2_assets/remote.js
 
 import { FIREBASE_CONFIG } from './config.js';
+import { getRankInfo, getUsageData, formatUsageTime } from './usage-tracker.js';
 
 // ⚠️ Config ถูกย้ายไปอยู่ใน config.js แล้ว ⚠️
 const firebaseConfig = FIREBASE_CONFIG;
@@ -54,11 +55,19 @@ window.initOnlinePresenceSystem = () => {
     window.myRoomRef = roomRef;
     window.myUserID = identity.ID; // Store 8-digit ID globally
 
+    // V2.9.3: Include rank info in presence data
+    const usageData = getUsageData();
+    const rankInfo = getRankInfo(usageData.totalMinutes || 0);
+
     const presenceData = {
         name: identity.name.substring(0, 30),
         platform: "PC",
         province: identity.province || "Unknown",
-        ID: identity.ID // 8-digit ID
+        ID: identity.ID, // 8-digit ID
+        rank: rankInfo.name,
+        rankTh: rankInfo.nameTh,
+        rankIcon: rankInfo.icon,
+        totalMinutes: usageData.totalMinutes || 0
     };
 
     // Set onDisconnect and write data
@@ -194,6 +203,19 @@ window.renderOnlineUsersList = () => {
         cellProvince.textContent = user.province || '-';
         row.appendChild(cellProvince);
 
+        // V2.9.3: Rank column
+        const cellRank = document.createElement('td');
+        cellRank.style.padding = '8px 6px';
+        cellRank.style.whiteSpace = 'nowrap';
+        if (user.rankIcon && user.rankTh) {
+            cellRank.innerHTML = `<span style="color: ${getRankInfo(user.totalMinutes || 0).color}">${user.rankIcon} ${user.rankTh}</span>`;
+        } else {
+            // Fallback: calculate from totalMinutes if available
+            const ri = getRankInfo(user.totalMinutes || 0);
+            cellRank.innerHTML = `<span style="color: ${ri.color}">${ri.icon} ${ri.nameTh}</span>`;
+        }
+        row.appendChild(cellRank);
+
         // Type (PC icon + Mobile icon if connected)
         const cellType = document.createElement('td');
         cellType.style.padding = '8px 6px';
@@ -220,7 +242,7 @@ window.renderOnlineUsersList = () => {
     if (Object.keys(comRooms).length === 0) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 4;
+        cell.colSpan = 5;
         cell.style.padding = '12px';
         cell.style.textAlign = 'center';
         cell.style.color = '#64748b';

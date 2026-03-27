@@ -1,27 +1,31 @@
 // fcp_v2_assets/usage-tracker.js
-// ระบบติดตามเวลาการใช้งาน + ระดับขั้นผู้ใช้
+// ระบบติดตามเวลาการใช้งาน + ระดับขั้นผู้ใช้ + Firebase Sync
 
 const USAGE_KEY = 'usageTracker';
 const USAGE_HISTORY_KEY = 'usageHistory';
+const OBS_ID_PATH = 'obs_id'; // Firebase folder
 
-// --- Rank Tiers (ชั่วโมง) ---
+// --- Rank Tiers (ชั่วโมง) — แต่ละระดับมี icon ไม่ซ้ำกัน ---
 const RANK_TIERS = [
     { name: 'Trainee',      nameTh: 'เด็กฝึกหัด',           hours: 0,     icon: '🔰', color: '#94a3b8' },
     { name: 'Rookie',       nameTh: 'มือใหม่',              hours: 80,    icon: '⭐', color: '#a3e635' },
-    { name: 'Beginner',     nameTh: 'ผู้เริ่มต้น',           hours: 200,   icon: '⭐', color: '#22c55e' },
+    { name: 'Beginner',     nameTh: 'ผู้เริ่มต้น',           hours: 200,   icon: '🌱', color: '#22c55e' },
     { name: 'Junior',       nameTh: 'ระดับต้น',             hours: 400,   icon: '🌟', color: '#14b8a6' },
-    { name: 'Senior',       nameTh: 'ระดับสูง',             hours: 700,   icon: '🌟', color: '#06b6d4' },
-    { name: 'Amateur',      nameTh: 'มือสมัครเล่น',          hours: 1100,  icon: '💫', color: '#3b82f6' },
+    { name: 'Senior',       nameTh: 'ระดับสูง',             hours: 700,   icon: '💪', color: '#06b6d4' },
+    { name: 'Amateur',      nameTh: 'มือสมัครเล่น',          hours: 1100,  icon: '🎯', color: '#3b82f6' },
     { name: 'Semi-Pro',     nameTh: 'กึ่งอาชีพ',            hours: 1600,  icon: '💫', color: '#6366f1' },
     { name: 'Pro',          nameTh: 'มืออาชีพ',             hours: 2200,  icon: '👑', color: '#8b5cf6' },
-    { name: 'National',     nameTh: 'ระดับประเทศ',          hours: 3000,  icon: '👑', color: '#a855f7' },
-    { name: 'World Class',  nameTh: 'ระดับโลก',             hours: 4000,  icon: '🏆', color: '#d946ef' },
-    { name: 'Master',       nameTh: 'ปรมาจารย์',            hours: 5200,  icon: '🏆', color: '#ec4899' },
-    { name: 'Grand Master', nameTh: 'ปรมาจารย์ขั้นสูงสุด',   hours: 6700,  icon: '💎', color: '#f43f5e' },
-    { name: 'Legend',       nameTh: 'ระดับตำนาน',           hours: 8500,  icon: '🔥', color: '#ef4444' },
+    { name: 'National',     nameTh: 'ระดับประเทศ',          hours: 3000,  icon: '🏆', color: '#a855f7' },
+    { name: 'World Class',  nameTh: 'ระดับโลก',             hours: 4000,  icon: '🌍', color: '#d946ef' },
+    { name: 'Master',       nameTh: 'ปรมาจารย์',            hours: 5200,  icon: '💎', color: '#ec4899' },
+    { name: 'Grand Master', nameTh: 'จอมจักรวาล',           hours: 6700,  icon: '🐉', color: '#f43f5e' },
+    { name: 'Legend',       nameTh: 'ตำนาน',               hours: 8500,  icon: '⚡', color: '#fbbf24' },
+    { name: 'God',          nameTh: 'เทพ',                 hours: 10000, icon: '🔱', color: '#ff0000' },
 ];
 
 let trackingInterval = null;
+let firebaseSyncInterval = null;
+let minutesSinceLastSync = 0;
 
 // --- Get stored usage data ---
 export function getUsageData() {
@@ -52,7 +56,6 @@ function recordUserSession(identity) {
     const history = getUsageHistory();
     const now = new Date().toISOString();
 
-    // Find existing user entry
     const existing = history.find(h => h.name === identity.name);
     if (existing) {
         existing.lastSeen = now;
@@ -83,7 +86,6 @@ export function getRank(totalMinutes) {
         }
     }
 
-    // Next rank info
     const currentIndex = RANK_TIERS.indexOf(currentRank);
     const nextRank = currentIndex < RANK_TIERS.length - 1 ? RANK_TIERS[currentIndex + 1] : null;
     const hoursToNext = nextRank ? (nextRank.hours * 60 - totalMinutes) / 60 : 0;
@@ -98,6 +100,11 @@ export function getRank(totalMinutes) {
     };
 }
 
+// --- Get rank from total minutes (for external use, returns just name+icon) ---
+export function getRankInfo(totalMinutes) {
+    return getRank(totalMinutes);
+}
+
 // --- Format time display ---
 export function formatUsageTime(totalMinutes) {
     const hours = Math.floor(totalMinutes / 60);
@@ -105,13 +112,64 @@ export function formatUsageTime(totalMinutes) {
     return `${hours}h ${String(mins).padStart(2, '0')}m`;
 }
 
+// --- Firebase: Sync user data to obs_id folder ---
+function syncToFirebase(identity) {
+    if (!identity || !identity.name) return;
+    if (typeof firebase === 'undefined' || !firebase.database) return;
+
+    try {
+        const sanitizedName = identity.name.trim()
+            .replace(/[.#$\[\]\/]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 30);
+        if (!sanitizedName) return;
+
+        const data = getUsageData();
+        const rank = getRank(data.totalMinutes || 0);
+
+        const userData = {
+            name: identity.name.substring(0, 30),
+            province: identity.province || 'Unknown',
+            totalMinutes: data.totalMinutes || 0,
+            rank: rank.name,
+            rankTh: rank.nameTh,
+            rankIcon: rank.icon,
+            lastUpdated: new Date().toISOString()
+        };
+
+        firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).update(userData)
+            .then(() => console.log(`Firebase obs_id synced: ${sanitizedName}`))
+            .catch(err => console.error('Firebase obs_id sync error:', err));
+    } catch (e) {
+        console.error('Firebase sync error:', e);
+    }
+}
+
+// --- Firebase: Fetch existing user data (for duplicate name protection) ---
+export async function fetchFirebaseUserData(name) {
+    if (!name) return null;
+    if (typeof firebase === 'undefined' || !firebase.database) return null;
+
+    try {
+        const sanitizedName = name.trim()
+            .replace(/[.#$\[\]\/]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 30);
+        if (!sanitizedName) return null;
+
+        const snapshot = await firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).once('value');
+        return snapshot.val();
+    } catch (e) {
+        console.error('Firebase fetch error:', e);
+        return null;
+    }
+}
+
 // --- Start tracking usage ---
 export function startUsageTracking(identity) {
-    // Record this session
     recordUserSession(identity);
-
-    // Stop existing tracking if any
     stopUsageTracking();
+    minutesSinceLastSync = 0;
 
     // Increment every minute
     trackingInterval = setInterval(() => {
@@ -122,7 +180,17 @@ export function startUsageTracking(identity) {
 
         // Update UI
         updateRankDisplay();
+
+        // Sync to Firebase every 15 minutes
+        minutesSinceLastSync++;
+        if (minutesSinceLastSync >= 15) {
+            minutesSinceLastSync = 0;
+            syncToFirebase(identity);
+        }
     }, 60000); // Every 1 minute
+
+    // Initial sync to Firebase
+    syncToFirebase(identity);
 
     // Initial UI update
     updateRankDisplay();
@@ -136,7 +204,7 @@ export function stopUsageTracking() {
     }
 }
 
-// --- Update rank display in the top bar ---
+// --- Update rank display in the top bar (Thai + English) ---
 export function updateRankDisplay() {
     const data = getUsageData();
     const rank = getRank(data.totalMinutes || 0);
@@ -144,8 +212,8 @@ export function updateRankDisplay() {
 
     const rankEl = document.getElementById('userRankDisplay');
     if (rankEl) {
-        rankEl.innerHTML = `${rank.icon} <span class="rank-name" style="color: ${rank.color}">${rank.name}</span> <span class="rank-time">${timeStr}</span>`;
-        rankEl.title = `${rank.nameTh} (${rank.name}) — ${timeStr}\n${rank.nextRank ? `ถัดไป: ${rank.nextRank.name} (อีก ${rank.hoursToNext} ชม.)` : '🏆 ระดับสูงสุด!'}`;
+        rankEl.innerHTML = `${rank.icon} <span class="rank-name" style="color: ${rank.color}">${rank.nameTh}</span> <span class="rank-time">${timeStr}</span>`;
+        rankEl.title = `${rank.nameTh} (${rank.name}) — ${timeStr}\n${rank.nextRank ? `ถัดไป: ${rank.nextRank.icon} ${rank.nextRank.nameTh} (อีก ${rank.hoursToNext} ชม.)` : '🔱 ระดับสูงสุดแล้ว!'}`;
     }
 }
 
