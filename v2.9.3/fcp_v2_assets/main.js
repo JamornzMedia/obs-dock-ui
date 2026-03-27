@@ -1919,13 +1919,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // --- CASE 1: Empty fields → Temporary User ---
                 if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
-                    const confirmTemp = confirm(
+                    const confirmTemp = await window.customConfirm(
                         'คุณยังไม่ได้กรอกข้อมูล\n\n' +
                         'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
                         '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
                         'You haven\'t filled in the information.\n' +
                         'Enter as temporary user?\n' +
-                        '(No usage data will be saved)'
+                        '(No usage data will be saved)',
+                        'เข้าสู่ระบบแบบผู้เยี่ยมชม',
+                        'fa-user-secret'
                     );
                     if (!confirmTemp) return;
 
@@ -1974,10 +1976,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Cooldown passed — confirm change
-                    const confirmChange = confirm(
+                    const confirmChange = await window.customConfirm(
                         `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${enteredName}"\n\n` +
                         `ยืนยันเปลี่ยนชื่อหรือไม่?\n` +
-                        `(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`
+                        `(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`,
+                        'ยืนยันเปลี่ยนชื่อ',
+                        'fa-exclamation-triangle'
                     );
                     if (!confirmChange) {
                         nameInput.value = storedMachineId;
@@ -2021,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             provOtherInput.style.border = '2px solid #ef4444';
                             provOtherInput.focus();
                             setTimeout(() => { provOtherInput.style.border = ''; }, 2000);
-                            alert('กรุณาระบุจังหวัด / Please specify your province');
+                            await window.customAlert('กรุณาระบุจังหวัด / Please specify your province', 'ข้อมูลไม่ครบ', 'fa-map-marker-alt');
                             return;
                         }
                     }
@@ -2365,10 +2369,12 @@ window.saveAndEnterApp = async () => {
 
     // CASE 1: Empty fields → Temporary User
     if (!name || (provinceSelect && !provinceSelect.value)) {
-        const confirmTemp = confirm(
+        const confirmTemp = await window.customConfirm(
             'คุณยังไม่ได้กรอกข้อมูล\n\n' +
             'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
-            '(จะไม่มีการเก็บข้อมูลการใช้งาน)'
+            '(จะไม่มีการเก็บข้อมูลการใช้งาน)',
+            'เข้าสู่ระบบแบบผู้เยี่ยมชม',
+            'fa-user-secret'
         );
         if (!confirmTemp) return;
 
@@ -2407,9 +2413,11 @@ window.saveAndEnterApp = async () => {
             return;
         }
 
-        const confirmChange = confirm(
+        const confirmChange = await window.customConfirm(
             `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${name}"\n\n` +
-            `ยืนยันเปลี่ยนชื่อหรือไม่?\n(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`
+            `ยืนยันเปลี่ยนชื่อหรือไม่?\n(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`,
+            'ยืนยันเปลี่ยนชื่อ',
+            'fa-exclamation-triangle'
         );
         if (!confirmChange) {
             if (nameInput) nameInput.value = storedMachineId;
@@ -2439,7 +2447,7 @@ window.saveAndEnterApp = async () => {
     if (province === 'Other' && provinceOtherInput) {
         province = provinceOtherInput.value.trim();
         if (!province) {
-            alert('กรุณาระบุจังหวัด / Please specify your province');
+            await window.customAlert('กรุณาระบุจังหวัด / Please specify your province', 'ข้อมูลไม่ครบ', 'fa-map-marker-alt');
             return;
         }
     }
@@ -2543,7 +2551,7 @@ window.copyDetails = () => {
 };
 
 // Call init on load
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
     if (window.initWelcomeScreen) window.initWelcomeScreen();
     if (window.updateUserIdentityUI) window.updateUserIdentityUI();
     // V2.9.3: Initialize rank display

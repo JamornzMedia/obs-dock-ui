@@ -267,7 +267,7 @@ window.cleanupStaleEntries = () => {
 if (document.readyState === 'complete') {
     setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
 } else {
-    window.addEventListener('load', () => {
+    document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (window.cleanupStaleEntries) window.cleanupStaleEntries(); }, 500);
     });
 }

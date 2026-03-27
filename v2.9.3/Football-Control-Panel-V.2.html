@@ -2216,6 +2216,17 @@
         </div>
     </div>
 
+    <!-- Generic Alert/Confirm Modal for OBS UI -->
+    <div id="genericModalOverlay" class="confirm-overlay" style="display: none; z-index: 10000; background: rgba(0,0,0,0.8);"></div>
+    <div id="genericModal" class="confirm-modal" style="display: none; z-index: 10001; min-width: 300px;">
+        <h3 id="genericModalTitle" style="margin-top: 0;"><i class="fas fa-info-circle"></i> แจ้งเตือน</h3>
+        <p id="genericModalMsg" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;"></p>
+        <div class="confirm-buttons" id="genericModalBtnContainer" style="margin-top: 20px; display: flex; gap: 10px;">
+            <button id="genericModalYesBtn" class="btn-primary" style="flex: 1;"><i class="fas fa-check"></i> ตกลง</button>
+            <button id="genericModalNoBtn" class="btn-secondary" style="flex: 1;"><i class="fas fa-times"></i> ยกเลิก</button>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
 
@@ -2351,13 +2362,63 @@
     <!-- Cache settings moved to main Settings modal -->
 
     <script>
-        // the function clearCacheCategory was left here
+        // Custom Modal Wrappers
+        window.customAlert = (msg, title = 'แจ้งเตือน', icon = 'fa-info-circle') => {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('genericModalOverlay');
+                const modal = document.getElementById('genericModal');
+                document.getElementById('genericModalTitle').innerHTML = `<i class="fas ${icon}"></i> ${title}`;
+                document.getElementById('genericModalMsg').innerHTML = msg.replace(/\n/g, '<br>');
+                
+                const btnContainer = document.getElementById('genericModalBtnContainer');
+                btnContainer.innerHTML = '<button id="genericModalYesBtn" class="btn-primary" style="flex: 1;"><i class="fas fa-check"></i> ตกลง</button>';
+                
+                overlay.style.display = 'block';
+                modal.style.display = 'block';
 
-        window.clearCacheCategory = (type) => {
+                document.getElementById('genericModalYesBtn').onclick = () => {
+                    overlay.style.display = 'none';
+                    modal.style.display = 'none';
+                    resolve();
+                };
+            });
+        };
+
+        window.customConfirm = (msg, title = 'ยืนยันการดำเนินการ', icon = 'fa-question-circle', yesText = 'ตกลง', yesColor = 'btn-danger') => {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('genericModalOverlay');
+                const modal = document.getElementById('genericModal');
+                document.getElementById('genericModalTitle').innerHTML = `<i class="fas ${icon}"></i> ${title}`;
+                document.getElementById('genericModalMsg').innerHTML = msg.replace(/\n/g, '<br>');
+                
+                const btnContainer = document.getElementById('genericModalBtnContainer');
+                btnContainer.innerHTML = `
+                    <button id="genericModalYesBtn" class="${yesColor}" style="flex: 1;"><i class="fas fa-check"></i> ${yesText}</button>
+                    <button id="genericModalNoBtn" class="btn-secondary" style="flex: 1;"><i class="fas fa-times"></i> ยกเลิก</button>
+                `;
+                
+                overlay.style.display = 'block';
+                modal.style.display = 'block';
+
+                document.getElementById('genericModalYesBtn').onclick = () => {
+                    overlay.style.display = 'none';
+                    modal.style.display = 'none';
+                    resolve(true);
+                };
+                document.getElementById('genericModalNoBtn').onclick = () => {
+                    overlay.style.display = 'none';
+                    modal.style.display = 'none';
+                    resolve(false);
+                };
+            });
+        };
+
+        window.clearCacheCategory = async (type) => {
             let msg = 'คุณแน่ใจหรือไม่ที่จะลบแคชในหมวดหมู่นี้?';
             if (type === 'all') msg = '⚠️ ระบบจะลบข้อมูลที่บันทึกไว้ในเครื่องทั้งหมด รวมถึงโพยแข่งและข้อมูลผู้ใช้\n\nคุณแน่ใจหรือไม่?';
 
-            if (!confirm(msg + '\n(ระบบจะโหลดหน้าใหม่เพื่อเคลียร์ข้อมูล)')) return;
+            const confirmed = await window.customConfirm(msg + '\n(ระบบจะโหลดหน้าใหม่เพื่อเคลียร์ข้อมูล)', 'ล้างข้อมูล (Clear Cache)', 'fa-trash-alt');
+            if (!confirmed) return;
 
             switch (type) {
                 case 'user':
@@ -2398,29 +2459,27 @@
             const profile = { v: 'V2.9.3', d: data };
             try {
                 const code = 'OBS-' + btoa(encodeURIComponent(JSON.stringify(profile)));
-                const input = document.getElementById('profileCodeInput');
-                if(input && (!input.value || input.value.startsWith('OBS-'))) {
-                    input.value = code;
-                }
+                const exportInput = document.getElementById('profileCodeExport');
+                if(exportInput) exportInput.value = code;
             } catch(e) { console.error("Export error", e); }
         };
 
-        window.copyProfileCode = () => {
-            const input = document.getElementById('profileCodeInput');
-            if(!input.value.startsWith('OBS-')) window.generateProfileCode();
-            input.select();
+        window.copyProfileCode = async () => {
+            const exportInput = document.getElementById('profileCodeExport');
+            window.generateProfileCode(); // Force generate every copy to avoid stale data
+            exportInput.select();
             document.execCommand('copy');
-            if(window.showToast) window.showToast('คัดลอก Profile Code แล้ว!', 'success');
-            else alert('คัดลอก Profile Code แล้ว!');
+            if(window.showToast) window.showToast('คัดลอก Export Code แล้ว!', 'success');
+            else await window.customAlert('คัดลอก Export Code แล้ว!', 'สำเร็จ', 'fa-check');
         };
 
         let tempImportProfile = null;
 
-        window.verifyProfileCode = () => {
+        window.verifyProfileCode = async () => {
             const input = document.getElementById('profileCodeInput');
             const code = input.value.trim();
             if (!code || !code.startsWith('OBS-')) {
-                alert('❌ โค้ดไม่ถูกต้อง หรือเป็นโค้ดรุ่นเก่า\n(โค้ดต้องขึ้นต้นด้วย OBS-)');
+                await window.customAlert('❌ โค้ดไม่ถูกต้อง หรือเป็นโค้ดรุ่นเก่า\n(โค้ดต้องขึ้นต้นด้วย OBS-)', 'ข้อผิดพลาด', 'fa-times-circle');
                 return;
             }
             try {
@@ -2428,25 +2487,25 @@
                 const profile = JSON.parse(decodedStr);
                 
                 if (profile.v !== 'V2.9.3') {
-                    alert(`⚠️ ไม่สามารถนำเข้าข้อมูลข้ามเวอร์ชั่นได้\nโค้ดนี้สร้างจากเวอร์ชั่น: ${profile.v || 'เก่า'}`);
+                    await window.customAlert(`⚠️ ไม่สามารถนำเข้าข้อมูลข้ามเวอร์ชั่นได้\nโค้ดนี้สร้างจากเวอร์ชั่น: ${profile.v || 'เก่า'}`, 'คนละเวอร์ชั่น', 'fa-exclamation-triangle');
                     return;
                 }
                 
                 tempImportProfile = profile.d;
                 document.getElementById('profileActionsNormal').style.display = 'none';
                 document.getElementById('profileActionsConfirm').style.display = 'flex';
-                document.getElementById('profileVerifyMsg').innerHTML = `✔️ โค้ดสมบูรณ์ (Version: ${profile.v})<br><span style="font-size:0.75rem;font-weight:normal;color:#94a3b8;">กดปุ่มสีเขียวเพื่อลง Profile แทนที่การตั้งค่าปัจจุบัน</span>`;
+                document.getElementById('profileVerifyMsg').innerHTML = `✔️ โค้ดสมบูรณ์ (Version: ${profile.v})<br><span style="font-size:0.75rem;font-weight:normal;color:#94a3b8;">กดปุ่มสีเขียวเพื่อแทนที่การตั้งค่าปัจจุบัน</span>`;
             } catch(e) {
-                alert('❌ โค้ดข้อมูลไม่ถูกต้องหรือชำรุด');
+                await window.customAlert('❌ โค้ดข้อมูลไม่ถูกต้องหรือชำรุด', 'ข้อมูลพัง', 'fa-times-circle');
             }
         };
 
-        window.applyProfileCode = () => {
+        window.applyProfileCode = async () => {
             if (!tempImportProfile) return;
             Object.keys(tempImportProfile).forEach(k => {
                 localStorage.setItem(k, tempImportProfile[k]);
             });
-            alert('✅ นำเข้า Profile เรียบร้อย!\nระบบจะทำการโหลดหน้าจอใหม่เพื่อแสดงผลตามการตั้งค่าใหม่...');
+            await window.customAlert('✅ นำเข้า Profile เรียบร้อย!\nระบบจะทำการโหลดหน้าจอใหม่เพื่อแสดงผลตามการตั้งค่าใหม่...', 'สำเร็จ', 'fa-check-circle');
             location.reload();
         };
 
@@ -3062,9 +3121,21 @@
                 <h5 style="margin: 0 0 10px 0; color: #fbbf24; font-size: 0.95rem;"><i class="fas fa-file-export"></i> Profile Settings (โค้ดตั้งค่าระบบ)</h5>
                 <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; line-height: 1.4;">ก๊อปปี้โค้ดด้านล่างเพื่อนำการตั้งค่าต่างๆ (รูปแบบปุ่ม, คีย์ลัด, การแสดงผล) ไปใช้กับเครื่องอื่น หรือวางโค้ดจากเครื่องอื่นเพื่อนำมาใช้ที่นี่</p>
                 
-                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                    <input type="text" id="profileCodeInput" placeholder="กรอกโค้ดตั้งค่าที่นี่..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 0.8rem;">
-                    <button onclick="copyProfileCode()" class="btn-secondary" title="Copy Code" style="padding: 0 12px; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
+                <!-- Export Section -->
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 0.75rem; color: #cbd5e1; display: block; margin-bottom: 4px;">ส่งออกตั้งค่าบัญชีนี้ (Export Code):</span>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="profileCodeExport" readonly placeholder="กำลังสร้างโค้ด..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px dashed rgba(255,255,255,0.3); padding: 8px 10px; color: #94a3b8; border-radius: 6px; font-family: monospace; font-size: 0.8rem; cursor: text;">
+                        <button onclick="copyProfileCode()" class="btn-secondary" title="Copy Code" style="padding: 0 12px; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+
+                <!-- Import Section -->
+                <div style="margin-bottom: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <span style="font-size: 0.75rem; color: #cbd5e1; display: block; margin-bottom: 4px;">นำเข้าจากเครื่องอื่น (Import Code):</span>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="profileCodeInput" placeholder="วางโค้ดตั้งค่า (OBS-...) ที่นี่..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(59,130,246,0.3); padding: 8px 10px; color: #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 0.8rem;">
+                    </div>
                 </div>
                 
                 <div id="profileActionsNormal" style="display: flex; gap: 6px;">
