@@ -2381,6 +2381,88 @@
             // Reload page to ensure clean state
             location.reload();
         };
+
+        const profileKeys = [
+            'cardVisibility', 'customKeybinds', 'actionButtonSettings', 'maxHalves', 
+            'colorCount', 'labelCount', 'dataSourceMode', 'googleSheetUrl', 
+            'googleSheetTabIndex', 'obsMainSceneName', 'obsReplaySceneName', 
+            'controlPanelLayout', 'tagsData', 'detailsText'
+        ];
+        
+        window.generateProfileCode = () => {
+            let data = {};
+            profileKeys.forEach(k => {
+                const val = localStorage.getItem(k);
+                if (val !== null) data[k] = val;
+            });
+            const profile = { v: 'V2.9.3', d: data };
+            try {
+                const code = 'OBS-' + btoa(encodeURIComponent(JSON.stringify(profile)));
+                const input = document.getElementById('profileCodeInput');
+                if(input && (!input.value || input.value.startsWith('OBS-'))) {
+                    input.value = code;
+                }
+            } catch(e) { console.error("Export error", e); }
+        };
+
+        window.copyProfileCode = () => {
+            const input = document.getElementById('profileCodeInput');
+            if(!input.value.startsWith('OBS-')) window.generateProfileCode();
+            input.select();
+            document.execCommand('copy');
+            if(window.showToast) window.showToast('คัดลอก Profile Code แล้ว!', 'success');
+            else alert('คัดลอก Profile Code แล้ว!');
+        };
+
+        let tempImportProfile = null;
+
+        window.verifyProfileCode = () => {
+            const input = document.getElementById('profileCodeInput');
+            const code = input.value.trim();
+            if (!code || !code.startsWith('OBS-')) {
+                alert('❌ โค้ดไม่ถูกต้อง หรือเป็นโค้ดรุ่นเก่า\n(โค้ดต้องขึ้นต้นด้วย OBS-)');
+                return;
+            }
+            try {
+                const decodedStr = decodeURIComponent(atob(code.replace('OBS-', '')));
+                const profile = JSON.parse(decodedStr);
+                
+                if (profile.v !== 'V2.9.3') {
+                    alert(`⚠️ ไม่สามารถนำเข้าข้อมูลข้ามเวอร์ชั่นได้\nโค้ดนี้สร้างจากเวอร์ชั่น: ${profile.v || 'เก่า'}`);
+                    return;
+                }
+                
+                tempImportProfile = profile.d;
+                document.getElementById('profileActionsNormal').style.display = 'none';
+                document.getElementById('profileActionsConfirm').style.display = 'flex';
+                document.getElementById('profileVerifyMsg').innerHTML = `✔️ โค้ดสมบูรณ์ (Version: ${profile.v})<br><span style="font-size:0.75rem;font-weight:normal;color:#94a3b8;">กดปุ่มสีเขียวเพื่อลง Profile แทนที่การตั้งค่าปัจจุบัน</span>`;
+            } catch(e) {
+                alert('❌ โค้ดข้อมูลไม่ถูกต้องหรือชำรุด');
+            }
+        };
+
+        window.applyProfileCode = () => {
+            if (!tempImportProfile) return;
+            Object.keys(tempImportProfile).forEach(k => {
+                localStorage.setItem(k, tempImportProfile[k]);
+            });
+            alert('✅ นำเข้า Profile เรียบร้อย!\nระบบจะทำการโหลดหน้าจอใหม่เพื่อแสดงผลตามการตั้งค่าใหม่...');
+            location.reload();
+        };
+
+        window.cancelProfileCode = () => {
+            tempImportProfile = null;
+            document.getElementById('profileActionsNormal').style.display = 'flex';
+            document.getElementById('profileActionsConfirm').style.display = 'none';
+        };
+
+        // Attach event listener to generate fresh code when Cache Tab is clicked
+        document.addEventListener('DOMContentLoaded', () => {
+            const cacheTabBtn = document.querySelector('[data-tab="settingsTabCache"]');
+            if(cacheTabBtn) {
+                cacheTabBtn.addEventListener('click', window.generateProfileCode);
+            }
+        });
     </script>
     <div class="container">
         <div class="card"
@@ -2974,6 +3056,31 @@
         <!-- V2.9.3: Tab 6: Cache Management -->
         <div class="settings-tab-content" id="settingsTabCache">
             <h4 style="margin: 0; margin-bottom: 15px;"><i class="fas fa-trash-alt"></i> ตั้งค่า & จัดการแคช</h4>
+            
+            <!-- V2.9.3: Profile Export/Import -->
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                <h5 style="margin: 0 0 10px 0; color: #fbbf24; font-size: 0.95rem;"><i class="fas fa-file-export"></i> Profile Settings (โค้ดตั้งค่าระบบ)</h5>
+                <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px; line-height: 1.4;">ก๊อปปี้โค้ดด้านล่างเพื่อนำการตั้งค่าต่างๆ (รูปแบบปุ่ม, คีย์ลัด, การแสดงผล) ไปใช้กับเครื่องอื่น หรือวางโค้ดจากเครื่องอื่นเพื่อนำมาใช้ที่นี่</p>
+                
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <input type="text" id="profileCodeInput" placeholder="กรอกโค้ดตั้งค่าที่นี่..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 0.8rem;">
+                    <button onclick="copyProfileCode()" class="btn-secondary" title="Copy Code" style="padding: 0 12px; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
+                </div>
+                
+                <div id="profileActionsNormal" style="display: flex; gap: 6px;">
+                    <button onclick="verifyProfileCode()" class="btn-primary" style="flex: 1; justify-content: center;"><i class="fas fa-download"></i> ตรวจสอบ และ อิมพอร์ตตั้งค่า (Import)</button>
+                </div>
+                
+                <div id="profileActionsConfirm" style="display: none; flex-direction: column; gap: 10px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); padding: 12px; border-radius: 6px;">
+                    <div id="profileVerifyMsg" style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;"><i class="fas fa-check-circle"></i> โค้ดถูกต้อง พร้อมใช้งาน!</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="applyProfileCode()" class="btn-success" style="flex: 1; justify-content: center;"><i class="fas fa-check"></i> ยืนยันการทับข้อมูล Profile เดิม</button>
+                        <button onclick="cancelProfileCode()" class="btn-danger" style="flex: 1; justify-content: center;"><i class="fas fa-times"></i> ยกเลิก</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear Cache List -->
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button onclick="clearCacheCategory('user')" style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(59,130,246,0.25)'" onmouseout="this.style.background='rgba(59,130,246,0.15)'">
                     <strong style="display: block; margin-bottom: 2px;"><i class="fas fa-user-circle"></i> ข้อมูลผู้ใช้ & ระดับขั้น</strong>
