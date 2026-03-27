@@ -1,10 +1,10 @@
-// fcp_v2_assets/languages.js
+﻿// fcp_v2_assets/languages.js
 // ไฟล์สำหรับเก็บคำแปลทั้งหมด
 
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.9.1 (OBSScore)",
+        appTitle: "Football Scoreboard Controller - V2.9.2 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.9.1",
+        changelog: "Update Version 2.9.2",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -89,42 +89,42 @@ export const translations = {
             { code: '&lt;label5&gt;', desc: 'Label 5 Text' },
         ],
         save: "Save",
-        // V2.9.1 Settings Tabs
+        // V2.9.2 Settings Tabs
         settingsTabGeneral: "📝 Announce",
         settingsTabActions: "🎮 Actions",
         settingsTabKeybinds: "⌨️ Keys",
         settingsTabVisibility: "👁️ Display",
         settingsTabData: "📊 Data",
-        // V2.9.1 Confirm Dialog
+        // V2.9.2 Confirm Dialog
         confirmResetTitle: "Confirm Full Reset",
         confirmResetMsg: "This will reset all scores, timer, half, and injury time. Are you sure?",
         confirmYes: "Yes, Reset All",
         confirmNo: "Cancel",
-        // V2.9.1 Color Count
+        // V2.9.2 Color Count
         colorCount: "Team Colors:",
         colorCount1: "1 Color",
         colorCount2: "2 Colors",
-        // V2.9.1 Timer State
+        // V2.9.2 Timer State
         timerRunning: "Running",
         timerPaused: "Paused",
-        // V2.9.1 OBS Source Creation
+        // V2.9.2 OBS Source Creation
         createObsSources: "Auto-Create Sources in OBS",
         createObsSourcesDesc: "Create all required text & color sources in the current OBS scene automatically.",
         toastSourcesCreated: "All OBS sources created successfully!",
         toastSourcesPartial: "Some sources already exist, others created.",
         toastSourcesFailed: "Failed to create sources. Check OBS connection.",
-        // V2.9.1 Help
+        // V2.9.2 Help
         helpStep4: "4. Use the <i class='fas fa-cog'></i> Settings button to configure action buttons, keyboard shortcuts, display settings, and data sources.",
         helpStep5: "5. Use the <i class='fas fa-mobile-alt'></i> Mobile button to control from a smartphone.",
         helpStep6: "6. Click <strong>'Auto-Create Sources in OBS'</strong> below to generate all required sources automatically.",
-        // V2.9.1 Donate
+        // V2.9.2 Donate
         donateShopee: "Shopee (Affiliate)",
         donateDesc: "This program is free! Thank you for supporting the developer.",
         donateShopeeDesc: "Support by shopping on Shopee via this affiliate link.",
         donateEasyDonateDesc: "Alternative: Support via EasyDonate.",
         donateSponsorTitle: "Support the Developer",
         donateClose: "Close",
-        // V2.9.1 Visibility extras (translated labels)
+        // V2.9.2 Visibility extras (translated labels)
         visExtraTimeBtns: "Extra Time Buttons",
         visResetToStart: "Reset to Start",
         visSetTimeBtn: "Set Time Button",
@@ -142,7 +142,7 @@ export const translations = {
         sourcesTableHeaders: ["Source Name", "Source Type", "Details"],
         selectMatchId: "Select Match ID",
         loadBtn: "LOAD",
-        // V2.9.1 Welcome Sponsor
+        // V2.9.2 Welcome Sponsor
         donateFreeMsg: "This program is free! Thank you for your support.",
         donateShopeeMsg: "You can support me by shopping on Shopee via this Affiliate link.",
         donateShopeeAlt: "QR Code for Jamornz's Shopee",
@@ -184,7 +184,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.9.1</h5>
+                    <h5>Version 2.9.2</h5>
                     <ul>
                         <li>**Settings:** Reorganized into Tabs (Announce, Actions, Keys, Display, Data) for easier access.</li>
                         <li>**UI:** Bigger color pickers, 1 or 2 color display option, timer running/paused indicator.</li>
@@ -265,7 +265,7 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.1 (OBSScore)",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.2 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -302,7 +302,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.9.1",
+        changelog: "อัปเดตเวอร์ชัน 2.9.2",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -348,42 +348,42 @@ export const translations = {
             { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5' },
         ],
         save: "บันทึก",
-        // V2.9.1 Settings Tabs
+        // V2.9.2 Settings Tabs
         settingsTabGeneral: "📝 ประกาศ",
         settingsTabActions: "🎮 ปุ่ม",
         settingsTabKeybinds: "⌨️ คีย์ลัด",
         settingsTabVisibility: "👁️ แสดงผล",
         settingsTabData: "📊 ข้อมูล",
-        // V2.9.1 Confirm Dialog
+        // V2.9.2 Confirm Dialog
         confirmResetTitle: "ยืนยันการรีเซ็ตทั้งหมด",
         confirmResetMsg: "จะรีเซ็ตคะแนน, เวลา, ครึ่ง, ทดเวลา ทั้งหมด คุณแน่ใจหรือไม่?",
         confirmYes: "ใช่ รีเซ็ตทั้งหมด",
         confirmNo: "ยกเลิก",
-        // V2.9.1 Color Count
+        // V2.9.2 Color Count
         colorCount: "จำนวนสีทีม:",
         colorCount1: "1 สี",
         colorCount2: "2 สี",
-        // V2.9.1 Timer State
+        // V2.9.2 Timer State
         timerRunning: "กำลังเดิน",
         timerPaused: "หยุด",
-        // V2.9.1 OBS Source Creation
+        // V2.9.2 OBS Source Creation
         createObsSources: "สร้าง Source อัตโนมัติใน OBS",
         createObsSourcesDesc: "สร้าง Text & Color sources ที่จำเป็นทั้งหมดใน Scene ปัจจุบันของ OBS โดยอัตโนมัติ",
         toastSourcesCreated: "สร้าง OBS sources ทั้งหมดสำเร็จ!",
         toastSourcesPartial: "บาง source มีอยู่แล้ว สร้างที่เหลือสำเร็จ",
         toastSourcesFailed: "สร้าง sources ไม่สำเร็จ ตรวจสอบการเชื่อมต่อ OBS",
-        // V2.9.1 Help
+        // V2.9.2 Help
         helpStep4: "4. ใช้ปุ่ม <i class='fas fa-cog'></i> ตั้งค่า เพื่อปรับ action buttons, คีย์ลัด, การแสดงผล, และแหล่งข้อมูล",
         helpStep5: "5. ใช้ปุ่ม <i class='fas fa-mobile-alt'></i> มือถือ เพื่อควบคุมผ่านสมาร์ทโฟน",
         helpStep6: "6. คลิกปุ่ม <strong>'สร้าง Source อัตโนมัติ'</strong> ด้านล่างเพื่อสร้าง sources ทั้งหมดใน OBS อัตโนมัติ",
-        // V2.9.1 Donate
+        // V2.9.2 Donate
         donateShopee: "Shopee (Affiliate)",
         donateDesc: "โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน",
         donateShopeeDesc: "สนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้",
         donateEasyDonateDesc: "ทางเลือกอื่น: สนับสนุนผ่าน EasyDonate",
         donateSponsorTitle: "สนับสนุนผู้พัฒนา",
         donateClose: "ปิด",
-        // V2.9.1 Visibility extras
+        // V2.9.2 Visibility extras
         visExtraTimeBtns: "ปุ่มทดเวลา",
         visResetToStart: "รีเซ็ตไปเวลาเริ่มต้น",
         visSetTimeBtn: "ปุ่มตั้งเวลา",
@@ -400,7 +400,7 @@ export const translations = {
         sourcesTitle: "OBS Sources ที่ต้องมี (คลิกเพื่อคัดลอก)",
         selectMatchId: "เลือก Match ID",
         loadBtn: "โหลดข้อมูล",
-        // V2.9.1 Welcome Sponsor
+        // V2.9.2 Welcome Sponsor
         donateFreeMsg: "โปรแกรมนี้แจกฟรี! ขอขอบคุณทุกท่านที่สนับสนุน",
         donateShopeeMsg: "คุณสามารถสนับสนุนผมด้วยการซื้อของใน Shopee ผ่านลิ้งค์ Affiliate นี้ได้",
         donateShopeeAlt: "QR Code สำหรับ Shopee ของ Jamornz",
@@ -446,7 +446,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.9.1</h5>
+                    <h5>เวอร์ชัน 2.9.2</h5>
                     <ul>
                         <li>**ตั้งค่า:** จัดเรียงเป็นแท็บ (ประกาศ, ปุ่ม, คีย์ลัด, แสดงผล, ข้อมูล) เข้าถึงง่ายขึ้น</li>
                         <li>**UI:** ปุ่มสีใหญ่ขึ้น, เลือกแสดง 1 หรือ 2 สี, สถานะ timer (เดิน/หยุด)</li>

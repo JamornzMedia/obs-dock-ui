@@ -1,6 +1,7 @@
-﻿// fcp_v2_assets/main.js
+// fcp_v2_assets/main.js
 
 import { translations } from './languages.js';
+import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
@@ -25,16 +26,14 @@ const elements = [
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
     "injuryTimePlusBtn", "injuryTimeMinusBtn", "resetToZeroBtn", "timeSettingsPopup",
     "startTimeMinutes", "startTimeSeconds", "saveTimeSettingsBtn", "saveAndUpdateTimeBtn", "closeTimeSettingsBtn",
-    "timeSettingsError", "changelogBtn", "changelogPopup", "closeChangelogBtn",
+    "timeSettingsError",    "closeChangelogBtn",
     "logoPathBtn", "logoPathPopup", "currentLogoPath", "logoPathInput", "editLogoPathBtn", "closeLogoPathBtn",
     "sourcesTableHeaders", "sourcesTableBody",
     "keybindsTable", "resetKeybindsBtn", "resetColorsBtn",
     "tagsTable",
     "actionSettingsTable",
     "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
-    // NEW ELEMENT ID
-    "logoDropZone", "clearLogoCacheBtn", "logoCacheList",
-    // NEW ELEMENT ID
+    // Logo Cache
     "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect", "colorCountSelect",
     "confirmOverlay", "confirmModal", "confirmYesBtn", "confirmNoBtn",
     // V2.8.1 NEW VISIBILITY INPUTS
@@ -62,6 +61,7 @@ let logoFolderPath = 'C:/OBSAssets/logos';
 let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
+let googleSheetTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1'); // 1-based sheet number
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
 window.userIdentity = userIdentity;
 
@@ -177,7 +177,7 @@ const showToast = (message, type = 'info') => {
     setTimeout(() => toast.remove(), 5000);
 };
 
-// --- V2.9.1: Settings Tab Switching ---
+// --- V2.9.2: Settings Tab Switching ---
 const switchSettingsTab = (tabName) => {
     document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.settings-tab-btn').forEach(el => el.classList.remove('active'));
@@ -187,7 +187,7 @@ const switchSettingsTab = (tabName) => {
     if (targetBtn) targetBtn.classList.add('active');
 };
 
-// --- V2.9.1: Confirm Reset Dialog ---
+// --- V2.9.2: Confirm Reset Dialog ---
 const showConfirmReset = () => {
     if (elements.confirmOverlay) elements.confirmOverlay.style.display = 'block';
     if (elements.confirmModal) elements.confirmModal.style.display = 'block';
@@ -198,7 +198,7 @@ const hideConfirmReset = () => {
     if (elements.confirmModal) elements.confirmModal.style.display = 'none';
 };
 
-// --- V2.9.1: Color Count ---
+// --- V2.9.2: Color Count ---
 const applyColorCount = () => {
     const count = parseInt(localStorage.getItem('colorCount') || '2');
     document.querySelectorAll('.color-picker-2').forEach(el => {
@@ -208,7 +208,7 @@ const applyColorCount = () => {
     if (elements.colorCountSelect) elements.colorCountSelect.value = count;
 };
 
-// --- V2.9.1: OBS Source Creation ---
+// --- V2.9.2: OBS Source Creation ---
 const OBS_INPUT_KIND_MAP = {
     'Color Source': 'color_source_v3',
     'Image Source': 'image_source',
@@ -239,7 +239,7 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
             sceneItemEnabled: true
         });
 
-        // V2.9.1: Set Transform to Scale to inner bounds
+        // V2.9.2: Set Transform to Scale to inner bounds
         // OBS WebSocket v5 returns sceneItemId in response
         if (response && response.sceneItemId) {
             await obs.call('SetSceneItemTransform', {
@@ -313,7 +313,8 @@ const closeAllPopups = () => {
     elements.helpPopup.style.display = 'none';
     elements.donatePopup.style.display = 'none';
     elements.timeSettingsPopup.style.display = 'none';
-    elements.changelogPopup.style.display = 'none';
+    const changelogPopup = document.getElementById('changelogPopup');
+    if (changelogPopup) changelogPopup.style.display = 'none';
     elements.logoPathPopup.style.display = 'none';
     elements.timeSettingsError.style.display = 'none';
     elements.welcomeSponsorPopup.style.display = 'none';
@@ -322,7 +323,7 @@ const closeAllPopups = () => {
     if (onlinePopup) onlinePopup.style.display = 'none';
     // Mobile Control popup
     if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
-    // V2.9.1 Confirm dialog
+    // V2.9.2 Confirm dialog
     hideConfirmReset();
 };
 
@@ -388,7 +389,7 @@ const populateHelpTable = (lang) => {
     sources.forEach(item => {
         const row = elements.sourcesTableBody.insertRow();
 
-        // V2.9.1: Styling for Score vs Score2
+        // V2.9.2: Styling for Score vs Score2
         if (item.code.startsWith('score2')) {
             row.style.backgroundColor = 'rgba(255, 99, 71, 0.15)'; // Reddish tint for Secondary
         } else if (item.code.startsWith('score')) {
@@ -400,7 +401,7 @@ const populateHelpTable = (lang) => {
         nameCell.onclick = () => copySourceName(item.code);
         row.insertCell().textContent = item.type;
         row.insertCell().innerHTML = item.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // V2.9.1: Create button per source
+        // V2.9.2: Create button per source
         const actionCell = row.insertCell();
         const createBtn = document.createElement('button');
         createBtn.id = `create-src-${item.code}`;
@@ -750,8 +751,6 @@ const applyVisibilitySettings = () => {
     // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
     // showResetTime removed - always visible
-    // showResetTime removed - always visible
-    if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
     if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
     if (elements.visibility_edit_time) elements.visibility_edit_time.checked = settings.showEditTime;
     if (elements.visibility_countdown) elements.visibility_countdown.checked = settings.showCountdown;
@@ -1202,7 +1201,7 @@ const updateTimerDisplay = () => {
 
 const startTimer = () => {
     if (interval) return;
-    // V2.9.1: Timer state color
+    // V2.9.2: Timer state color
     elements.timerText.classList.add('timer-running');
     elements.timerText.classList.remove('timer-paused');
     interval = setInterval(() => {
@@ -1219,7 +1218,7 @@ const startTimer = () => {
 const stopTimer = () => {
     clearInterval(interval);
     interval = null;
-    // V2.9.1: Timer state color
+    // V2.9.2: Timer state color
     elements.timerText.classList.remove('timer-running');
     elements.timerText.classList.add('timer-paused');
 };
@@ -1283,7 +1282,7 @@ const saveAndUpdateTime = () => {
 const toggleHalf = () => {
     const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
     // Limit halves array based on maxHalves
-    // V2.9.1: Fix slice logic if maxHalves is undefined or logic slightly off
+    // V2.9.2: Fix slice logic if maxHalves is undefined or logic slightly off
     const limit = maxHalves || 2;
     const activeHalves = halves.slice(0, limit);
 
@@ -1293,7 +1292,7 @@ const toggleHalf = () => {
     let nextIndex = (currentIndex + 1) % activeHalves.length;
     half = activeHalves[nextIndex];
 
-    // V2.9.1: Styled Half Text
+    // V2.9.2: Styled Half Text
     const html = `<span class="half-ordinal">${half}</span>`;
     elements.halfText.innerHTML = html;
     setText('half_text', half);
@@ -1322,9 +1321,12 @@ const handleExcel = () => {
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
+                // V2.9.3: Use selected sheet tab index (re-read from localStorage)
+                const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
+                const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
+                const sheetName = workbook.SheetNames[sheetIndex];
                 sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-                showToast(translations[currentLang].toastSuccess, 'success');
+                showToast(`${translations[currentLang].toastSuccess} (Sheet: ${sheetName})`, 'success');
             } catch (err) {
                 showToast(err.message, 'error');
             }
@@ -1341,7 +1343,11 @@ const fetchGoogleSheet = async () => {
     const match = googleSheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) return showToast(translations[currentLang].toastGoogleSheetError, 'error');
     const docId = match[1];
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`;
+    
+    // V2.9.3: Build export URL with sheet tab (gid) support
+    // Note: For CSV export, Google Sheets uses gid parameter
+    // We fetch full XLSX instead to support sheet selection by index
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=xlsx`;
 
     try {
         const loadingToast = document.createElement('div');
@@ -1351,16 +1357,19 @@ const fetchGoogleSheet = async () => {
 
         const response = await fetch(exportUrl);
         if (!response.ok) throw new Error("Network response was not ok");
-        const csvText = await response.text();
+        const arrayBuffer = await response.arrayBuffer();
 
         // Remove loading toast
         loadingToast.remove();
 
-        const workbook = XLSX.read(csvText, { type: 'string', raw: true });
-        const sheetName = workbook.SheetNames[0];
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        // V2.9.3: Use selected sheet tab index (re-read from localStorage)
+        const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
+        const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
+        const sheetName = workbook.SheetNames[sheetIndex];
         sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
 
-        showToast(translations[currentLang].toastGoogleSheetSuccess, 'success');
+        showToast(`${translations[currentLang].toastGoogleSheetSuccess} (Sheet: ${sheetName})`, 'success');
         // Auto-refresh match data if ID matches
         const currentId = parseInt(elements.matchID.value);
         if (sheetData.length > 1) {
@@ -1387,10 +1396,10 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const gsheetSettings = document.getElementById('gsheetSettings');
-    const excelSettings = document.getElementById('excelSettings'); // V2.9.1
+    const excelSettings = document.getElementById('excelSettings'); // V2.9.2
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = isGSheet ? 'none' : 'block'; // V2.9.1
+    if (excelSettings) excelSettings.style.display = isGSheet ? 'none' : 'block'; // V2.9.2
 
     const btnSpan = elements.excelBtn.querySelector('span');
     const trans = translations[currentLang];
@@ -1406,7 +1415,7 @@ const setDataSourceMode = (mode) => {
     }
 };
 
-// V2.9.1: Copy Excel Column List
+// V2.9.2: Copy Excel Column List
 window.copyExcelColumns = () => {
     const list = document.getElementById('excelColumnList');
     if (list) {
@@ -1455,7 +1464,7 @@ const enterEditMode = (team) => {
     nameInput.style.display = 'block';
     okBtn.style.display = 'inline-flex';
     nameInput.focus();
-    // V2.9.1: Enter/Escape key support
+    // V2.9.2: Enter/Escape key support
     nameInput.onkeydown = (e) => {
         if (e.key === 'Enter') { e.preventDefault(); exitEditMode(team, true); }
         else if (e.key === 'Escape') { e.preventDefault(); exitEditMode(team, false); }
@@ -1591,7 +1600,7 @@ const setupEventListeners = () => {
     }
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', showConfirmReset);
-    // V2.9.1: Confirm dialog buttons
+    // V2.9.2: Confirm dialog buttons
     if (elements.confirmYesBtn) elements.confirmYesBtn.addEventListener('click', () => { fullReset(); hideConfirmReset(); });
     if (elements.confirmNoBtn) elements.confirmNoBtn.addEventListener('click', hideConfirmReset);
     if (elements.confirmOverlay) elements.confirmOverlay.addEventListener('click', hideConfirmReset);
@@ -1638,11 +1647,11 @@ const setupEventListeners = () => {
     elements.resetToZeroBtn.addEventListener('click', resetToZero);
     elements.editTimeBtn.addEventListener('click', openTimeSettings);
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
-    // V2.9.1: Settings Tab click handlers
+    // V2.9.2: Settings Tab click handlers
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
     });
-    // V2.9.1: Color Count listener
+    // V2.9.2: Color Count listener
     if (elements.colorCountSelect) {
         elements.colorCountSelect.addEventListener('change', (e) => {
             localStorage.setItem('colorCount', e.target.value);
@@ -1661,12 +1670,17 @@ const setupEventListeners = () => {
     elements.copyBtn.addEventListener('click', copyDetails);
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
-    elements.changelogBtn.addEventListener('click', () => openPopup(elements.changelogPopup));
+    // V2.9.3: Changelog removed
+    const changelogBtn = document.getElementById('changelogBtn');
+    if (changelogBtn) changelogBtn.addEventListener('click', () => {
+        const changelogPopup = document.getElementById('changelogPopup');
+        if (changelogPopup) openPopup(changelogPopup);
+    });
     elements.popupOverlay.addEventListener('click', closeAllPopups);
 
     elements.closeHelpBtn.addEventListener('click', closeAllPopups);
     elements.closeDonateBtn.addEventListener('click', closeAllPopups);
-    elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
+    if (elements.closeChangelogBtn) elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
     elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup);
@@ -1842,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.copyTag = copyTag;
 
-    // V2.9.1: Mobile Room Logic (Copy Link Handler Only — popup/create/close handled by outer DOMContentLoaded)
+    // V2.9.2: Mobile Room Logic (Copy Link Handler Only — popup/create/close handled by outer DOMContentLoaded)
     const setupMobileRoomLogic = () => {
         const mobileLinkInput = document.getElementById('mobileLinkInput');
 
@@ -1858,7 +1872,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- V2.9.1: Loading State & Initialization ---
+    // --- V2.9.2: Loading State & Initialization ---
     const initApp = async () => {
         let startBtn = document.getElementById('closeWelcomeBtn');
 
@@ -1893,39 +1907,182 @@ document.addEventListener('DOMContentLoaded', () => {
             // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
 
             // Attach Save & Enter Logic
-            startBtn.addEventListener('click', () => {
+            startBtn.addEventListener('click', async () => {
                 const nameInput = document.getElementById('visitorName');
                 const provInput = document.getElementById('visitorProvince');
                 const provOtherInput = document.getElementById('visitorProvinceOther');
+                const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
-                if (nameInput && nameInput.value.trim()) {
-                    // Generate 8-digit ID for this user
-                    const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+                const setStatus = (msg, color = '#94a3b8') => {
+                    if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
+                };
 
-                    let province = '';
-                    if (provInput) {
-                        province = provInput.value;
-                        if (province === 'Other' && provOtherInput) {
-                            province = provOtherInput.value.trim() || 'Unknown';
-                        }
-                    }
+                // --- CASE 1: Empty fields → Temporary User ---
+                if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
+                    const confirmTemp = await window.customConfirm(
+                        'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+                        'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
+                        '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
+                        'You haven\'t filled in the information.\n' +
+                        'Enter as temporary user?\n' +
+                        '(No usage data will be saved)',
+                        'เข้าสู่ระบบแบบผู้เยี่ยมชม',
+                        'fa-user-secret'
+                    );
+                    if (!confirmTemp) return;
 
-                    const identity = {
-                        name: nameInput.value.trim(),
-                        province: province || 'Unknown',
+                    // Enter as temporary user
+                    const tempIdentity = {
+                        name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+                        province: 'Unknown',
                         platform: 'PC',
-                        ID: userID
+                        ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+                        isTemporary: true
                     };
 
-                    localStorage.setItem('userIdentity', JSON.stringify(identity));
-                    userIdentity = identity; // Update module-level variable
-                    window.userIdentity = identity;
+                    localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
+                    userIdentity = tempIdentity;
+                    window.userIdentity = tempIdentity;
 
-                    // Create com_ room in Firebase
-                    if (window.initOnlinePresenceSystem) {
-                        window.initOnlinePresenceSystem();
+                    setStatus('⚡ เข้าแบบผู้ใช้ชั่วคราว...', '#f59e0b');
+
+                    const welcomeScreen = document.getElementById('welcomeScreen');
+                    if (welcomeScreen) {
+                        welcomeScreen.style.opacity = '0';
+                        setTimeout(() => welcomeScreen.style.display = 'none', 500);
+                    }
+                    return;
+                }
+
+                // --- CASE 2: Full login flow ---
+                const enteredName = nameInput.value.trim();
+
+                // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
+                const storedMachineId = localStorage.getItem('machineIdentityName');
+                if (storedMachineId && storedMachineId !== enteredName) {
+                    // Check cooldown
+                    const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
+                    const now = Date.now();
+                    const cooldownMs = 30 * 60 * 1000; // 30 minutes
+                    const elapsed = now - (changeLog.lastChanged || 0);
+                    const remaining = cooldownMs - elapsed;
+
+                    if (remaining > 0) {
+                        // Still in cooldown
+                        const mins = Math.ceil(remaining / 60000);
+                        setStatus(`⏳ เปลี่ยนชื่อได้อีก ${mins} นาที (ชื่อปัจจุบัน: ${storedMachineId})`, '#f59e0b');
+                        nameInput.value = storedMachineId;
+                        return;
+                    }
+
+                    // Cooldown passed — confirm change
+                    const confirmChange = await window.customConfirm(
+                        `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${enteredName}"\n\n` +
+                        `ยืนยันเปลี่ยนชื่อหรือไม่?\n` +
+                        `(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`,
+                        'ยืนยันเปลี่ยนชื่อ',
+                        'fa-exclamation-triangle'
+                    );
+                    if (!confirmChange) {
+                        nameInput.value = storedMachineId;
+                        return;
+                    }
+
+                    // Update change log
+                    const newCount = (changeLog.count || 0) + 1;
+                    localStorage.setItem('nameChangeLog', JSON.stringify({
+                        count: newCount,
+                        lastChanged: now,
+                        previousName: storedMachineId
+                    }));
+
+                    // If changed >= 3 times → log to Firebase as suspicious
+                    if (newCount >= 3) {
+                        try {
+                            if (typeof firebase !== 'undefined' && firebase.database) {
+                                await firebase.database().ref('obs_id_spam/' + Date.now()).set({
+                                    originalName: storedMachineId,
+                                    attemptedName: enteredName,
+                                    changeCount: newCount,
+                                    timestamp: new Date().toISOString(),
+                                    userAgent: navigator.userAgent.substring(0, 100)
+                                });
+                                console.warn(`Suspicious name change #${newCount}: ${storedMachineId} → ${enteredName}`);
+                            }
+                        } catch (e) { console.error('Spam log error:', e); }
+                    }
+
+                    setStatus(`🔄 เปลี่ยนชื่อเป็น "${enteredName}" สำเร็จ`, '#60a5fa');
+                }
+
+                // Province validation
+                let province = '';
+                if (provInput) {
+                    province = provInput.value;
+                    if (province === 'Other' && provOtherInput) {
+                        province = provOtherInput.value.trim();
+                        if (!province) {
+                            provOtherInput.style.border = '2px solid #ef4444';
+                            provOtherInput.focus();
+                            setTimeout(() => { provOtherInput.style.border = ''; }, 2000);
+                            await window.customAlert('กรุณาระบุจังหวัด / Please specify your province', 'ข้อมูลไม่ครบ', 'fa-map-marker-alt');
+                            return;
+                        }
                     }
                 }
+
+                // Generate 8-digit ID
+                const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+                // V2.9.3: Restore usage data from Firebase
+                try {
+                    startBtn.disabled = true;
+                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+
+                    const existingData = await fetchFirebaseUserData(enteredName);
+                    if (existingData && existingData.totalMinutes) {
+                        // V2.9.3: Always trust Firebase as the single source of truth for time
+                        const restoredMinutes = existingData.totalMinutes;
+                        localStorage.setItem('usageTracker', JSON.stringify({
+                            totalMinutes: restoredMinutes,
+                            lastUpdated: new Date().toISOString()
+                        }));
+                        const restoredRank = getRank(restoredMinutes);
+                        setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${enteredName}`);
+                    } else {
+                        setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+                    }
+
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start';
+                } catch (err) {
+                    console.error('Firebase user check error:', err);
+                    setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start';
+                }
+
+                const identity = {
+                    name: enteredName,
+                    province: province || 'Unknown',
+                    platform: 'PC',
+                    ID: userID
+                };
+
+                localStorage.setItem('userIdentity', JSON.stringify(identity));
+                // V2.9.3: Lock this machine to this name (anti-spam)
+                localStorage.setItem('machineIdentityName', enteredName);
+                userIdentity = identity;
+                window.userIdentity = identity;
+
+                // Create com_ room in Firebase
+                if (window.initOnlinePresenceSystem) {
+                    window.initOnlinePresenceSystem();
+                }
+
+                // V2.9.3: Start usage tracking
+                startUsageTracking(identity);
 
                 const welcomeScreen = document.getElementById('welcomeScreen');
                 if (welcomeScreen) {
@@ -1944,7 +2101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
     setupMobileRoomLogic();
 
-    // V2.9.1: Copy Table to Clipboard (For Excel)
+    // V2.9.2: Copy Table to Clipboard (For Excel)
     window.copyTableToClipboard = (tableId) => {
         const table = document.getElementById(tableId);
         if (!table) return;
@@ -2022,7 +2179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileBtn.addEventListener('click', window.openMobileControlPopup);
     }
 
-    // V2.9.1: Create Room / Save Settings
+    // V2.9.2: Create Room / Save Settings
     const createRoomBtn = document.getElementById('createRoomBtn');
     if (createRoomBtn) {
         createRoomBtn.addEventListener('click', () => {
@@ -2157,7 +2314,8 @@ window.initWelcomeScreen = () => {
         otherOpt.textContent = "Other / อื่นๆ";
         provinceSelect.appendChild(otherOpt);
 
-        provinceSelect.value = "กรุงเทพมหานคร"; // Default
+        // V2.9.3: Don't set default province — force user to choose
+        provinceSelect.value = ""; // Keep placeholder selected
 
         // Listener for "Other"
         provinceSelect.addEventListener('change', (e) => {
@@ -2187,44 +2345,153 @@ window.initWelcomeScreen = () => {
                 }
             }
         }
+    } else {
+        // V2.9.3: Auto-fill locked name from anti-spam if exists
+        const lockedName = localStorage.getItem('machineIdentityName');
+        if (lockedName && nameInput) {
+            nameInput.value = lockedName;
+        }
     }
 };
 
-window.saveAndEnterApp = () => {
+window.saveAndEnterApp = async () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
     const provinceOtherInput = $('visitorProvinceOther');
+    const startBtn = $('closeWelcomeBtn');
+    const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
-    const name = nameInput.value.trim();
-    if (!name) {
-        alert("Please enter your name / กรุณากรอกชื่อ");
+    const setStatus = (msg, color = '#94a3b8') => {
+        if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
+    };
+
+    const name = nameInput ? nameInput.value.trim() : '';
+
+    // CASE 1: Empty fields → Temporary User
+    if (!name || (provinceSelect && !provinceSelect.value)) {
+        const confirmTemp = await window.customConfirm(
+            'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+            'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
+            '(จะไม่มีการเก็บข้อมูลการใช้งาน)',
+            'เข้าสู่ระบบแบบผู้เยี่ยมชม',
+            'fa-user-secret'
+        );
+        if (!confirmTemp) return;
+
+        userIdentity = {
+            name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+            province: 'Unknown',
+            platform: 'PC',
+            ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+            isTemporary: true
+        };
+        localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
+        window.userIdentity = userIdentity;
+        setStatus('⚡ เข้าแบบผู้ใช้ชั่วคราว...', '#f59e0b');
+
+        const screen = $('welcomeScreen');
+        if (screen) {
+            screen.style.opacity = '0';
+            setTimeout(() => { screen.style.display = 'none'; }, 500);
+        }
         return;
     }
 
-    let province = provinceSelect.value;
-    if (province === 'Other' && provinceOtherInput) {
-        province = provinceOtherInput.value.trim() || "Unknown";
+    // CASE 2: Soft anti-spam — cooldown timer + warn
+    const storedMachineId = localStorage.getItem('machineIdentityName');
+    if (storedMachineId && storedMachineId !== name) {
+        const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
+        const now = Date.now();
+        const cooldownMs = 30 * 60 * 1000;
+        const elapsed = now - (changeLog.lastChanged || 0);
+        const remaining = cooldownMs - elapsed;
+
+        if (remaining > 0) {
+            const mins = Math.ceil(remaining / 60000);
+            setStatus(`⏳ เปลี่ยนชื่อได้อีก ${mins} นาที (ชื่อปัจจุบัน: ${storedMachineId})`, '#f59e0b');
+            if (nameInput) nameInput.value = storedMachineId;
+            return;
+        }
+
+        const confirmChange = await window.customConfirm(
+            `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${name}"\n\n` +
+            `ยืนยันเปลี่ยนชื่อหรือไม่?\n(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`,
+            'ยืนยันเปลี่ยนชื่อ',
+            'fa-exclamation-triangle'
+        );
+        if (!confirmChange) {
+            if (nameInput) nameInput.value = storedMachineId;
+            return;
+        }
+
+        const newCount = (changeLog.count || 0) + 1;
+        localStorage.setItem('nameChangeLog', JSON.stringify({
+            count: newCount, lastChanged: now, previousName: storedMachineId
+        }));
+
+        if (newCount >= 3) {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    await firebase.database().ref('obs_id_spam/' + Date.now()).set({
+                        originalName: storedMachineId, attemptedName: name,
+                        changeCount: newCount, timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent.substring(0, 100)
+                    });
+                }
+            } catch (e) { console.error('Spam log error:', e); }
+        }
+        setStatus(`🔄 เปลี่ยนชื่อเป็น "${name}" สำเร็จ`, '#60a5fa');
     }
 
-    userIdentity = {
-        name: name,
-        province: province
-    };
+    let province = provinceSelect ? provinceSelect.value : 'Unknown';
+    if (province === 'Other' && provinceOtherInput) {
+        province = provinceOtherInput.value.trim();
+        if (!province) {
+            await window.customAlert('กรุณาระบุจังหวัด / Please specify your province', 'ข้อมูลไม่ครบ', 'fa-map-marker-alt');
+            return;
+        }
+    }
 
+    // CASE 3: Full login — Restore from Firebase
+    try {
+        if (startBtn) startBtn.disabled = true;
+        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+
+        const existingData = await fetchFirebaseUserData(name);
+        if (existingData && existingData.totalMinutes) {
+            // V2.9.3: Always trust Firebase as the single source of truth for time
+            const restoredMinutes = existingData.totalMinutes;
+            localStorage.setItem('usageTracker', JSON.stringify({
+                totalMinutes: restoredMinutes,
+                lastUpdated: new Date().toISOString()
+            }));
+            const restoredRank = getRank(restoredMinutes);
+            setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+        } else {
+            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+        }
+
+        if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
+    } catch (err) {
+        console.error('Firebase user check error:', err);
+        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
+    }
+
+    userIdentity = { name: name, province: province };
     localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
-    window.userIdentity = userIdentity; // Keep in sync
+    localStorage.setItem('machineIdentityName', name);
+    window.userIdentity = userIdentity;
     updateUserIdentityUI();
 
-    // Animate out
+    startUsageTracking(userIdentity);
+
     const screen = $('welcomeScreen');
     if (screen) {
         screen.style.opacity = '0';
-        setTimeout(() => {
-            screen.style.display = 'none';
-        }, 500);
+        setTimeout(() => { screen.style.display = 'none'; }, 500);
     }
 
-    // Create room in Firebase with new identity
     if (window.initOnlinePresenceSystem) window.initOnlinePresenceSystem();
 };
 
@@ -2284,9 +2551,15 @@ window.copyDetails = () => {
 };
 
 // Call init on load
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
     if (window.initWelcomeScreen) window.initWelcomeScreen();
     if (window.updateUserIdentityUI) window.updateUserIdentityUI();
+    // V2.9.3: Initialize rank display
+    updateRankDisplay();
+    // If user already has identity (returning user), auto-start tracking
+    if (userIdentity && userIdentity.name) {
+        startUsageTracking(userIdentity);
+    }
     // Mobile Host initialized via Popup Button now
 });
 
@@ -2447,7 +2720,8 @@ window.broadcastToMobile = () => {
     const actionSettings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
     const actions = actionSettings.map((btn, index) => ({
         name: btn.name || `Action ${index + 1}`,
-        index: index + 1
+        index: index + 1,
+        backgroundColor: btn.backgroundColor || '#374151'
     })).filter(a => a.name);
 
     // Get current Match ID
@@ -2582,7 +2856,7 @@ function handleMobileCommand(data) {
 
 
 
-// V2.9.1: Trigger Action from Mobile or PC
+// V2.9.2: Trigger Action from Mobile or PC
 window.triggerAction = async (index) => {
     const settings = JSON.parse(localStorage.getItem('actionButtonSettings') || '[]');
     const btn = settings[index - 1]; // Index is 1-based

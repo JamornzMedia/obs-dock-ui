@@ -1,4 +1,4 @@
-# Firebase Data Structure Guideline
+﻿# Firebase Data Structure Guideline
 
 > 📋 เอกสารแนวทางการจัดเก็บข้อมูลใน Firebase สำหรับระบบ OBSScore Control Panel  
 > เพื่อใช้อ้างอิงในการพัฒนาและแก้ไขในอนาคต
@@ -294,4 +294,4 @@ firebase.database().ref(`obs_rooms_score/mobile_{name}`).remove();
 ---
 
 **อัพเดทล่าสุด**: 16 ก.พ. 2026  
-**เวอร์ชัน**: 2.9.1
+**เวอร์ชัน**: 2.9.2
