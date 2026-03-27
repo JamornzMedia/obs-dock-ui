@@ -1951,24 +1951,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // V2.9.3: Duplicate name protection — check Firebase obs_id
+                // V2.9.3: Restore usage data from Firebase (duplicate name protection)
                 try {
                     startBtn.disabled = true;
                     startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
                     const existingData = await fetchFirebaseUserData(nameInput.value.trim());
                     if (existingData && existingData.totalMinutes) {
-                        // Restore accumulated minutes from Firebase
                         const localData = getUsageData();
-                        if (existingData.totalMinutes > (localData.totalMinutes || 0)) {
-                            localStorage.setItem('usageTracker', JSON.stringify({
-                                totalMinutes: existingData.totalMinutes,
-                                lastUpdated: new Date().toISOString()
-                            }));
-                            console.log(`Restored ${existingData.totalMinutes} minutes from Firebase for ${nameInput.value.trim()}`);
-                            if (typeof showToast === 'function') {
-                                showToast(`ดึงข้อมูลเดิม: ${existingData.rank || 'Trainee'} (${Math.floor(existingData.totalMinutes/60)}h)`, 'info', 5000);
-                            }
+                        // Always take the higher value (Firebase or local)
+                        const restoredMinutes = Math.max(existingData.totalMinutes, localData.totalMinutes || 0);
+                        localStorage.setItem('usageTracker', JSON.stringify({
+                            totalMinutes: restoredMinutes,
+                            lastUpdated: new Date().toISOString()
+                        }));
+                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${nameInput.value.trim()}`);
+                        if (typeof showToast === 'function') {
+                            showToast(`ดึงข้อมูลเดิม: ${existingData.rankIcon || '🔰'} ${existingData.rankTh || existingData.rank || 'Trainee'} (${Math.floor(restoredMinutes/60)}h)`, 'info', 5000);
                         }
                     }
 
@@ -2263,10 +2262,11 @@ window.initWelcomeScreen = () => {
     }
 };
 
-window.saveAndEnterApp = () => {
+window.saveAndEnterApp = async () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
     const provinceOtherInput = $('visitorProvinceOther');
+    const startBtn = $('closeWelcomeBtn');
 
     const name = nameInput.value.trim();
     if (!name) {
@@ -2286,6 +2286,40 @@ window.saveAndEnterApp = () => {
         if (!province) {
             alert("กรุณาระบุจังหวัด / Please specify your province");
             return;
+        }
+    }
+
+    // V2.9.3: Restore usage data from Firebase (duplicate name protection)
+    try {
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        }
+
+        const existingData = await fetchFirebaseUserData(name);
+        if (existingData && existingData.totalMinutes) {
+            const localData = getUsageData();
+            // Always take the higher value (Firebase or local)
+            const restoredMinutes = Math.max(existingData.totalMinutes, localData.totalMinutes || 0);
+            localStorage.setItem('usageTracker', JSON.stringify({
+                totalMinutes: restoredMinutes,
+                lastUpdated: new Date().toISOString()
+            }));
+            console.log(`Restored ${restoredMinutes} minutes from Firebase for ${name}`);
+            if (typeof showToast === 'function') {
+                showToast(`ดึงข้อมูลเดิม: ${existingData.rankIcon || '🔰'} ${existingData.rankTh || existingData.rank || 'Trainee'} (${Math.floor(restoredMinutes/60)}h)`, 'info', 5000);
+            }
+        }
+
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start';
+        }
+    } catch (err) {
+        console.error('Firebase user check error:', err);
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start';
         }
     }
 
