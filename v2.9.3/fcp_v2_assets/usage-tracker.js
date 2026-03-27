@@ -8,19 +8,19 @@ const OBS_ID_PATH = 'obs_id'; // Firebase folder
 // --- Rank Tiers (ชั่วโมง) — แต่ละระดับมี icon ไม่ซ้ำกัน ---
 const RANK_TIERS = [
     { name: 'Trainee',      nameTh: 'เด็กฝึกหัด',           hours: 0,     icon: '🔰', color: '#94a3b8' },
-    { name: 'Rookie',       nameTh: 'มือใหม่',              hours: 80,    icon: '⭐', color: '#a3e635' },
-    { name: 'Beginner',     nameTh: 'ผู้เริ่มต้น',           hours: 200,   icon: '🌱', color: '#22c55e' },
-    { name: 'Junior',       nameTh: 'ระดับต้น',             hours: 400,   icon: '🌟', color: '#14b8a6' },
-    { name: 'Senior',       nameTh: 'ระดับสูง',             hours: 700,   icon: '💪', color: '#06b6d4' },
-    { name: 'Amateur',      nameTh: 'มือสมัครเล่น',          hours: 1100,  icon: '🎯', color: '#3b82f6' },
-    { name: 'Semi-Pro',     nameTh: 'กึ่งอาชีพ',            hours: 1600,  icon: '💫', color: '#6366f1' },
-    { name: 'Pro',          nameTh: 'มืออาชีพ',             hours: 2200,  icon: '👑', color: '#8b5cf6' },
-    { name: 'National',     nameTh: 'ระดับประเทศ',          hours: 3000,  icon: '🏆', color: '#a855f7' },
-    { name: 'World Class',  nameTh: 'ระดับโลก',             hours: 4000,  icon: '🌍', color: '#d946ef' },
-    { name: 'Master',       nameTh: 'ปรมาจารย์',            hours: 5200,  icon: '💎', color: '#ec4899' },
-    { name: 'Grand Master', nameTh: 'จอมจักรวาล',           hours: 6700,  icon: '🐉', color: '#f43f5e' },
-    { name: 'Legend',       nameTh: 'ตำนาน',               hours: 8500,  icon: '⚡', color: '#fbbf24' },
-    { name: 'God',          nameTh: 'เทพ',                 hours: 10000, icon: '🔱', color: '#ff0000' },
+    { name: 'Rookie',       nameTh: 'มือใหม่',              hours: 30,    icon: '⭐', color: '#a3e635' },
+    { name: 'Beginner',     nameTh: 'ผู้เริ่มต้น',           hours: 60,    icon: '🌱', color: '#22c55e' },
+    { name: 'Junior',       nameTh: 'ระดับต้น',             hours: 95,    icon: '🌟', color: '#14b8a6' },
+    { name: 'Senior',       nameTh: 'ระดับสูง',             hours: 135,   icon: '💪', color: '#06b6d4' },
+    { name: 'Amateur',      nameTh: 'มือสมัครเล่น',          hours: 180,   icon: '🎯', color: '#3b82f6' },
+    { name: 'Semi-Pro',     nameTh: 'กึ่งอาชีพ',            hours: 230,   icon: '💫', color: '#6366f1' },
+    { name: 'Pro',          nameTh: 'มืออาชีพ',             hours: 285,   icon: '👑', color: '#8b5cf6' },
+    { name: 'National',     nameTh: 'ระดับประเทศ',          hours: 345,   icon: '🏆', color: '#a855f7' },
+    { name: 'World Class',  nameTh: 'ระดับโลก',             hours: 410,   icon: '🌍', color: '#d946ef' },
+    { name: 'Master',       nameTh: 'ปรมาจารย์',            hours: 480,   icon: '💎', color: '#ec4899' },
+    { name: 'Grand Master', nameTh: 'จอมจักรวาล',           hours: 555,   icon: '🐉', color: '#f43f5e' },
+    { name: 'Legend',       nameTh: 'ตำนาน',               hours: 635,   icon: '⚡', color: '#fbbf24' },
+    { name: 'God',          nameTh: 'เทพ',                 hours: 720,   icon: '🔱', color: '#ff0000' },
 ];
 
 let trackingInterval = null;
