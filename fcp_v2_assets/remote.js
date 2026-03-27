@@ -42,6 +42,11 @@ window.initOnlinePresenceSystem = () => {
         return;
     }
 
+    if (identity.isTemporary || identity.name.startsWith('Guest_')) {
+        console.log("Temporary user (Guest), skipping presence system.");
+        return;
+    }
+
     const sanitizedName = sanitizeKey(identity.name);
     if (!sanitizedName) {
         console.log("Invalid user name for presence key.");
@@ -139,6 +144,120 @@ window.openOnlineUsersPopup = () => {
     const popup = document.getElementById('onlineUsersPopup');
     if (popup) popup.style.display = 'flex';
     renderOnlineUsersList();
+    if (window.renderGlobalRanking) window.renderGlobalRanking();
+};
+
+window.renderGlobalRanking = async () => {
+    const tbody = document.getElementById('globalRankingTableBody');
+    if (!tbody) return;
+
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#ef4444">Firebase is offline</td></tr>';
+        return;
+    }
+
+    try {
+        const snapshot = await firebase.database().ref('obs_id').once('value');
+        const rawUsers = snapshot.val() || {};
+        
+        let usersArray = [];
+        Object.keys(rawUsers).forEach(key => {
+            const user = rawUsers[key];
+            if (!user || !user.name || user.name.startsWith('Guest_')) return;
+            usersArray.push(user);
+        });
+
+        // Sort descending by totalMinutes
+        usersArray.sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
+
+        let currentUserName = '';
+        try {
+            const identity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+            if (identity && identity.name) currentUserName = identity.name.trim();
+        } catch(e){}
+
+        tbody.innerHTML = '';
+
+        if (usersArray.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#94a3b8">No ranking data found</td></tr>';
+            return;
+        }
+
+        usersArray.forEach((user, index) => {
+            const rankNum = index + 1;
+            const minutes = user.totalMinutes || 0;
+            const hoursDisplay = Math.floor(minutes/60) + 'h ' + String(minutes%60).padStart(2, '0') + 'm';
+            
+            let rankInfo = { icon: '🔰', nameTh: 'เด็กฝึกหัด', color: '#94a3b8' };
+            if (typeof window.fcpGetRankInfo === 'function') {
+                rankInfo = window.fcpGetRankInfo(minutes);
+            }
+
+            const isMe = (user.name === currentUserName);
+
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid #334155';
+            
+            if (isMe) {
+                row.style.background = 'rgba(59, 130, 246, 0.2)';
+            }
+
+            // Medal emojis
+            let medal = rankNum;
+            let numColor = '#94a3b8';
+            if (rankNum === 1) { medal = '🥇'; numColor = '#fbbf24'; row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(251, 191, 36, 0.1)'; }
+            else if (rankNum === 2) { medal = '🥈'; numColor = '#cbd5e1';  row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(203, 213, 225, 0.05)'; }
+            else if (rankNum === 3) { medal = '🥉'; numColor = '#b45309';  row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(180, 83, 9, 0.05)'; }
+
+            const cellNum = document.createElement('td');
+            cellNum.style.padding = '8px 6px';
+            cellNum.style.textAlign = 'center';
+            cellNum.style.color = numColor;
+            cellNum.style.fontWeight = 'bold';
+            cellNum.style.fontSize = (rankNum <= 3) ? '1.1rem' : '0.9rem';
+            cellNum.textContent = medal;
+            row.appendChild(cellNum);
+
+            const cellPlayer = document.createElement('td');
+            cellPlayer.style.padding = '8px 6px';
+            
+            const pName = document.createElement('div');
+            pName.textContent = user.name || 'Unknown';
+            if (isMe) {
+                pName.style.color = '#fff';
+                pName.style.fontWeight = 'bold';
+            }
+            
+            const pRank = document.createElement('div');
+            pRank.style.fontSize = '0.75rem';
+            pRank.innerHTML = `<span style="color:${rankInfo.color}">${rankInfo.icon} ${rankInfo.nameTh}</span> <span style="color:#64748b; margin-left:5px;">(${user.province || 'Unknown'})</span>`;
+            
+            cellPlayer.appendChild(pName);
+            cellPlayer.appendChild(pRank);
+            row.appendChild(cellPlayer);
+
+            const cellTime = document.createElement('td');
+            cellTime.style.padding = '8px 6px';
+            cellTime.style.textAlign = 'right';
+            cellTime.style.color = isMe ? '#93c5fd' : '#cbd5e1';
+            cellTime.style.fontFamily = 'monospace';
+            cellTime.style.whiteSpace = 'nowrap';
+            if (isMe) cellTime.style.fontWeight = 'bold';
+            cellTime.textContent = hoursDisplay;
+            row.appendChild(cellTime);
+
+            tbody.appendChild(row);
+
+            if (isMe) {
+                row.style.borderLeft = '3px solid #3b82f6';
+                row.style.borderRight = '3px solid #3b82f6';
+            }
+        });
+
+    } catch(err) {
+        console.error('Error fetching global ranking:', err);
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#ef4444">Failed to load ranking</td></tr>';
+    }
 };
 
 window.renderOnlineUsersList = () => {

@@ -115,6 +115,7 @@ export function formatUsageTime(totalMinutes) {
 // --- Firebase: Sync user data to obs_id folder ---
 function syncToFirebase(identity) {
     if (!identity || !identity.name) return;
+    if (identity.isTemporary || identity.name.startsWith('Guest_')) return;
     if (typeof firebase === 'undefined' || !firebase.database) return;
 
     try {
