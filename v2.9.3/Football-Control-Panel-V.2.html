@@ -2013,17 +2013,31 @@
             font-family: 'Inter', monospace;
             z-index: 10;
         }
+
         /* V2.9.3: Shake animation for validation */
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
         }
 
         /* V2.9.3: Rank Display */
         #userRankDisplay {
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
@@ -2035,13 +2049,16 @@
             transition: all 0.3s;
             white-space: nowrap;
         }
+
         #userRankDisplay:hover {
             border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
         }
+
         #userRankDisplay .rank-name {
             font-weight: 700;
         }
+
         #userRankDisplay .rank-time {
             color: #94a3b8;
             font-size: 0.8rem;
@@ -2089,7 +2106,8 @@
 
             <button id="closeWelcomeBtn" class="welcome-btn">Start</button>
             <!-- V2.9.3: Loading status -->
-            <div id="welcomeLoadingStatus" style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8; text-align: center; min-height: 20px; transition: all 0.3s;">
+            <div id="welcomeLoadingStatus"
+                style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8; text-align: center; min-height: 20px; transition: all 0.3s;">
             </div>
             <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center;">
                 * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
@@ -2329,6 +2347,100 @@
 
 
     </div>
+
+    <!-- V2.9.3: Settings & Cache Popup -->
+    <div id="settingsCachePopup"
+        onclick="if(event.target===this) { this.style.display='none'; document.getElementById('popupOverlay').style.display='none'; }"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center;">
+        <div
+            style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; width: 350px; max-width: 90%; max-height: 80vh; overflow-y: auto; text-align: left; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff;"><i class="fas fa-cog"></i> ตั้งค่า & จัดการแคช
+                </h3>
+                <button
+                    onclick="document.getElementById('settingsCachePopup').style.display='none'; document.getElementById('popupOverlay').style.display='none';"
+                    style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem;"><i
+                        class="fas fa-times"></i></button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <button onclick="clearCacheCategory('user')"
+                    style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(59,130,246,0.25)'"
+                    onmouseout="this.style.background='rgba(59,130,246,0.15)'">
+                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-user-circle"></i> ข้อมูลผู้ใช้
+                        & ระดับขั้น</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ, จังหวัด, และเวลาสะสม (เฉพาะในเครื่อง
+                        ไม่ลบใน Firebase)</span>
+                </button>
+
+                <button onclick="clearCacheCategory('match')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.25)'" onmouseout="this.style.background='rgba(16,185,129,0.15)'">
+                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-futbol"></i>
+                        ข้อมูลทีมแข่งล่วงหน้า</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">ล้างข้อมูลโพยแข่งที่บันทึกไว้ในสล๊อตทั้งหมด</span>
+                </button>
+
+                <button onclick="clearCacheCategory('obs')"
+                    style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #c084fc; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(168,85,247,0.25)'"
+                    onmouseout="this.style.background='rgba(168,85,247,0.15)'">
+                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-video"></i> หน้าต่าง / ตั้งค่า
+                        OBS</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ Scene, Google Sheet Tab, และ
+                        Layout</span>
+                </button>
+
+                <button onclick="clearCacheCategory('all')"
+                    style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #f87171; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; margin-top: 5px; font-weight: bold; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+                    onmouseout="this.style.background='rgba(239,68,68,0.2)'">
+                    <i class="fas fa-trash-alt"></i> ลบแคชทั้งหมด (เริ่มต้นระบบใหม่)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.openSettingsCachePopup = () => {
+            const popup = document.getElementById('settingsCachePopup');
+            const overlay = document.getElementById('popupOverlay');
+            if (popup) {
+                popup.style.display = 'flex';
+            }
+            if (overlay) {
+                overlay.style.display = 'block';
+            }
+        };
+
+        window.clearCacheCategory = (type) => {
+            let msg = 'คุณแน่ใจหรือไม่ที่จะลบแคชในหมวดหมู่นี้?';
+            if (type === 'all') msg = '⚠️ ระบบจะลบข้อมูลที่บันทึกไว้ในเครื่องทั้งหมด รวมถึงโพยแข่งและข้อมูลผู้ใช้\n\nคุณแน่ใจหรือไม่?';
+
+            if (!confirm(msg + '\n(ระบบจะโหลดหน้าใหม่เพื่อเคลียร์ข้อมูล)')) return;
+
+            switch (type) {
+                case 'user':
+                    localStorage.removeItem('userIdentity');
+                    localStorage.removeItem('usageTracker');
+                    break;
+                case 'match':
+                    localStorage.removeItem('matchesData');
+                    break;
+                case 'obs':
+                    localStorage.removeItem('obsMainSceneName');
+                    localStorage.removeItem('obsReplaySceneName');
+                    localStorage.removeItem('googleSheetTabIndex');
+                    localStorage.removeItem('controlPanelLayout');
+                    break;
+                case 'all':
+                    localStorage.clear();
+                    break;
+            }
+
+            // Reload page to ensure clean state
+            location.reload();
+        };
+    </script>
     <div class="container">
         <div class="card"
             style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px;">
@@ -2337,13 +2449,16 @@
                 <!-- Online Count: PC + Phone combined -->
                 <div id="onlineUserCount" title="Click to view Online Users" onclick="openOnlineUsersPopup()"
                     style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                    <span style="color: #4ade80; display: flex; align-items: center; gap: 4px;"><i class="fas fa-desktop"></i> <span id="onlineCountVal">0</span></span>
+                    <span style="color: #4ade80; display: flex; align-items: center; gap: 4px;"><i
+                            class="fas fa-desktop"></i> <span id="onlineCountVal">0</span></span>
                     <span style="color: rgba(255,255,255,0.2);">|</span>
-                    <span style="color: #60a5fa; display: flex; align-items: center; gap: 4px;"><i class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span></span>
+                    <span style="color: #60a5fa; display: flex; align-items: center; gap: 4px;"><i
+                            class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span></span>
                 </div>
                 <!-- V2.9.3: Rank Display with user name -->
                 <div id="userRankDisplay" title="ระดับขั้นของคุณ">
-                    🔰 <span id="rankUserName" style="color: #e2e8f0; font-weight: 600;"></span> <span class="rank-name" style="color: #94a3b8">เด็กฝึกหัด</span> <span class="rank-time">0h 00m</span>
+                    🔰 <span id="rankUserName" style="color: #e2e8f0; font-weight: 600;"></span> <span class="rank-name"
+                        style="color: #94a3b8">เด็กฝึกหัด</span> <span class="rank-time">0h 00m</span>
                 </div>
                 <!-- Announcement Text (Fixed Visibility) -->
                 <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 30px;">
@@ -2353,10 +2468,18 @@
                 </div>
             </div>
 
-            <!-- Removed Visitor Identity Slot (User Icon) as requested -->
-
         </div>
-        <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
+
+        <!-- V2.9.3: Settings & Cache Button -->
+        <button id="settingsCacheBtn" onclick="openSettingsCachePopup()"
+            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;"
+            onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+            <i class="fas fa-cog"></i>
+        </button>
+
+    </div>
+    <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
     </div>
     </div>
     <div class="card">
@@ -2890,28 +3013,29 @@
                 </div>
             </div>
 
-                <!-- V2.9.3: Sheet Tab Selector -->
-                <div style="margin-top: 10px; padding: 10px; background: rgba(30, 41, 59, 0.5); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
-                        <label style="font-size: 0.85rem; color: #cbd5e1; white-space: nowrap;">
-                            <i class="fas fa-table"></i> Sheet Number / ชีทที่:
-                        </label>
-                        <div style="display: flex; gap: 6px; align-items: center;">
-                            <input type="number" id="sheetTabInput" value="1" min="1" max="20"
-                                style="width: 60px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 6px; color: #60a5fa; border-radius: 6px; font-size: 0.95rem; font-weight: 600;"
-                                disabled>
-                            <button id="editSheetTabBtn" class="btn-secondary" style="padding: 6px 10px; font-size: 0.8rem;"
-                                onclick="toggleSheetTabEdit()">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button id="confirmSheetTabBtn" class="btn-success" style="padding: 6px 10px; font-size: 0.8rem; display: none;"
-                                onclick="confirmSheetTab()">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
+            <!-- V2.9.3: Sheet Tab Selector -->
+            <div
+                style="margin-top: 10px; padding: 10px; background: rgba(30, 41, 59, 0.5); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                    <label style="font-size: 0.85rem; color: #cbd5e1; white-space: nowrap;">
+                        <i class="fas fa-table"></i> Sheet Number / ชีทที่:
+                    </label>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="number" id="sheetTabInput" value="1" min="1" max="20"
+                            style="width: 60px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 6px; color: #60a5fa; border-radius: 6px; font-size: 0.95rem; font-weight: 600;"
+                            disabled>
+                        <button id="editSheetTabBtn" class="btn-secondary" style="padding: 6px 10px; font-size: 0.8rem;"
+                            onclick="toggleSheetTabEdit()">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button id="confirmSheetTabBtn" class="btn-success"
+                            style="padding: 6px 10px; font-size: 0.8rem; display: none;" onclick="confirmSheetTab()">
+                            <i class="fas fa-check"></i>
+                        </button>
                     </div>
-                    <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: #64748b;">* ค่าเริ่มต้นเป็นชีทแรก (1)</p>
                 </div>
+                <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: #64748b;">* ค่าเริ่มต้นเป็นชีทแรก (1)</p>
+            </div>
         </div>
 
         <!-- Close button (always visible) -->
