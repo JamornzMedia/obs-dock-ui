@@ -1911,31 +1911,107 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nameInput = document.getElementById('visitorName');
                 const provInput = document.getElementById('visitorProvince');
                 const provOtherInput = document.getElementById('visitorProvinceOther');
+                const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
-                // V2.9.3: Enforce name input
-                if (!nameInput || !nameInput.value.trim()) {
-                    if (nameInput) {
-                        nameInput.style.border = '2px solid #ef4444';
-                        nameInput.style.animation = 'shake 0.3s';
-                        nameInput.focus();
-                        setTimeout(() => { nameInput.style.border = ''; nameInput.style.animation = ''; }, 2000);
+                const setStatus = (msg, color = '#94a3b8') => {
+                    if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
+                };
+
+                // --- CASE 1: Empty fields → Temporary User ---
+                if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
+                    const confirmTemp = confirm(
+                        'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+                        'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
+                        '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
+                        'You haven\'t filled in the information.\n' +
+                        'Enter as temporary user?\n' +
+                        '(No usage data will be saved)'
+                    );
+                    if (!confirmTemp) return;
+
+                    // Enter as temporary user
+                    const tempIdentity = {
+                        name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+                        province: 'Unknown',
+                        platform: 'PC',
+                        ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+                        isTemporary: true
+                    };
+
+                    localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
+                    userIdentity = tempIdentity;
+                    window.userIdentity = tempIdentity;
+
+                    setStatus('⚡ เข้าแบบผู้ใช้ชั่วคราว...', '#f59e0b');
+
+                    const welcomeScreen = document.getElementById('welcomeScreen');
+                    if (welcomeScreen) {
+                        welcomeScreen.style.opacity = '0';
+                        setTimeout(() => welcomeScreen.style.display = 'none', 500);
                     }
-                    alert('กรุณากรอกชื่อ / Please enter your name');
                     return;
                 }
 
-                // V2.9.3: Enforce province selection
-                if (provInput && !provInput.value) {
-                    provInput.style.border = '2px solid #ef4444';
-                    provInput.focus();
-                    setTimeout(() => { provInput.style.border = ''; }, 2000);
-                    alert('กรุณาเลือกจังหวัด / Please select a province');
-                    return;
+                // --- CASE 2: Full login flow ---
+                const enteredName = nameInput.value.trim();
+
+                // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
+                const storedMachineId = localStorage.getItem('machineIdentityName');
+                if (storedMachineId && storedMachineId !== enteredName) {
+                    // Check cooldown
+                    const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
+                    const now = Date.now();
+                    const cooldownMs = 30 * 60 * 1000; // 30 minutes
+                    const elapsed = now - (changeLog.lastChanged || 0);
+                    const remaining = cooldownMs - elapsed;
+
+                    if (remaining > 0) {
+                        // Still in cooldown
+                        const mins = Math.ceil(remaining / 60000);
+                        setStatus(`⏳ เปลี่ยนชื่อได้อีก ${mins} นาที (ชื่อปัจจุบัน: ${storedMachineId})`, '#f59e0b');
+                        nameInput.value = storedMachineId;
+                        return;
+                    }
+
+                    // Cooldown passed — confirm change
+                    const confirmChange = confirm(
+                        `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${enteredName}"\n\n` +
+                        `ยืนยันเปลี่ยนชื่อหรือไม่?\n` +
+                        `(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`
+                    );
+                    if (!confirmChange) {
+                        nameInput.value = storedMachineId;
+                        return;
+                    }
+
+                    // Update change log
+                    const newCount = (changeLog.count || 0) + 1;
+                    localStorage.setItem('nameChangeLog', JSON.stringify({
+                        count: newCount,
+                        lastChanged: now,
+                        previousName: storedMachineId
+                    }));
+
+                    // If changed >= 3 times → log to Firebase as suspicious
+                    if (newCount >= 3) {
+                        try {
+                            if (typeof firebase !== 'undefined' && firebase.database) {
+                                await firebase.database().ref('obs_id_spam/' + Date.now()).set({
+                                    originalName: storedMachineId,
+                                    attemptedName: enteredName,
+                                    changeCount: newCount,
+                                    timestamp: new Date().toISOString(),
+                                    userAgent: navigator.userAgent.substring(0, 100)
+                                });
+                                console.warn(`Suspicious name change #${newCount}: ${storedMachineId} → ${enteredName}`);
+                            }
+                        } catch (e) { console.error('Spam log error:', e); }
+                    }
+
+                    setStatus(`🔄 เปลี่ยนชื่อเป็น "${enteredName}" สำเร็จ`, '#60a5fa');
                 }
 
-                // Generate 8-digit ID for this user
-                const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
-
+                // Province validation
                 let province = '';
                 if (provInput) {
                     province = provInput.value;
@@ -1951,43 +2027,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // V2.9.3: Restore usage data from Firebase (duplicate name protection)
+                // Generate 8-digit ID
+                const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+                // V2.9.3: Restore usage data from Firebase
                 try {
                     startBtn.disabled = true;
-                    startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-                    const existingData = await fetchFirebaseUserData(nameInput.value.trim());
+                    const existingData = await fetchFirebaseUserData(enteredName);
                     if (existingData && existingData.totalMinutes) {
-                        const localData = getUsageData();
-                        // Always take the higher value (Firebase or local)
-                        const restoredMinutes = Math.max(existingData.totalMinutes, localData.totalMinutes || 0);
+                        // V2.9.3: Always trust Firebase as the single source of truth for time
+                        const restoredMinutes = existingData.totalMinutes;
                         localStorage.setItem('usageTracker', JSON.stringify({
                             totalMinutes: restoredMinutes,
                             lastUpdated: new Date().toISOString()
                         }));
-                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${nameInput.value.trim()}`);
-                        if (typeof showToast === 'function') {
-                            showToast(`ดึงข้อมูลเดิม: ${existingData.rankIcon || '🔰'} ${existingData.rankTh || existingData.rank || 'Trainee'} (${Math.floor(restoredMinutes/60)}h)`, 'info', 5000);
-                        }
+                        const restoredRank = getRank(restoredMinutes);
+                        setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${enteredName}`);
+                    } else {
+                        setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
                     }
 
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 } catch (err) {
                     console.error('Firebase user check error:', err);
+                    setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 }
 
                 const identity = {
-                    name: nameInput.value.trim(),
+                    name: enteredName,
                     province: province || 'Unknown',
                     platform: 'PC',
                     ID: userID
                 };
 
                 localStorage.setItem('userIdentity', JSON.stringify(identity));
-                userIdentity = identity; // Update module-level variable
+                // V2.9.3: Lock this machine to this name (anti-spam)
+                localStorage.setItem('machineIdentityName', enteredName);
+                userIdentity = identity;
                 window.userIdentity = identity;
 
                 // Create com_ room in Firebase
@@ -2259,6 +2341,12 @@ window.initWelcomeScreen = () => {
                 }
             }
         }
+    } else {
+        // V2.9.3: Auto-fill locked name from anti-spam if exists
+        const lockedName = localStorage.getItem('machineIdentityName');
+        if (lockedName && nameInput) {
+            nameInput.value = lockedName;
+        }
     }
 };
 
@@ -2267,84 +2355,135 @@ window.saveAndEnterApp = async () => {
     const provinceSelect = $('visitorProvince');
     const provinceOtherInput = $('visitorProvinceOther');
     const startBtn = $('closeWelcomeBtn');
+    const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
-    const name = nameInput.value.trim();
-    if (!name) {
-        alert("Please enter your name / กรุณากรอกชื่อ");
+    const setStatus = (msg, color = '#94a3b8') => {
+        if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
+    };
+
+    const name = nameInput ? nameInput.value.trim() : '';
+
+    // CASE 1: Empty fields → Temporary User
+    if (!name || (provinceSelect && !provinceSelect.value)) {
+        const confirmTemp = confirm(
+            'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+            'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
+            '(จะไม่มีการเก็บข้อมูลการใช้งาน)'
+        );
+        if (!confirmTemp) return;
+
+        userIdentity = {
+            name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+            province: 'Unknown',
+            platform: 'PC',
+            ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+            isTemporary: true
+        };
+        localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
+        window.userIdentity = userIdentity;
+        setStatus('⚡ เข้าแบบผู้ใช้ชั่วคราว...', '#f59e0b');
+
+        const screen = $('welcomeScreen');
+        if (screen) {
+            screen.style.opacity = '0';
+            setTimeout(() => { screen.style.display = 'none'; }, 500);
+        }
         return;
     }
 
-    // V2.9.3: Enforce province
-    if (!provinceSelect.value) {
-        alert("กรุณาเลือกจังหวัด / Please select a province");
-        return;
+    // CASE 2: Soft anti-spam — cooldown timer + warn
+    const storedMachineId = localStorage.getItem('machineIdentityName');
+    if (storedMachineId && storedMachineId !== name) {
+        const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
+        const now = Date.now();
+        const cooldownMs = 30 * 60 * 1000;
+        const elapsed = now - (changeLog.lastChanged || 0);
+        const remaining = cooldownMs - elapsed;
+
+        if (remaining > 0) {
+            const mins = Math.ceil(remaining / 60000);
+            setStatus(`⏳ เปลี่ยนชื่อได้อีก ${mins} นาที (ชื่อปัจจุบัน: ${storedMachineId})`, '#f59e0b');
+            if (nameInput) nameInput.value = storedMachineId;
+            return;
+        }
+
+        const confirmChange = confirm(
+            `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${name}"\n\n` +
+            `ยืนยันเปลี่ยนชื่อหรือไม่?\n(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`
+        );
+        if (!confirmChange) {
+            if (nameInput) nameInput.value = storedMachineId;
+            return;
+        }
+
+        const newCount = (changeLog.count || 0) + 1;
+        localStorage.setItem('nameChangeLog', JSON.stringify({
+            count: newCount, lastChanged: now, previousName: storedMachineId
+        }));
+
+        if (newCount >= 3) {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    await firebase.database().ref('obs_id_spam/' + Date.now()).set({
+                        originalName: storedMachineId, attemptedName: name,
+                        changeCount: newCount, timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent.substring(0, 100)
+                    });
+                }
+            } catch (e) { console.error('Spam log error:', e); }
+        }
+        setStatus(`🔄 เปลี่ยนชื่อเป็น "${name}" สำเร็จ`, '#60a5fa');
     }
 
-    let province = provinceSelect.value;
+    let province = provinceSelect ? provinceSelect.value : 'Unknown';
     if (province === 'Other' && provinceOtherInput) {
         province = provinceOtherInput.value.trim();
         if (!province) {
-            alert("กรุณาระบุจังหวัด / Please specify your province");
+            alert('กรุณาระบุจังหวัด / Please specify your province');
             return;
         }
     }
 
-    // V2.9.3: Restore usage data from Firebase (duplicate name protection)
+    // CASE 3: Full login — Restore from Firebase
     try {
-        if (startBtn) {
-            startBtn.disabled = true;
-            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        }
+        if (startBtn) startBtn.disabled = true;
+        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
         const existingData = await fetchFirebaseUserData(name);
         if (existingData && existingData.totalMinutes) {
-            const localData = getUsageData();
-            // Always take the higher value (Firebase or local)
-            const restoredMinutes = Math.max(existingData.totalMinutes, localData.totalMinutes || 0);
+            // V2.9.3: Always trust Firebase as the single source of truth for time
+            const restoredMinutes = existingData.totalMinutes;
             localStorage.setItem('usageTracker', JSON.stringify({
                 totalMinutes: restoredMinutes,
                 lastUpdated: new Date().toISOString()
             }));
-            console.log(`Restored ${restoredMinutes} minutes from Firebase for ${name}`);
-            if (typeof showToast === 'function') {
-                showToast(`ดึงข้อมูลเดิม: ${existingData.rankIcon || '🔰'} ${existingData.rankTh || existingData.rank || 'Trainee'} (${Math.floor(restoredMinutes/60)}h)`, 'info', 5000);
-            }
+            const restoredRank = getRank(restoredMinutes);
+            setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+        } else {
+            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
         }
 
-        if (startBtn) {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start';
-        }
+        if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     } catch (err) {
         console.error('Firebase user check error:', err);
-        if (startBtn) {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start';
-        }
+        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     }
 
-    userIdentity = {
-        name: name,
-        province: province
-    };
-
+    userIdentity = { name: name, province: province };
     localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
-    window.userIdentity = userIdentity; // Keep in sync
+    localStorage.setItem('machineIdentityName', name);
+    window.userIdentity = userIdentity;
     updateUserIdentityUI();
 
-    // V2.9.3: Start usage tracking
     startUsageTracking(userIdentity);
 
-    // Animate out
     const screen = $('welcomeScreen');
     if (screen) {
         screen.style.opacity = '0';
-        setTimeout(() => {
-            screen.style.display = 'none';
-        }, 500);
+        setTimeout(() => { screen.style.display = 'none'; }, 500);
     }
 
-    // Create room in Firebase with new identity
     if (window.initOnlinePresenceSystem) window.initOnlinePresenceSystem();
 };
 

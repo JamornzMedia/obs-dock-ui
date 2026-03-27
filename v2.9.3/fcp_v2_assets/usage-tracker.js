@@ -125,15 +125,11 @@ function syncToFirebase(identity) {
         if (!sanitizedName) return;
 
         const data = getUsageData();
-        const rank = getRank(data.totalMinutes || 0);
 
         const userData = {
             name: identity.name.substring(0, 30),
             province: identity.province || 'Unknown',
             totalMinutes: data.totalMinutes || 0,
-            rank: rank.name,
-            rankTh: rank.nameTh,
-            rankIcon: rank.icon,
             lastUpdated: new Date().toISOString()
         };
 

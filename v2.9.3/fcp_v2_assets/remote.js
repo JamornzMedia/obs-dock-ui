@@ -55,27 +55,18 @@ window.initOnlinePresenceSystem = () => {
     window.myRoomRef = roomRef;
     window.myUserID = identity.ID;
 
-    // V2.9.3: Include rank info in presence data (via window globals set by usage-tracker)
-    let rankName = 'Trainee', rankTh = 'เด็กฝึกหัด', rankIcon = '🔰', totalMins = 0;
-    if (typeof window.fcpGetRankInfo === 'function') {
-        try {
-            const usageData = JSON.parse(localStorage.getItem('usageTracker') || '{"totalMinutes":0}');
-            totalMins = usageData.totalMinutes || 0;
-            const ri = window.fcpGetRankInfo(totalMins);
-            rankName = ri.name;
-            rankTh = ri.nameTh;
-            rankIcon = ri.icon;
-        } catch (e) { }
-    }
+    // V2.9.3: Read totalMinutes from localStorage for presence
+    let totalMins = 0;
+    try {
+        const usageData = JSON.parse(localStorage.getItem('usageTracker') || '{"totalMinutes":0}');
+        totalMins = usageData.totalMinutes || 0;
+    } catch (e) { }
 
     const presenceData = {
         name: identity.name.substring(0, 30),
         platform: "PC",
         province: identity.province || "Unknown",
         ID: identity.ID,
-        rank: rankName,
-        rankTh: rankTh,
-        rankIcon: rankIcon,
         totalMinutes: totalMins
     };
 
@@ -201,19 +192,16 @@ window.renderOnlineUsersList = () => {
         cellProvince.textContent = user.province || '-';
         row.appendChild(cellProvince);
 
-        // V2.9.3: Rank column
+        // V2.9.3: Rank column (calculated from totalMinutes)
         const cellRank = document.createElement('td');
         cellRank.style.padding = '8px 6px';
         cellRank.style.whiteSpace = 'nowrap';
-        // Use rank data from presence, or calculate from window global
         let rankColor = '#94a3b8';
-        let rankDisplay = `${user.rankIcon || '🔰'} ${user.rankTh || 'เด็กฝึกหัด'}`;
-        if (typeof window.fcpGetRankInfo === 'function' && user.totalMinutes) {
-            const ri = window.fcpGetRankInfo(user.totalMinutes);
+        let rankDisplay = '🔰 เด็กฝึกหัด';
+        if (typeof window.fcpGetRankInfo === 'function') {
+            const ri = window.fcpGetRankInfo(user.totalMinutes || 0);
             rankColor = ri.color;
             rankDisplay = `${ri.icon} ${ri.nameTh}`;
-        } else if (user.rankIcon) {
-            rankDisplay = `${user.rankIcon} ${user.rankTh || user.rank || 'Trainee'}`;
         }
         cellRank.innerHTML = `<span style="color: ${rankColor}">${rankDisplay}</span>`;
         row.appendChild(cellRank);
