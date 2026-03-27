@@ -204,16 +204,24 @@ export function stopUsageTracking() {
     }
 }
 
-// --- Update rank display in the top bar (Thai + English) ---
+// --- Update rank display in the top bar (Name + Thai Rank) ---
 export function updateRankDisplay() {
     const data = getUsageData();
     const rank = getRank(data.totalMinutes || 0);
     const timeStr = formatUsageTime(data.totalMinutes || 0);
 
+    // Get user name
+    let userName = '';
+    try {
+        const identity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
+        if (identity && identity.name) userName = identity.name;
+    } catch (e) { }
+
     const rankEl = document.getElementById('userRankDisplay');
     if (rankEl) {
-        rankEl.innerHTML = `${rank.icon} <span class="rank-name" style="color: ${rank.color}">${rank.nameTh}</span> <span class="rank-time">${timeStr}</span>`;
-        rankEl.title = `${rank.nameTh} (${rank.name}) — ${timeStr}\n${rank.nextRank ? `ถัดไป: ${rank.nextRank.icon} ${rank.nextRank.nameTh} (อีก ${rank.hoursToNext} ชม.)` : '🔱 ระดับสูงสุดแล้ว!'}`;
+        const nameHtml = userName ? `<span id="rankUserName" style="color: #e2e8f0; font-weight: 600;">${userName}</span> ` : '';
+        rankEl.innerHTML = `${rank.icon} ${nameHtml}<span class="rank-name" style="color: ${rank.color}">${rank.nameTh}</span> <span class="rank-time">${timeStr}</span>`;
+        rankEl.title = `${userName ? userName + ' — ' : ''}${rank.nameTh} (${rank.name}) — ${timeStr}\n${rank.nextRank ? `ถัดไป: ${rank.nextRank.icon} ${rank.nextRank.nameTh} (อีก ${rank.hoursToNext} ชม.)` : '🔱 ระดับสูงสุดแล้ว!'}`;
     }
 }
 
@@ -221,3 +229,6 @@ export function updateRankDisplay() {
 export function getAllRanks() {
     return RANK_TIERS;
 }
+
+// --- Expose to window for remote.js (non-module script) ---
+window.fcpGetRankInfo = getRankInfo;

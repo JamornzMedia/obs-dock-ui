@@ -2069,14 +2069,6 @@
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <input type="text" id="visitorName" placeholder="ชื่อ / ID Name"
                             style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
-                        <button id="editNameBtn" onclick="toggleNameEdit()" title="Edit"
-                            style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button id="confirmNameBtn" onclick="confirmNameEdit()" title="Confirm"
-                            style="display: none; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                            <i class="fas fa-check"></i>
-                        </button>
                     </div>
                 </div>
 
@@ -2101,36 +2093,6 @@
     </div>
 
     <script>
-        // Toggle Name Edit Mode
-        window.toggleNameEdit = () => {
-            const nameInput = document.getElementById('visitorName');
-            const editBtn = document.getElementById('editNameBtn');
-            const confirmBtn = document.getElementById('confirmNameBtn');
-
-            if (nameInput.disabled) {
-                nameInput.disabled = false;
-                nameInput.focus();
-                editBtn.style.display = 'none';
-                confirmBtn.style.display = 'inline-block';
-            }
-        };
-
-        // Confirm Name Edit
-        window.confirmNameEdit = () => {
-            const nameInput = document.getElementById('visitorName');
-            const editBtn = document.getElementById('editNameBtn');
-            const confirmBtn = document.getElementById('confirmNameBtn');
-
-            if (!nameInput.value.trim()) {
-                alert('Please enter a name / กรุณากรอกชื่อ');
-                return;
-            }
-
-            nameInput.disabled = true;
-            editBtn.style.display = 'inline-block';
-            confirmBtn.style.display = 'none';
-        };
-
         // V2.9.3: Sheet Tab Edit/Confirm
         window.toggleSheetTabEdit = () => {
             const input = document.getElementById('sheetTabInput');
@@ -2366,19 +2328,16 @@
             style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px;">
 
             <div style="display: flex; gap: 10px; align-items: center;">
-                <!-- Online Count: PC -->
+                <!-- Online Count: PC + Phone combined -->
                 <div id="onlineUserCount" title="Click to view Online Users" onclick="openOnlineUsersPopup()"
-                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #4ade80; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(74, 222, 128, 0.2);">
-                    <i class="fas fa-desktop"></i> <span id="onlineCountVal">0</span>
+                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: #4ade80; display: flex; align-items: center; gap: 4px;"><i class="fas fa-desktop"></i> <span id="onlineCountVal">0</span></span>
+                    <span style="color: rgba(255,255,255,0.2);">|</span>
+                    <span style="color: #60a5fa; display: flex; align-items: center; gap: 4px;"><i class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span></span>
                 </div>
-                <!-- Online Count: Phone -->
-                <div title="Phone Users Online"
-                    style="background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; color: #60a5fa; cursor: default; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(96, 165, 250, 0.2); transition: background 0.2s;">
-                    <i class="fas fa-mobile-alt"></i> <span id="onlinePhoneCountVal">0</span>
-                </div>
-                <!-- V2.9.3: Rank Display -->
+                <!-- V2.9.3: Rank Display with user name -->
                 <div id="userRankDisplay" title="ระดับขั้นของคุณ">
-                    🔰 <span class="rank-name" style="color: #94a3b8">Trainee</span> <span class="rank-time">0h 00m</span>
+                    🔰 <span id="rankUserName" style="color: #e2e8f0; font-weight: 600;"></span> <span class="rank-name" style="color: #94a3b8">เด็กฝึกหัด</span> <span class="rank-time">0h 00m</span>
                 </div>
                 <!-- Announcement Text (Fixed Visibility) -->
                 <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 30px;">
