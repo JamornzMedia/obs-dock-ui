@@ -2113,7 +2113,7 @@
                 * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
             </p>
         </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.3</div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.3 (อัพเดต: 28 มี.ค. 2026)</div>
     </div>
 
     <script>
@@ -2348,69 +2348,10 @@
 
     </div>
 
-    <!-- V2.9.3: Settings & Cache Popup -->
-    <div id="settingsCachePopup"
-        onclick="if(event.target===this) { this.style.display='none'; document.getElementById('popupOverlay').style.display='none'; }"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center;">
-        <div
-            style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; width: 350px; max-width: 90%; max-height: 80vh; overflow-y: auto; text-align: left; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: #fff;"><i class="fas fa-cog"></i> ตั้งค่า & จัดการแคช
-                </h3>
-                <button
-                    onclick="document.getElementById('settingsCachePopup').style.display='none'; document.getElementById('popupOverlay').style.display='none';"
-                    style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem;"><i
-                        class="fas fa-times"></i></button>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <button onclick="clearCacheCategory('user')"
-                    style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;"
-                    onmouseover="this.style.background='rgba(59,130,246,0.25)'"
-                    onmouseout="this.style.background='rgba(59,130,246,0.15)'">
-                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-user-circle"></i> ข้อมูลผู้ใช้
-                        & ระดับขั้น</strong>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ, จังหวัด, และเวลาสะสม (เฉพาะในเครื่อง
-                        ไม่ลบใน Firebase)</span>
-                </button>
-
-                <button onclick="clearCacheCategory('match')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.25)'" onmouseout="this.style.background='rgba(16,185,129,0.15)'">
-                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-futbol"></i>
-                        ข้อมูลทีมแข่งล่วงหน้า</strong>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">ล้างข้อมูลโพยแข่งที่บันทึกไว้ในสล๊อตทั้งหมด</span>
-                </button>
-
-                <button onclick="clearCacheCategory('obs')"
-                    style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #c084fc; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;"
-                    onmouseover="this.style.background='rgba(168,85,247,0.25)'"
-                    onmouseout="this.style.background='rgba(168,85,247,0.15)'">
-                    <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-video"></i> หน้าต่าง / ตั้งค่า
-                        OBS</strong>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ Scene, Google Sheet Tab, และ
-                        Layout</span>
-                </button>
-
-                <button onclick="clearCacheCategory('all')"
-                    style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #f87171; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; margin-top: 5px; font-weight: bold; transition: all 0.2s;"
-                    onmouseover="this.style.background='rgba(239,68,68,0.3)'"
-                    onmouseout="this.style.background='rgba(239,68,68,0.2)'">
-                    <i class="fas fa-trash-alt"></i> ลบแคชทั้งหมด (เริ่มต้นระบบใหม่)
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- Cache settings moved to main Settings modal -->
 
     <script>
-        window.openSettingsCachePopup = () => {
-            const popup = document.getElementById('settingsCachePopup');
-            const overlay = document.getElementById('popupOverlay');
-            if (popup) {
-                popup.style.display = 'flex';
-            }
-            if (overlay) {
-                overlay.style.display = 'block';
-            }
-        };
+        // the function clearCacheCategory was left here
 
         window.clearCacheCategory = (type) => {
             let msg = 'คุณแน่ใจหรือไม่ที่จะลบแคชในหมวดหมู่นี้?';
@@ -2469,15 +2410,6 @@
             </div>
 
         </div>
-
-        <!-- V2.9.3: Settings & Cache Button -->
-        <button id="settingsCacheBtn" onclick="openSettingsCachePopup()"
-            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;"
-            onmouseover="this.style.background='rgba(255,255,255,0.2)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-            <i class="fas fa-cog"></i>
-        </button>
-
     </div>
     <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
     </div>
@@ -2692,7 +2624,7 @@
                 src="https://www.freevisitorcounters.com/en/home/counter/1361951/t/24"></script>
         </div>
         <div class="footer-changelog-link">
-            <span data-lang="footerAppName"></span> - V2.9.3
+            <span data-lang="footerAppName"></span> - V2.9.3 (อัพเดต: 28 มี.ค. 2026)
         </div>
     </div>
     </div>
@@ -2713,6 +2645,7 @@
             <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
                 Display</button>
             <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
+            <button class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
         </div>
 
         <!-- Tab 1: General / Announce -->
@@ -3035,6 +2968,28 @@
                     </div>
                 </div>
                 <p style="margin: 5px 0 0 0; font-size: 0.75rem; color: #64748b;">* ค่าเริ่มต้นเป็นชีทแรก (1)</p>
+            </div>
+        </div>
+
+        <!-- V2.9.3: Tab 6: Cache Management -->
+        <div class="settings-tab-content" id="settingsTabCache">
+            <h4 style="margin: 0; margin-bottom: 15px;"><i class="fas fa-trash-alt"></i> ตั้งค่า & จัดการแคช</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="clearCacheCategory('user')" style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(59,130,246,0.25)'" onmouseout="this.style.background='rgba(59,130,246,0.15)'">
+                    <strong style="display: block; margin-bottom: 2px;"><i class="fas fa-user-circle"></i> ข้อมูลผู้ใช้ & ระดับขั้น</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ, จังหวัด, และเวลาสะสม (เฉพาะในเครื่อง ไม่ลบใน Firebase)</span>
+                </button>
+                <button onclick="clearCacheCategory('match')" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.25)'" onmouseout="this.style.background='rgba(16,185,129,0.15)'">
+                    <strong style="display: block; margin-bottom: 2px;"><i class="fas fa-futbol"></i> ข้อมูลทีมแข่งล่วงหน้า</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">ล้างข้อมูลโพยแข่งที่บันทึกไว้ในสล๊อตทั้งหมด</span>
+                </button>
+                <button onclick="clearCacheCategory('obs')" style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #c084fc; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s;" onmouseover="this.style.background='rgba(168,85,247,0.25)'" onmouseout="this.style.background='rgba(168,85,247,0.15)'">
+                    <strong style="display: block; margin-bottom: 2px;"><i class="fas fa-video"></i> หน้าต่าง / ตั้งค่า OBS</strong>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">รีเซ็ตชื่อ Scene, Google Sheet Tab, และ Layout</span>
+                </button>
+                <button onclick="clearCacheCategory('all')" style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #f87171; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; margin-top: 10px; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.2)'">
+                    <i class="fas fa-trash-alt"></i> ลบแคชทั้งหมด (เริ่มต้นระบบใหม่)
+                </button>
             </div>
         </div>
 
