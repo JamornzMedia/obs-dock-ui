@@ -2557,7 +2557,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // V2.9.3: Initialize rank display
     updateRankDisplay();
     // If user already has identity (returning user), auto-start tracking
-    if (userIdentity && userIdentity.name) {
+    if (userIdentity && userIdentity.name && !userIdentity.isTemporary && !userIdentity.name.startsWith('Guest_')) {
         startUsageTracking(userIdentity);
     }
     // Mobile Host initialized via Popup Button now

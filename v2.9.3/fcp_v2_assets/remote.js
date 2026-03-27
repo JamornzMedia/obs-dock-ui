@@ -42,6 +42,11 @@ window.initOnlinePresenceSystem = () => {
         return;
     }
 
+    if (identity.isTemporary || identity.name.startsWith('Guest_')) {
+        console.log("Temporary user (Guest), skipping presence system.");
+        return;
+    }
+
     const sanitizedName = sanitizeKey(identity.name);
     if (!sanitizedName) {
         console.log("Invalid user name for presence key.");
@@ -157,7 +162,9 @@ window.renderGlobalRanking = async () => {
         
         let usersArray = [];
         Object.keys(rawUsers).forEach(key => {
-            usersArray.push(rawUsers[key]);
+            const user = rawUsers[key];
+            if (!user || !user.name || user.name.startsWith('Guest_')) return;
+            usersArray.push(user);
         });
 
         // Sort descending by totalMinutes
