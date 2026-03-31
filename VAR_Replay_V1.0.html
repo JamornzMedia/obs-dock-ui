@@ -359,7 +359,10 @@
         }
 
         input[type=range].v-slider {
+            writing-mode: vertical-lr;
+            direction: rtl;
             -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
             width: 8px;
             height: 80px;
             accent-color: #00aaff;
@@ -641,7 +644,7 @@
     </div>
 
     <div id="controls-ui">
-        <input type="file" id="fileInput" accept=".mp4,.mkv,.avi,.mov,.webm" style="display:none;" onchange="handleFileSelect(this)">
+        <input type="file" id="fileInput" accept="video/mp4,video/x-matroska,video/webm,video/quicktime,video/avi,.mp4,.mkv,.avi,.mov,.webm" style="display:none;" onchange="handleFileSelect(this)">
 
         <div id="drop-zone" onclick="document.getElementById('fileInput').click()">
             <div style="font-size:20px;">📂</div>
@@ -737,8 +740,8 @@
 
             <div class="obs-connect-section">
                 <h3>🔌 สร้าง Source อัตโนมัติ</h3>
-                <button class="btn-create-source" id="btnCreateSource" onclick="createOBSSource()" disabled>📺 สร้าง Source ใน Scene ปัจจุบัน</button>
-                <div class="obs-status" id="obsStatus">⏳ กำลังเชื่อมต่อ OBS...</div>
+                <button class="btn-create-source" id="btnCreateSource" onclick="createOBSSource()">📺 สร้าง Source ใน Scene ปัจจุบัน</button>
+                <div class="obs-status" id="obsStatus"></div>
             </div>
         </div>
     </div>
@@ -1201,6 +1204,7 @@
         }
 
         function connectOBS() {
+            if (obsWs && obsWs.readyState <= 1) return; // already connecting/connected
             if (obsWs) { obsWs.close(); obsWs = null; }
             setObsStatus('⏳ กำลังเชื่อมต่อ OBS...', 'info');
 
@@ -1217,18 +1221,37 @@
                 const msg = JSON.parse(e.data);
                 const op = msg.op;
 
-                // op 0 = Hello → Identify without auth
+                // op 0 = Hello
                 if (op === 0) {
-                    obsWs.send(JSON.stringify({
-                        op: 1,
-                        d: { rpcVersion: 1 }
-                    }));
+                    const auth = msg.d.authentication;
+                    if (auth) {
+                        // OBS requires auth - try without password
+                        try {
+                            const secret = await sha256('' + auth.salt);
+                            const authStr = await sha256(secret + auth.challenge);
+                            obsWs.send(JSON.stringify({
+                                op: 1,
+                                d: { rpcVersion: 1, authentication: authStr }
+                            }));
+                        } catch(err) {
+                            // Fallback: try identify without auth
+                            obsWs.send(JSON.stringify({
+                                op: 1,
+                                d: { rpcVersion: 1 }
+                            }));
+                        }
+                    } else {
+                        // No auth required
+                        obsWs.send(JSON.stringify({
+                            op: 1,
+                            d: { rpcVersion: 1 }
+                        }));
+                    }
                 }
                 // op 2 = Identified (success)
                 if (op === 2) {
                     obsConnected = true;
                     setObsStatus('✅ เชื่อมต่อ OBS สำเร็จ!', 'connected');
-                    document.getElementById('btnCreateSource').disabled = false;
                 }
                 // op 7 = RequestResponse
                 if (op === 7) {
@@ -1242,12 +1265,7 @@
             };
 
             obsWs.onclose = () => {
-                if (obsConnected) {
-                    setObsStatus('⚠️ OBS ถูกตัดการเชื่อมต่อ', 'error');
-                }
                 obsConnected = false;
-                const btn = document.getElementById('btnCreateSource');
-                if (btn) btn.disabled = true;
             };
         }
 
@@ -1275,6 +1293,13 @@
             const rid = d.requestId;
             const status = d.requestStatus;
 
+            // Check pending callbacks first
+            if (window._obsPendingCallbacks && window._obsPendingCallbacks[rid]) {
+                window._obsPendingCallbacks[rid](d);
+                delete window._obsPendingCallbacks[rid];
+                return;
+            }
+
             if (rid === 'create_source') {
                 if (status.result) {
                     setObsStatus('✅ สร้าง Source "' + obsSourceName + '" สำเร็จ!', 'connected');
@@ -1292,8 +1317,15 @@
         }
 
         function createOBSSource() {
+            // ถ้ายังไม่ได้เชื่อมต่อ ลองเชื่อมต่อแล้วลองอีกที
             if (!obsConnected) {
-                setObsStatus('❌ ยังไม่ได้เชื่อมต่อ OBS', 'error');
+                setObsStatus('⏳ กำลังเชื่อมต่อ OBS...', 'info');
+                connectOBS();
+                // Retry after connection
+                setTimeout(() => {
+                    if (obsConnected) createOBSSource();
+                    else setObsStatus('❌ เชื่อมต่อ OBS ไม่ได้ - เปิด OBS และเปิด WebSocket Server', 'error');
+                }, 2000);
                 return;
             }
             const url = document.getElementById('linkInputScreen').value;
@@ -1301,38 +1333,28 @@
 
             // Get current scene first, then create input in it
             const sceneReqId = 'get_scene_' + (++obsReqId);
-            // We'll chain: get current scene -> create input
-            const origHandler = handleObsResponse;
-            const chainHandler = (d) => {
-                if (d.requestId === sceneReqId) {
-                    const sceneName = d.responseData && (d.responseData.currentProgramSceneName || d.responseData.sceneName);
-                    if (sceneName) {
-                        obsSend('CreateInput', {
-                            sceneName: sceneName,
-                            inputName: obsSourceName,
-                            inputKind: 'browser_source',
-                            inputSettings: {
-                                url: url,
-                                width: 1920,
-                                height: 1080,
-                                css: '',
-                                shutdown: false,
-                                restart_when_active: false
-                            },
-                            sceneItemEnabled: true
-                        }, 'create_source');
-                    } else {
-                        setObsStatus('❌ ไม่พบ Scene ปัจจุบัน', 'error');
-                    }
+
+            // Use a pending callbacks map instead of swapping handler
+            if (!window._obsPendingCallbacks) window._obsPendingCallbacks = {};
+            window._obsPendingCallbacks[sceneReqId] = (d) => {
+                const sceneName = d.responseData && (d.responseData.currentProgramSceneName || d.responseData.sceneName);
+                if (sceneName) {
+                    obsSend('CreateInput', {
+                        sceneName: sceneName,
+                        inputName: obsSourceName,
+                        inputKind: 'browser_source',
+                        inputSettings: {
+                            url: url,
+                            width: 1920,
+                            height: 1080,
+                            css: '',
+                            shutdown: false,
+                            restart_when_active: false
+                        },
+                        sceneItemEnabled: true
+                    }, 'create_source');
                 } else {
-                    origHandler(d);
-                }
-            };
-            // Temporarily swap handler
-            handleObsResponse = (d) => {
-                chainHandler(d);
-                if (d.requestId !== sceneReqId) {
-                    handleObsResponse = origHandler; // Restore
+                    setObsStatus('❌ ไม่พบ Scene ปัจจุบัน', 'error');
                 }
             };
 
