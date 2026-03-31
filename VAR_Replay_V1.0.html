@@ -359,10 +359,7 @@
         }
 
         input[type=range].v-slider {
-            writing-mode: vertical-lr;
-            direction: rtl;
             -webkit-appearance: slider-vertical;
-            appearance: slider-vertical;
             width: 8px;
             height: 80px;
             accent-color: #00aaff;
@@ -544,91 +541,6 @@
                 opacity: 0.5;
             }
         }
-
-        /* OBS Connection */
-        .obs-connect-section {
-            margin-top: 15px;
-            padding-top: 12px;
-            border-top: 1px solid #444;
-        }
-        .obs-connect-section h3 {
-            color: #ffca28;
-            margin: 0 0 8px;
-            font-size: 13px;
-        }
-        .obs-input-row {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 6px;
-        }
-        .obs-input-row input {
-            flex: 1;
-            background: #111;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 6px 8px;
-            font-size: 11px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-        .obs-input-row input::placeholder {
-            color: #666;
-        }
-        .btn-obs {
-            background: linear-gradient(135deg, #1a6b3c, #2e7d32);
-            color: white;
-            font-weight: bold;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: 0.2s;
-        }
-        .btn-obs:hover {
-            filter: brightness(1.3);
-        }
-        .btn-obs:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .btn-create-source {
-            background: linear-gradient(135deg, #005f73, #0077b6);
-            color: white;
-            font-weight: bold;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            width: 100%;
-            margin-top: 8px;
-            transition: 0.2s;
-        }
-        .btn-create-source:hover {
-            filter: brightness(1.3);
-        }
-        .btn-create-source:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .obs-status {
-            font-size: 10px;
-            margin-top: 5px;
-            min-height: 14px;
-        }
-        .obs-status.connected { color: #44aa44; }
-        .obs-status.error { color: #ff5555; }
-        .obs-status.info { color: #ffca28; }
-
-        /* Clear Video Button */
-        .btn-clear-video {
-            background: linear-gradient(135deg, #8b4513, #a0522d);
-            color: #ffd9b3;
-            font-weight: bold;
-            margin-bottom: 10px;
-            width: 100%;
-        }
     </style>
 </head>
 
@@ -644,7 +556,7 @@
     </div>
 
     <div id="controls-ui">
-        <input type="file" id="fileInput" accept="video/mp4,video/x-matroska,video/webm,video/quicktime,video/avi,.mp4,.mkv,.avi,.mov,.webm" style="display:none;" onchange="handleFileSelect(this)">
+        <input type="file" id="fileInput" accept="video/*" style="display:none;" onchange="handleFileSelect(this)">
 
         <div id="drop-zone" onclick="document.getElementById('fileInput').click()">
             <div style="font-size:20px;">📂</div>
@@ -691,7 +603,6 @@
         </div>
         <button onclick="sendCmd('clearLoop')" style="width:100%; background:#422; margin-bottom:10px; color:#ffaaaa;">❌
             CLEAR LOOP</button>
-        <button class="btn-clear-video" onclick="clearVideo()">🗑️ CLEAR VIDEO</button>
 
         <div class="slider-row" style="flex-wrap:wrap;">
             <div style="width:100%; display:flex; justify-content:space-between; margin-bottom:2px;">
@@ -737,12 +648,6 @@
                     onclick="copyInput('linkInputScreen')">Copy</button>
             </div>
             <div id="copy-msg" style="font-size:11px; color:#44aa44; opacity:0; transition:0.3s;">Copied!</div>
-
-            <div class="obs-connect-section">
-                <h3>🔌 สร้าง Source อัตโนมัติ</h3>
-                <button class="btn-create-source" id="btnCreateSource" onclick="createOBSSource()">📺 สร้าง Source ใน Scene ปัจจุบัน</button>
-                <div class="obs-status" id="obsStatus"></div>
-            </div>
         </div>
     </div>
 
@@ -789,7 +694,6 @@
         } else {
             document.body.classList.add('control-mode');
             initControl();
-            connectOBS();
         }
 
         // --- Utils ---
@@ -1087,8 +991,8 @@
         // ==========================================
         function initScreen() {
             video.muted = true;
-            // เปิด Loop ธรรมชาติ เพื่อให้วิดีโอวนซ้ำเมื่อเล่นจบ (กรณีไม่มี A-B Loop)
-            video.loop = true;
+            // ตั้งค่าพื้นฐานวิดีโอ: ปิด Loop ธรรมชาติ เพื่อใช้ Custom Loop A-B แทน
+            video.loop = false;
 
             channel.onmessage = e => {
                 const msg = e.data;
@@ -1102,16 +1006,6 @@
                     resetVideoTransform();
                     video.playbackRate = 1.0;
                     video.play();
-                }
-
-                // 1.5 กรณี Clear Video
-                if (msg.type === 'clearVideo') {
-                    video.pause();
-                    video.removeAttribute('src');
-                    video.load();
-                    loopA = null; loopB = null;
-                    resetVideoTransform();
-                    video.playbackRate = 1.0;
                 }
 
                 // 2. กรณีรับคำสั่ง (Command)
@@ -1189,206 +1083,6 @@
         }
         function resetVideoTransform() { video.style.transform = `scale(1) translate(0%, 0%)`; }
         function fmt(s) { let m = Math.floor(s / 60), sc = Math.floor(s % 60); return m + ":" + (sc < 10 ? "0" : "") + sc; }
-
-        // ==========================================
-        // 🔌 OBS WEBSOCKET INTEGRATION
-        // ==========================================
-        let obsWs = null;
-        let obsConnected = false;
-        let obsSourceName = 'VAR_Replay_Screen';
-        let obsReqId = 0;
-
-        function setObsStatus(msg, cls) {
-            const el = document.getElementById('obsStatus');
-            if (el) { el.textContent = msg; el.className = 'obs-status ' + cls; }
-        }
-
-        function connectOBS() {
-            if (obsWs && obsWs.readyState <= 1) return; // already connecting/connected
-            if (obsWs) { obsWs.close(); obsWs = null; }
-            setObsStatus('⏳ กำลังเชื่อมต่อ OBS...', 'info');
-
-            try {
-                obsWs = new WebSocket('ws://localhost:4455');
-            } catch(e) {
-                setObsStatus('❌ เชื่อมต่อไม่ได้', 'error');
-                return;
-            }
-
-            obsWs.onopen = () => {};
-
-            obsWs.onmessage = async (e) => {
-                const msg = JSON.parse(e.data);
-                const op = msg.op;
-
-                // op 0 = Hello
-                if (op === 0) {
-                    const auth = msg.d.authentication;
-                    if (auth) {
-                        // OBS requires auth - try without password
-                        try {
-                            const secret = await sha256('' + auth.salt);
-                            const authStr = await sha256(secret + auth.challenge);
-                            obsWs.send(JSON.stringify({
-                                op: 1,
-                                d: { rpcVersion: 1, authentication: authStr }
-                            }));
-                        } catch(err) {
-                            // Fallback: try identify without auth
-                            obsWs.send(JSON.stringify({
-                                op: 1,
-                                d: { rpcVersion: 1 }
-                            }));
-                        }
-                    } else {
-                        // No auth required
-                        obsWs.send(JSON.stringify({
-                            op: 1,
-                            d: { rpcVersion: 1 }
-                        }));
-                    }
-                }
-                // op 2 = Identified (success)
-                if (op === 2) {
-                    obsConnected = true;
-                    setObsStatus('✅ เชื่อมต่อ OBS สำเร็จ!', 'connected');
-                }
-                // op 7 = RequestResponse
-                if (op === 7) {
-                    handleObsResponse(msg.d);
-                }
-            };
-
-            obsWs.onerror = () => {
-                setObsStatus('❌ เชื่อมต่อไม่ได้ - เปิด OBS ก่อน', 'error');
-                obsConnected = false;
-            };
-
-            obsWs.onclose = () => {
-                obsConnected = false;
-            };
-        }
-
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-        }
-
-        function obsSend(requestType, requestData = {}, requestId = null) {
-            if (!obsWs || obsWs.readyState !== 1) return;
-            const id = requestId || ('req_' + (++obsReqId));
-            obsWs.send(JSON.stringify({
-                op: 6,
-                d: {
-                    requestType: requestType,
-                    requestId: id,
-                    requestData: requestData
-                }
-            }));
-            return id;
-        }
-
-        function handleObsResponse(d) {
-            const rid = d.requestId;
-            const status = d.requestStatus;
-
-            // Check pending callbacks first
-            if (window._obsPendingCallbacks && window._obsPendingCallbacks[rid]) {
-                window._obsPendingCallbacks[rid](d);
-                delete window._obsPendingCallbacks[rid];
-                return;
-            }
-
-            if (rid === 'create_source') {
-                if (status.result) {
-                    setObsStatus('✅ สร้าง Source "' + obsSourceName + '" สำเร็จ!', 'connected');
-                } else if (status.code === 601) {
-                    setObsStatus('⚠️ Source "' + obsSourceName + '" มีอยู่แล้ว', 'info');
-                } else {
-                    setObsStatus('❌ สร้างไม่ได้: ' + (status.comment || 'Unknown error'), 'error');
-                }
-            }
-            if (rid === 'refresh_source') {
-                if (status.result) {
-                    setObsStatus('✅ รีเฟรช Source สำเร็จ!', 'connected');
-                }
-            }
-        }
-
-        function createOBSSource() {
-            // ถ้ายังไม่ได้เชื่อมต่อ ลองเชื่อมต่อแล้วลองอีกที
-            if (!obsConnected) {
-                setObsStatus('⏳ กำลังเชื่อมต่อ OBS...', 'info');
-                connectOBS();
-                // Retry after connection
-                setTimeout(() => {
-                    if (obsConnected) createOBSSource();
-                    else setObsStatus('❌ เชื่อมต่อ OBS ไม่ได้ - เปิด OBS และเปิด WebSocket Server', 'error');
-                }, 2000);
-                return;
-            }
-            const url = document.getElementById('linkInputScreen').value;
-            setObsStatus('⏳ กำลังสร้าง Source...', 'info');
-
-            // Get current scene first, then create input in it
-            const sceneReqId = 'get_scene_' + (++obsReqId);
-
-            // Use a pending callbacks map instead of swapping handler
-            if (!window._obsPendingCallbacks) window._obsPendingCallbacks = {};
-            window._obsPendingCallbacks[sceneReqId] = (d) => {
-                const sceneName = d.responseData && (d.responseData.currentProgramSceneName || d.responseData.sceneName);
-                if (sceneName) {
-                    obsSend('CreateInput', {
-                        sceneName: sceneName,
-                        inputName: obsSourceName,
-                        inputKind: 'browser_source',
-                        inputSettings: {
-                            url: url,
-                            width: 1920,
-                            height: 1080,
-                            css: '',
-                            shutdown: false,
-                            restart_when_active: false
-                        },
-                        sceneItemEnabled: true
-                    }, 'create_source');
-                } else {
-                    setObsStatus('❌ ไม่พบ Scene ปัจจุบัน', 'error');
-                }
-            };
-
-            obsSend('GetCurrentProgramScene', {}, sceneReqId);
-        }
-
-        // ==========================================
-        // 🗑️ CLEAR VIDEO
-        // ==========================================
-        function clearVideo() {
-            // 1. ส่งคำสั่ง clear ไปยัง Screen
-            channel.postMessage({ type: 'clearVideo' });
-
-            // 2. Reset UI ฝั่ง Control
-            dropZone.innerHTML = `<div style="font-size:20px;">📂</div><b>คลิก</b> หรือ ลากไฟล์วิดีโอมาวางที่นี่<br><span style="font-size:10px; color:#666;">รองรับทุกขนาดความยาวคลิป</span>`;
-            resetZoom();
-            viewStart = 0; viewWidth = 1; updateNavUI();
-            document.getElementById('speedRange').value = 1.0;
-            document.getElementById('speedVal').innerText = "1.0x";
-            document.getElementById('loop-status').style.display = 'none';
-            document.getElementById('trackFill').style.width = '0%';
-            document.getElementById('markA').style.display = 'none';
-            document.getElementById('markB').style.display = 'none';
-            document.getElementById('currTime').innerText = '0:00';
-            document.getElementById('totalTime').innerText = '0:00';
-
-            // 3. Refresh OBS Browser Source (ถ้าเชื่อมต่ออยู่)
-            if (obsConnected) {
-                obsSend('PressInputPropertiesButton', {
-                    inputName: obsSourceName,
-                    propertyName: 'refreshnocache'
-                }, 'refresh_source');
-            }
-        }
 
     </script>
 </body>
