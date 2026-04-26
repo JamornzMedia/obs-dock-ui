@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Penalty Dots AB</title>
+  <style>
+    html, body {
+      margin: 0;
+      background-color: transparent;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .overlay-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: var(--layout-direction, row);
+      gap: var(--team-gap, 80px);
+      padding: 12px;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .team-dots {
+      display: flex;
+      gap: var(--dot-gap, 8px);
+    }
+
+    .dot {
+      width: var(--dot-size, 20px);
+      height: var(--dot-size, 20px);
+      border-radius: var(--dot-radius, 50%);
+      background-color: transparent;
+      border: 2px solid #666;
+      opacity: 0.4;
+      transition: background-color 0.1s ease, opacity 0.1s ease;
+    }
+
+    .dot.goal {
+      background-color: limegreen;
+      opacity: 1;
+    }
+
+    .dot.miss {
+      background-color: crimson;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="team-dots" id="dotsA"></div>
+    <div class="team-dots" id="dotsB"></div>
+  </div>
+
+  <script>
+    const MAX_SHOTS_DISPLAY = 5;
+    const dotsA = document.getElementById('dotsA');
+    const dotsB = document.getElementById('dotsB');
+    const channel = new BroadcastChannel("penalty_channel");
+
+    function renderDots(container, shotsToRender) {
+      container.innerHTML = '';
+      
+      for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        const shot = shotsToRender[i];
+        if (shot === true) dot.classList.add('goal');
+        else if (shot === false) dot.classList.add('miss');
+        container.appendChild(dot);
+      }
+    }
+
+    function applySettings(settings) {
+      document.documentElement.style.setProperty('--dot-size', settings.dotSize + 'px');
+      document.documentElement.style.setProperty('--dot-gap', settings.dotGap + 'px');
+      document.documentElement.style.setProperty('--team-gap', settings.teamGap + 'px');
+      
+      const layoutDirection = settings.layout === 'top-bottom' ? 'column' : 'row';
+      document.documentElement.style.setProperty('--layout-direction', layoutDirection);
+
+      const dotRadius = settings.dotShape === 'square' ? '4px' : '50%';
+      document.documentElement.style.setProperty('--dot-radius', dotRadius);
+    }
+
+    channel.onmessage = (e) => {
+      const { type, data } = e.data;
+      if (type !== 'update') return;
+
+      const { shotsA, shotsB, settings } = data;
+
+      if (settings) applySettings(settings);
+      
+      renderDots(dotsA, shotsA);
+      renderDots(dotsB, shotsB);
+    };
+
+    renderDots(dotsA, Array(MAX_SHOTS_DISPLAY).fill(null));
+    renderDots(dotsB, Array(MAX_SHOTS_DISPLAY).fill(null));
+  </script>
+</body>
+</html>
