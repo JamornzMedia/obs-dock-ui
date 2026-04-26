@@ -32,7 +32,7 @@
     .dot {
       width: var(--dot-size, 20px);
       height: var(--dot-size, 20px);
-      border-radius: 50%;
+      border-radius: var(--dot-radius, 50%);
       background-color: transparent;
       border: 2px solid #666;
       opacity: 0.4;
@@ -82,6 +82,9 @@
       
       const layoutDirection = settings.layout === 'top-bottom' ? 'column' : 'row';
       document.documentElement.style.setProperty('--layout-direction', layoutDirection);
+
+      const dotRadius = settings.dotShape === 'square' ? '4px' : '50%';
+      document.documentElement.style.setProperty('--dot-radius', dotRadius);
     }
 
     channel.onmessage = (e) => {
@@ -98,6 +101,9 @@
 
     renderDots(dotsA, Array(MAX_SHOTS_DISPLAY).fill(null));
     renderDots(dotsB, Array(MAX_SHOTS_DISPLAY).fill(null));
+
+    // Request initial state from the control panel
+    channel.postMessage({ type: 'request_state' });
   </script>
 </body>
 </html>
