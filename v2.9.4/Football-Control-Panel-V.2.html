@@ -2086,6 +2086,7 @@
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <input type="text" id="visitorName" placeholder="ชื่อ / ID Name"
                             style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
+                        <button id="editNameBtn" title="แก้ไขชื่อ" style="display: none; background: #3b82f6; border: none; padding: 8px 12px; color: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-edit"></i></button>
                     </div>
                 </div>
 
@@ -2112,6 +2113,9 @@
             <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center;">
                 * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
             </p>
+            <div id="deleteIdContainer" style="display: none; margin-top: 15px; text-align: center;">
+                <button id="deleteIdBtn" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; text-decoration: underline; transition: color 0.2s;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#ef4444'"><i class="fas fa-trash-alt"></i> ลบข้อมูล ID ของฉัน</button>
+            </div>
         </div>
         <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.4 (อัพเดต: 27 เม.ย. 2026)</div>
     </div>
@@ -2185,7 +2189,7 @@
             <div class="tab-buttons" style="margin-bottom: 10px;">
                 <button class="tab-button active" onclick="openWelcomeTab(event, 'OnlineUsersTabContent')"><i class="fas fa-signal" style="color:#4ade80;"></i> Online</button>
                 <button class="tab-button" onclick="openWelcomeTab(event, 'GlobalRankingTabContent')"><i class="fas fa-trophy" style="color:#fbbf24;"></i> Ranking</button>
-                <button class="tab-button" onclick="openWelcomeTab(event, 'MapFilterTabContent')"><i class="fas fa-map" style="color:#38bdf8;"></i> Map</button>
+                <button class="tab-button" onclick="openWelcomeTab(event, 'MapFilterTabContent'); if(window.loadMapData) window.loadMapData();"><i class="fas fa-map" style="color:#38bdf8;"></i> Map</button>
             </div>
 
             <div id="OnlineUsersTabContent" class="tab-content active" style="overflow-y: auto; flex: 1; padding: 0; border: none; background: transparent;">
@@ -2221,13 +2225,50 @@
             </div>
             
             <div id="MapFilterTabContent" class="tab-content" style="overflow-y: auto; flex: 1; padding: 0; border: none; background: transparent;">
-                <div id="thaiMapContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                    <button style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('เหนือ')"><i class="fas fa-mountain"></i> ภาคเหนือ</button>
-                    <button style="background: linear-gradient(135deg, #064e3b, #10b981); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('อีสาน')"><i class="fas fa-tractor"></i> ภาคอีสาน</button>
-                    <button style="background: linear-gradient(135deg, #7c2d12, #f59e0b); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('กลาง')"><i class="fas fa-city"></i> ภาคกลาง</button>
-                    <button style="background: linear-gradient(135deg, #4c1d95, #8b5cf6); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('ตะวันออก')"><i class="fas fa-umbrella-beach"></i> ภาคตะวันออก</button>
-                    <button style="background: linear-gradient(135deg, #701a75, #d946ef); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('ตะวันตก')"><i class="fas fa-tree"></i> ภาคตะวันตก</button>
-                    <button style="background: linear-gradient(135deg, #082f49, #0ea5e9); color: white; border: none; padding: 15px 5px; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="filterOnlineUsersByRegion('ใต้')"><i class="fas fa-water"></i> ภาคใต้</button>
+                <div id="thaiMapContainer" style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px; padding: 10px; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <svg viewBox="0 0 300 450" width="100%" height="auto" style="max-height: 380px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
+                        <!-- North -->
+                        <g onclick="filterOnlineUsersByRegion('เหนือ')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 80 40 L 120 20 L 150 40 L 160 80 L 140 120 L 90 130 L 60 90 Z" fill="#3b82f6" stroke="#1e293b" stroke-width="2" />
+                            <text x="110" y="65" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">เหนือ</text>
+                            <text id="count-เหนือ" x="110" y="85" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+                        
+                        <!-- Northeast -->
+                        <g onclick="filterOnlineUsersByRegion('อีสาน')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 160 80 L 220 80 L 280 120 L 280 200 L 210 230 L 150 180 L 140 120 Z" fill="#10b981" stroke="#1e293b" stroke-width="2" />
+                            <text x="210" y="145" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">อีสาน</text>
+                            <text id="count-อีสาน" x="210" y="165" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+                        
+                        <!-- Central -->
+                        <g onclick="filterOnlineUsersByRegion('กลาง')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 90 130 L 140 120 L 150 180 L 210 230 L 180 260 L 120 250 L 90 200 Z" fill="#f59e0b" stroke="#1e293b" stroke-width="2" />
+                            <text x="145" y="195" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">กลาง</text>
+                            <text id="count-กลาง" x="145" y="215" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+                        
+                        <!-- East -->
+                        <g onclick="filterOnlineUsersByRegion('ตะวันออก')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 180 260 L 210 230 L 250 260 L 260 300 L 200 320 Z" fill="#8b5cf6" stroke="#1e293b" stroke-width="2" />
+                            <text x="220" y="275" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">ตะวันออก</text>
+                            <text id="count-ตะวันออก" x="220" y="295" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+
+                        <!-- West -->
+                        <g onclick="filterOnlineUsersByRegion('ตะวันตก')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 60 90 L 90 130 L 90 200 L 120 250 L 120 280 L 70 240 L 40 160 Z" fill="#d946ef" stroke="#1e293b" stroke-width="2" />
+                            <text x="80" y="195" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">ตะวันตก</text>
+                            <text id="count-ตะวันตก" x="80" y="215" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+                        
+                        <!-- South -->
+                        <g onclick="filterOnlineUsersByRegion('ใต้')" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+                            <path d="M 120 250 L 180 260 L 150 340 L 160 420 L 120 440 L 100 380 L 110 320 L 120 280 Z" fill="#0ea5e9" stroke="#1e293b" stroke-width="2" />
+                            <text x="135" y="340" fill="white" font-weight="bold" font-size="13" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">ใต้</text>
+                            <text id="count-ใต้" x="135" y="360" fill="#fbbf24" font-weight="bold" font-size="18" text-anchor="middle" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">0</text>
+                        </g>
+                    </svg>
                 </div>
                 
                 <div id="mapUsersContainer" style="display: none; flex-direction: column;">

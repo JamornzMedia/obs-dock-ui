@@ -2098,6 +2098,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // V2.9.3: Start usage tracking
                 startUsageTracking(identity);
 
+                // V2.9.4: Increment visitor counter on every start
+                if (window.incrementVisitorCounter) window.incrementVisitorCounter();
+
                 const welcomeScreen = document.getElementById('welcomeScreen');
                 if (welcomeScreen) {
                     welcomeScreen.style.opacity = '0';
@@ -2344,8 +2347,51 @@ window.initWelcomeScreen = () => {
         });
     }
 
-    if (userIdentity && userIdentity.name) {
-        if (nameInput) nameInput.value = userIdentity.name;
+    if (userIdentity && userIdentity.name && !userIdentity.isTemporary) {
+        if (nameInput) {
+            nameInput.value = userIdentity.name;
+            nameInput.disabled = true;
+            nameInput.style.opacity = '0.7';
+        }
+
+        const editBtn = $('editNameBtn');
+        if (editBtn) {
+            editBtn.style.display = 'block';
+            editBtn.onclick = () => {
+                nameInput.disabled = false;
+                nameInput.style.opacity = '1';
+                nameInput.focus();
+            };
+        }
+
+        const deleteContainer = $('deleteIdContainer');
+        if (deleteContainer) {
+            deleteContainer.style.display = 'block';
+            const deleteBtn = $('deleteIdBtn');
+            if (deleteBtn) {
+                deleteBtn.onclick = async () => {
+                    const confirmDel = await window.customConfirm(
+                        'คุณแน่ใจหรือไม่?\nการดำเนินการนี้จะลบ ID, ชื่อ และเวลาสะสมของคุณออกจากระบบอย่างถาวร',
+                        'ยืนยันการลบข้อมูล ID',
+                        'fa-exclamation-triangle'
+                    );
+                    if (confirmDel) {
+                        try {
+                            if (typeof firebase !== 'undefined' && firebase.database) {
+                                await firebase.database().ref('obs_id/' + userIdentity.ID).remove();
+                            }
+                        } catch(e) { console.error("Error deleting ID from DB:", e); }
+                        
+                        localStorage.removeItem('userIdentity');
+                        localStorage.removeItem('machineIdentityName');
+                        localStorage.removeItem('usageTracker');
+                        localStorage.removeItem('nameChangeLog');
+                        location.reload();
+                    }
+                };
+            }
+        }
+
         if (provinceSelect) {
             // Check if province is in list
             if (thaiProvinces.includes(userIdentity.province)) {
@@ -2515,6 +2561,9 @@ window.saveAndEnterApp = async () => {
     updateUserIdentityUI();
 
     startUsageTracking(userIdentity);
+    
+    // V2.9.4: Increment visitor counter on every start
+    if (window.incrementVisitorCounter) window.incrementVisitorCounter();
 
     const screen = $('welcomeScreen');
     if (screen) {

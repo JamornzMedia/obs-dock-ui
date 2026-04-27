@@ -416,39 +416,66 @@ const thaiRegions = {
     'ใต้': ['ชุมพร', 'ระนอง', 'สุราษฎร์ธานี', 'พังงา', 'นครศรีธรรมราช', 'ภูเก็ต', 'กระบี่', 'ตรัง', 'พัทลุง', 'สตูล', 'สงขลา', 'ปัตตานี', 'ยะลา', 'นราธิวาส']
 };
 
+window.loadMapData = async () => {
+    if (typeof firebase === 'undefined' || !firebase.database) return;
+    
+    try {
+        const snapshot = await firebase.database().ref('obs_id').once('value');
+        const rawUsers = snapshot.val() || {};
+        
+        let usersMap = {};
+        Object.keys(rawUsers).forEach(key => {
+            const user = rawUsers[key];
+            if (!user || !user.name || user.name.startsWith('Guest_')) return;
+            const lowerName = user.name.toLowerCase();
+            if (!usersMap[lowerName] || (user.totalMinutes || 0) > (usersMap[lowerName].totalMinutes || 0)) {
+                usersMap[lowerName] = user;
+            }
+        });
+        
+        window.allRegisteredUsersArray = Object.values(usersMap);
+        
+        // Count users per region
+        const counts = { 'เหนือ': 0, 'อีสาน': 0, 'กลาง': 0, 'ตะวันออก': 0, 'ตะวันตก': 0, 'ใต้': 0 };
+        
+        window.allRegisteredUsersArray.forEach(user => {
+            if (!user.province) return;
+            for (const region in thaiRegions) {
+                if (thaiRegions[region].some(p => user.province.includes(p))) {
+                    counts[region]++;
+                    break;
+                }
+            }
+        });
+        
+        // Update SVG text elements
+        for (const region in counts) {
+            const el = document.getElementById(`count-${region}`);
+            if (el) el.textContent = counts[region];
+        }
+    } catch (e) {
+        console.error("Failed to load map data", e);
+    }
+};
+
 window.filterOnlineUsersByRegion = (region) => {
     document.getElementById('thaiMapContainer').style.display = 'none';
     document.getElementById('mapUsersContainer').style.display = 'flex';
     document.getElementById('selectedRegionTitle').textContent = `ผู้ใช้งานภาค${region}`;
     
     const tbody = document.getElementById('mapUsersTableBody');
-    if (!tbody || !window.onlineUsersSnapshot) return;
+    if (!tbody || !window.allRegisteredUsersArray) return;
     
     tbody.innerHTML = '';
-    const rawUsers = window.onlineUsersSnapshot.val() || {};
     
-    const comRooms = {};
-    const mobileRooms = {};
-
-    Object.keys(rawUsers).forEach(key => {
-        if (key.startsWith('com_')) comRooms[key] = rawUsers[key];
-        else if (key.startsWith('mobile_')) mobileRooms[key] = rawUsers[key];
-    });
-
     const regionProvinces = thaiRegions[region] || [];
     let count = 0;
 
-    Object.keys(comRooms).forEach(key => {
-        const user = comRooms[key];
-        if (!user || !user.province) return;
+    window.allRegisteredUsersArray.forEach(user => {
+        if (!user.province) return;
         
         const isMatch = regionProvinces.some(p => user.province.includes(p));
         if (!isMatch) return;
-
-        let matchedMobile = null;
-        Object.keys(mobileRooms).forEach(mKey => {
-            if (mobileRooms[mKey].ID === user.ID) matchedMobile = mobileRooms[mKey];
-        });
 
         count++;
         const row = document.createElement('tr');
@@ -467,18 +494,28 @@ window.filterOnlineUsersByRegion = (region) => {
         const cellType = document.createElement('td');
         cellType.style.padding = '8px 6px';
         cellType.style.textAlign = 'right';
-        const pcIcon = document.createElement('i');
-        pcIcon.className = 'fas fa-desktop';
-        pcIcon.style.color = '#60a5fa';
-        cellType.appendChild(pcIcon);
-
-        if (matchedMobile && matchedMobile.Mobile === 'on') {
-            const mobileIcon = document.createElement('i');
-            mobileIcon.className = 'fas fa-mobile-alt';
-            mobileIcon.style.color = '#4ade80';
-            mobileIcon.style.marginLeft = '6px';
-            cellType.appendChild(mobileIcon);
+        
+        let isOnline = false;
+        if (window.onlineUsersSnapshot) {
+            const activeRooms = window.onlineUsersSnapshot.val() || {};
+            Object.values(activeRooms).forEach(room => {
+                if (room.ID === user.ID) isOnline = true;
+            });
         }
+
+        if (isOnline) {
+            const onlineDot = document.createElement('span');
+            onlineDot.style.color = '#4ade80';
+            onlineDot.innerHTML = '● ';
+            onlineDot.title = 'Online Now';
+            cellType.appendChild(onlineDot);
+        }
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-user';
+        icon.style.color = isOnline ? '#60a5fa' : '#64748b';
+        cellType.appendChild(icon);
+
         row.appendChild(cellType);
         tbody.appendChild(row);
     });
@@ -489,7 +526,7 @@ window.filterOnlineUsersByRegion = (region) => {
 };
 
 window.backToMapRegions = () => {
-    document.getElementById('thaiMapContainer').style.display = 'grid';
+    document.getElementById('thaiMapContainer').style.display = 'flex';
     document.getElementById('mapUsersContainer').style.display = 'none';
 };
 
@@ -509,17 +546,19 @@ window.initVisitorCounter = () => {
             displayEl.textContent = count.toString().padStart(6, '0');
         }
     });
+};
 
+window.incrementVisitorCounter = () => {
+    if (typeof firebase === 'undefined' || !firebase.database) return;
+    const counterRef = firebase.database().ref('global_stats/visitor_count');
+    
     // Increment if not already done in this session
-    if (!sessionStorage.getItem('visitorCounted')) {
-        counterRef.transaction((currentCount) => {
-            return (currentCount || 35463) + 1;
-        }, (error, committed) => {
-            if (committed) {
-                sessionStorage.setItem('visitorCounted', 'true');
-            }
-        });
-    }
+    // V2.9.4: Increment every time start is clicked, as requested, but maybe we should still use sessionStorage? 
+    // The user explicitly requested: "ทุกครั้งที่กดปุ่ม Start เข้ามาให้เพิ่ม count +1 ไปเรื่อยๆเลยครับ" 
+    // So we remove the sessionStorage check entirely!
+    counterRef.transaction((currentCount) => {
+        return (currentCount || 35463) + 1;
+    });
 };
 
 // --- NO auto-init on load ---
