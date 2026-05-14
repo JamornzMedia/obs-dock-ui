@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Barlow:wght@600;800&display=swap');
+
+:root {
+  --font-main: 'Barlow Condensed', sans-serif;
+  --team-a-bg: #1e3a8a;
+  --team-b-bg: #1e3a8a;
+  --text-light: #ffffff;
+  --sets-bg-top: #16a34a;
+  --sets-bg-bottom: #15803d;
+  --score-bg-dark: #0f172a;
+  --score-bg-light: #1e293b;
+  --active-score-bg: #0369a1;
+  --serve-color: #fde047;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-main);
+  background: transparent;
+  color: var(--text-light);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#vb-overlay {
+  display: flex;
+  height: 90px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  background: #ffffff; /* for the logo area */
+}
+
+/* ════════════════════════════ LOGO AREA ════════════════════════════ */
+.logo-area {
+  width: 140px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 16px 0 0 16px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+.logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ════════════════════════════ TEAM NAMES ════════════════════════════ */
+.teams-area {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  background: linear-gradient(90deg, #1e3a8a 0%, #172554 100%);
+  position: relative;
+  border-right: 2px solid #000;
+}
+
+.team-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  font-size: 28px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-row:first-child {
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.serve-indicator {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%23fde047" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM218.3 125.4c17.5-8.5 38.3-5.2 52.3 8.3L371.1 230c14.7 14.1 19.4 35.8 11.9 55L311.6 473.4c-9.1 23-33.8 35.3-58 28.7l-94.8-25.9c-22.3-6.1-37.4-26.6-37.1-49.8l1.4-118c.2-16.7 9.8-31.8 25-39.2l69.7-34c16.3-7.9 35.6-4.6 48.7 8.3L309 285.9l46.2-44.5L254.7 141.1 218.3 125.4z"/></svg>');
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.serve-indicator.active { opacity: 1; }
+
+.timeouts {
+  position: absolute;
+  left: 15px;
+  bottom: 4px;
+  display: flex;
+  gap: 4px;
+}
+.timeout-dot {
+  width: 25px;
+  height: 4px;
+  background: var(--text-light);
+  opacity: 0.2;
+}
+.timeout-dot.used { opacity: 1; background: #ef4444; }
+
+/* ════════════════════════════ SETS WON ════════════════════════════ */
+.sets-won-area {
+  display: flex;
+  flex-direction: column;
+  width: 50px;
+  text-align: center;
+  font-family: 'Barlow', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+}
+.sets-won-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sets-won-row:first-child {
+  background: var(--sets-bg-top);
+  border-bottom: 1px solid #064e3b;
+}
+.sets-won-row:last-child {
+  background: var(--sets-bg-bottom);
+}
+
+/* ════════════════════════════ SCORES AREA ════════════════════════════ */
+.scores-area {
+  display: flex;
+  flex-direction: row;
+}
+
+.score-col {
+  display: flex;
+  flex-direction: column;
+  width: 65px;
+  text-align: center;
+  font-family: 'Barlow', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.score-col.active {
+  background: var(--active-score-bg);
+}
+
+.score-col.history-1 { background: #172554; }
+.score-col.history-2 { background: #1e3a8a; }
+
+.score-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.score-cell:first-child {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Specific to History Table Overlay */
+#history-scores {
+  display: flex;
+}
+
+/* Specific to Main Score Overlay */
+#main-score {
+  display: flex;
+}
+
+.hidden { display: none !important; }
