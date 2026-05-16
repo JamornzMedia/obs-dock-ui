@@ -34,13 +34,14 @@ function getSetLimit() {
 }
 
 // ──────────────────────────────────────── RENDER HISTORY
-function renderHistory(history) {
+function renderHistory(history, maxSets) {
   const historyEl = document.getElementById('history-scores');
   if (historyEl) {
-    let headersHtml = '<div style="position:absolute; top:-24px; left:0; width:100%; display:flex; background:#1e293b; border-radius:6px 6px 0 0; overflow:hidden; box-shadow:0 -2px 5px rgba(0,0,0,0.3);">';
+    const totalSets = maxSets || 5;
+    let headersHtml = '<div style="position:absolute; top:-24px; left:0; width:100%; display:flex; background:#1e293b; border-radius:6px 6px 0 0; overflow:hidden;">';
     let colsHtml = '';
     
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < totalSets; i++) {
       const cls = ((i % 2) === 0) ? 'history-1' : 'history-2';
       const s = history[i];
       const sA = s ? s[0] : '-';
@@ -63,7 +64,7 @@ function renderHistory(history) {
 }
 
 function renderScoreboard(newState, prevState) {
-  const { scoreA, scoreB, setsA, setsB, setHistory, colorA, colorB, nameA, nameB, logoUrl, serve, timeoutActive, font, teamWidth } = newState;
+  const { scoreA, scoreB, setsA, setsB, setHistory, colorA, colorB, colorA2, colorB2, nameA, nameB, logoUrl, serve, timeoutActive, font, teamWidth, maxSets, setLimit, finalSetLimit } = newState;
 
   // Custom CSS properties
   const root = document.documentElement;
@@ -73,8 +74,8 @@ function renderScoreboard(newState, prevState) {
   // Colors
   const panelA = document.getElementById('panelA');
   const panelB = document.getElementById('panelB');
-  if (panelA) panelA.style.background = `linear-gradient(90deg, ${colorA} 0%, rgba(0,0,0,0.5) 100%)`;
-  if (panelB) panelB.style.background = `linear-gradient(90deg, ${colorB} 0%, rgba(0,0,0,0.5) 100%)`;
+  if (panelA) panelA.style.background = `linear-gradient(90deg, ${colorA} 0%, ${colorA2 || 'rgba(0,0,0,0.5)'} 100%)`;
+  if (panelB) panelB.style.background = `linear-gradient(90deg, ${colorB} 0%, ${colorB2 || 'rgba(0,0,0,0.5)'} 100%)`;
 
   // Names
   const elNameA = document.getElementById('nameA');
@@ -112,11 +113,12 @@ function renderScoreboard(newState, prevState) {
   if (elServeB) { elServeB.className = 'serve-indicator' + (serve === 'B' ? ' active' : ''); elServeB.textContent = '🏐'; }
 
   // Calculate Set Point
-  const limit = getSetLimit();
+  const isFinalSet = setHistory && (setHistory.length === (maxSets || 5) - 1);
+  const currentLimit = isFinalSet ? (finalSetLimit || 15) : (setLimit || 25);
   // Is team EXACTLY 1 point away from winning the set?
   // Math.max(limit, opponentScore + 2) is the target score to win.
-  const isSetPointA = (scoreA === Math.max(limit, scoreB + 2) - 1);
-  const isSetPointB = (scoreB === Math.max(limit, scoreA + 2) - 1);
+  const isSetPointA = (scoreA === Math.max(currentLimit, scoreB + 2) - 1);
+  const isSetPointB = (scoreB === Math.max(currentLimit, scoreA + 2) - 1);
 
   const statusA = document.getElementById('statusA');
   const statusB = document.getElementById('statusB');
@@ -152,7 +154,7 @@ function renderScoreboard(newState, prevState) {
   }
 
   // History
-  renderHistory(setHistory);
+  renderHistory(setHistory, maxSets);
 }
 
 // ──────────────────────────────────────── STATE UPDATE

@@ -16,7 +16,7 @@ const elements = [
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
-    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn",
+    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "swapScoreBtn", "scoreAPlusBtn", "scoreAMinusBtn",
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
@@ -1065,6 +1065,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     colorEl2.value = masterTeam.color2;
     initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
     scoreEl.textContent = masterTeam.score;
+    scoreEl.style.backgroundColor = masterTeam.color1;
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
@@ -1610,6 +1611,19 @@ const setupEventListeners = () => {
     elements.scoreBPlusBtn.addEventListener('click', () => changeScore('B', 1));
     elements.scoreBMinusBtn.addEventListener('click', () => changeScore('B', -1));
     elements.resetScoreBtn.addEventListener('click', resetScore);
+
+    if (elements.swapScoreBtn) {
+        elements.swapScoreBtn.addEventListener('click', () => {
+            const panel = document.querySelector('.score-panel-clean');
+            if (panel) {
+                if (panel.style.flexDirection === 'row-reverse') {
+                    panel.style.flexDirection = 'row';
+                } else {
+                    panel.style.flexDirection = 'row-reverse';
+                }
+            }
+        });
+    }
 
     elements.score2APlusBtn.addEventListener('click', () => changeScore2('A', 1));
     elements.score2AMinusBtn.addEventListener('click', () => changeScore2('A', -1));
