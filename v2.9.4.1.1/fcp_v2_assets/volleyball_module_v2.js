@@ -37,7 +37,7 @@ try { bc = new BroadcastChannel(VB_CHANNEL); } catch (_) {}
 
 // ── State ────────────────────────────────────────────────────────────
 let lastA = -1, lastB = -1, last2A = -1, last2B = -1;
-let lastNA = '', lastNB = '', lastCA = '', lastCB = '';
+let lastNA = '', lastNB = '', lastCA = '', lastCB = '', lastCA2 = '', lastCB2 = '';
 
 function getSetLimit()      { return Math.max(1, parseInt(localStorage.getItem(VB_LIMIT_KEY) || '25')); }
 function saveSetLimit(v)    { localStorage.setItem(VB_LIMIT_KEY, String(v)); }
@@ -178,6 +178,30 @@ async function createVBSource(btn, type) {
   }
 }
 
+async function toggleVbSource(sourceName, btnElement) {
+  const obs = window.fcpOBS;
+  if(!obs) {
+    vbToast('❌ OBS not connected', 'error');
+    return;
+  }
+  try {
+    const scene = await obs.call('GetCurrentProgramScene');
+    const sceneName = scene.currentProgramSceneName;
+    const item = await obs.call('GetSceneItemId', { sceneName, sourceName });
+    const { sceneItemEnabled } = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId: item.sceneItemId });
+    await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: item.sceneItemId, sceneItemEnabled: !sceneItemEnabled });
+    
+    const isNowEnabled = !sceneItemEnabled;
+    const label = sourceName.includes('Main') ? 'Main Score' : 'History';
+    btnElement.innerHTML = isNowEnabled ? `<i class="fas fa-eye"></i> ${label}` : `<i class="fas fa-eye-slash"></i> ${label}`;
+    btnElement.className = isNowEnabled ? 'btn-primary' : 'btn-secondary';
+    btnElement.style.background = isNowEnabled ? '#3b82f6' : '';
+    vbToast(`${sourceName} is now ${isNowEnabled ? 'Visible' : 'Hidden'}`, 'success');
+  } catch(e) {
+    vbToast(`❌ OBS Error: Source '${sourceName}' not found.`, 'error');
+  }
+}
+
 // ── Toast Helper ─────────────────────────────────────────────────────
 function vbToast(msg, type = 'info') {
   const c = document.getElementById('toast-container');
@@ -229,14 +253,8 @@ function updateMainPanelUI(state) {
         <button id="vb-main-reset-match" class="btn-danger" style="font-size:0.85rem;padding:8px;"><i class="fas fa-undo"></i> Reset Match</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
-        <div style="display:flex;gap:5px;">
-          <button id="vb-show-main" class="btn-primary" style="flex:1;font-size:0.8rem;padding:6px;background:#3b82f6;" title="Show Main Score"><i class="fas fa-eye"></i> Main</button>
-          <button id="vb-hide-main" class="btn-secondary" style="flex:1;font-size:0.8rem;padding:6px;" title="Hide Main Score"><i class="fas fa-eye-slash"></i></button>
-        </div>
-        <div style="display:flex;gap:5px;">
-          <button id="vb-show-hist" class="btn-primary" style="flex:1;font-size:0.8rem;padding:6px;background:#3b82f6;" title="Show History"><i class="fas fa-eye"></i> Hist</button>
-          <button id="vb-hide-hist" class="btn-secondary" style="flex:1;font-size:0.8rem;padding:6px;" title="Hide History"><i class="fas fa-eye-slash"></i></button>
-        </div>
+        <button id="vb-toggle-main" class="btn-secondary" style="font-size:0.8rem;padding:6px;" title="Toggle Main Score"><i class="fas fa-eye-slash"></i> Main Score</button>
+        <button id="vb-toggle-hist" class="btn-secondary" style="font-size:0.8rem;padding:6px;" title="Toggle History"><i class="fas fa-eye-slash"></i> History</button>
       </div>
     `;
     s2Card.insertAdjacentElement('afterend', panel);
@@ -251,11 +269,9 @@ function updateMainPanelUI(state) {
     document.getElementById('vb-main-finish-set').onclick = finishSet;
     document.getElementById('vb-main-reset-match').onclick = resetMatch;
     
-    // Wire OBS Show/Hide
-    document.getElementById('vb-show-main').onclick = () => window.setSourceVisibility && window.setSourceVisibility('Volleyball_Main_Score', true);
-    document.getElementById('vb-hide-main').onclick = () => window.setSourceVisibility && window.setSourceVisibility('Volleyball_Main_Score', false);
-    document.getElementById('vb-show-hist').onclick = () => window.setSourceVisibility && window.setSourceVisibility('Volleyball_History', true);
-    document.getElementById('vb-hide-hist').onclick = () => window.setSourceVisibility && window.setSourceVisibility('Volleyball_History', false);
+    // Wire OBS Toggle
+    document.getElementById('vb-toggle-main').onclick = function() { toggleVbSource('Volleyball_Main_Score', this); };
+    document.getElementById('vb-toggle-hist').onclick = function() { toggleVbSource('Volleyball_History', this); };
   }
   
   panel.style.display = 'block';
@@ -582,10 +598,11 @@ function injectSettingsTab() {
 // ── Poll loop ────────────────────────────────────────────────────────
 function poll() {
   if (!isEnabled()) return;
-  const { sA, sB, s2A, s2B, nA, nB, cA, cB } = readScores();
+  const { sA, sB, s2A, s2B, nA, nB, cA, cB, cA2, cB2 } = readScores();
   
   const changed = sA !== lastA || sB !== lastB || s2A !== last2A || s2B !== last2B || 
-                  nA !== lastNA || nB !== lastNB || cA !== lastCA || cB !== lastCB;
+                  nA !== lastNA || nB !== lastNB || cA !== lastCA || cB !== lastCB ||
+                  cA2 !== lastCA2 || cB2 !== lastCB2;
                   
   if (changed) {
     if (getVbState(VB_AUTO_SERVE_KEY, 'true') === 'true') {
@@ -594,6 +611,7 @@ function poll() {
     }
     lastA = sA; lastB = sB; last2A = s2A; last2B = s2B;
     lastNA = nA; lastNB = nB; lastCA = cA; lastCB = cB;
+    lastCA2 = cA2; lastCB2 = cB2;
     broadcast();
   }
 }

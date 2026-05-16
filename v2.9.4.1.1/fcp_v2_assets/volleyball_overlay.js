@@ -38,7 +38,7 @@ function renderHistory(history, maxSets) {
   const historyEl = document.getElementById('history-scores');
   if (historyEl) {
     const totalSets = maxSets || 5;
-    let headersHtml = '<div style="position:absolute; top:-24px; left:0; width:100%; display:flex; background:#1e293b; border-radius:6px 6px 0 0; overflow:hidden; box-shadow:0 -2px 5px rgba(0,0,0,0.3);">';
+    let headersHtml = '<div style="position:absolute; top:-24px; left:0; width:100%; display:flex; background:#1e293b; border-radius:6px 6px 0 0; overflow:hidden;">';
     let colsHtml = '';
     
     for (let i = 0; i < totalSets; i++) {
