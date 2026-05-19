@@ -1897,7 +1897,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- V2.9.2: Loading State & Initialization ---
     const initApp = async () => {
-        let startBtn = document.getElementById('closeWelcomeBtn');
+        let startBtn = document.getElementById('startAppBtn');
 
         // 1. Try OBS Connect (Wait max 2 seconds to not block UI too long if offline)
         try {
@@ -2441,7 +2441,7 @@ window.saveAndEnterApp = async () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
     const provinceOtherInput = $('visitorProvinceOther');
-    const startBtn = $('closeWelcomeBtn');
+    const startBtn = $('startAppBtn');
     const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
     const setStatus = (msg, color = '#94a3b8') => {
