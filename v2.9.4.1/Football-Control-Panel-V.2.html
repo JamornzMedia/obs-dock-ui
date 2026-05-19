@@ -774,6 +774,7 @@
             text-align: center;
             margin: 2px 0;
             color: #ffffff;
+            -webkit-text-stroke: 1.5px black;
             box-sizing: border-box;
             /* Ensure padding doesn't overflow */
         }
@@ -2731,7 +2732,10 @@
             </div>
 
             <!-- Center -->
-            <div class="score-col-center">
+            <div class="score-col-center" style="flex-direction: column; gap: 8px;">
+                <button id="swapScoreBtn" class="btn-warning"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Swap Score Sides"><i
+                        class="fas fa-exchange-alt"></i></button>
                 <button id="resetScoreBtn" class="btn-secondary"
                     style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
                         class="fas fa-sync-alt"></i></button>

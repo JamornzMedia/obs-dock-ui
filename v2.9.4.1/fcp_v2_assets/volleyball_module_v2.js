@@ -16,6 +16,8 @@
 const VB_STATE_KEY   = 'vb_state';
 const VB_HISTORY_KEY = 'vb_set_history';
 const VB_LIMIT_KEY   = 'vb_set_limit';
+const VB_MAX_SETS_KEY = 'vb_max_sets';
+const VB_FINAL_LIMIT_KEY = 'vb_final_limit';
 const VB_ENABLED_KEY = 'vb_enabled';
 const VB_LOGO_KEY    = 'vb_logo_url';
 const VB_SERVE_KEY   = 'vb_serve';
@@ -35,10 +37,14 @@ try { bc = new BroadcastChannel(VB_CHANNEL); } catch (_) {}
 
 // ── State ────────────────────────────────────────────────────────────
 let lastA = -1, lastB = -1, last2A = -1, last2B = -1;
-let lastNA = '', lastNB = '', lastCA = '', lastCB = '';
+let lastNA = '', lastNB = '', lastCA = '', lastCB = '', lastCA2 = '', lastCB2 = '';
 
 function getSetLimit()      { return Math.max(1, parseInt(localStorage.getItem(VB_LIMIT_KEY) || '25')); }
 function saveSetLimit(v)    { localStorage.setItem(VB_LIMIT_KEY, String(v)); }
+function getMaxSets()       { return Math.max(1, parseInt(localStorage.getItem(VB_MAX_SETS_KEY) || '5')); }
+function saveMaxSets(v)     { localStorage.setItem(VB_MAX_SETS_KEY, String(v)); }
+function getFinalSetLimit() { return Math.max(1, parseInt(localStorage.getItem(VB_FINAL_LIMIT_KEY) || '15')); }
+function saveFinalSetLimit(v){ localStorage.setItem(VB_FINAL_LIMIT_KEY, String(v)); }
 function loadHistory()      { try { return JSON.parse(localStorage.getItem(VB_HISTORY_KEY) || '[]'); } catch(_){ return []; } }
 function saveHistory(h)     { localStorage.setItem(VB_HISTORY_KEY, JSON.stringify(h)); }
 function isEnabled()        { return localStorage.getItem(VB_ENABLED_KEY) !== 'false'; }
@@ -54,6 +60,8 @@ function readScores() {
     s2B: parseInt(document.getElementById('score2B')?.textContent ?? '0') || 0,
     cA:  document.getElementById('colorA')?.value || '#1e3a8a',
     cB:  document.getElementById('colorB')?.value || '#7f1d1d',
+    cA2: document.getElementById('colorA2')?.value || '#000000',
+    cB2: document.getElementById('colorB2')?.value || '#000000',
     nA:  document.getElementById('nameA')?.textContent || 'TEAM A',
     nB:  document.getElementById('nameB')?.textContent || 'TEAM B',
   };
@@ -61,13 +69,16 @@ function readScores() {
 
 // ── Broadcast State ──────────────────────────────────────────────────
 function broadcast() {
-  const { sA, sB, s2A, s2B, cA, cB, nA, nB } = readScores();
+  const { sA, sB, s2A, s2B, cA, cB, cA2, cB2, nA, nB } = readScores();
   const payload = {
     scoreA: sA, scoreB: sB,
     setsA: s2A, setsB: s2B,
     setHistory: loadHistory(),
     setLimit: getSetLimit(),
+    maxSets: getMaxSets(),
+    finalSetLimit: getFinalSetLimit(),
     colorA: cA, colorB: cB,
+    colorA2: cA2, colorB2: cB2,
     nameA: nA, nameB: nB,
     logoUrl: getVbState(VB_LOGO_KEY, ''),
     serve: getVbState(VB_SERVE_KEY, ''),
@@ -167,6 +178,30 @@ async function createVBSource(btn, type) {
   }
 }
 
+async function toggleVbSource(sourceName, btnElement) {
+  const obs = window.fcpOBS;
+  if(!obs) {
+    vbToast('❌ OBS not connected', 'error');
+    return;
+  }
+  try {
+    const scene = await obs.call('GetCurrentProgramScene');
+    const sceneName = scene.currentProgramSceneName;
+    const item = await obs.call('GetSceneItemId', { sceneName, sourceName });
+    const { sceneItemEnabled } = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId: item.sceneItemId });
+    await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: item.sceneItemId, sceneItemEnabled: !sceneItemEnabled });
+    
+    const isNowEnabled = !sceneItemEnabled;
+    const label = sourceName.includes('Main') ? 'Main Score' : 'History';
+    btnElement.innerHTML = isNowEnabled ? `<i class="fas fa-eye"></i> ${label}` : `<i class="fas fa-eye-slash"></i> ${label}`;
+    btnElement.className = isNowEnabled ? 'btn-primary' : 'btn-secondary';
+    btnElement.style.background = isNowEnabled ? '#3b82f6' : '';
+    vbToast(`${sourceName} is now ${isNowEnabled ? 'Visible' : 'Hidden'}`, 'success');
+  } catch(e) {
+    vbToast(`❌ OBS Error: Source '${sourceName}' not found.`, 'error');
+  }
+}
+
 // ── Toast Helper ─────────────────────────────────────────────────────
 function vbToast(msg, type = 'info') {
   const c = document.getElementById('toast-container');
@@ -217,6 +252,10 @@ function updateMainPanelUI(state) {
         <button id="vb-main-finish-set" class="btn-success" style="font-size:0.85rem;padding:8px;"><i class="fas fa-flag-checkered"></i> Finish Set</button>
         <button id="vb-main-reset-match" class="btn-danger" style="font-size:0.85rem;padding:8px;"><i class="fas fa-undo"></i> Reset Match</button>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <button id="vb-toggle-main" class="btn-secondary" style="font-size:0.8rem;padding:6px;" title="Toggle Main Score"><i class="fas fa-eye-slash"></i> Main Score</button>
+        <button id="vb-toggle-hist" class="btn-secondary" style="font-size:0.8rem;padding:6px;" title="Toggle History"><i class="fas fa-eye-slash"></i> History</button>
+      </div>
     `;
     s2Card.insertAdjacentElement('afterend', panel);
     
@@ -229,6 +268,10 @@ function updateMainPanelUI(state) {
     document.getElementById('vb-to-b-toggle').onclick = () => setVbState(VB_TIMEOUT_ACTIVE_KEY, getVbState(VB_TIMEOUT_ACTIVE_KEY,'')==='B'?'':'B');
     document.getElementById('vb-main-finish-set').onclick = finishSet;
     document.getElementById('vb-main-reset-match').onclick = resetMatch;
+    
+    // Wire OBS Toggle
+    document.getElementById('vb-toggle-main').onclick = function() { toggleVbSource('Volleyball_Main_Score', this); };
+    document.getElementById('vb-toggle-hist').onclick = function() { toggleVbSource('Volleyball_History', this); };
   }
   
   panel.style.display = 'block';
@@ -294,6 +337,8 @@ function injectSettingsTab() {
   // ── 2. Tab content panel ──────────────────────────────────────
   const enabled = isEnabled();
   const limit   = getSetLimit();
+  const maxSets = getMaxSets();
+  const finalLimit = getFinalSetLimit();
 
   const panel = document.createElement('div');
   panel.className = 'settings-tab-content';
@@ -372,14 +417,38 @@ function injectSettingsTab() {
         </div>
       </div>
 
-      <!-- Set Point Limit -->
+      <!-- Match Settings: Sets & Limits -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <!-- Number of Sets -->
+        <div>
+          <label style="font-size:.75rem;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">🎯 Max Sets</label>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button id="vb2-maxsets-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+            <input id="vb2-maxsets" type="number" min="1" max="9" value="${maxSets}"
+              style="width:100%;text-align:center;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:14px;font-weight:700;padding:4px 0;">
+            <button id="vb2-maxsets-plus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+          </div>
+        </div>
+        <!-- Set Point Limit -->
+        <div>
+          <label style="font-size:.75rem;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">🎯 Set Point</label>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <button id="vb2-limit-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+            <input id="vb2-limit" type="number" min="1" max="99" value="${limit}"
+              style="width:100%;text-align:center;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:14px;font-weight:700;padding:4px 0;">
+            <button id="vb2-limit-plus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Final Set Point Limit -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <label style="font-size:.85rem;font-weight:600;color:#cbd5e1;">🎯 Set Point Limit</label>
+        <label style="font-size:.85rem;font-weight:600;color:#cbd5e1;">🎯 Final Set Point Limit</label>
         <div style="display:flex;align-items:center;gap:5px;">
-          <button id="vb2-limit-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
-          <input id="vb2-limit" type="number" min="1" max="99" value="${limit}"
+          <button id="vb2-finallimit-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+          <input id="vb2-finallimit" type="number" min="1" max="99" value="${finalLimit}"
             style="width:54px;text-align:center;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:14px;font-weight:700;padding:4px 0;">
-          <button id="vb2-limit-plus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+          <button id="vb2-finallimit-plus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
         </div>
       </div>
 
@@ -494,6 +563,31 @@ function injectSettingsTab() {
   document.getElementById('vb2-limit-minus').addEventListener('click', () => { limitInput.value = Math.max(1, parseInt(limitInput.value) - 1); applyLimit(); });
   document.getElementById('vb2-limit-plus').addEventListener('click',  () => { limitInput.value = Math.min(99, parseInt(limitInput.value) + 1); applyLimit(); });
 
+  // Max Sets input
+  const maxSetsInput = document.getElementById('vb2-maxsets');
+  const applyMaxSets = () => {
+    const v = Math.max(1, Math.min(9, parseInt(maxSetsInput.value) || 5));
+    maxSetsInput.value = v;
+    saveMaxSets(v);
+    broadcast();
+  };
+  maxSetsInput.addEventListener('change', applyMaxSets);
+  document.getElementById('vb2-maxsets-minus').addEventListener('click', () => { maxSetsInput.value = Math.max(1, parseInt(maxSetsInput.value) - 1); applyMaxSets(); });
+  document.getElementById('vb2-maxsets-plus').addEventListener('click',  () => { maxSetsInput.value = Math.min(9, parseInt(maxSetsInput.value) + 1); applyMaxSets(); });
+
+  // Final Limit input
+  const finalLimitInput = document.getElementById('vb2-finallimit');
+  const applyFinalLimit = () => {
+    const v = Math.max(1, Math.min(99, parseInt(finalLimitInput.value) || 15));
+    finalLimitInput.value = v;
+    saveFinalSetLimit(v);
+    broadcast();
+  };
+  finalLimitInput.addEventListener('change', applyFinalLimit);
+  document.getElementById('vb2-finallimit-minus').addEventListener('click', () => { finalLimitInput.value = Math.max(1, parseInt(finalLimitInput.value) - 1); applyFinalLimit(); });
+  document.getElementById('vb2-finallimit-plus').addEventListener('click',  () => { finalLimitInput.value = Math.min(99, parseInt(finalLimitInput.value) + 1); applyFinalLimit(); });
+
+
   // Action buttons
   document.getElementById('vb2-finish-btn').addEventListener('click', finishSet);
   document.getElementById('vb2-reset-btn').addEventListener('click', resetMatch);
@@ -504,10 +598,11 @@ function injectSettingsTab() {
 // ── Poll loop ────────────────────────────────────────────────────────
 function poll() {
   if (!isEnabled()) return;
-  const { sA, sB, s2A, s2B, nA, nB, cA, cB } = readScores();
+  const { sA, sB, s2A, s2B, nA, nB, cA, cB, cA2, cB2 } = readScores();
   
   const changed = sA !== lastA || sB !== lastB || s2A !== last2A || s2B !== last2B || 
-                  nA !== lastNA || nB !== lastNB || cA !== lastCA || cB !== lastCB;
+                  nA !== lastNA || nB !== lastNB || cA !== lastCA || cB !== lastCB ||
+                  cA2 !== lastCA2 || cB2 !== lastCB2;
                   
   if (changed) {
     if (getVbState(VB_AUTO_SERVE_KEY, 'true') === 'true') {
@@ -516,6 +611,7 @@ function poll() {
     }
     lastA = sA; lastB = sB; last2A = s2A; last2B = s2B;
     lastNA = nA; lastNB = nB; lastCA = cA; lastCB = cB;
+    lastCA2 = cA2; lastCB2 = cB2;
     broadcast();
   }
 }
