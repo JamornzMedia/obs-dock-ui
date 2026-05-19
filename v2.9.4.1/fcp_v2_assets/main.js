@@ -11,12 +11,12 @@ const elements = [
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
     "swapCard",
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", "groupTimeVisibilityCheck",
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
     "actionButtonsCard", "actionButtonsGrid",
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
-    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "swapScoreBtn", "scoreAPlusBtn", "scoreAMinusBtn",
+    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn",
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
@@ -733,8 +733,7 @@ const loadVisibilitySettings = () => {
         showResetTime: true,
         showResetStart: true,
         showEditTime: true,
-        showCountdown: true,
-        showGroupTime: true
+        showCountdown: true
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -748,11 +747,6 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
-    if (elements.groupTimeVisibilityCheck) elements.groupTimeVisibilityCheck.checked = settings.showGroupTime;
-
-    // Group Time (timer area) visibility
-    const timerAreaEl = document.querySelector('.timer-area-container');
-    if (timerAreaEl) timerAreaEl.style.display = settings.showGroupTime ? '' : 'none';
 
     // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
@@ -1071,7 +1065,6 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     colorEl2.value = masterTeam.color2;
     initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
     scoreEl.textContent = masterTeam.score;
-    scoreEl.style.backgroundColor = masterTeam.color1;
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
@@ -1618,19 +1611,6 @@ const setupEventListeners = () => {
     elements.scoreBMinusBtn.addEventListener('click', () => changeScore('B', -1));
     elements.resetScoreBtn.addEventListener('click', resetScore);
 
-    if (elements.swapScoreBtn) {
-        elements.swapScoreBtn.addEventListener('click', () => {
-            const panel = document.querySelector('.score-panel-clean');
-            if (panel) {
-                if (panel.style.flexDirection === 'row-reverse') {
-                    panel.style.flexDirection = 'row';
-                } else {
-                    panel.style.flexDirection = 'row-reverse';
-                }
-            }
-        });
-    }
-
     elements.score2APlusBtn.addEventListener('click', () => changeScore2('A', 1));
     elements.score2AMinusBtn.addEventListener('click', () => changeScore2('A', -1));
     elements.score2BPlusBtn.addEventListener('click', () => changeScore2('B', 1));
@@ -1640,7 +1620,6 @@ const setupEventListeners = () => {
     elements.score2VisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('score2', e.target.checked));
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
-    if (elements.groupTimeVisibilityCheck) elements.groupTimeVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('showGroupTime', e.target.checked));
 
     // V2.8.1 Listeners
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
@@ -1897,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- V2.9.2: Loading State & Initialization ---
     const initApp = async () => {
-        let startBtn = document.getElementById('startAppBtn');
+        let startBtn = document.getElementById('closeWelcomeBtn');
 
         // 1. Try OBS Connect (Wait max 2 seconds to not block UI too long if offline)
         try {
@@ -2441,7 +2420,7 @@ window.saveAndEnterApp = async () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
     const provinceOtherInput = $('visitorProvinceOther');
-    const startBtn = $('startAppBtn');
+    const startBtn = $('closeWelcomeBtn');
     const loadingStatus = document.getElementById('welcomeLoadingStatus');
 
     const setStatus = (msg, color = '#94a3b8') => {
