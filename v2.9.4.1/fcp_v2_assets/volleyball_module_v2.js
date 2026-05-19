@@ -47,7 +47,7 @@ function getFinalSetLimit() { return Math.max(1, parseInt(localStorage.getItem(V
 function saveFinalSetLimit(v){ localStorage.setItem(VB_FINAL_LIMIT_KEY, String(v)); }
 function loadHistory()      { try { return JSON.parse(localStorage.getItem(VB_HISTORY_KEY) || '[]'); } catch(_){ return []; } }
 function saveHistory(h)     { localStorage.setItem(VB_HISTORY_KEY, JSON.stringify(h)); }
-function isEnabled()        { return localStorage.getItem(VB_ENABLED_KEY) !== 'false'; }
+function isEnabled()        { return localStorage.getItem(VB_ENABLED_KEY) === 'true'; }
 function getVbState(k, def) { return localStorage.getItem(k) || def; }
 function setVbState(k, v)   { localStorage.setItem(k, v); broadcast(); }
 
@@ -360,7 +360,7 @@ function injectSettingsTab() {
       </div>
       <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
         <div class="toggle-switch">
-          <input type="checkbox" id="vb2-enabled-toggle" ${enabled ? 'checked' : ''}>
+          <input type="checkbox" id="vb2-enabled-toggle" ${enabled ? 'checked' : ''} >
           <span class="slider"></span>
         </div>
       </label>
@@ -460,17 +460,7 @@ function injectSettingsTab() {
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-        <button id="vb2-finish-btn"
-          style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a0e00;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(245,158,11,0.3);">
-          🏁 Finish Set
-        </button>
-        <button id="vb2-reset-btn"
-          style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px solid rgba(239,68,68,0.35);border-radius:8px;background:rgba(239,68,68,0.12);color:#fca5a5;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;">
-          🔄 Reset Match
-        </button>
-      </div>
+
 
       <!-- OBS Source Creator -->
       <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
@@ -509,8 +499,7 @@ function injectSettingsTab() {
       .vb2-win-a{background:rgba(147,197,253,.12);border-color:rgba(147,197,253,.3);color:#93c5fd;}
       .vb2-win-b{background:rgba(252,165,165,.12);border-color:rgba(252,165,165,.3);color:#fca5a5;}
       .vb2-tie  {background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.4);}
-      #vb2-finish-btn:hover{transform:scale(1.03);box-shadow:0 6px 20px rgba(245,158,11,0.45);}
-      #vb2-reset-btn:hover{background:rgba(239,68,68,0.22);}
+
       #vb2-create-main-btn:hover, #vb2-create-hist-btn:hover {background:rgba(34,197,94,0.2);}
       #vb2-limit::-webkit-inner-spin-button{display:none;}
     `;
@@ -588,9 +577,7 @@ function injectSettingsTab() {
   document.getElementById('vb2-finallimit-plus').addEventListener('click',  () => { finalLimitInput.value = Math.min(99, parseInt(finalLimitInput.value) + 1); applyFinalLimit(); });
 
 
-  // Action buttons
-  document.getElementById('vb2-finish-btn').addEventListener('click', finishSet);
-  document.getElementById('vb2-reset-btn').addEventListener('click', resetMatch);
+
   document.getElementById('vb2-create-main-btn').addEventListener('click', function() { createVBSource(this, 'main'); });
   document.getElementById('vb2-create-hist-btn').addEventListener('click', function() { createVBSource(this, 'history'); });
 }

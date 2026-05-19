@@ -11,7 +11,7 @@ const elements = [
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
     "swapCard",
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", "groupTimeVisibilityCheck",
     "actionButtonsCard", "actionButtonsGrid",
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
@@ -733,7 +733,8 @@ const loadVisibilitySettings = () => {
         showResetTime: true,
         showResetStart: true,
         showEditTime: true,
-        showCountdown: true
+        showCountdown: true,
+        showGroupTime: true
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -747,6 +748,11 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+    if (elements.groupTimeVisibilityCheck) elements.groupTimeVisibilityCheck.checked = settings.showGroupTime;
+
+    // Group Time (timer area) visibility
+    const timerAreaEl = document.querySelector('.timer-area-container');
+    if (timerAreaEl) timerAreaEl.style.display = settings.showGroupTime ? '' : 'none';
 
     // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
@@ -1634,6 +1640,7 @@ const setupEventListeners = () => {
     elements.score2VisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('score2', e.target.checked));
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
+    if (elements.groupTimeVisibilityCheck) elements.groupTimeVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('showGroupTime', e.target.checked));
 
     // V2.8.1 Listeners
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
