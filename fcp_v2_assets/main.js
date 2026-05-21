@@ -16,7 +16,7 @@ const elements = [
     "timerText", "halfText", "announcement-text", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
-    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "scoreAPlusBtn", "scoreAMinusBtn",
+    "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "swapScoreBtn", "scoreAPlusBtn", "scoreAMinusBtn",
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
@@ -1065,6 +1065,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     colorEl2.value = masterTeam.color2;
     initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
     scoreEl.textContent = masterTeam.score;
+    scoreEl.style.backgroundColor = masterTeam.color1;
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
@@ -1611,6 +1612,19 @@ const setupEventListeners = () => {
     elements.scoreBMinusBtn.addEventListener('click', () => changeScore('B', -1));
     elements.resetScoreBtn.addEventListener('click', resetScore);
 
+    if (elements.swapScoreBtn) {
+        elements.swapScoreBtn.addEventListener('click', () => {
+            const panel = document.querySelector('.score-panel-clean');
+            if (panel) {
+                if (panel.style.flexDirection === 'row-reverse') {
+                    panel.style.flexDirection = 'row';
+                } else {
+                    panel.style.flexDirection = 'row-reverse';
+                }
+            }
+        });
+    }
+
     elements.score2APlusBtn.addEventListener('click', () => changeScore2('A', 1));
     elements.score2AMinusBtn.addEventListener('click', () => changeScore2('A', -1));
     elements.score2BPlusBtn.addEventListener('click', () => changeScore2('B', 1));
@@ -1743,9 +1757,11 @@ const setupEventListeners = () => {
             elements.logoPathInput.focus();
             btnSpan.textContent = trans.save;
         } else {
-            const newPath = elements.logoPathInput.value.trim();
+            const newPath = elements.logoPathInput.value.trim().replace(/\\/g, '/');
             logoFolderPath = newPath;
             localStorage.setItem('logoFolderPath', newPath);
+            elements.currentLogoPath.textContent = newPath;
+            elements.logoPathInput.value = newPath;
             elements.currentLogoPath.textContent = newPath;
             elements.logoPathInput.disabled = true;
             btnSpan.textContent = trans.edit;
@@ -1818,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const savedPath = localStorage.getItem('logoFolderPath');
     if (savedPath) {
-        logoFolderPath = savedPath;
+        logoFolderPath = savedPath.replace(/\\/g, '/');
     }
 
     // LOAD DATA SOURCE SETTINGS
@@ -2031,15 +2047,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Generate 8-digit ID
-                const userID = Math.floor(10000000 + Math.random() * 90000000).toString();
+                // Reuse existing ID or Generate 6-digit ID
+                let userID = Math.floor(100000 + Math.random() * 900000).toString();
+                try {
+                    const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+                    if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
+                        userID = existingIdentity.ID;
+                    }
+                } catch(e) {}
 
                 // V2.9.3: Restore usage data from Firebase
                 try {
                     startBtn.disabled = true;
                     setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-                    const existingData = await fetchFirebaseUserData(enteredName);
+                    const existingData = await fetchFirebaseUserData(enteredName, userID);
+                    // Check if it's a true duplicate (name taken by another ID)
+                    if (existingData && existingData.ID && existingData.ID !== userID) {
+                        setStatus(`⚠️ ชื่อ "${enteredName}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
+                        startBtn.disabled = false;
+                        startBtn.textContent = 'Start';
+                        return;
+                    }
+
                     if (existingData && existingData.totalMinutes) {
                         // V2.9.3: Always trust Firebase as the single source of truth for time
                         const restoredMinutes = existingData.totalMinutes;
@@ -2083,6 +2113,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // V2.9.3: Start usage tracking
                 startUsageTracking(identity);
+
+                // V2.9.4: Increment visitor counter on every start
+                if (window.incrementVisitorCounter) window.incrementVisitorCounter();
 
                 const welcomeScreen = document.getElementById('welcomeScreen');
                 if (welcomeScreen) {
@@ -2330,8 +2363,51 @@ window.initWelcomeScreen = () => {
         });
     }
 
-    if (userIdentity && userIdentity.name) {
-        if (nameInput) nameInput.value = userIdentity.name;
+    if (userIdentity && userIdentity.name && !userIdentity.isTemporary) {
+        if (nameInput) {
+            nameInput.value = userIdentity.name;
+            nameInput.disabled = true;
+            nameInput.style.opacity = '0.7';
+        }
+
+        const editBtn = $('editNameBtn');
+        if (editBtn) {
+            editBtn.style.display = 'block';
+            editBtn.onclick = () => {
+                nameInput.disabled = false;
+                nameInput.style.opacity = '1';
+                nameInput.focus();
+            };
+        }
+
+        const deleteContainer = $('deleteIdContainer');
+        if (deleteContainer) {
+            deleteContainer.style.display = 'block';
+            const deleteBtn = $('deleteIdBtn');
+            if (deleteBtn) {
+                deleteBtn.onclick = async () => {
+                    const confirmDel = await window.customConfirm(
+                        'คุณแน่ใจหรือไม่?\nการดำเนินการนี้จะลบ ID, ชื่อ และเวลาสะสมของคุณออกจากระบบอย่างถาวร',
+                        'ยืนยันการลบข้อมูล ID',
+                        'fa-exclamation-triangle'
+                    );
+                    if (confirmDel) {
+                        try {
+                            if (typeof firebase !== 'undefined' && firebase.database) {
+                                await firebase.database().ref('obs_id/' + userIdentity.ID).remove();
+                            }
+                        } catch(e) { console.error("Error deleting ID from DB:", e); }
+                        
+                        localStorage.removeItem('userIdentity');
+                        localStorage.removeItem('machineIdentityName');
+                        localStorage.removeItem('usageTracker');
+                        localStorage.removeItem('nameChangeLog');
+                        location.reload();
+                    }
+                };
+            }
+        }
+
         if (provinceSelect) {
             // Check if province is in list
             if (thaiProvinces.includes(userIdentity.province)) {
@@ -2452,12 +2528,28 @@ window.saveAndEnterApp = async () => {
         }
     }
 
+    // Reuse existing ID or Generate 6-digit ID
+    let userID = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
+            userID = existingIdentity.ID;
+        }
+    } catch(e) {}
+
     // CASE 3: Full login — Restore from Firebase
     try {
         if (startBtn) startBtn.disabled = true;
         setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-        const existingData = await fetchFirebaseUserData(name);
+        const existingData = await fetchFirebaseUserData(name, userID);
+        // Check if it's a true duplicate (name taken by another ID)
+        if (existingData && existingData.ID && existingData.ID !== userID) {
+            setStatus(`⚠️ ชื่อ "${name}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
+            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
+            return;
+        }
+
         if (existingData && existingData.totalMinutes) {
             // V2.9.3: Always trust Firebase as the single source of truth for time
             const restoredMinutes = existingData.totalMinutes;
@@ -2478,13 +2570,16 @@ window.saveAndEnterApp = async () => {
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     }
 
-    userIdentity = { name: name, province: province };
+    userIdentity = { name: name, province: province, platform: 'PC', ID: userID };
     localStorage.setItem('userIdentity', JSON.stringify(userIdentity));
     localStorage.setItem('machineIdentityName', name);
     window.userIdentity = userIdentity;
     updateUserIdentityUI();
 
     startUsageTracking(userIdentity);
+    
+    // V2.9.4: Increment visitor counter on every start
+    if (window.incrementVisitorCounter) window.incrementVisitorCounter();
 
     const screen = $('welcomeScreen');
     if (screen) {
@@ -2905,3 +3000,11 @@ window.triggerAction = async (index) => {
         showToast(`Action Failed: ${err.message || err.error}`, 'error');
     }
 };
+
+// ── Volleyball Module Add-on ──────────────────────────────────────────
+// Expose the module-scoped obs instance so volleyball_module_v2.js can
+// call obs.call() via window.fcpOBS (avoids window.obs which doesn't exist).
+window.fcpOBS = obs;
+// Also expose switchSettingsTab so the injected tab button can switch to it.
+window.switchSettingsTab = switchSettingsTab;
+import './volleyball_module_v2.js';

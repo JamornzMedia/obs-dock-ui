@@ -119,23 +119,24 @@ function syncToFirebase(identity) {
     if (typeof firebase === 'undefined' || !firebase.database) return;
 
     try {
-        const sanitizedName = identity.name.trim()
-            .replace(/[.#$\[\]\/]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 30);
-        if (!sanitizedName) return;
-
         const data = getUsageData();
+        
+        // Ensure ID exists (fallback to a generated one if somehow missing)
+        if (!identity.ID) {
+            identity.ID = Math.floor(100000 + Math.random() * 900000).toString();
+            try { localStorage.setItem('userIdentity', JSON.stringify(identity)); } catch(e){}
+        }
 
         const userData = {
             name: identity.name.substring(0, 30),
             province: identity.province || 'Unknown',
             totalMinutes: data.totalMinutes || 0,
+            ID: identity.ID,
             lastUpdated: new Date().toISOString()
         };
 
-        firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).update(userData)
-            .then(() => console.log(`Firebase obs_id synced: ${sanitizedName}`))
+        firebase.database().ref(`${OBS_ID_PATH}/${identity.ID}`).update(userData)
+            .then(() => console.log(`Firebase obs_id synced for ID: ${identity.ID} (${userData.name})`))
             .catch(err => console.error('Firebase obs_id sync error:', err));
     } catch (e) {
         console.error('Firebase sync error:', e);
@@ -143,19 +144,37 @@ function syncToFirebase(identity) {
 }
 
 // --- Firebase: Fetch existing user data (for duplicate name protection) ---
-export async function fetchFirebaseUserData(name) {
+export async function fetchFirebaseUserData(name, currentID = null) {
     if (!name) return null;
     if (typeof firebase === 'undefined' || !firebase.database) return null;
 
     try {
-        const sanitizedName = name.trim()
-            .replace(/[.#$\[\]\/]/g, '')
-            .replace(/\s+/g, '_')
-            .substring(0, 30);
-        if (!sanitizedName) return null;
-
-        const snapshot = await firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).once('value');
-        return snapshot.val();
+        const snapshot = await firebase.database().ref(OBS_ID_PATH).once('value');
+        const allUsers = snapshot.val() || {};
+        
+        let foundUser = null;
+        Object.keys(allUsers).forEach(key => {
+            const user = allUsers[key];
+            if (user && user.name && user.name.toLowerCase() === name.toLowerCase()) {
+                // Ignore if it's the current user's ID
+                if (!currentID || key !== currentID) {
+                    foundUser = user;
+                }
+            }
+        });
+        
+        // Backward compatibility check
+        if (!foundUser) {
+            const sanitizedName = name.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_').substring(0, 30);
+            if (sanitizedName) {
+                const oldSnapshot = await firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).once('value');
+                if (oldSnapshot.exists()) {
+                    foundUser = oldSnapshot.val();
+                }
+            }
+        }
+        
+        return foundUser;
     } catch (e) {
         console.error('Firebase fetch error:', e);
         return null;
