@@ -1,0 +1,752 @@
+﻿/* ================= CORE STYLES ================= */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #1e1e1e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER STYLE */
+        .app-header {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #151515;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+
+        .logo-header-main {
+            font-size: 1.3rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: -webkit-linear-gradient(#00aaff, #005f73);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            user-select: none;
+        }
+
+        .logo-header-sub {
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #888;
+            text-transform: uppercase;
+            margin-top: 2px;
+            user-select: none;
+        }
+
+        /* STATUS BAR */
+        .status-bar {
+            background: #111;
+            font-size: 10px;
+            padding: 3px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #555;
+            flex-shrink: 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+            margin-right: 5px;
+        }
+
+        .status-connected {
+            background: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+
+        .status-error {
+            background: #ff0000;
+        }
+
+        /* MAIN CONTENT */
+        .container {
+            padding: 10px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* --- CARDS CONTAINER --- */
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+
+        /* --- CONTROL CARD (Compact) --- */
+        .control-card {
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 160px;
+            max-width: 220px;
+            flex: 1 1 160px;
+            position: relative;
+        }
+
+        .control-card.single {
+            border-left: 3px solid #4ade80;
+        }
+
+        .control-card.double {
+            border-left: 3px solid #fbbf24;
+        }
+
+        .btn-card-settings {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: 0.2s;
+        }
+
+        .btn-card-settings:hover {
+            background: #333;
+            color: #00aaff;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 10px;
+            color: #00aaff;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .card-type-badge {
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: #333;
+            color: #888;
+        }
+
+        .card-type-badge.single {
+            background: #2d4a3e;
+            color: #4ade80;
+        }
+
+        .card-type-badge.double {
+            background: #4a3d2d;
+            color: #fbbf24;
+        }
+
+        /* FORM ELEMENTS */
+        .input-group {
+            margin-bottom: 5px;
+        }
+
+        label {
+            display: block;
+            font-size: 9px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            background: #111;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 11px;
+            box-sizing: border-box;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: #00aaff;
+            outline: none;
+        }
+
+        /* Data Select with monospace for column alignment */
+        .data-select {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .data-select option {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            padding: 4px;
+        }
+
+        /* --- TOGGLE SWITCH --- */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+            background: #1a1a1a;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 16px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .3s;
+            border-radius: 16px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 10px;
+            width: 10px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #00aaff;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        /* ACTION BUTTONS */
+        .btn-update {
+            width: 100%;
+            padding: 5px;
+            background: #005f73;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 9px;
+            transition: 0.2s;
+        }
+
+        .btn-update:hover {
+            background: #0a9396;
+        }
+
+        /* SOURCE MAPPING SECTION */
+        .source-mapping {
+            background: #1a1a1a;
+            border-radius: 4px;
+            padding: 5px;
+            margin-top: 6px;
+            font-size: 8px;
+        }
+
+        .source-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .source-row:last-child {
+            border-bottom: none;
+        }
+
+        .source-name {
+            color: #4ade80;
+            font-family: monospace;
+            font-size: 9px;
+        }
+
+        .btn-copy {
+            background: #333;
+            border: none;
+            color: #888;
+            padding: 1px 4px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 8px;
+        }
+
+        .btn-copy:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-copy.copied {
+            background: #2d4a3e;
+            color: #4ade80;
+        }
+
+        /* ============ IMPORT BAR (Collapsible) ============ */
+        .import-bar {
+            background: #151515;
+            border-top: 1px solid #333;
+            flex-shrink: 0;
+        }
+
+        .import-bar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .import-bar-header:hover {
+            background: #222;
+        }
+
+        .import-bar-title {
+            font-size: 10px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .import-bar-title .icon {
+            font-size: 12px;
+        }
+
+        .import-status {
+            font-size: 10px;
+            color: #4ade80;
+        }
+
+        .import-status.empty {
+            color: #888;
+        }
+
+        .toggle-arrow {
+            color: #888;
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .import-bar.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .import-bar-content {
+            display: none;
+            padding: 10px;
+            border-top: 1px solid #333;
+        }
+
+        .import-bar.expanded .import-bar-content {
+            display: block;
+        }
+
+        /* DROP ZONE (Inside Import Bar) */
+        .drop-zone {
+            border: 2px dashed #444;
+            background: #1a1a1a;
+            padding: 15px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #888;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        .drop-zone:hover {
+            border-color: #00aaff;
+            background: #252525;
+            color: #fff;
+        }
+
+        .drop-zone.dragover {
+            border-color: #00aaff;
+            background: #252525;
+        }
+
+        .drop-zone-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        /* SETTINGS BAR */
+        .settings-bar {
+            padding: 8px 10px;
+            border-top: 1px solid #333;
+            display: flex;
+            gap: 5px;
+            background: #151515;
+            flex-shrink: 0;
+        }
+
+        .btn-settings {
+            background: linear-gradient(135deg, #00aaff, #005f73);
+            border: none;
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .btn-settings:hover {
+            background: linear-gradient(135deg, #0bb8e8, #0a9396);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #555;
+            color: #ccc;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .btn-outline:hover {
+            background: #333;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: #252525;
+            width: 95%;
+            max-width: 380px;
+            max-height: 85vh;
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            border: 1px solid #444;
+            color: #ddd;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal h2 {
+            margin: 0 0 12px 0;
+            color: #00aaff;
+            font-size: 14px;
+        }
+
+        /* SETTINGS MODAL STYLES */
+        .settings-list {
+            margin-bottom: 12px;
+        }
+
+        .settings-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .settings-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .settings-item-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .settings-item-type {
+            font-size: 9px;
+            color: #666;
+        }
+
+        .settings-item-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-icon {
+            background: #333;
+            border: none;
+            color: #888;
+            padding: 4px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .btn-icon:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-icon.delete:hover {
+            background: #5c2626;
+            color: #ff6b6b;
+        }
+
+        /* ADD CARD FORM */
+        .add-card-form {
+            background: #1a1a1a;
+            border: 1px dashed #444;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .add-card-form h4 {
+            margin: 0 0 8px 0;
+            color: #888;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .form-row>* {
+            flex: 1;
+        }
+
+        .btn-add {
+            background: #005f73;
+            border: none;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 10px;
+        }
+
+        .btn-add:hover {
+            background: #0a9396;
+        }
+
+        .btn-add:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* Edit Card Modal */
+        .edit-form {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .edit-form .input-group {
+            margin-bottom: 10px;
+        }
+
+        .edit-form label {
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .edit-form .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-save {
+            background: #2d4a3e;
+            border: none;
+            color: #4ade80;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .btn-save:hover {
+            background: #3d5a4e;
+        }
+
+        .btn-cancel {
+            background: #333;
+            border: none;
+            color: #888;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-cancel:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .empty-state-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        /* Sponsor */
+        .sponsor-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .sponsor-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .qr-box img {
+            width: 80px;
+            height: 80px;
+            display: block;
+            margin: 5px auto;
+            border-radius: 4px;
+        }
+
+        a {
+            color: #00aaff;
+            text-decoration: none;
+        }
+
+        /* Double Side Labels */
+        .side-label {
+            font-size: 8px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            padding: 1px 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        .side-label.home {
+            color: #4ade80;
+        }
+
+        .side-label.away {
+            color: #f87171;
+        }
+
+        .side-section {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 4px;
+        }
+
+        .side-section.home .side-label {
+            color: #4ade80;
+        }
+
+        .side-section.away .side-label {
+            color: #f87171;
+        }
