@@ -11,34 +11,73 @@ var MAX_CARDS = 10;
 var OBS_URL = "ws://localhost:4455";
 var imageFolder = ""; // Base folder for images
 
-// ============ IMAGE PATH HELPER ============
-// Build full image path: folder + filename + extension (auto-detect .png/.jpg)
-function buildImagePath(imageName) {
-    if (!imageName) return "";
+// ============ IMAGE PATH HELPERS ============
 
-    // If already has extension, use as-is
+// Build image path for OBS WebSocket (requires direct OS filesystem path, e.g. C:\Images\img.png)
+function buildOBSImagePath(imageName) {
+    if (!imageName) return "";
+    
+    // If it's a web URL or base64, return as-is
+    if (/^(http|https|data):/i.test(imageName)) {
+        return imageName;
+    }
+
     var hasExt = /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(imageName);
     var nameWithExt = hasExt ? imageName : imageName + ".png";
     var basePath = imageFolder ? imageFolder + nameWithExt : nameWithExt;
 
-    // Check if it is a Windows absolute path (e.g. C:\path or D:\path)
+    // Ensure it has backward slashes for Windows compatibility
+    if (/^[a-zA-Z]:\\/.test(basePath) || /^[a-zA-Z]:\//.test(basePath)) {
+        return basePath.replace(/\//g, "\\");
+    }
+    return basePath;
+}
+
+// Build image path for Web browser (requires file:/// prefix for local absolute paths)
+function buildBrowserImagePath(imageName) {
+    if (!imageName) return "";
+
+    // If it's a web URL or base64, return as-is
+    if (/^(http|https|data):/i.test(imageName)) {
+        return imageName;
+    }
+
+    var hasExt = /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(imageName);
+    var nameWithExt = hasExt ? imageName : imageName + ".png";
+    var basePath = imageFolder ? imageFolder + nameWithExt : nameWithExt;
+
+    // Check if it is a Windows absolute path (e.g. C:\path)
     if (/^[a-zA-Z]:\\/.test(basePath) || /^[a-zA-Z]:\//.test(basePath)) {
         return "file:///" + basePath.replace(/\\/g, "/");
     }
     return basePath;
 }
 
-// Save/Load image folder setting
+// Save/Load image folder setting (with sanitization for file:/// and forward slashes)
 function saveImageFolder(value) {
-    imageFolder = value || "";
+    var rawValue = value || "";
+    // Sanitize file:/// prefix if pasted
+    if (rawValue.startsWith("file:///")) {
+        rawValue = rawValue.substring(8);
+        rawValue = rawValue.replace(/\//g, "\\");
+    }
+    
+    imageFolder = rawValue;
     // Ensure trailing slash
     if (imageFolder && !imageFolder.endsWith("\\") && !imageFolder.endsWith("/")) {
         imageFolder += "\\";
     }
+    
     try {
         localStorage.setItem('l3_image_folder', imageFolder);
     } catch (e) { }
-    console.log('Image folder saved:', imageFolder);
+
+    // Update text field to show normalized path
+    var input = document.getElementById('image-folder-input');
+    if (input) {
+        input.value = imageFolder;
+    }
+    console.log('Image folder saved & sanitized:', imageFolder);
 }
 
 function loadImageFolder() {
@@ -47,7 +86,6 @@ function loadImageFolder() {
         if (saved) {
             imageFolder = saved;
         }
-        // Try to set input value (might be called before or after DOM ready)
         var input = document.getElementById('image-folder-input');
         if (input) {
             input.value = imageFolder || '';
@@ -810,7 +848,7 @@ async function applySingleL3(cardId) {
     batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_' + cardId, inputSettings: { text: String(item.label3) } } });
 
     if (item.image) {
-        batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+        batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
     }
 
     sendOBSBatch(batch);
@@ -838,7 +876,7 @@ async function applyDoubleL3(cardId) {
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label2_Home_' + cardId, inputSettings: { text: String(item.label2) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_Home_' + cardId, inputSettings: { text: String(item.label3) } } });
         if (item.image) {
-            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Home_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Home_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
         }
     }
 
@@ -850,7 +888,7 @@ async function applyDoubleL3(cardId) {
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label2_Away_' + cardId, inputSettings: { text: String(item.label2) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_Away_' + cardId, inputSettings: { text: String(item.label3) } } });
         if (item.image) {
-            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Away_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Away_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
         }
     }
 
@@ -1079,11 +1117,61 @@ function openCardSettings(cardId, cardType) {
 
         gHtml += '</div>'; // end grid
 
+        // NEW: Position & Scale Row
+        gHtml += '<div style="margin-bottom:8px; border-top:1px dashed #333; padding-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+        gHtml += '<div>' +
+            '<label>ตำแหน่งการแสดงผล</label>' +
+            '<select id="g-position" onchange="updateGraphicsPositionMode(' + cardId + ', this.value)" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '<option value="topLeft" ' + (gs.position === 'topLeft' ? 'selected' : '') + '>ซ้ายบน (Top-Left)</option>' +
+            '<option value="topRight" ' + (gs.position === 'topRight' ? 'selected' : '') + '>ขวาบน (Top-Right)</option>' +
+            '<option value="bottomLeft" ' + (gs.position === 'bottomLeft' ? 'selected' : '') + '>ซ้ายล่าง (Bottom-Left)</option>' +
+            '<option value="bottomRight" ' + (gs.position === 'bottomRight' ? 'selected' : '') + '>ขวาล่าง (Bottom-Right)</option>' +
+            '<option value="custom" ' + (gs.position === 'custom' ? 'selected' : '') + '>กำหนดเอง (Custom)</option>' +
+            '</select>' +
+            '</div>';
+
+        gHtml += '<div>' +
+            '<label>ขนาดอัตราส่วน (Scale)</label>' +
+            '<input type="number" step="0.1" min="0.1" max="3.0" value="' + (gs.scale || 1.0) + '" onchange="updateGraphicsSetting(' + cardId + ', \'scale\', parseFloat(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>';
+        gHtml += '</div>';
+
+        // NEW: Custom Coordinates Row
+        var customCoordsDisplay = gs.position === 'custom' ? 'grid' : 'none';
+        gHtml += '<div id="g-custom-coords-row" style="margin-bottom:8px; display:' + customCoordsDisplay + '; grid-template-columns:1fr 1fr; gap:6px;">' +
+            '<div>' +
+            '<label>ตำแหน่งแกน X (px)</label>' +
+            '<input type="number" value="' + (gs.posX !== undefined ? gs.posX : 20) + '" onchange="updateGraphicsSetting(' + cardId + ', \'posX\', parseInt(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>' +
+            '<div>' +
+            '<label>ตำแหน่งแกน Y (px)</label>' +
+            '<input type="number" value="' + (gs.posY !== undefined ? gs.posY : 20) + '" onchange="updateGraphicsSetting(' + cardId + ', \'posY\', parseInt(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>' +
+            '</div>';
+
+        // NEW: Text Layout & Sub Delay Row
+        gHtml += '<div style="margin-bottom:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+        gHtml += '<div>' +
+            '<label>การจัดเรียงข้อความ (Text Layout)</label>' +
+            '<select id="g-textlayout" onchange="updateGraphicsSetting(' + cardId + ', \'textLayout\', this.value)" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '<option value="vertical" ' + (gs.textLayout === 'vertical' ? 'selected' : '') + '>ต่อแถวลงมา (Vertical)</option>' +
+            '<option value="horizontal" ' + (gs.textLayout === 'horizontal' ? 'selected' : '') + '>เรียงไปด้านข้าง (Horizontal)</option>' +
+            '</select>' +
+            '</div>';
+
+        if (cardType === 'double') {
+            gHtml += '<div id="g-subdelay-container" style="display:' + (mode === 'sports' ? 'block' : 'none') + ';">' +
+                '<label>เวลาหน่วงสลับเปลี่ยนตัว (วิ)</label>' +
+                '<input type="number" step="0.5" min="0.5" max="20" value="' + (gs.subDelay !== undefined ? gs.subDelay : 1.5) + '" onchange="updateGraphicsSetting(' + cardId + ', \'subDelay\', parseFloat(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+                '</div>';
+        }
+        gHtml += '</div>';
+
         // Mode selection for Double Cards
         if (cardType === 'double') {
             gHtml += '<div style="margin-bottom:8px; border-top:1px dashed #333; padding-top:6px;">' +
                 '<label style="font-weight:bold; color:#fbbf24;">รูปแบบกราฟิก (โหมดพิเศษ)</label>' +
-                '<select id="g-mode" onchange="updateGraphicsSetting(' + cardId + ', \'mode\', this.value)" style="height:22px; font-size:10px; padding:2px; width:100%; background:#111; border-color:#fbbf24;">' +
+                '<select id="g-mode" onchange="updateGraphicsModeSetting(' + cardId + ', this.value)" style="height:22px; font-size:10px; padding:2px; width:100%; background:#111; border-color:#fbbf24;">' +
                 '<option value="standard" ' + (mode === 'standard' ? 'selected' : '') + '>Standard Side-by-Side (คู่ ซ้าย-ขวา)</option>' +
                 '<option value="sports" ' + (mode === 'sports' ? 'selected' : '') + '>⚽ Sports Substitution (เปลี่ยนตัวนักกีฬา)</option>' +
                 '</select>' +
@@ -1130,8 +1218,11 @@ function openCardSettings(cardId, cardType) {
 
         gHtml += '<div style="margin-top:10px; border-top:1px solid #333; padding-top:6px; font-size:8px; color:#888; line-height:1.2;">' +
             '📌 <b>วิธีใช้งานใน OBS:</b><br>' +
-            '1. เพิ่ม Browser Source ใน OBS<br>' +
-            '2. เลือก Local file และชี้ไปที่ไฟล์ <code style="color:#00aaff;">graphicsl3.html</code> หรือใส่ URL ด้านล่างนี้:<br>' +
+            '1. เพิ่ม Browser Source ใน OBS หรือคลิกปุ่มด้านล่างเพื่อสร้างอัตโนมัติ:<br>' +
+            '<div style="margin:5px 0;">' +
+            '<button class="btn-settings" onclick="createBrowserSourceInOBS(this)" style="font-size:10px; padding:4px 8px; width:100%; font-weight:bold; background:linear-gradient(135deg, #00ff66, #005f73); border:none; color:#000; cursor:pointer; border-radius:4px;">🔧 สร้าง Browser Source ใน Scene ปัจจุบัน</button>' +
+            '</div>' +
+            '2. หรือใส่ URL ด้วยตนเองด้านล่างนี้ (ไม่ต้องติ๊กเลือก Local file):<br>' +
             '<div style="display:flex; gap:3px; margin-top:3px; margin-bottom:4px;">' +
             '<input type="text" readonly value="' + getGraphicsUrl() + '" style="font-size:8px; height:18px; padding:2px 4px; background:#111; border:1px solid #444; color:#00aaff; flex:1; box-sizing:border-box;">' +
             '<button class="btn-copy" onclick="copyGraphicsUrl(this)" style="font-size:8px; padding:2px 4px; height:18px; line-height:1; width:auto; flex:0;">คัดลอก</button>' +
@@ -1145,6 +1236,74 @@ function openCardSettings(cardId, cardType) {
     }
 
     openModal('modal-card-settings');
+}
+
+// ============ OBS BROWSER SOURCE AUTOMATED CREATION & COMPONENT EVENT HANDLERS ============
+function createBrowserSourceInOBS(btn) {
+    if (!obsConnected) {
+        alert('ไม่สามารถสร้างได้ (OBS ไม่เชื่อมต่อ)');
+        return;
+    }
+    
+    sendOBSRequestWithCallback('GetCurrentProgramScene', {}, function (err, response) {
+        if (err || !response) {
+            console.error('Failed to get current scene:', err);
+            alert('ไม่สามารถดึงข้อมูล Scene ปัจจุบันได้');
+            return;
+        }
+
+        var sceneName = response.currentProgramSceneName;
+        if (!sceneName) {
+            alert('ไม่พบชื่อ Scene ปัจจุบัน');
+            return;
+        }
+
+        var sourceName = prompt('ระบุชื่อ Browser Source ที่ต้องการสร้างใน OBS:', 'L3 Graphics Overlay');
+        if (!sourceName) return;
+
+        // Visual loading feedback
+        var oldHtml = btn.innerHTML;
+        btn.innerHTML = '⌛ กำลังสร้าง...';
+        btn.disabled = true;
+
+        sendOBSRequestWithCallback('CreateInput', {
+            sceneName: sceneName,
+            inputName: sourceName,
+            inputKind: 'browser_source',
+            inputSettings: {
+                url: getGraphicsUrl(),
+                width: 1920,
+                height: 1080
+            }
+        }, function (errCreate, responseCreate) {
+            // Restore button state
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+
+            if (errCreate) {
+                console.error('CreateInput error:', errCreate);
+                alert('สร้างไม่สำเร็จ: ' + (errCreate.comment || 'เกิดข้อผิดพลาดในการส่งคำสั่ง (อาจมีชื่อ Source นี้ซ้ำอยู่แล้ว)'));
+            } else {
+                alert('✅ สร้าง Browser Source "' + sourceName + '" ใน Scene "' + sceneName + '" สำเร็จเรียบร้อย!');
+            }
+        });
+    });
+}
+
+function updateGraphicsPositionMode(cardId, value) {
+    updateGraphicsSetting(cardId, 'position', value);
+    const row = document.getElementById('g-custom-coords-row');
+    if (row) {
+        row.style.display = value === 'custom' ? 'grid' : 'none';
+    }
+}
+
+function updateGraphicsModeSetting(cardId, value) {
+    updateGraphicsSetting(cardId, 'mode', value);
+    const subDelayContainer = document.getElementById('g-subdelay-container');
+    if (subDelayContainer) {
+        subDelayContainer.style.display = value === 'sports' ? 'block' : 'none';
+    }
 }
 
 function renderSourceRowWithCreate(sourceName, label, sourceType, cardId, side) {
@@ -1468,7 +1627,8 @@ function broadcastStateUpdate() {
             const sel = document.getElementById('sel_single_' + card.id);
             const idx = sel ? sel.value : null;
             if (idx !== null && idx !== "" && cardData[idx]) {
-                selectedItem = cardData[idx];
+                selectedItem = { ...cardData[idx] };
+                selectedItem.image = buildBrowserImagePath(selectedItem.image);
             }
             const visChk = document.getElementById('vis_single_' + card.id);
             isVisible = visChk ? visChk.checked : false;
@@ -1478,10 +1638,12 @@ function broadcastStateUpdate() {
             const idxHome = selHome ? selHome.value : null;
             const idxAway = selAway ? selAway.value : null;
             if (idxHome !== null && idxHome !== "" && cardData[idxHome]) {
-                selectedItemHome = cardData[idxHome];
+                selectedItemHome = { ...cardData[idxHome] };
+                selectedItemHome.image = buildBrowserImagePath(selectedItemHome.image);
             }
             if (idxAway !== null && idxAway !== "" && cardData[idxAway]) {
-                selectedItemAway = cardData[idxAway];
+                selectedItemAway = { ...cardData[idxAway] };
+                selectedItemAway.image = buildBrowserImagePath(selectedItemAway.image);
             }
             const visChk = document.getElementById('vis_double_' + card.id);
             isVisible = visChk ? visChk.checked : false;
@@ -1534,6 +1696,12 @@ function getCardGraphicsSettings(card) {
             borderRadius: 6,
             transition: 'slide',
             textColor: '#ffffff',
+            position: 'topLeft',
+            posX: 20,
+            posY: 20,
+            scale: 1.0,
+            textLayout: 'vertical',
+            subDelay: 1.5,
             fields: {
                 id: { show: card.type === 'single', order: 1, width: 40, color: '#888888', size: 12 },
                 image: { show: true, order: 2, width: 50, color: '', size: 0 },
@@ -1544,6 +1712,15 @@ function getCardGraphicsSettings(card) {
             }
         };
     }
+    
+    // Fill in newer parameters if missing from localStorage
+    if (card.graphicsSettings.position === undefined) card.graphicsSettings.position = 'topLeft';
+    if (card.graphicsSettings.posX === undefined) card.graphicsSettings.posX = 20;
+    if (card.graphicsSettings.posY === undefined) card.graphicsSettings.posY = 20;
+    if (card.graphicsSettings.scale === undefined) card.graphicsSettings.scale = 1.0;
+    if (card.graphicsSettings.textLayout === undefined) card.graphicsSettings.textLayout = 'vertical';
+    if (card.graphicsSettings.subDelay === undefined) card.graphicsSettings.subDelay = 1.5;
+
     return card.graphicsSettings;
 }
 
