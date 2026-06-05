@@ -1,0 +1,357 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  display_table_module.js  —  Excel/GSheet Display Table OBS Overlay Controller
+// ═══════════════════════════════════════════════════════════════════════
+
+const DT_TAB_ID = 'settingsTabDisplayTable';
+const DT_BROADCAST_KEY = 'dt_broadcast_data';
+const DT_SETTINGS_KEY = 'dt_settings';
+const DT_CHANNEL_NAME = 'dt_score_channel';
+
+let dtChannel = null;
+try { dtChannel = new BroadcastChannel(DT_CHANNEL_NAME); } catch (_) {}
+
+// Default settings
+let dtSettings = {
+  columns: {}, // column_name: true/false
+  order: 'label1,label2,TeamA,LogoA,Score,LogoB,TeamB',
+  bg_color: '#0f172a',
+  text_color: '#f8fafc',
+  alt_bg_color: '#1e293b',
+  border_color: '#334155',
+  font_size: '16',
+  row_range: '1-10'
+};
+
+// Load settings
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(DT_SETTINGS_KEY);
+    if (saved) dtSettings = { ...dtSettings, ...JSON.parse(saved) };
+  } catch (_) {}
+}
+
+function saveSettings() {
+  localStorage.setItem(DT_SETTINGS_KEY, JSON.stringify(dtSettings));
+}
+
+function getVbState(k, def) {
+  return localStorage.getItem(k) || def;
+}
+
+// Inject Settings Tab
+function injectDisplayTableTab() {
+  if (document.getElementById(DT_TAB_ID)) return;
+
+  const tabsContainer = document.getElementById('settingsTabs');
+  if (!tabsContainer) {
+    setTimeout(injectDisplayTableTab, 1000);
+    return;
+  }
+
+  // Create Tab Button
+  const tabBtn = document.createElement('button');
+  tabBtn.className = 'settings-tab-btn';
+  tabBtn.setAttribute('data-tab', DT_TAB_ID);
+  tabBtn.innerHTML = '📊 Table';
+  tabBtn.style.color = '#22c55e';
+  tabsContainer.appendChild(tabBtn);
+
+  tabBtn.addEventListener('click', () => {
+    if (window.switchSettingsTab) window.switchSettingsTab(DT_TAB_ID);
+    renderDynamicColumns();
+  });
+
+  // Load configuration
+  loadSettings();
+
+  // Create Content Panel
+  const panel = document.createElement('div');
+  panel.className = 'settings-tab-content';
+  panel.id = DT_TAB_ID;
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h4 style="margin:0;font-size:1rem;display:flex;align-items:center;gap:8px;">
+        <span>📊</span> Display Table Settings
+      </h4>
+    </div>
+
+    <!-- Info Notice -->
+    <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80;border-radius:8px;padding:10px;font-size:0.8rem;margin-bottom:14px;line-height:1.4;">
+      ดึงข้อมูลตารางคะแนนจาก Excel หรือ Google Sheets ที่โหลดไว้แล้ว และส่งออกไปยังหน้าจอโอเวอร์เลย์ OBS ที่ออกแบบมาอย่างสวยงาม
+    </div>
+
+    <!-- Row Filters -->
+    <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+      <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;">🔍 Row Filters / กรองแถว (MatchID)</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-size:12px;color:#94a3b8;">MatchID Range:</span>
+        <input type="text" id="dt-row-range" value="${dtSettings.row_range}" placeholder="e.g. 1-10" style="flex:1;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
+      </div>
+    </div>
+
+    <!-- Columns Config -->
+    <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+      <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:6px;">📋 Columns Selection / เลือกคอลัมน์</div>
+      <div id="dt-columns-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;max-height:120px;overflow-y:auto;padding:4px;background:rgba(0,0,0,0.15);border-radius:6px;">
+        <span style="font-size:11px;color:#64748b;">(ยังไม่ได้โหลดข้อมูลจากสเปรดชีต)</span>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Column Order (Comma-separated) / เรียงลำดับคอลัมน์:</div>
+        <input type="text" id="dt-col-order" value="${dtSettings.order}" placeholder="MatchID,TeamA,LogoA,Score,LogoB,TeamB" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
+      </div>
+    </div>
+
+    <!-- Table Colors styling -->
+    <div style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 Custom Table Colors / ปรับแต่งสีตาราง</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #cbd5e1;">
+        <div>
+          <span style="display:block;margin-bottom:2px;">Background BG</span>
+          <input type="color" id="dt-color-bg" value="${dtSettings.bg_color}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">Text Color</span>
+          <input type="color" id="dt-color-text" value="${dtSettings.text_color}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">Alternating Row BG</span>
+          <input type="color" id="dt-color-alt-bg" value="${dtSettings.alt_bg_color}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">Border Color</span>
+          <input type="color" id="dt-color-border" value="${dtSettings.border_color}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Fonts Config -->
+    <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+      <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;">✍️ Typography Settings / แบบอักษร</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <span style="display:block;margin-bottom:2px;font-size:12px;">Font Size (px)</span>
+          <input type="number" id="dt-font-size" value="${dtSettings.font_size}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;font-size:12px;">Active Font Family</span>
+          <div style="font-size:11px;color:#22c55e;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px;border:1px solid rgba(255,255,255,0.1);">
+            ใช้ตามฟอนต์ที่อัปโหลดไว้
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <button id="dt-confirm-btn"
+        style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(34,197,94,0.3);grid-column: span 2;">
+        🚀 Confirm & Broadcast Table
+      </button>
+      
+      <button id="dt-create-obs-btn"
+        style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;grid-column: span 2;">
+        🎬 Create OBS Browser Source
+      </button>
+    </div>
+  `;
+
+  // Append panel to popup
+  const detailsPopup = document.getElementById('detailsPopup');
+  if (detailsPopup) {
+    const lastTab = [...detailsPopup.querySelectorAll('.settings-tab-content')].pop();
+    if (lastTab) lastTab.insertAdjacentElement('afterend', panel);
+    else detailsPopup.appendChild(panel);
+  }
+
+  // Wire events
+  document.getElementById('dt-confirm-btn').addEventListener('click', broadcastTableData);
+  document.getElementById('dt-create-obs-btn').addEventListener('click', function() { createTableSource(this); });
+
+  // Input changes
+  document.getElementById('dt-row-range').addEventListener('change', e => { dtSettings.row_range = e.target.value; saveSettings(); });
+  document.getElementById('dt-col-order').addEventListener('change', e => { dtSettings.order = e.target.value; saveSettings(); });
+  document.getElementById('dt-font-size').addEventListener('change', e => { dtSettings.font_size = e.target.value; saveSettings(); });
+
+  const colorPickers = ['dt-color-bg', 'dt-color-text', 'dt-color-alt-bg', 'dt-color-border'];
+  colorPickers.forEach(id => {
+    document.getElementById(id).addEventListener('change', e => {
+      const key = id.replace('dt-color-', '').replace('-', '_') + '_color';
+      dtSettings[key] = e.target.value;
+      saveSettings();
+    });
+  });
+
+  renderDynamicColumns();
+}
+
+// Generate dynamic checkboxes for columns
+function renderDynamicColumns() {
+  const container = document.getElementById('dt-columns-list');
+  if (!container) return;
+
+  const sheetData = window.getSheetData ? window.getSheetData() : [];
+  if (!sheetData || !sheetData.length) {
+    container.innerHTML = '<span style="font-size:11px;color:#64748b;padding:5px;">No sheet data loaded. Please fetch GS or load Excel first.</span>';
+    return;
+  }
+
+  const header = sheetData[0];
+  container.innerHTML = '';
+  
+  header.forEach(col => {
+    // Checkbox container
+    const lbl = document.createElement('label');
+    lbl.style.display = 'flex';
+    lbl.style.alignItems = 'center';
+    lbl.style.gap = '4px';
+    lbl.style.fontSize = '12px';
+    lbl.style.color = '#cbd5e1';
+    lbl.style.background = 'rgba(255,255,255,0.05)';
+    lbl.style.padding = '3px 8px';
+    lbl.style.borderRadius = '4px';
+    lbl.style.cursor = 'pointer';
+
+    const isChecked = dtSettings.columns[col] !== false; // Default true
+    
+    lbl.innerHTML = `
+      <input type="checkbox" data-col="${col}" ${isChecked ? 'checked' : ''} style="cursor:pointer;">
+      <span>${col}</span>
+    `;
+
+    lbl.querySelector('input').addEventListener('change', e => {
+      dtSettings.columns[col] = e.target.checked;
+      saveSettings();
+    });
+
+    container.appendChild(lbl);
+  });
+}
+
+// Process sheetData and broadcast
+function broadcastTableData() {
+  const sheetData = window.getSheetData ? window.getSheetData() : [];
+  if (!sheetData || !sheetData.length) {
+    alert('No sheet data loaded to broadcast.');
+    return;
+  }
+
+  const header = sheetData[0];
+  const rows = sheetData.slice(1);
+
+  // Apply row filter (MatchID range)
+  let filteredRows = rows;
+  const rangeInput = dtSettings.row_range.trim();
+  if (rangeInput) {
+    const match = rangeInput.match(/^(\d+)-(\d+)$/);
+    if (match) {
+      const minId = parseInt(match[1]);
+      const maxId = parseInt(match[2]);
+      // MatchID is usually the first column (index 0)
+      filteredRows = rows.filter(r => {
+        const idVal = parseInt(r[0]);
+        return !isNaN(idVal) && idVal >= minId && idVal <= maxId;
+      });
+    }
+  }
+
+  // Column order mapping
+  const orderArray = dtSettings.order.split(',').map(s => s.trim()).filter(Boolean);
+
+  // Build the payload
+  const tableData = filteredRows.map(row => {
+    const item = {};
+    orderArray.forEach(colName => {
+      // Check if column is enabled
+      if (dtSettings.columns[colName] === false) {
+        return; // Skip disabled columns
+      }
+      const colIdx = header.indexOf(colName);
+      if (colIdx >= 0) {
+        item[colName] = row[colIdx];
+      } else {
+        item[colName] = ''; // Empty column if not found
+      }
+    });
+    return item;
+  });
+
+  const broadcastPayload = {
+    settings: {
+      bgColor: dtSettings.bg_color,
+      textColor: dtSettings.text_color,
+      altBgColor: dtSettings.alt_bg_color,
+      borderColor: dtSettings.border_color,
+      fontSize: dtSettings.font_size + 'px',
+      columnsOrder: orderArray.filter(col => dtSettings.columns[col] !== false),
+      fontFamily: localStorage.getItem('vb_custom_font_family') || 'Prompt, sans-serif',
+      customFontData: localStorage.getItem('vb_custom_font_data') || '',
+      logoCache: JSON.parse(localStorage.getItem('logoDataCache') || '{}')
+    },
+    data: tableData
+  };
+
+  // Save to localStorage
+  localStorage.setItem(DT_BROADCAST_KEY, JSON.stringify(broadcastPayload));
+
+  // Send broadcast
+  if (dtChannel) {
+    dtChannel.postMessage({ type: 'dt_update', payload: broadcastPayload });
+  }
+
+  alert(`🚀 Table Broadcasted successfully! (${tableData.length} rows)`);
+}
+
+// Create OBS Source for display table
+async function createTableSource(btn) {
+  const obs = window.fcpOBS;
+  if (!obs) {
+    alert('❌ OBS not connected — start OBS WebSocket first.');
+    return;
+  }
+  try {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...'; }
+
+    const scene = await obs.call('GetCurrentProgramScene');
+    const sceneName = scene.currentProgramSceneName;
+    const absPath = window.location.href.replace(/\/[^/]*$/, '') + '/display_table.html';
+
+    await obs.call('CreateInput', {
+      sceneName,
+      inputName: 'Display_Table_Overlay',
+      inputKind: 'browser_source',
+      inputSettings: {
+        url: absPath,
+        width: 1920,
+        height: 1080,
+        css: 'body { background: transparent !important; }',
+        shutdown: false,
+        reroute_audio: false,
+      },
+      sceneItemEnabled: true,
+    });
+
+    alert('✅ Display_Table_Overlay source created in OBS!');
+    if (btn) { btn.innerHTML = '<i class="fas fa-check"></i> Created!'; }
+  } catch (err) {
+    const msg = err?.message || err?.error || String(err);
+    if (msg.includes('already exists') || err?.code === 601) {
+      alert('⚠️ Display_Table_Overlay already exists.');
+      if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Already exists';
+    } else {
+      alert('❌ OBS Error: ' + msg);
+      if (btn) { btn.disabled = false; btn.innerHTML = '🎬 Create OBS Source'; }
+    }
+  }
+}
+
+// Boot
+function dtBoot() {
+  injectDisplayTableTab();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', dtBoot);
+} else {
+  setTimeout(dtBoot, 100);
+}
