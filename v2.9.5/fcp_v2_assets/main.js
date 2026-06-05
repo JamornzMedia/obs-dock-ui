@@ -1458,6 +1458,7 @@ const fetchGoogleSheet = async () => {
         showToast(translations[currentLang].toastGoogleSheetError, 'error');
     }
 }
+window.fetchGoogleSheet = fetchGoogleSheet;
 
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {

@@ -114,10 +114,14 @@ function injectDisplayTableTab() {
     <!-- Row Filters -->
     <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
       <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;">🔍 Row Filters / กรองแถว (MatchID)</div>
-      <div style="display:flex;gap:10px;align-items:center;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
         <span style="font-size:12px;color:#94a3b8;">MatchID Range:</span>
         <input type="text" id="dt-row-range" value="${dtSettings.row_range}" placeholder="e.g. 1-10" style="flex:1;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
       </div>
+      <button id="dt-confirm-btn"
+        style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(34,197,94,0.3);">
+        🚀 Confirm & Broadcast Table
+      </button>
     </div>
 
     <!-- Columns Config -->
@@ -171,14 +175,9 @@ function injectDisplayTableTab() {
     </div>
 
     <!-- Actions -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <button id="dt-confirm-btn"
-        style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(34,197,94,0.3);grid-column: span 2;">
-        🚀 Confirm & Broadcast Table
-      </button>
-      
+    <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px;">
       <button id="dt-create-obs-btn"
-        style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;grid-column: span 2;">
+        style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;">
         🎬 Create OBS Browser Source
       </button>
     </div>
@@ -347,7 +346,16 @@ function renderDynamicColumns() {
 }
 
 // Process sheetData and broadcast
-function broadcastTableData() {
+async function broadcastTableData() {
+  // Update file from source if using Google Sheets
+  if (localStorage.getItem('dataSourceMode') === 'gsheet' && window.fetchGoogleSheet) {
+    try {
+      await window.fetchGoogleSheet();
+    } catch (e) {
+      console.error("Auto-fetch error during broadcast:", e);
+    }
+  }
+
   const sheetData = window.getSheetData ? window.getSheetData() : [];
   if (!sheetData || !sheetData.length) {
     alert('No sheet data loaded to broadcast.');

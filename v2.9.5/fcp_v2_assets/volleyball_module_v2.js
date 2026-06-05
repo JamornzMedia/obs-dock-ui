@@ -512,7 +512,7 @@ function updateSportUI() {
   const btnsA = document.getElementById('basketballBtnsA');
   const btnsB = document.getElementById('basketballBtnsB');
   
-  if (sport === 'basketball') {
+  if (sport === 'basketball' || sport === 'streetball') {
     if (btnsA) btnsA.style.display = 'flex';
     if (btnsB) btnsB.style.display = 'flex';
   } else {
