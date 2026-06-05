@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.5</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2117,19 +2117,8 @@
                         <div style="margin-top: 15px; text-align: center;">
                 <a href="https://ezdn.app/Jamornz" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-hand-holding-heart"></i> สนับสนุนการพัฒนาโปรแกรม (Donate)</a>
             </div>
-
-            <!-- Email Login Teaser -->
-            <div style="margin-top: 15px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.15)); border: 1px solid rgba(147, 51, 234, 0.3); padding: 12px; border-radius: 8px; text-align: left; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);">
-                <div style="font-size: 0.8rem; font-weight: bold; color: #a78bfa; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-rocket"></i>
-                    <span>COMING SOON: THE NEXT GENERATION</span>
-                </div>
-                <p style="margin: 0; font-size: 0.72rem; color: #d8b4fe; line-height: 1.4;">
-                    เตรียมก้าวสู่อนาคตที่ยิ่งใหญ่ขึ้น! ในเวอร์ชันถัดไป ระบบจะอัปเกรดมาใช้การยืนยันตัวตนผ่าน <strong>Email Login</strong> เพื่อยกระดับความปลอดภัย จัดการข้อมูลผู้ใช้อย่างเสถียร และเพื่อเตรียมความพร้อมรับโปรเจกต์ใหญ่ที่กำลังจะมาถึง... รอติดตามความตื่นตาตื่นใจได้เร็วๆ นี้!
-                </p>
-            </div>
         </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.5 (อัพเดต: 5 มิถุนายน 2569)</div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.4.1 (อัพเดต: 16 พ.ค. 2026)</div>
     </div>
 
     <script>
@@ -2291,7 +2280,7 @@
 
 
 
-    <!-- V2.9.5 Confirm Reset Modal -->
+    <!-- V2.9.2 Confirm Reset Modal -->
     <div id="confirmOverlay" class="confirm-overlay"></div>
     <div id="confirmModal" class="confirm-modal">
         <h3><i class="fas fa-exclamation-triangle"></i> <span data-lang="confirmResetTitle">Confirm Full Reset</span>
@@ -2739,7 +2728,12 @@
             <div class="score-col-team">
                 <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
                 <div class="clean-score-display" id="scoreA">0</div>
-                <button id="scoreAMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                <!-- Basketball Extra Buttons A -->
+                <div id="basketballBtnsA" style="display: none; gap: 4px; margin-top: 4px; width: 100%;">
+                    <button id="scoreAPlus2Btn" class="btn-secondary" style="flex: 1; padding: 4px 0; font-size: 0.8rem; font-weight: bold; border-radius: 4px;">+2</button>
+                    <button id="scoreAPlus3Btn" class="btn-secondary" style="flex: 1; padding: 4px 0; font-size: 0.8rem; font-weight: bold; border-radius: 4px;">+3</button>
+                </div>
+                <button id="scoreAMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
             </div>
 
             <!-- Center -->
@@ -2747,8 +2741,11 @@
                 <button id="swapScoreBtn" class="btn-warning"
                     style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Swap Score Sides"><i
                         class="fas fa-exchange-alt"></i></button>
+                <button id="undoScoreBtn" class="btn-secondary"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0; background: #64748b; color: white;" title="Undo Last Score"><i
+                        class="fas fa-undo"></i></button>
                 <button id="resetScoreBtn" class="btn-secondary"
-                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Reset Scores"><i
                         class="fas fa-sync-alt"></i></button>
             </div>
 
@@ -2756,7 +2753,12 @@
             <div class="score-col-team">
                 <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
                 <div class="clean-score-display" id="scoreB">0</div>
-                <button id="scoreBMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                <!-- Basketball Extra Buttons B -->
+                <div id="basketballBtnsB" style="display: none; gap: 4px; margin-top: 4px; width: 100%;">
+                    <button id="scoreBPlus2Btn" class="btn-secondary" style="flex: 1; padding: 4px 0; font-size: 0.8rem; font-weight: bold; border-radius: 4px;">+2</button>
+                    <button id="scoreBPlus3Btn" class="btn-secondary" style="flex: 1; padding: 4px 0; font-size: 0.8rem; font-weight: bold; border-radius: 4px;">+3</button>
+                </div>
+                <button id="scoreBMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
             </div>
         </div>
     </div>
@@ -2857,7 +2859,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - V2.9.5 (อัพเดต: 5 มิถุนายน 2569)
+            <span data-lang="footerAppName"></span> - V2.9.4 (อัพเดต: 27 เม.ย. 2026)
         </div>
     </div>
     </div>

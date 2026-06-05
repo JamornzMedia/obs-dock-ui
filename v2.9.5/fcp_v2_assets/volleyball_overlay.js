@@ -64,40 +64,55 @@ function renderHistory(history, maxSets) {
   }
 }
 
-function injectCustomFont(customFontData, customFontFamily) {
-  if (customFontData && customFontFamily) {
-    let style = document.getElementById('vb-custom-font-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'vb-custom-font-style';
-      document.head.appendChild(style);
-    }
-    style.textContent = `
+function injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore) {
+  let style = document.getElementById('vb-custom-font-style');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'vb-custom-font-style';
+    document.head.appendChild(style);
+  }
+  
+  let css = '';
+  if (customFontDataTeam && customFontFamilyTeam) {
+    css += `
       @font-face {
-        font-family: '${customFontFamily}';
-        src: url('${customFontData}');
+        font-family: '${customFontFamilyTeam}';
+        src: url('${customFontDataTeam}');
       }
     `;
   }
+  if (customFontDataScore && customFontFamilyScore) {
+    css += `
+      @font-face {
+        font-family: '${customFontFamilyScore}';
+        src: url('${customFontDataScore}');
+      }
+    `;
+  }
+  style.textContent = css;
 }
 
 function renderScoreboard(newState, prevState) {
   const { 
     scoreA, scoreB, setsA, setsB, setHistory, 
     colorA, colorB, colorA2, colorB2, nameA, nameB, 
-    logoUrl, serve, timeoutActive, font, teamWidth, 
+    logoUrl, serve, timeoutActive, fontTeam, fontScore, font, teamWidth, 
     maxSets, setLimit, finalSetLimit, timeoutsA, timeoutsB,
     sport, colorActiveScore, colorActiveScoreText, colorSetsBg,
     colorSetsText, colorLogoBg, colorText, colorServe,
-    customFontData, customFontFamily
+    customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore
   } = newState;
 
   // Custom CSS properties
   const root = document.documentElement;
   
-  // Font override
-  const activeFont = customFontFamily ? `'${customFontFamily}'` : (font || "'Barlow Condensed', sans-serif");
-  if (activeFont) root.style.setProperty('--vb-font', activeFont);
+  // Split Fonts overrides
+  const activeFontTeam = customFontFamilyTeam ? `'${customFontFamilyTeam}'` : (fontTeam || "'Kanit', sans-serif");
+  root.style.setProperty('--vb-font-team', activeFontTeam);
+
+  const activeFontScore = customFontFamilyScore ? `'${customFontFamilyScore}'` : (fontScore || "'Barlow Condensed', sans-serif");
+  root.style.setProperty('--vb-font-score', activeFontScore);
+  root.style.setProperty('--vb-font', activeFontScore); // legacy fallback
   
   if (teamWidth) root.style.setProperty('--team-name-width', teamWidth);
 
@@ -111,7 +126,7 @@ function renderScoreboard(newState, prevState) {
   if (colorText) root.style.setProperty('--text-light', colorText);
 
   // Inject custom font stylesheet
-  injectCustomFont(customFontData, customFontFamily);
+  injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore);
 
   // Colors
   const panelA = document.getElementById('panelA');

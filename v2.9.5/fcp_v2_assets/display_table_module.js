@@ -41,6 +41,37 @@ function getVbState(k, def) {
 // Inject Settings Tab
 function injectDisplayTableTab() {
   if (document.getElementById(DT_TAB_ID)) return;
+  // Sortable Styles Injection
+  if (!document.getElementById('dt-sortable-styles')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'dt-sortable-styles';
+    styleEl.textContent = `
+      .dt-sortable-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #cbd5e1;
+        background: rgba(255,255,255,0.04);
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: grab;
+        border: 1px solid rgba(255,255,255,0.06);
+        user-select: none;
+        transition: background 0.2s, border 0.2s;
+        margin-bottom: 4px;
+      }
+      .dt-sortable-item:active {
+        cursor: grabbing;
+      }
+      .dt-sortable-item.over {
+        border: 1px dashed #22c55e;
+        background: rgba(34,197,94,0.1);
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+
 
   const tabsContainer = document.getElementById('settingsTabs');
   if (!tabsContainer) {
@@ -96,10 +127,7 @@ function injectDisplayTableTab() {
         <span style="font-size:11px;color:#64748b;">(ยังไม่ได้โหลดข้อมูลจากสเปรดชีต)</span>
       </div>
 
-      <div style="margin-top:8px;">
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Column Order (Comma-separated) / เรียงลำดับคอลัมน์:</div>
-        <input type="text" id="dt-col-order" value="${dtSettings.order}" placeholder="MatchID,TeamA,LogoA,Score,LogoB,TeamB" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
-      </div>
+
     </div>
 
     <!-- Table Colors styling -->
@@ -170,7 +198,7 @@ function injectDisplayTableTab() {
 
   // Input changes
   document.getElementById('dt-row-range').addEventListener('change', e => { dtSettings.row_range = e.target.value; saveSettings(); });
-  document.getElementById('dt-col-order').addEventListener('change', e => { dtSettings.order = e.target.value; saveSettings(); });
+
   document.getElementById('dt-font-size').addEventListener('change', e => { dtSettings.font_size = e.target.value; saveSettings(); });
 
   const colorPickers = ['dt-color-bg', 'dt-color-text', 'dt-color-alt-bg', 'dt-color-border'];
@@ -185,7 +213,70 @@ function injectDisplayTableTab() {
   renderDynamicColumns();
 }
 
-// Generate dynamic checkboxes for columns
+// Drag & Drop Handlers
+let dragSrcEl = null;
+
+function handleDragStart(e) {
+  dragSrcEl = this;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', this.getAttribute('data-col'));
+  this.style.opacity = '0.4';
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleDragEnter(e) {
+  this.classList.add('over');
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('over');
+}
+
+function handleDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  if (dragSrcEl !== this) {
+    const draggedCol = e.dataTransfer.getData('text/plain');
+    const targetCol = this.getAttribute('data-col');
+    
+    let orderArray = dtSettings.order.split(',').map(s => s.trim()).filter(Boolean);
+    const sheetData = window.getSheetData ? window.getSheetData() : [];
+    const header = sheetData[0] || [];
+    header.forEach(h => {
+      if (!orderArray.includes(h)) orderArray.push(h);
+    });
+    
+    const draggedIdx = orderArray.indexOf(draggedCol);
+    const targetIdx = orderArray.indexOf(targetCol);
+    
+    if (draggedIdx >= 0 && targetIdx >= 0) {
+      orderArray.splice(draggedIdx, 1);
+      orderArray.splice(targetIdx, 0, draggedCol);
+      dtSettings.order = orderArray.join(',');
+      saveSettings();
+      renderDynamicColumns();
+    }
+  }
+  return false;
+}
+
+function handleDragEnd(e) {
+  this.style.opacity = '1.0';
+  const items = document.querySelectorAll('.dt-sortable-item');
+  items.forEach(item => {
+    item.classList.remove('over');
+  });
+}
+
+// Generate dynamic sortable checkboxes for columns
 function renderDynamicColumns() {
   const container = document.getElementById('dt-columns-list');
   if (!container) return;
@@ -196,35 +287,62 @@ function renderDynamicColumns() {
     return;
   }
 
-  const header = sheetData[0];
-  container.innerHTML = '';
+  const header = sheetData[0] || [];
   
+  // Parse order
+  let orderArray = dtSettings.order.split(',').map(s => s.trim()).filter(Boolean);
+  
+  // Filter order to only keep columns that exist in the sheet header
+  let sortedHeader = orderArray.filter(col => header.includes(col));
+  // Append any header columns that are missing from orderArray
   header.forEach(col => {
-    // Checkbox container
-    const lbl = document.createElement('label');
-    lbl.style.display = 'flex';
-    lbl.style.alignItems = 'center';
-    lbl.style.gap = '4px';
-    lbl.style.fontSize = '12px';
-    lbl.style.color = '#cbd5e1';
-    lbl.style.background = 'rgba(255,255,255,0.05)';
-    lbl.style.padding = '3px 8px';
-    lbl.style.borderRadius = '4px';
-    lbl.style.cursor = 'pointer';
+    if (!sortedHeader.includes(col)) {
+      sortedHeader.push(col);
+    }
+  });
 
-    const isChecked = dtSettings.columns[col] !== false; // Default true
-    
-    lbl.innerHTML = `
-      <input type="checkbox" data-col="${col}" ${isChecked ? 'checked' : ''} style="cursor:pointer;">
-      <span>${col}</span>
+  // Keep setting synchronized
+  dtSettings.order = sortedHeader.join(',');
+  saveSettings();
+
+  container.innerHTML = '';
+  // Force vertical list structure
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.gap = '4px';
+  container.style.flexWrap = 'nowrap';
+  container.style.maxHeight = '240px';
+  container.style.overflowY = 'auto';
+
+  sortedHeader.forEach((col, index) => {
+    const item = document.createElement('div');
+    item.className = 'dt-sortable-item';
+    item.setAttribute('draggable', 'true');
+    item.setAttribute('data-col', col);
+
+    const isChecked = dtSettings.columns[col] !== false;
+
+    item.innerHTML = `
+      <i class="fas fa-bars" style="color: #64748b; cursor: grab; font-size: 11px;"></i>
+      <input type="checkbox" data-col="${col}" ${isChecked ? 'checked' : ''} style="cursor:pointer; margin: 0;">
+      <span style="flex:1;">${col}</span>
     `;
 
-    lbl.querySelector('input').addEventListener('change', e => {
+    // Bind Drag events
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragover', handleDragOver);
+    item.addEventListener('dragenter', handleDragEnter);
+    item.addEventListener('dragleave', handleDragLeave);
+    item.addEventListener('drop', handleDrop);
+    item.addEventListener('dragend', handleDragEnd);
+
+    // Bind Checkbox event
+    item.querySelector('input').addEventListener('change', e => {
       dtSettings.columns[col] = e.target.checked;
       saveSettings();
     });
 
-    container.appendChild(lbl);
+    container.appendChild(item);
   });
 }
 

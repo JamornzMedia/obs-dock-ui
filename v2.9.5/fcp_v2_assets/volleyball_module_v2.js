@@ -71,6 +71,28 @@ function readScores() {
 // ── Broadcast State ──────────────────────────────────────────────────
 function broadcast() {
   const { sA, sB, s2A, s2B, cA, cB, cA2, cB2, nA, nB } = readScores();
+
+  // Resolved Fonts
+  const fontSrcTeam = localStorage.getItem('vb_font_src_team') || 'preset';
+  let fontTeam = "'Kanit', sans-serif";
+  if (fontSrcTeam === 'custom_name') {
+    fontTeam = localStorage.getItem('vb_font_custom_name_team') || 'Arial, sans-serif';
+  } else if (fontSrcTeam === 'upload') {
+    fontTeam = localStorage.getItem('vb_font_upload_family_team') || 'CustomFontTeam';
+  } else {
+    fontTeam = localStorage.getItem('vb_font_preset_team') || "'Kanit', sans-serif";
+  }
+
+  const fontSrcScore = localStorage.getItem('vb_font_src_score') || 'preset';
+  let fontScore = "'Barlow Condensed', sans-serif";
+  if (fontSrcScore === 'custom_name') {
+    fontScore = localStorage.getItem('vb_font_custom_name_score') || 'Arial, sans-serif';
+  } else if (fontSrcScore === 'upload') {
+    fontScore = localStorage.getItem('vb_font_upload_family_score') || 'CustomFontScore';
+  } else {
+    fontScore = localStorage.getItem('vb_font_preset_score') || "'Barlow Condensed', sans-serif";
+  }
+
   const payload = {
     scoreA: sA, scoreB: sB,
     setsA: s2A, setsB: s2B,
@@ -85,7 +107,12 @@ function broadcast() {
     serve: getVbState(VB_SERVE_KEY, ''),
     timeoutsA: parseInt(getVbState(VB_TIMEOUTSA_KEY, '0')),
     timeoutsB: parseInt(getVbState(VB_TIMEOUTSB_KEY, '0')),
-    font: getVbState(VB_FONT_KEY, '"Barlow Condensed", sans-serif'),
+    
+    // Split Resolved Fonts
+    fontTeam: fontTeam,
+    fontScore: fontScore,
+    font: fontScore, // fallback legacy
+    
     teamWidth: getVbState(VB_TEAM_WIDTH_KEY, '250') + 'px',
     autoServe: getVbState(VB_AUTO_SERVE_KEY, 'true') === 'true',
     timeoutActive: getVbState(VB_TIMEOUT_ACTIVE_KEY, ''),
@@ -97,8 +124,12 @@ function broadcast() {
     colorLogoBg: getVbState('vb_color_logo_bg', '#ffffff'),
     colorText: getVbState('vb_color_text', '#ffffff'),
     colorServe: getVbState('vb_color_serve', '#fde047'),
-    customFontData: localStorage.getItem('vb_custom_font_data') || '',
-    customFontFamily: localStorage.getItem('vb_custom_font_family') || ''
+    
+    // Split Upload Data
+    customFontDataTeam: localStorage.getItem('vb_font_upload_data_team') || '',
+    customFontFamilyTeam: localStorage.getItem('vb_font_upload_family_team') || '',
+    customFontDataScore: localStorage.getItem('vb_font_upload_data_score') || '',
+    customFontFamilyScore: localStorage.getItem('vb_font_upload_family_score') || ''
   };
   try { localStorage.setItem(VB_STATE_KEY, JSON.stringify(payload)); } catch (_) {}
   if (bc) bc.postMessage({ type: 'vb_update', payload });
@@ -258,7 +289,7 @@ function updateMainPanelUI(state) {
     panel.className = 'card';
     panel.style.border = '1px solid #f59e0b';
     panel.innerHTML = `
-      <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;text-align:center;">🏐 Volleyball Quick Actions</div>
+      <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;text-align:center;">🎨 ควบคุมกราฟิกกีฬา / Sport Graphics Control</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <!-- Team A controls -->
         <div style="display:flex;flex-direction:column;gap:5px;align-items:center;">
@@ -374,23 +405,58 @@ function updateCardUI(state) {
 }
 
 // ── Settings Tab Injection ───────────────────────────────────────────
+function updateFontFieldsVisibility() {
+  const teamSrc = localStorage.getItem('vb_font_src_team') || 'preset';
+  const scoreSrc = localStorage.getItem('vb_font_src_score') || 'preset';
+  
+  const pTeam = document.getElementById('vb2-font-preset-team-container');
+  const cTeam = document.getElementById('vb2-font-custom-team-container');
+  const uTeam = document.getElementById('vb2-font-upload-team-container');
+  
+  if (pTeam) pTeam.style.display = teamSrc === 'preset' ? 'block' : 'none';
+  if (cTeam) cTeam.style.display = teamSrc === 'custom_name' ? 'block' : 'none';
+  if (uTeam) uTeam.style.display = teamSrc === 'upload' ? 'block' : 'none';
+  
+  const pScore = document.getElementById('vb2-font-preset-score-container');
+  const cScore = document.getElementById('vb2-font-custom-score-container');
+  const uScore = document.getElementById('vb2-font-upload-score-container');
+  
+  if (pScore) pScore.style.display = scoreSrc === 'preset' ? 'block' : 'none';
+  if (cScore) cScore.style.display = scoreSrc === 'custom_name' ? 'block' : 'none';
+  if (uScore) uScore.style.display = scoreSrc === 'upload' ? 'block' : 'none';
+}
+
 function injectCustomFont() {
-  const fontData = localStorage.getItem('vb_custom_font_data');
-  const fontFamily = localStorage.getItem('vb_custom_font_family');
-  if (fontData && fontFamily) {
-    let style = document.getElementById('vb-custom-font-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'vb-custom-font-style';
-      document.head.appendChild(style);
-    }
-    style.textContent = `
+  let style = document.getElementById('vb-custom-font-style');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'vb-custom-font-style';
+    document.head.appendChild(style);
+  }
+  
+  let css = '';
+  const teamSrc = localStorage.getItem('vb_font_src_team') || 'preset';
+  const teamData = localStorage.getItem('vb_font_upload_data_team');
+  if (teamSrc === 'upload' && teamData) {
+    css += `
       @font-face {
-        font-family: '${fontFamily}';
-        src: url('${fontData}');
+        font-family: 'CustomFontTeam';
+        src: url('${teamData}');
       }
     `;
   }
+  
+  const scoreSrc = localStorage.getItem('vb_font_src_score') || 'preset';
+  const scoreData = localStorage.getItem('vb_font_upload_data_score');
+  if (scoreSrc === 'upload' && scoreData) {
+    css += `
+      @font-face {
+        font-family: 'CustomFontScore';
+        src: url('${scoreData}');
+      }
+    `;
+  }
+  style.textContent = css;
 }
 
 function updatePointHistoryList() {
@@ -466,7 +532,7 @@ function injectSettingsTab() {
   const tabBtn = document.createElement('button');
   tabBtn.className = 'settings-tab-btn';
   tabBtn.setAttribute('data-tab', TAB_ID);
-  tabBtn.innerHTML = '🏐 Volleyball';
+  tabBtn.innerHTML = '🎨 กราฟิกกีฬา / Sport Graphics';
   tabBtn.style.color = '#f59e0b';
   tabsContainer.appendChild(tabBtn);
 
@@ -488,7 +554,7 @@ function injectSettingsTab() {
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <h4 style="margin:0;font-size:1rem;display:flex;align-items:center;gap:8px;">
-        <span>🏐</span> Volleyball Settings
+        <span>🎨</span> ตั้งค่ากราฟิกกีฬา / Sport Graphics Settings
       </h4>
       <span id="vb2-set-label" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);color:#f59e0b;border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;letter-spacing:.08em;">SET 1</span>
     </div>
@@ -496,8 +562,8 @@ function injectSettingsTab() {
     <!-- Enable Toggle -->
     <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
       <div>
-        <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">Enable Volleyball Mode</div>
-        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">Activates score sync & overlay broadcasting</div>
+        <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">เปิดใช้งานกราฟิกกีฬา / Enable Sport Graphics</div>
+        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">เปิดใช้งานระบบซิงค์แต้มและกราฟิกถ่ายทอดสด</div>
       </div>
       <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
         <div class="toggle-switch">
@@ -563,34 +629,98 @@ function injectSettingsTab() {
       </div>
       <img id="vb2-logo-preview" src="${getVbState(VB_LOGO_KEY, '')}" style="max-height:50px;display:${getVbState(VB_LOGO_KEY, '') ? 'block' : 'none'};margin-bottom:10px;border-radius:4px;">
       
-      <!-- Custom Fonts -->
+      <!-- Custom Fonts Split (Team & Score) -->
       <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
-        <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">✍️ Custom Fonts / ดึงฟอนต์จากเครื่อง</div>
-        <div style="margin-bottom: 10px;">
-          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">Custom Font Family Name:</div>
-          <input type="text" id="vb2-custom-font-family" value="${localStorage.getItem('vb_custom_font_family') || ''}" placeholder="Type font name (e.g. MyFont)" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+        <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">✍️ Custom Fonts / จัดการแบบอักษร</div>
+        
+        <!-- Section 1: Team Names Font -->
+        <div style="background: rgba(0,0,0,0.15); padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.03);">
+          <div style="font-size: 12px; font-weight: bold; color: #f59e0b; margin-bottom: 6px;">ฟอนต์ชื่อทีม / Team Names Font</div>
+          
+          <div style="margin-bottom: 8px;">
+            <span style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:3px;">แหล่งที่มา / Font Source:</span>
+            <select id="vb2-font-src-team" style="width:100%; padding:6px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; font-size:12px; appearance:auto;">
+              <option value="preset" ${localStorage.getItem('vb_font_src_team') === 'preset' ? 'selected' : ''}>Preset Font / ฟอนต์ระบบแนะนำ</option>
+              <option value="custom_name" ${localStorage.getItem('vb_font_src_team') === 'custom_name' ? 'selected' : ''}>Type Local Font Name / ชื่อฟอนต์ในเครื่อง</option>
+              <option value="upload" ${localStorage.getItem('vb_font_src_team') === 'upload' ? 'selected' : ''}>Upload Font File / อัปโหลดไฟล์ฟอนต์</option>
+            </select>
+          </div>
+          
+          <!-- Team Preset -->
+          <div id="vb2-font-preset-team-container" style="margin-bottom: 6px;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Select Preset:</span>
+            <select id="vb2-font-preset-team" style="width:100%; padding:6px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; font-size:12px; appearance:auto;">
+              <option value="'Kanit', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Kanit', sans-serif" ? 'selected' : ''}>Kanit (Thai)</option>
+              <option value="'Prompt', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Prompt', sans-serif" ? 'selected' : ''}>Prompt (Thai)</option>
+              <option value="'Sarabun', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Sarabun', sans-serif" ? 'selected' : ''}>Sarabun (Thai)</option>
+              <option value="'Barlow Condensed', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Barlow Condensed', sans-serif" ? 'selected' : ''}>Barlow Condensed</option>
+              <option value="'Roboto Condensed', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Roboto Condensed', sans-serif" ? 'selected' : ''}>Roboto Condensed</option>
+              <option value="'Oswald', sans-serif" ${localStorage.getItem('vb_font_preset_team') === "'Oswald', sans-serif" ? 'selected' : ''}>Oswald</option>
+              <option value="Arial, sans-serif" ${localStorage.getItem('vb_font_preset_team') === "Arial, sans-serif" ? 'selected' : ''}>Arial</option>
+              <option value="Tahoma, sans-serif" ${localStorage.getItem('vb_font_preset_team') === "Tahoma, sans-serif" ? 'selected' : ''}>Tahoma</option>
+              <option value="Impact, sans-serif" ${localStorage.getItem('vb_font_preset_team') === "Impact, sans-serif" ? 'selected' : ''}>Impact</option>
+            </select>
+          </div>
+          
+          <!-- Team Custom Name -->
+          <div id="vb2-font-custom-team-container" style="margin-bottom: 6px; display:none;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Custom Font Family Name (installed in PC):</span>
+            <input type="text" id="vb2-font-custom-name-team" value="${localStorage.getItem('vb_font_custom_name_team') || ''}" placeholder="e.g. Angsana New, CordiaUPC" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+          </div>
+          
+          <!-- Team Upload -->
+          <div id="vb2-font-upload-team-container" style="margin-bottom: 6px; display:none;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Upload Font file (.ttf, .otf, .woff, .woff2):</span>
+            <input type="file" id="vb2-font-file-team" accept=".ttf,.otf,.woff,.woff2" style="font-size: 0.75rem; width: 100%; color: #fff;">
+            <div id="vb2-font-status-team" style="font-size: 11px; color: #22c55e; margin-top: 4px;">${localStorage.getItem('vb_font_upload_data_team') ? '✓ Font cached' : ''}</div>
+          </div>
         </div>
-        <div>
-          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">Upload Font File (.ttf, .otf, .woff, .woff2):</div>
-          <input type="file" id="vb2-font-file" accept=".ttf,.otf,.woff,.woff2" style="font-size: 0.75rem; width: 100%; color: #fff;">
-          <div id="vb2-font-status" style="font-size: 11px; color: #22c55e; margin-top: 4px;">${localStorage.getItem('vb_custom_font_data') ? '✓ Font file cached' : ''}</div>
-        </div>
-      </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
-        <div>
-          <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Preset Font</div>
-          <select id="vb2-font-name" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;appearance:auto;">
-            <option value="'Barlow Condensed', sans-serif"${getVbState(VB_FONT_KEY, "") === "'Barlow Condensed', sans-serif" ? ' selected' : ''}>Barlow Condensed</option>
-            <option value="Arial, sans-serif"${getVbState(VB_FONT_KEY, "") === "Arial, sans-serif" ? ' selected' : ''}>Arial</option>
-            <option value="Impact, sans-serif"${getVbState(VB_FONT_KEY, "") === "Impact, sans-serif" ? ' selected' : ''}>Impact</option>
-            <option value="'Roboto Condensed', sans-serif"${getVbState(VB_FONT_KEY, "") === "'Roboto Condensed', sans-serif" ? ' selected' : ''}>Roboto Condensed</option>
-            <option value="Tahoma, sans-serif"${getVbState(VB_FONT_KEY, "") === "Tahoma, sans-serif" ? ' selected' : ''}>Tahoma</option>
-            <option value="'Kanit', sans-serif"${getVbState(VB_FONT_KEY, "") === "'Kanit', sans-serif" ? ' selected' : ''}>Kanit (Thai)</option>
-          </select>
+        <!-- Section 2: Scores & Numbers Font -->
+        <div style="background: rgba(0,0,0,0.15); padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.03);">
+          <div style="font-size: 12px; font-weight: bold; color: #f59e0b; margin-bottom: 6px;">ฟอนต์ตัวเลขคะแนน / Scores & Numbers Font</div>
+          
+          <div style="margin-bottom: 8px;">
+            <span style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:3px;">แหล่งที่มา / Font Source:</span>
+            <select id="vb2-font-src-score" style="width:100%; padding:6px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; font-size:12px; appearance:auto;">
+              <option value="preset" ${localStorage.getItem('vb_font_src_score') === 'preset' ? 'selected' : ''}>Preset Font / ฟอนต์ระบบแนะนำ</option>
+              <option value="custom_name" ${localStorage.getItem('vb_font_src_score') === 'custom_name' ? 'selected' : ''}>Type Local Font Name / ชื่อฟอนต์ในเครื่อง</option>
+              <option value="upload" ${localStorage.getItem('vb_font_src_score') === 'upload' ? 'selected' : ''}>Upload Font File / อัปโหลดไฟล์ฟอนต์</option>
+            </select>
+          </div>
+          
+          <!-- Score Preset -->
+          <div id="vb2-font-preset-score-container" style="margin-bottom: 6px;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Select Preset:</span>
+            <select id="vb2-font-preset-score" style="width:100%; padding:6px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; font-size:12px; appearance:auto;">
+              <option value="'Barlow Condensed', sans-serif" ${localStorage.getItem('vb_font_preset_score') === "'Barlow Condensed', sans-serif" ? 'selected' : ''}>Barlow Condensed</option>
+              <option value="'Roboto Condensed', sans-serif" ${localStorage.getItem('vb_font_preset_score') === "'Roboto Condensed', sans-serif" ? 'selected' : ''}>Roboto Condensed</option>
+              <option value="'Oswald', sans-serif" ${localStorage.getItem('vb_font_preset_score') === "'Oswald', sans-serif" ? 'selected' : ''}>Oswald</option>
+              <option value="'Kanit', sans-serif" ${localStorage.getItem('vb_font_preset_score') === "'Kanit', sans-serif" ? 'selected' : ''}>Kanit (Thai)</option>
+              <option value="'Prompt', sans-serif" ${localStorage.getItem('vb_font_preset_score') === "'Prompt', sans-serif" ? 'selected' : ''}>Prompt (Thai)</option>
+              <option value="Arial, sans-serif" ${localStorage.getItem('vb_font_preset_score') === "Arial, sans-serif" ? 'selected' : ''}>Arial</option>
+              <option value="Tahoma, sans-serif" ${localStorage.getItem('vb_font_preset_score') === "Tahoma, sans-serif" ? 'selected' : ''}>Tahoma</option>
+              <option value="Impact, sans-serif" ${localStorage.getItem('vb_font_preset_score') === "Impact, sans-serif" ? 'selected' : ''}>Impact</option>
+            </select>
+          </div>
+          
+          <!-- Score Custom Name -->
+          <div id="vb2-font-custom-score-container" style="margin-bottom: 6px; display:none;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Custom Font Family Name (installed in PC):</span>
+            <input type="text" id="vb2-font-custom-name-score" value="${localStorage.getItem('vb_font_custom_name_score') || ''}" placeholder="e.g. Barlow Condensed, Arial" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+          </div>
+          
+          <!-- Score Upload -->
+          <div id="vb2-font-upload-score-container" style="margin-bottom: 6px; display:none;">
+            <span style="font-size:11px; color:#94a3b8; display:block; margin-bottom:3px;">Upload Font file (.ttf, .otf, .woff, .woff2):</span>
+            <input type="file" id="vb2-font-file-score" accept=".ttf,.otf,.woff,.woff2" style="font-size: 0.75rem; width: 100%; color: #fff;">
+            <div id="vb2-font-status-score" style="font-size: 11px; color: #22c55e; margin-top: 4px;">${localStorage.getItem('vb_font_upload_data_score') ? '✓ Font cached' : ''}</div>
+          </div>
         </div>
-        <div>
-          <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Team Width (px)</div>
+
+        <!-- Team width setting -->
+        <div style="margin-bottom:6px;">
+          <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Team Name Width (px)</div>
           <input type="number" id="vb2-team-width" value="${parseInt(getVbState(VB_TEAM_WIDTH_KEY, '250'))}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
         </div>
       </div>
@@ -603,17 +733,8 @@ function injectSettingsTab() {
       </label>
     </div>
 
-    <!-- Point History Section -->
+    <!-- Point History Section Removed -->
     <div id="vb2-scores-section" style="${enabled ? '' : 'opacity:.4;pointer-events:none;'}">
-      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.05);">
-        <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-          <span>📋 Point History / ประวัติคะแนน</span>
-          <button id="vb2-clear-history" class="btn-danger" style="padding:2px 8px;font-size:10px;border-radius:4px;border:none;cursor:pointer;">Clear</button>
-        </div>
-        <div id="vb2-point-history-list" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;font-size:12px;">
-          <!-- Items will be injected dynamically -->
-        </div>
-      </div>
 
       <!-- Match Settings: Sets & Limits -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
@@ -682,10 +803,7 @@ function injectSettingsTab() {
             style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;">
             🎬 History
           </button>
-          <button id="vb2-create-pointhist-btn"
-            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;grid-column: span 2;">
-            🎬 Point History
-          </button>
+<!-- Point History OBS Button Removed -->
         </div>
         <p style="font-size:.7rem;color:#475569;margin-top:6px;line-height:1.4;">
           Adds Browser Sources to OBS pointing to overlays.
@@ -752,25 +870,66 @@ function injectSettingsTab() {
     });
   });
 
-  // Custom Fonts
-  document.getElementById('vb2-custom-font-family').addEventListener('change', e => {
-    localStorage.setItem('vb_custom_font_family', e.target.value);
+  // Split Fonts Listeners - Team Font
+  document.getElementById('vb2-font-src-team').addEventListener('change', e => {
+    localStorage.setItem('vb_font_src_team', e.target.value);
+    updateFontFieldsVisibility();
     injectCustomFont();
     broadcast();
   });
-
-  document.getElementById('vb2-font-file').addEventListener('change', e => {
+  document.getElementById('vb2-font-preset-team').addEventListener('change', e => {
+    localStorage.setItem('vb_font_preset_team', e.target.value);
+    broadcast();
+  });
+  document.getElementById('vb2-font-custom-name-team').addEventListener('change', e => {
+    localStorage.setItem('vb_font_custom_name_team', e.target.value);
+    broadcast();
+  });
+  document.getElementById('vb2-font-file-team').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      localStorage.setItem('vb_custom_font_data', ev.target.result);
-      document.getElementById('vb2-font-status').textContent = '✓ Font file cached';
+      localStorage.setItem('vb_font_upload_data_team', ev.target.result);
+      localStorage.setItem('vb_font_upload_family_team', 'CustomFontTeam');
+      document.getElementById('vb2-font-status-team').textContent = '✓ Font cached';
       injectCustomFont();
       broadcast();
     };
     reader.readAsDataURL(file);
   });
+
+  // Split Fonts Listeners - Score Font
+  document.getElementById('vb2-font-src-score').addEventListener('change', e => {
+    localStorage.setItem('vb_font_src_score', e.target.value);
+    updateFontFieldsVisibility();
+    injectCustomFont();
+    broadcast();
+  });
+  document.getElementById('vb2-font-preset-score').addEventListener('change', e => {
+    localStorage.setItem('vb_font_preset_score', e.target.value);
+    broadcast();
+  });
+  document.getElementById('vb2-font-custom-name-score').addEventListener('change', e => {
+    localStorage.setItem('vb_font_custom_name_score', e.target.value);
+    broadcast();
+  });
+  document.getElementById('vb2-font-file-score').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      localStorage.setItem('vb_font_upload_data_score', ev.target.result);
+      localStorage.setItem('vb_font_upload_family_score', 'CustomFontScore');
+      document.getElementById('vb2-font-status-score').textContent = '✓ Font cached';
+      injectCustomFont();
+      broadcast();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Initial Visibility Setup
+  updateFontFieldsVisibility();
   
   // Logo Local File
   document.getElementById('vb2-logo-file').addEventListener('change', e => {
@@ -793,7 +952,7 @@ function injectSettingsTab() {
   });
 
   // Preset font select
-  document.getElementById('vb2-font-name').addEventListener('change', e => setVbState(VB_FONT_KEY, e.target.value));
+  // Preset font listener removed
   document.getElementById('vb2-team-width').addEventListener('change', e => setVbState(VB_TEAM_WIDTH_KEY, e.target.value));
   document.getElementById('vb2-auto-serve').addEventListener('change', e => setVbState(VB_AUTO_SERVE_KEY, e.target.checked ? 'true' : 'false'));
 
@@ -838,8 +997,8 @@ function injectSettingsTab() {
   document.getElementById('vb2-reset-btn').addEventListener('click', resetMatch);
   document.getElementById('vb2-create-main-btn').addEventListener('click', function() { createVBSource(this, 'main'); });
   document.getElementById('vb2-create-hist-btn').addEventListener('click', function() { createVBSource(this, 'history'); });
-  document.getElementById('vb2-create-pointhist-btn').addEventListener('click', function() { createVBSource(this, 'pointhist'); });
-  document.getElementById('vb2-clear-history').addEventListener('click', () => {
+  const pHistBtn = document.getElementById('vb2-create-pointhist-btn'); if (pHistBtn) pHistBtn.addEventListener('click', function() { createVBSource(this, 'pointhist'); });
+  const clearHistBtn = document.getElementById('vb2-clear-history'); if (clearHistBtn) clearHistBtn.addEventListener('click', () => {
     if (confirm('Clear point history?')) {
       localStorage.setItem('score_action_history', '[]');
       updatePointHistoryList();
