@@ -24,7 +24,8 @@ let state = {
   teamWidth: '250px',
   autoServe: true,
   timeoutActive: '',
-  setLimit: 25
+  setLimit: 25,
+  sport: 'volleyball'
 };
 
 // ──────────────────────────────────────── RENDER
@@ -63,13 +64,70 @@ function renderHistory(history, maxSets) {
   }
 }
 
+function injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore) {
+  let style = document.getElementById('vb-custom-font-style');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'vb-custom-font-style';
+    document.head.appendChild(style);
+  }
+  
+  let css = '';
+  if (customFontDataTeam && customFontFamilyTeam) {
+    css += `
+      @font-face {
+        font-family: '${customFontFamilyTeam}';
+        src: url('${customFontDataTeam}');
+      }
+    `;
+  }
+  if (customFontDataScore && customFontFamilyScore) {
+    css += `
+      @font-face {
+        font-family: '${customFontFamilyScore}';
+        src: url('${customFontDataScore}');
+      }
+    `;
+  }
+  style.textContent = css;
+}
+
 function renderScoreboard(newState, prevState) {
-  const { scoreA, scoreB, setsA, setsB, setHistory, colorA, colorB, colorA2, colorB2, nameA, nameB, logoUrl, serve, timeoutActive, font, teamWidth, maxSets, setLimit, finalSetLimit } = newState;
+  const { 
+    scoreA, scoreB, setsA, setsB, setHistory, 
+    colorA, colorB, colorA2, colorB2, nameA, nameB, 
+    logoUrl, serve, timeoutActive, fontTeam, fontScore, font, teamWidth, 
+    maxSets, setLimit, finalSetLimit, timeoutsA, timeoutsB,
+    sport, colorActiveScore, colorActiveScoreText, colorSetsBg,
+    colorSetsText, colorLogoBg, colorText, colorServe,
+    customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore,
+    showServeBall
+  } = newState;
 
   // Custom CSS properties
   const root = document.documentElement;
-  if (font) root.style.setProperty('--vb-font', font);
+  
+  // Split Fonts overrides
+  const activeFontTeam = customFontFamilyTeam ? `'${customFontFamilyTeam}'` : (fontTeam || "'Kanit', sans-serif");
+  root.style.setProperty('--vb-font-team', activeFontTeam);
+
+  const activeFontScore = customFontFamilyScore ? `'${customFontFamilyScore}'` : (fontScore || "'Barlow Condensed', sans-serif");
+  root.style.setProperty('--vb-font-score', activeFontScore);
+  root.style.setProperty('--vb-font', activeFontScore); // legacy fallback
+  
   if (teamWidth) root.style.setProperty('--team-name-width', teamWidth);
+
+  // Apply custom styling variables if provided
+  if (colorActiveScore) root.style.setProperty('--active-score-bg', colorActiveScore);
+  if (colorServe) root.style.setProperty('--serve-color', colorServe);
+  if (colorSetsBg) {
+    root.style.setProperty('--sets-bg-top', colorSetsBg);
+    root.style.setProperty('--sets-bg-bottom', colorSetsBg);
+  }
+  if (colorText) root.style.setProperty('--text-light', colorText);
+
+  // Inject custom font stylesheet
+  injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore);
 
   // Colors
   const panelA = document.getElementById('panelA');
@@ -93,6 +151,10 @@ function renderScoreboard(newState, prevState) {
       elLogo.style.display = 'none';
     }
   }
+  const logoArea = document.querySelector('.logo-area');
+  if (logoArea && colorLogoBg) {
+    logoArea.style.backgroundColor = colorLogoBg;
+  }
 
   // Scores
   const elA = document.getElementById('scoreA');
@@ -100,23 +162,92 @@ function renderScoreboard(newState, prevState) {
   if (elA) elA.textContent = scoreA;
   if (elB) elB.textContent = scoreB;
 
-  // Sets Won
+  // Active score cell styling text color
+  const activeScoreCell = document.querySelector('.score-col.active');
+  if (activeScoreCell && colorActiveScoreText) {
+    activeScoreCell.style.color = colorActiveScoreText;
+  }
+
+  // Sets Won (Fouls/Sets)
   const elSetsA = document.getElementById('setsA');
   const elSetsB = document.getElementById('setsB');
-  if (elSetsA) elSetsA.textContent = setsA;
-  if (elSetsB) elSetsB.textContent = setsB;
+  if (elSetsA) {
+    elSetsA.textContent = setsA;
+    if (colorSetsText) elSetsA.style.color = colorSetsText;
+  }
+  if (elSetsB) {
+    elSetsB.textContent = setsB;
+    if (colorSetsText) elSetsB.style.color = colorSetsText;
+  }
+
+  // Sport support variables
+  const activeSport = sport || 'volleyball';
+  const serveSupport = (showServeBall !== false);
+  const timeoutSupport = (activeSport !== 'badminton');
+
+  const getSportEmoji = (sp) => {
+    switch (sp) {
+      case 'basketball':
+      case 'streetball':
+        return '🏀';
+      case 'football':
+        return '⚽';
+      case 'badminton':
+        return '🏸';
+      case 'volleyball':
+      default:
+        return '🏐';
+    }
+  };
+  const currentEmoji = getSportEmoji(activeSport);
 
   // Serve
   const elServeA = document.getElementById('serveA');
   const elServeB = document.getElementById('serveB');
-  if (elServeA) { elServeA.className = 'serve-indicator' + (serve === 'A' ? ' active' : ''); elServeA.textContent = '🏐'; }
-  if (elServeB) { elServeB.className = 'serve-indicator' + (serve === 'B' ? ' active' : ''); elServeB.textContent = '🏐'; }
+  if (elServeA) {
+    elServeA.style.display = serveSupport ? 'block' : 'none';
+    if (serveSupport) {
+      elServeA.className = 'serve-indicator' + (serve === 'A' ? ' active' : '');
+      elServeA.textContent = currentEmoji;
+    }
+  }
+  if (elServeB) {
+    elServeB.style.display = serveSupport ? 'block' : 'none';
+    if (serveSupport) {
+      elServeB.className = 'serve-indicator' + (serve === 'B' ? ' active' : '');
+      elServeB.textContent = currentEmoji;
+    }
+  }
+
+  // Timeouts (dots indicator)
+  const elTimeoutsA = document.getElementById('timeoutsA');
+  const elTimeoutsB = document.getElementById('timeoutsB');
+  if (elTimeoutsA) {
+    elTimeoutsA.style.display = timeoutSupport ? 'flex' : 'none';
+    if (timeoutSupport) {
+      elTimeoutsA.innerHTML = '';
+      for (let i = 0; i < 2; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'timeout-dot' + (i < timeoutsA ? ' active' : '');
+        elTimeoutsA.appendChild(dot);
+      }
+    }
+  }
+  if (elTimeoutsB) {
+    elTimeoutsB.style.display = timeoutSupport ? 'flex' : 'none';
+    if (timeoutSupport) {
+      elTimeoutsB.innerHTML = '';
+      for (let i = 0; i < 2; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'timeout-dot' + (i < timeoutsB ? ' active' : '');
+        elTimeoutsB.appendChild(dot);
+      }
+    }
+  }
 
   // Calculate Set Point
   const isFinalSet = setHistory && (setHistory.length === (maxSets || 5) - 1);
   const currentLimit = isFinalSet ? (finalSetLimit || 15) : (setLimit || 25);
-  // Is team EXACTLY 1 point away from winning the set?
-  // Math.max(limit, opponentScore + 2) is the target score to win.
   const isSetPointA = (scoreA === Math.max(currentLimit, scoreB + 2) - 1);
   const isSetPointB = (scoreB === Math.max(currentLimit, scoreA + 2) - 1);
 
@@ -131,7 +262,7 @@ function renderScoreboard(newState, prevState) {
     if (timeoutActive === 'A') {
       statusA.className = 'status-cell timeout';
       txtA.textContent = 'TIMEOUT';
-    } else if (isSetPointA && !anyTimeout) {
+    } else if (isSetPointA && !anyTimeout && activeSport === 'volleyball') {
       statusA.className = 'status-cell setpoint';
       txtA.textContent = 'SET POINT';
     } else {
@@ -144,7 +275,7 @@ function renderScoreboard(newState, prevState) {
     if (timeoutActive === 'B') {
       statusB.className = 'status-cell timeout';
       txtB.textContent = 'TIMEOUT';
-    } else if (isSetPointB && !anyTimeout) {
+    } else if (isSetPointB && !anyTimeout && activeSport === 'volleyball') {
       statusB.className = 'status-cell setpoint';
       txtB.textContent = 'SET POINT';
     } else {

@@ -184,7 +184,10 @@ const switchSettingsTab = (tabName) => {
     const targetPanel = document.getElementById(tabName);
     if (targetPanel) targetPanel.classList.add('active');
     const targetBtn = document.querySelector(`.settings-tab-btn[data-tab="${tabName}"]`);
-    if (targetBtn) targetBtn.classList.add('active');
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 };
 
 // --- V2.9.2: Confirm Reset Dialog ---
@@ -1035,6 +1038,17 @@ const handleDragLeave = (e) => {
 // --- Scoreboard Logic ---
 const getTeamInitials = (name) => name ? (name.split(' ').filter(Boolean).length >= 2 ? (name.split(' ')[0][0] + name.split(' ')[1][0]) : name.substring(0, 2)).toUpperCase() : '';
 
+const getContrastColor = (hexColor) => {
+    if (!hexColor) return '#ffffff';
+    const hex = hexColor.replace('#', '');
+    if (hex.length !== 6) return '#ffffff';
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
+};
+
 const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isA = team === 'A';
     const masterTeam = isA ? masterTeamA : masterTeamB;
@@ -1066,6 +1080,12 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
     scoreEl.textContent = masterTeam.score;
     scoreEl.style.backgroundColor = masterTeam.color1;
+
+    // Contrast text color
+    const contrastColor = getContrastColor(masterTeam.color1);
+    scoreEl.style.color = contrastColor;
+    scoreEl.style.webkitTextStroke = "0px";
+
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
@@ -1149,19 +1169,76 @@ const swapTeams = () => {
     showToast(translations[currentLang].toastSwapped, 'info');
 };
 
+let scoreActionHistory = [];
+
+const pushScoreHistory = (type, team, delta) => {
+    scoreActionHistory.push({
+        scoreA: masterTeamA.score,
+        scoreB: masterTeamB.score,
+        score2A: masterTeamA.score2,
+        score2B: masterTeamB.score2,
+        type: type,
+        team: team,
+        delta: delta,
+        timestamp: Date.now()
+    });
+    if (scoreActionHistory.length > 100) {
+        scoreActionHistory.shift();
+    }
+    localStorage.setItem('score_action_history', JSON.stringify(scoreActionHistory));
+    if (window.updatePointHistoryList) window.updatePointHistoryList();
+};
+
+const pushResetHistory = () => {
+    scoreActionHistory.push({
+        scoreA: masterTeamA.score,
+        scoreB: masterTeamB.score,
+        score2A: masterTeamA.score2,
+        score2B: masterTeamB.score2,
+        type: 'reset',
+        timestamp: Date.now()
+    });
+    localStorage.setItem('score_action_history', JSON.stringify(scoreActionHistory));
+    if (window.updatePointHistoryList) window.updatePointHistoryList();
+};
+
+const undoLastScore = () => {
+    if (!scoreActionHistory.length) {
+        showToast("No history to undo", "warning");
+        return;
+    }
+    const lastState = scoreActionHistory.pop();
+    localStorage.setItem('score_action_history', JSON.stringify(scoreActionHistory));
+
+    masterTeamA.score = lastState.scoreA;
+    masterTeamB.score = lastState.scoreB;
+    masterTeamA.score2 = lastState.score2A;
+    masterTeamB.score2 = lastState.score2B;
+
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, masterTeamA.score, masterTeamA.score2);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, masterTeamB.score, masterTeamB.score2);
+
+    if (window.updatePointHistoryList) window.updatePointHistoryList();
+    showToast("Undo successful", "success");
+};
+window.undoLastScore = undoLastScore;
+
 const changeScore = (team, delta) => {
+    pushScoreHistory('score', team, delta);
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score = Math.max(0, masterTeam.score + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
 };
 
 const changeScore2 = (team, delta) => {
+    pushScoreHistory('score2', team, delta);
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score2 = Math.max(0, masterTeam.score2 + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
 };
 
 const resetScore = () => {
+    pushResetHistory();
     masterTeamA.score = masterTeamB.score = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, masterTeamA.score2);
     updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, masterTeamB.score2);
@@ -1169,6 +1246,7 @@ const resetScore = () => {
 };
 
 const resetScore2 = () => {
+    pushResetHistory();
     masterTeamA.score2 = masterTeamB.score2 = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, masterTeamA.score, 0);
     updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, masterTeamB.score, 0);
@@ -1176,6 +1254,7 @@ const resetScore2 = () => {
 };
 
 const fullReset = () => {
+    pushResetHistory();
     masterTeamA.score = masterTeamB.score = 0;
     masterTeamA.score2 = masterTeamB.score2 = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
@@ -1382,6 +1461,7 @@ const fetchGoogleSheet = async () => {
         showToast(translations[currentLang].toastGoogleSheetError, 'error');
     }
 }
+window.fetchGoogleSheet = fetchGoogleSheet;
 
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
@@ -1612,6 +1692,23 @@ const setupEventListeners = () => {
     elements.scoreBMinusBtn.addEventListener('click', () => changeScore('B', -1));
     elements.resetScoreBtn.addEventListener('click', resetScore);
 
+    // Basketball & Undo Buttons Listeners
+    const bPlus1A = document.getElementById('scoreAPlus1Btn');
+    const bPlus2A = document.getElementById('scoreAPlus2Btn');
+    const bPlus3A = document.getElementById('scoreAPlus3Btn');
+    const bPlus1B = document.getElementById('scoreBPlus1Btn');
+    const bPlus2B = document.getElementById('scoreBPlus2Btn');
+    const bPlus3B = document.getElementById('scoreBPlus3Btn');
+    const undoBtn = document.getElementById('undoScoreBtn');
+
+    if (bPlus1A) bPlus1A.addEventListener('click', () => changeScore('A', 1));
+    if (bPlus2A) bPlus2A.addEventListener('click', () => changeScore('A', 2));
+    if (bPlus3A) bPlus3A.addEventListener('click', () => changeScore('A', 3));
+    if (bPlus1B) bPlus1B.addEventListener('click', () => changeScore('B', 1));
+    if (bPlus2B) bPlus2B.addEventListener('click', () => changeScore('B', 2));
+    if (bPlus3B) bPlus3B.addEventListener('click', () => changeScore('B', 3));
+    if (undoBtn) undoBtn.addEventListener('click', () => window.undoLastScore());
+
     if (elements.swapScoreBtn) {
         elements.swapScoreBtn.addEventListener('click', () => {
             const panel = document.querySelector('.score-panel-clean');
@@ -1665,6 +1762,32 @@ const setupEventListeners = () => {
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
     });
+
+    // Settings Tab Arrow Navigation
+    const arrowLeft = document.getElementById('settingsTabArrowLeft');
+    const arrowRight = document.getElementById('settingsTabArrowRight');
+    const settingsTabs = document.getElementById('settingsTabs');
+
+    if (arrowLeft && arrowRight && settingsTabs) {
+        arrowLeft.addEventListener('click', () => {
+            const btns = Array.from(settingsTabs.querySelectorAll('.settings-tab-btn'));
+            const activeIdx = btns.findIndex(btn => btn.classList.contains('active'));
+            if (activeIdx > 0) {
+                btns[activeIdx - 1].click();
+            } else if (btns.length > 0) {
+                btns[btns.length - 1].click();
+            }
+        });
+        arrowRight.addEventListener('click', () => {
+            const btns = Array.from(settingsTabs.querySelectorAll('.settings-tab-btn'));
+            const activeIdx = btns.findIndex(btn => btn.classList.contains('active'));
+            if (activeIdx >= 0 && activeIdx < btns.length - 1) {
+                btns[activeIdx + 1].click();
+            } else if (btns.length > 0) {
+                btns[0].click();
+            }
+        });
+    }
     // V2.9.2: Color Count listener
     if (elements.colorCountSelect) {
         elements.colorCountSelect.addEventListener('change', (e) => {
@@ -2647,6 +2770,26 @@ window.copyDetails = () => {
 
 // Call init on load
 document.addEventListener('DOMContentLoaded', () => {
+    // Load cached custom font if any
+    try {
+        const fontData = localStorage.getItem('vb_custom_font_data');
+        if (fontData) {
+            const styleId = 'vb-custom-font-style';
+            let styleEl = document.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                document.head.appendChild(styleEl);
+            }
+            styleEl.textContent = `
+                @font-face {
+                    font-family: 'CustomCachedFont';
+                    src: url('${fontData}');
+                }
+            `;
+        }
+    } catch(e) {}
+
     if (window.initWelcomeScreen) window.initWelcomeScreen();
     if (window.updateUserIdentityUI) window.updateUserIdentityUI();
     // V2.9.3: Initialize rank display
@@ -2784,6 +2927,14 @@ window.initMobileHost = (customRoomId) => {
             statusEl.innerText = `Connected: ${hostConn.length} device(s)`;
             statusEl.style.color = "#22c55e";
         }
+
+        // Update Firebase Mobile status to "on"
+        const identity = window.userIdentity || userIdentity;
+        if (identity && identity.name && window.firebase) {
+            const key = `mobile_${sanitizeKey(identity.name)}`;
+            firebase.database().ref(`obs_rooms_score/${key}/Mobile`).set('on')
+                .catch(() => {});
+        }
     });
 
     hostPeer.on('error', (err) => {
@@ -2803,7 +2954,17 @@ function setupConnection(conn) {
         const statusEl = document.getElementById('remoteStatusText');
         if (statusEl) {
             statusEl.innerText = hostConn.length > 0 ? `Connected: ${hostConn.length} device(s)` : "Waiting...";
-            if (hostConn.length === 0) statusEl.style.color = "var(--warning-color)";
+            if (hostConn.length === 0) {
+                statusEl.style.color = "var(--warning-color)";
+                
+                // Update Firebase Mobile status to "off"
+                const identity = window.userIdentity || userIdentity;
+                if (identity && identity.name && window.firebase) {
+                    const key = `mobile_${sanitizeKey(identity.name)}`;
+                    firebase.database().ref(`obs_rooms_score/${key}/Mobile`).set('off')
+                        .catch(() => {});
+                }
+            }
         }
     });
 }
@@ -2844,7 +3005,9 @@ window.broadcastToMobile = () => {
         half: elements.halfText.textContent,
         injury: elements.injuryTimeDisplay.textContent,
         isPaused: !interval,
-        actions: actions // Added Actions List
+        actions: actions, // Added Actions List
+        sport: localStorage.getItem('vb_sport') || 'volleyball',
+        vbEnabled: localStorage.getItem('vb_enabled') !== 'false'
     };
 
     hostConn.forEach(conn => {
@@ -2866,6 +3029,22 @@ function handleMobileCommand(data) {
             } else {
                 changeScore(data.team, data.delta);
             }
+            break;
+
+        case 'undo':
+            undoLastScore();
+            break;
+
+        case 'swap':
+            swapTeams();
+            break;
+
+        case 'resetscores':
+            resetScore();
+            break;
+
+        case 'resetscores2':
+            resetScore2();
             break;
 
         case 'timer':
@@ -3007,4 +3186,7 @@ window.triggerAction = async (index) => {
 window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
+window.getSheetData = () => sheetData;
 import './volleyball_module_v2.js';
+import './display_table_module.js';
+

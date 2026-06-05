@@ -2,6 +2,8 @@
 
 :root {
   --vb-font: 'Barlow Condensed', sans-serif;
+  --vb-font-team: 'Kanit', sans-serif;
+  --vb-font-score: 'Barlow Condensed', sans-serif;
   --team-name-width: 250px;
   --team-a-bg: #1e3a8a;
   --team-b-bg: #1e3a8a;
@@ -79,6 +81,7 @@ body {
   display: flex;
   align-items: center;
   padding: 0 15px;
+  font-family: var(--vb-font-team, var(--vb-font));
   font-size: 28px;
   font-weight: 800;
   text-transform: uppercase;
@@ -150,7 +153,7 @@ body {
   flex-direction: column;
   width: 50px;
   text-align: center;
-  font-family: var(--vb-font);
+  font-family: var(--vb-font-score, var(--vb-font));
   font-size: 30px;
   font-weight: 800;
   flex-shrink: 0;
@@ -180,7 +183,7 @@ body {
   flex-direction: column;
   width: 65px;
   text-align: center;
-  font-family: var(--vb-font);
+  font-family: var(--vb-font-score, var(--vb-font));
   font-size: 32px;
   font-weight: 800;
   border-right: 1px solid rgba(255,255,255,0.05);
@@ -215,3 +218,24 @@ body {
 }
 
 .hidden { display: none !important; }
+
+/* Timeout indicator dots */
+.timeouts {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+.timeout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+.timeout-dot.active {
+  background: var(--serve-color, #fde047);
+  box-shadow: 0 0 6px var(--serve-color, #fde047);
+  border-color: var(--serve-color, #fde047);
+}
+

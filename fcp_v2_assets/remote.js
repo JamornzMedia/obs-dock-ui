@@ -67,12 +67,19 @@ window.initOnlinePresenceSystem = () => {
         totalMins = usageData.totalMinutes || 0;
     } catch (e) { }
 
+    // Setup server time offset listener
+    window.serverTimeOffset = 0;
+    firebase.database().ref(".info/serverTimeOffset").on("value", (snap) => {
+        window.serverTimeOffset = snap.val() || 0;
+    });
+
     const presenceData = {
         name: identity.name.substring(0, 30),
         platform: "PC",
         province: identity.province || "Unknown",
         ID: identity.ID,
-        totalMinutes: totalMins
+        totalMinutes: totalMins,
+        lastActive: firebase.database.ServerValue.TIMESTAMP
     };
 
     // V2.9.4: Clean up old room if name changed
@@ -96,13 +103,14 @@ window.initOnlinePresenceSystem = () => {
                     currentMins = usageData.totalMinutes || 0;
                 } catch (e) {}
                 presenceData.totalMinutes = currentMins;
+                presenceData.lastActive = firebase.database.ServerValue.TIMESTAMP;
                 window.myRoomRef.set(presenceData);
             }
         } catch(e) { console.warn("Auto-refresh online presence failed", e); }
     };
 
     if (window.presenceRefreshInterval) clearInterval(window.presenceRefreshInterval);
-    window.presenceRefreshInterval = setInterval(window.refreshOnlinePresence, 600000); // 10 mins
+    window.presenceRefreshInterval = setInterval(window.refreshOnlinePresence, 30000); // 30 seconds
 
     // --- Monitor All Users ---
     const allRoomsRef = firebase.database().ref(ROOMS_PATH);
@@ -110,12 +118,34 @@ window.initOnlinePresenceSystem = () => {
     allRoomsRef.on('value', (snapshot) => {
         const users = snapshot.val() || {};
         const keys = Object.keys(users);
+        const now = Date.now() + (window.serverTimeOffset || 0);
 
         let pcCount = 0;
         let phoneCount = 0;
         keys.forEach(key => {
             if (key.startsWith('com_')) {
-                pcCount++;
+                const user = users[key];
+                if (user) {
+                    if (user.lastActive) {
+                        const isStale = (now - user.lastActive) > 60000; // 60 seconds (2 * 30s)
+                        if (isStale) {
+                            console.log(`Detected stale user: ${key}. Cleaning up...`);
+                            firebase.database().ref(`${ROOMS_PATH}/${key}`).remove()
+                                .catch(() => {});
+                            const mobileKey = key.replace('com_', 'mobile_');
+                            firebase.database().ref(`${ROOMS_PATH}/${mobileKey}`).remove()
+                                .catch(() => {});
+                            return; // Skip counting
+                        }
+                    } else {
+                        // Legacy/stuck entry without lastActive: set initial timestamp
+                        console.log(`Legacy/stuck entry detected without lastActive: ${key}. Setting temporary lastActive...`);
+                        firebase.database().ref(`${ROOMS_PATH}/${key}`).update({
+                            lastActive: firebase.database.ServerValue.TIMESTAMP
+                        }).catch(() => {});
+                    }
+                    pcCount++;
+                }
             } else if (key.startsWith('mobile_')) {
                 const mobileRoom = users[key];
                 if (mobileRoom && mobileRoom.Mobile === 'on') {
@@ -312,6 +342,14 @@ window.renderOnlineUsersList = () => {
     let index = 1;
     Object.keys(comRooms).forEach(key => {
         const user = comRooms[key];
+
+        // Filter out stale user in the UI display list
+        if (user && user.lastActive) {
+            const now = Date.now() + (window.serverTimeOffset || 0);
+            if (now - user.lastActive > 60000) {
+                return; // skip stale user
+            }
+        }
 
         let matchedMobile = null;
         Object.keys(mobileRooms).forEach(mKey => {

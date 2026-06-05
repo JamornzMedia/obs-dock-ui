@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.9.2 (OBSScore)",
+        appTitle: "Football Scoreboard Controller - V2.9.5 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.9.2",
+        changelog: "Update Version 2.9.5",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -184,6 +184,20 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
+                    <li>
+                    <h5>Version 2.9.5</h5>
+                    <ul>
+                        <li>**Multi-Sport Settings:** Dropdown settings to select Volleyball, Basketball, Football, Streetball, or Badminton, with custom layout adaptations.</li>
+                        <li>**Basketball Controls:** Dedicated +1, +2, +3 score increment buttons.</li>
+                        <li>**Score Undo:** Retain last states history and revert the last points scored via the Undo button.</li>
+                        <li>**Text Auto-Contrast:** Score backgrounds dynamically check jersey color brightness and contrast text automatically between black and white.</li>
+                        <li>**Point History Overlay:** Create new standalone point history timeline logs overlay for OBS Browser Source.</li>
+                        <li>**Display Table Overlay:** Create custom spreadsheet table rendering overlay with column ordering, row filtering, and alternating row colors.</li>
+                        <li>**Custom Fonts:** Load and cache custom font files (TTF/OTF/WOFF/WOFF2) in base64 or specify custom local font-family names dynamically.</li>
+                    </ul>
+                </li>
+                </li>
+                <li>
                     <h5>Version 2.9.2</h5>
                     <ul>
                         <li>**Settings:** Reorganized into Tabs (Announce, Actions, Keys, Display, Data) for easier access.</li>
@@ -265,7 +279,7 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.2 (OBSScore)",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.5 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -302,7 +316,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.9.2",
+        changelog: "อัปเดตเวอร์ชัน 2.9.5",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -445,6 +459,20 @@ export const translations = {
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <li>
+                    <h5>เวอร์ชัน 2.9.5</h5>
+                    <ul>
+                        <li>**ระบบหลายชนิดกีฬา:** เลือกตั้งค่าบาสเกตบอล, ฟุตบอล, สตรีทบอล, และแบดมินตัน เพิ่มเติมจากวอลเลย์บอล พร้อมการปรับเปลี่ยนการแสดงผลตามประเภทกีฬา</li>
+                        <li>**ปุ่มคะแนนบาสเกตบอล:** เพิ่มปุ่มบวกแต้ม +1, +2, +3 สำหรับกีฬาบาสเกตบอล</li>
+                        <li>**ปุ่มย้อนกลับ (Undo):** จัดเก็บประวัติการทำแต้ม และกดถอยคะแนนกลับได้ทันทีเมื่อใส่คะแนนผิดพลาด</li>
+                        <li>**ปรับคอนทราสต์ตัวเลขแต้มอัตโนมัติ:** สีของตัวเลขคะแนนจะเปลี่ยนเป็นดำหรือขาวโดยอิงจากความสว่างของสีพื้นหลังทีมเพื่อให้มองเห็นได้ชัดเจน</li>
+                        <li>**การแสดงประวัติการทำแต้ม (Point History):** เพิ่มหน้าแสดงประวัติการทำแต้มแยกต่างหากสำหรับใช้เป็น OBS Browser Source</li>
+                        <li>**การแสดงผลตารางคะแนน (Display Table):** เพิ่มหน้าแสดงผลตารางคะแนนจาก Excel/Google Sheets โดยกำหนดคอลัมน์ ฟิลเตอร์ MatchID และสีสลับแถวได้อิสระ</li>
+                        <li>**รองรับฟอนต์กำหนดเอง:** อัปโหลดไฟล์ฟอนต์เก็บในแคช (.ttf/.otf/.woff/.woff2) หรือพิมพ์ฟอนต์ในเครื่องเพื่อแสดงผลได้ทันที</li>
+                    </ul>
+                </li>
+                </li>
                 <li>
                     <h5>เวอร์ชัน 2.9.2</h5>
                     <ul>

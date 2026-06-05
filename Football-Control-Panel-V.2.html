@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.4</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.5</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1713,29 +1713,67 @@
         }
 
         /* V2.9.2 Settings Tabs */
+        .settings-tabs-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            margin-bottom: 20px;
+            width: 100%;
+        }
         .settings-tabs {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-bottom: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 4px;
-            border-radius: 10px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            gap: 6px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            justify-content: flex-start;
+            scrollbar-width: none; /* Firefox */
+            flex-grow: 1;
+            scroll-behavior: smooth;
+        }
+
+        .settings-tabs::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+
+        .settings-tabs-arrow {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .settings-tabs-arrow:hover {
+            background: var(--accent-color);
+            color: #fff;
         }
 
         .settings-tab-btn {
             background: transparent;
             color: var(--text-muted-color);
-            padding: 8px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
-            flex: 1;
             text-align: center;
             font-weight: 500;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             border: none;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            flex: 0 0 auto;
         }
 
         .settings-tab-btn.active {
@@ -2117,8 +2155,18 @@
                         <div style="margin-top: 15px; text-align: center;">
                 <a href="https://ezdn.app/Jamornz" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-hand-holding-heart"></i> สนับสนุนการพัฒนาโปรแกรม (Donate)</a>
             </div>
+            
+            <!-- Major Update Warning Card -->
+            <div style="margin-top: 20px; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 12px; max-width: 320px; margin-left: auto; margin-right: auto; text-align: left; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);">
+                <div style="font-weight: bold; color: #f87171; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-rocket"></i> แจ้งเตือนการอัปเดตครั้งใหญ่ (Coming Soon)
+                </div>
+                <p style="margin: 0; font-size: 0.75rem; color: #cbd5e1; line-height: 1.45;">
+                    เตรียมก้าวสู่อนาคตที่ยิ่งใหญ่ขึ้น! ในเวอร์ชันถัดไป ระบบจะอัปเกรดมาใช้การยืนยันตัวตนผ่าน <strong>Email Login</strong> เพื่อความปลอดภัยระดับสูงสุด การบริหารจัดการข้อมูลผู้ใช้ที่เสถียรยิ่งขึ้น และเพื่อรองรับบิ๊กโปรเจกต์ใหม่ที่กำลังจะมาถึง... รอติดตาม!
+                </p>
+            </div>
         </div>
-        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.4.1 (อัพเดต: 16 พ.ค. 2026)</div>
+        <div class="welcome-footer">Developed by JamornzMedia - Version 2.9.5 (อัพเดต: 5 มิถุนายน 2569)</div>
     </div>
 
     <script>
@@ -2726,9 +2774,14 @@
         <div class="score-panel-clean">
             <!-- Team A -->
             <div class="score-col-team">
+                <!-- Basketball Extra Buttons A -->
+                <div id="basketballBtnsA" style="display: none; gap: 6px; margin-bottom: 8px; width: 100%;">
+                    <button id="scoreAPlus2Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+2</button>
+                    <button id="scoreAPlus3Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #8b5cf6, #5b21b6); color: white; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+3</button>
+                </div>
                 <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
                 <div class="clean-score-display" id="scoreA">0</div>
-                <button id="scoreAMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                <button id="scoreAMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
             </div>
 
             <!-- Center -->
@@ -2736,16 +2789,24 @@
                 <button id="swapScoreBtn" class="btn-warning"
                     style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Swap Score Sides"><i
                         class="fas fa-exchange-alt"></i></button>
+                <button id="undoScoreBtn" class="btn-secondary"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0; background: #64748b; color: white;" title="Undo Last Score"><i
+                        class="fas fa-undo"></i></button>
                 <button id="resetScoreBtn" class="btn-secondary"
-                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Reset Scores"><i
                         class="fas fa-sync-alt"></i></button>
             </div>
 
             <!-- Team B -->
             <div class="score-col-team">
+                <!-- Basketball Extra Buttons B -->
+                <div id="basketballBtnsB" style="display: none; gap: 6px; margin-bottom: 8px; width: 100%;">
+                    <button id="scoreBPlus2Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+2</button>
+                    <button id="scoreBPlus3Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #8b5cf6, #5b21b6); color: white; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+3</button>
+                </div>
                 <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
                 <div class="clean-score-display" id="scoreB">0</div>
-                <button id="scoreBMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                <button id="scoreBMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
             </div>
         </div>
     </div>
@@ -2846,7 +2907,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - V2.9.4 (อัพเดต: 27 เม.ย. 2026)
+            <span data-lang="footerAppName"></span> - V2.9.5 (อัพเดต: 5 มิถุนายน 2569)
         </div>
     </div>
     </div>
@@ -2857,7 +2918,9 @@
         <h3><i class="fas fa-cog"></i> <span data-lang="detailsTitle"></span></h3>
 
         <!-- Settings Tabs -->
-        <div class="settings-tabs" id="settingsTabs">
+        <div class="settings-tabs-wrapper">
+            <button type="button" class="settings-tabs-arrow" id="settingsTabArrowLeft"><i class="fas fa-chevron-left"></i></button>
+            <div class="settings-tabs" id="settingsTabs">
             <button class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
             <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
@@ -2868,6 +2931,8 @@
             <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
                 Display</button>
             <button class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
+            </div>
+            <button type="button" class="settings-tabs-arrow" id="settingsTabArrowRight"><i class="fas fa-chevron-right"></i></button>
         </div>
 
         <!-- Tab 1: General / Announce -->
