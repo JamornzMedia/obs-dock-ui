@@ -1713,23 +1713,52 @@
         }
 
         /* V2.9.2 Settings Tabs */
+        .settings-tabs-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            margin-bottom: 20px;
+            width: 100%;
+        }
         .settings-tabs {
             display: flex;
             flex-wrap: nowrap;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             gap: 6px;
-            margin-bottom: 20px;
             background: rgba(15, 23, 42, 0.6);
             padding: 6px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             justify-content: flex-start;
             scrollbar-width: none; /* Firefox */
+            flex-grow: 1;
+            scroll-behavior: smooth;
         }
 
         .settings-tabs::-webkit-scrollbar {
             display: none; /* Safari and Chrome */
+        }
+
+        .settings-tabs-arrow {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .settings-tabs-arrow:hover {
+            background: var(--accent-color);
+            color: #fff;
         }
 
         .settings-tab-btn {
@@ -2889,7 +2918,9 @@
         <h3><i class="fas fa-cog"></i> <span data-lang="detailsTitle"></span></h3>
 
         <!-- Settings Tabs -->
-        <div class="settings-tabs" id="settingsTabs">
+        <div class="settings-tabs-wrapper">
+            <button type="button" class="settings-tabs-arrow" id="settingsTabArrowLeft"><i class="fas fa-chevron-left"></i></button>
+            <div class="settings-tabs" id="settingsTabs">
             <button class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
             <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
@@ -2900,6 +2931,8 @@
             <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
                 Display</button>
             <button class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
+            </div>
+            <button type="button" class="settings-tabs-arrow" id="settingsTabArrowRight"><i class="fas fa-chevron-right"></i></button>
         </div>
 
         <!-- Tab 1: General / Announce -->

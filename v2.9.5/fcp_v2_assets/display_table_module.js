@@ -19,7 +19,11 @@ let dtSettings = {
   alt_bg_color: '#1e293b',
   border_color: '#334155',
   font_size: '16',
-  row_range: '1-10'
+  row_range: '1-10',
+  table_title: 'ผลคะแนน',
+  show_header: true,
+  score_bg_color: '#f59e0b',
+  score_text_color: '#000000'
 };
 
 // Load settings
@@ -134,9 +138,28 @@ function injectDisplayTableTab() {
 
     </div>
 
-    <!-- Table Colors styling -->
+    <!-- Table Colors & Header styling -->
     <div style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
-      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 Custom Table Colors / ปรับแต่งสีตาราง</div>
+      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 Custom Table & Header / ตารางและหัวข้อ</div>
+      
+      <!-- Header Settings -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; font-size: 12px; color: #cbd5e1; margin-bottom: 10px; align-items: flex-end;">
+        <div>
+          <span style="display:block;margin-bottom:2px;">Table Title / ชื่อหัวตาราง</span>
+          <input type="text" id="dt-table-title" value="${dtSettings.table_title || 'ผลคะแนน'}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:4px;">
+          <span style="display:block;margin-bottom:6px;font-size:11px;">Show Header</span>
+          <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
+            <div class="toggle-switch">
+              <input type="checkbox" id="dt-show-header" ${dtSettings.show_header !== false ? 'checked' : ''}>
+              <span class="slider"></span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Colors Grid -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #cbd5e1;">
         <div>
           <span style="display:block;margin-bottom:2px;">Background BG</span>
@@ -153,6 +176,14 @@ function injectDisplayTableTab() {
         <div>
           <span style="display:block;margin-bottom:2px;">Border Color</span>
           <input type="color" id="dt-color-border" value="${dtSettings.border_color}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">Score Badge BG</span>
+          <input type="color" id="dt-color-score-bg" value="${dtSettings.score_bg_color || '#f59e0b'}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">Score Badge Text</span>
+          <input type="color" id="dt-color-score-text" value="${dtSettings.score_text_color || '#000000'}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
         </div>
       </div>
     </div>
@@ -200,7 +231,11 @@ function injectDisplayTableTab() {
 
   document.getElementById('dt-font-size').addEventListener('change', e => { dtSettings.font_size = e.target.value; saveSettings(); });
 
-  const colorPickers = ['dt-color-bg', 'dt-color-text', 'dt-color-alt-bg', 'dt-color-border'];
+  document.getElementById('dt-table-title').addEventListener('change', e => { dtSettings.table_title = e.target.value; saveSettings(); });
+
+  document.getElementById('dt-show-header').addEventListener('change', e => { dtSettings.show_header = e.target.checked; saveSettings(); });
+
+  const colorPickers = ['dt-color-bg', 'dt-color-text', 'dt-color-alt-bg', 'dt-color-border', 'dt-color-score-bg', 'dt-color-score-text'];
   colorPickers.forEach(id => {
     document.getElementById(id).addEventListener('change', e => {
       const key = id.replace('dt-color-', '').replace('-', '_') + '_color';
@@ -412,7 +447,11 @@ async function broadcastTableData() {
       columnsOrder: orderArray.filter(col => dtSettings.columns[col] !== false),
       fontFamily: localStorage.getItem('vb_custom_font_family') || 'Prompt, sans-serif',
       customFontData: localStorage.getItem('vb_custom_font_data') || '',
-      logoCache: JSON.parse(localStorage.getItem('logoDataCache') || '{}')
+      logoCache: JSON.parse(localStorage.getItem('logoDataCache') || '{}'),
+      tableTitle: dtSettings.table_title || 'ผลคะแนน',
+      showHeader: dtSettings.show_header !== false,
+      scoreBgColor: dtSettings.score_bg_color || '#f59e0b',
+      scoreTextColor: dtSettings.score_text_color || '#000000'
     },
     data: tableData
   };

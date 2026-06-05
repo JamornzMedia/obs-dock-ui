@@ -184,7 +184,10 @@ const switchSettingsTab = (tabName) => {
     const targetPanel = document.getElementById(tabName);
     if (targetPanel) targetPanel.classList.add('active');
     const targetBtn = document.querySelector(`.settings-tab-btn[data-tab="${tabName}"]`);
-    if (targetBtn) targetBtn.classList.add('active');
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 };
 
 // --- V2.9.2: Confirm Reset Dialog ---
@@ -1759,6 +1762,32 @@ const setupEventListeners = () => {
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
     });
+
+    // Settings Tab Arrow Navigation
+    const arrowLeft = document.getElementById('settingsTabArrowLeft');
+    const arrowRight = document.getElementById('settingsTabArrowRight');
+    const settingsTabs = document.getElementById('settingsTabs');
+
+    if (arrowLeft && arrowRight && settingsTabs) {
+        arrowLeft.addEventListener('click', () => {
+            const btns = Array.from(settingsTabs.querySelectorAll('.settings-tab-btn'));
+            const activeIdx = btns.findIndex(btn => btn.classList.contains('active'));
+            if (activeIdx > 0) {
+                btns[activeIdx - 1].click();
+            } else if (btns.length > 0) {
+                btns[btns.length - 1].click();
+            }
+        });
+        arrowRight.addEventListener('click', () => {
+            const btns = Array.from(settingsTabs.querySelectorAll('.settings-tab-btn'));
+            const activeIdx = btns.findIndex(btn => btn.classList.contains('active'));
+            if (activeIdx >= 0 && activeIdx < btns.length - 1) {
+                btns[activeIdx + 1].click();
+            } else if (btns.length > 0) {
+                btns[0].click();
+            }
+        });
+    }
     // V2.9.2: Color Count listener
     if (elements.colorCountSelect) {
         elements.colorCountSelect.addEventListener('change', (e) => {
@@ -2976,7 +3005,9 @@ window.broadcastToMobile = () => {
         half: elements.halfText.textContent,
         injury: elements.injuryTimeDisplay.textContent,
         isPaused: !interval,
-        actions: actions // Added Actions List
+        actions: actions, // Added Actions List
+        sport: localStorage.getItem('vb_sport') || 'volleyball',
+        vbEnabled: localStorage.getItem('vb_enabled') !== 'false'
     };
 
     hostConn.forEach(conn => {
@@ -2998,6 +3029,22 @@ function handleMobileCommand(data) {
             } else {
                 changeScore(data.team, data.delta);
             }
+            break;
+
+        case 'undo':
+            undoLastScore();
+            break;
+
+        case 'swap':
+            swapTeams();
+            break;
+
+        case 'resetscores':
+            resetScore();
+            break;
+
+        case 'resetscores2':
+            resetScore2();
             break;
 
         case 'timer':

@@ -14,6 +14,8 @@
     --alt-bg-color: #1e293b;
     --border-color: #334155;
     --font-size: 16px;
+    --score-bg-color: #f59e0b;
+    --score-text-color: #000000;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -101,13 +103,13 @@
   /* Score styling */
   .score-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #000;
+    background: var(--score-bg-color);
+    color: var(--score-text-color);
     font-weight: 800;
     padding: 4px 14px;
     border-radius: 20px;
     font-size: calc(var(--font-size) + 1px);
-    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   }
 
   /* Serve / Serve status inside table */
@@ -187,6 +189,8 @@
     if (settings.altBgColor) root.style.setProperty('--alt-bg-color', settings.altBgColor);
     if (settings.borderColor) root.style.setProperty('--border-color', settings.borderColor);
     if (settings.fontSize) root.style.setProperty('--font-size', settings.fontSize);
+    if (settings.scoreBgColor) root.style.setProperty('--score-bg-color', settings.scoreBgColor);
+    if (settings.scoreTextColor) root.style.setProperty('--score-text-color', settings.scoreTextColor);
 
     // Font family override
     if (settings.fontFamily) {
@@ -197,13 +201,24 @@
     }
 
     // Render headers
-    headerRow.innerHTML = '';
     const columns = settings.columnsOrder || [];
-    columns.forEach(col => {
-      const th = document.createElement('th');
-      th.textContent = col;
-      headerRow.appendChild(th);
-    });
+    const showHeader = (settings.showHeader !== false);
+    const tableHeader = document.querySelector('#display-table thead');
+    
+    if (tableHeader) {
+      if (showHeader && columns.length > 0) {
+        tableHeader.style.display = '';
+        headerRow.innerHTML = '';
+        const th = document.createElement('th');
+        th.setAttribute('colspan', columns.length.toString());
+        th.style.textAlign = 'center';
+        th.style.fontSize = 'calc(var(--font-size) + 4px)';
+        th.textContent = settings.tableTitle || 'ผลคะแนน';
+        headerRow.appendChild(th);
+      } else {
+        tableHeader.style.display = 'none';
+      }
+    }
 
     // Render body
     tableBody.innerHTML = '';

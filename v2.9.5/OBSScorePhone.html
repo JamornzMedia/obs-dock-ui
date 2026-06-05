@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
     <title>OBSScore Remote V2.9.5</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -46,7 +46,7 @@
             font-family: 'Inter', system-ui, sans-serif;
             font-size: 14px;
             touch-action: manipulation;
-            overflow: hidden;
+            overflow-y: auto;
         }
 
         /* ── LOGIN SCREEN ── */
@@ -282,11 +282,6 @@
         }
 
         /* ── TEAM SCORE CARDS ── */
-        .teams-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
 
         .team-card {
             background: var(--card);
@@ -384,37 +379,64 @@
             color: white;
         }
 
-        .score-btns {
+        .score-btns-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             width: 100%;
+            margin-top: 10px;
         }
 
-        .btn-score {
+        .btn-score-new {
             border: none;
             border-radius: var(--radius-sm);
             color: white;
             font-size: 1.4rem;
             font-weight: 700;
-            padding: 10px 0;
+            padding: 18px 0;
             cursor: pointer;
             transition: all 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
         }
 
-        .btn-score.minus {
-            background: linear-gradient(180deg, var(--danger), var(--danger2));
+        .btn-score-new:active {
+            transform: scale(0.95);
         }
 
-        .btn-score.plus {
-            background: linear-gradient(180deg, var(--success), var(--success2));
+        .btn-score-new.plus-1 {
+            background: linear-gradient(135deg, var(--success), var(--success2));
         }
 
-        .btn-score:active {
-            transform: scale(0.93);
+        .btn-score-new.plus-2 {
+            background: linear-gradient(135deg, #fb923c, #ea580c);
+        }
+
+        .btn-score-new.plus-3 {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+        }
+
+        .btn-score-new.minus-1 {
+            background: linear-gradient(135deg, var(--danger), var(--danger2));
+            grid-column: span 3;
+            font-size: 1.1rem;
+            padding: 12px 0;
+        }
+
+        /* Responsive Layout Grid */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        @media (orientation: portrait) {
+            .teams-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .score2-row {
@@ -919,9 +941,11 @@
                 </div>
                 <!-- Score -->
                 <div class="score-big" id="score-a">0</div>
-                <div class="score-btns">
-                    <button class="btn-score minus" onclick="sendScore('A', -1)"><i class="fas fa-minus"></i></button>
-                    <button class="btn-score plus" onclick="sendScore('A', 1)"><i class="fas fa-plus"></i></button>
+                <div class="score-btns-grid">
+                    <button class="btn-score-new plus-1" id="plus-1-a" onclick="sendScore('A', 1)">+1</button>
+                    <button class="btn-score-new plus-2" id="plus-2-a" onclick="sendScore('A', 2)">+2</button>
+                    <button class="btn-score-new plus-3" id="plus-3-a" onclick="sendScore('A', 3)">+3</button>
+                    <button class="btn-score-new minus-1" onclick="sendScore('A', -1)"><i class="fas fa-minus" style="margin-right: 4px;"></i> คะแนน / -1</button>
                 </div>
                 <div class="score2-row">
                     <div style="display:flex;flex-direction:column;align-items:center;">
@@ -956,9 +980,11 @@
                 </div>
                 <!-- Score -->
                 <div class="score-big" id="score-b">0</div>
-                <div class="score-btns">
-                    <button class="btn-score minus" onclick="sendScore('B', -1)"><i class="fas fa-minus"></i></button>
-                    <button class="btn-score plus" onclick="sendScore('B', 1)"><i class="fas fa-plus"></i></button>
+                <div class="score-btns-grid">
+                    <button class="btn-score-new plus-1" id="plus-1-b" onclick="sendScore('B', 1)">+1</button>
+                    <button class="btn-score-new plus-2" id="plus-2-b" onclick="sendScore('B', 2)">+2</button>
+                    <button class="btn-score-new plus-3" id="plus-3-b" onclick="sendScore('B', 3)">+3</button>
+                    <button class="btn-score-new minus-1" onclick="sendScore('B', -1)"><i class="fas fa-minus" style="margin-right: 4px;"></i> คะแนน / -1</button>
                 </div>
                 <div class="score2-row">
                     <div style="display:flex;flex-direction:column;align-items:center;">
@@ -972,6 +998,29 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Central Controls Card -->
+        <div class="card" style="padding:10px 14px;">
+            <div class="section-header"><i class="fas fa-sliders" style="margin-right: 6px;"></i> Control Dashboard / แผงควบคุม</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <button class="btn-ctrl orange" onclick="sendCmd('swap')" style="padding:12px;border-radius:10px;font-size:0.8rem;background:linear-gradient(135deg, #f59e0b, #d97706); width: 100%;">
+                    <i class="fas fa-arrows-rotate" style="font-size:1.1rem;margin-bottom:4px;"></i>
+                    สลับฝั่ง / Swap
+                </button>
+                <button class="btn-ctrl orange" onclick="sendCmd('undo')" style="padding:12px;border-radius:10px;font-size:0.8rem;background:linear-gradient(135deg, #3b82f6, #1d4ed8); width: 100%;">
+                    <i class="fas fa-undo" style="font-size:1.1rem;margin-bottom:4px;"></i>
+                    ย้อนกลับ / Undo
+                </button>
+                <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+                    <button class="btn-ctrl red" onclick="if(confirm('Reset Scores?')) sendCmd('resetscores')" style="padding:6px;border-radius:6px;font-size:0.65rem;width:100%;height:100%;justify-content:center;">
+                        <i class="fas fa-rotate-left"></i> Reset Main
+                    </button>
+                    <button class="btn-ctrl red" onclick="if(confirm('Reset Fouls/Sub?')) sendCmd('resetscores2')" style="padding:6px;border-radius:6px;font-size:0.65rem;width:100%;height:100%;justify-content:center;background:linear-gradient(180deg, #dc2626, #991b1b);">
+                        <i class="fas fa-rotate-left"></i> Reset Fouls
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Timer Card -->
@@ -1398,6 +1447,31 @@
                             Retry
                         </button>
                     </div>`;
+            }
+
+            // Sport specific +2 +3 score buttons toggle
+            const isBasketball = (data.sport === 'basketball' || data.sport === 'streetball') && (data.vbEnabled !== false);
+            
+            const p1A = document.getElementById('plus-1-a');
+            const p2A = document.getElementById('plus-2-a');
+            const p3A = document.getElementById('plus-3-a');
+            const p1B = document.getElementById('plus-1-b');
+            const p2B = document.getElementById('plus-2-b');
+            const p3B = document.getElementById('plus-3-b');
+
+            if (p1A && p2A && p3A) {
+                p2A.style.display = isBasketball ? 'flex' : 'none';
+                p3A.style.display = isBasketball ? 'flex' : 'none';
+                p1A.style.gridColumn = isBasketball ? '' : 'span 3';
+                p1A.style.fontSize = isBasketball ? '1.4rem' : '1.8rem';
+                p1A.style.padding = isBasketball ? '18px 0' : '22px 0';
+            }
+            if (p1B && p2B && p3B) {
+                p2B.style.display = isBasketball ? 'flex' : 'none';
+                p3B.style.display = isBasketball ? 'flex' : 'none';
+                p1B.style.gridColumn = isBasketball ? '' : 'span 3';
+                p1B.style.fontSize = isBasketball ? '1.4rem' : '1.8rem';
+                p1B.style.padding = isBasketball ? '18px 0' : '22px 0';
             }
         }
 

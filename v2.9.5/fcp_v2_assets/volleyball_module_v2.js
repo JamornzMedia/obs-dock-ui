@@ -117,6 +117,7 @@ function broadcast() {
     autoServe: getVbState(VB_AUTO_SERVE_KEY, 'true') === 'true',
     timeoutActive: getVbState(VB_TIMEOUT_ACTIVE_KEY, ''),
     sport: getVbState('vb_sport', 'volleyball'),
+    showServeBall: getVbState('vb_show_serve_ball', 'true') === 'true',
     colorActiveScore: getVbState('vb_color_active_score', '#0369a1'),
     colorActiveScoreText: getVbState('vb_color_active_score_text', '#ffffff'),
     colorSetsBg: getVbState('vb_color_sets_bg', '#16a34a'),
@@ -337,7 +338,8 @@ function updateMainPanelUI(state) {
   panel.style.display = 'block';
 
   const sport = state.sport || 'volleyball';
-  const serveSupport = (sport === 'volleyball' || sport === 'badminton');
+  const showServeBall = (state.showServeBall !== false);
+  const serveSupport = showServeBall;
   const timeoutSupport = (sport !== 'badminton');
 
   const serveA = document.getElementById('vb-serve-a');
@@ -347,8 +349,16 @@ function updateMainPanelUI(state) {
   const toA = toAToggle ? toAToggle.parentElement : null;
   const toB = toBToggle ? toBToggle.parentElement : null;
 
-  if (serveA) serveA.style.display = serveSupport ? 'block' : 'none';
-  if (serveB) serveB.style.display = serveSupport ? 'block' : 'none';
+  const emoji = getSportEmoji(sport);
+
+  if (serveA) {
+    serveA.innerHTML = `${emoji} Serve A`;
+    serveA.style.display = serveSupport ? 'block' : 'none';
+  }
+  if (serveB) {
+    serveB.innerHTML = `${emoji} Serve B`;
+    serveB.style.display = serveSupport ? 'block' : 'none';
+  }
   if (toA) toA.style.display = timeoutSupport ? 'flex' : 'none';
   if (toB) toB.style.display = timeoutSupport ? 'flex' : 'none';
 
@@ -507,12 +517,28 @@ function updatePointHistoryList() {
 }
 window.updatePointHistoryList = updatePointHistoryList;
 
+function getSportEmoji(sport) {
+  switch (sport) {
+    case 'basketball':
+    case 'streetball':
+      return '🏀';
+    case 'football':
+      return '⚽';
+    case 'badminton':
+      return '🏸';
+    case 'volleyball':
+    default:
+      return '🏐';
+  }
+}
+
 function updateSportUI() {
   const sport = localStorage.getItem('vb_sport') || 'volleyball';
+  const vbEnabled = localStorage.getItem('vb_enabled') !== 'false';
   const btnsA = document.getElementById('basketballBtnsA');
   const btnsB = document.getElementById('basketballBtnsB');
   
-  if (sport === 'basketball' || sport === 'streetball') {
+  if (vbEnabled && (sport === 'basketball' || sport === 'streetball')) {
     if (btnsA) btnsA.style.display = 'flex';
     if (btnsB) btnsB.style.display = 'flex';
   } else {
@@ -568,6 +594,20 @@ function injectSettingsTab() {
       <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
         <div class="toggle-switch">
           <input type="checkbox" id="vb2-enabled-toggle" ${enabled ? 'checked' : ''}>
+          <span class="slider"></span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Show Serve Ball Toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
+      <div>
+        <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">แสดงตัวระบุครองบอล/เสิร์ฟ / Show Serve/Possession Ball</div>
+        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">แสดงสัญลักษณ์ลูกบอลแสดงสิทธิ์เสิร์ฟหรือครองบอลบนหน้าจอควบคุมและโอเวอร์เลย์</div>
+      </div>
+      <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
+        <div class="toggle-switch">
+          <input type="checkbox" id="vb2-show-serve-ball-toggle" ${getVbState('vb_show_serve_ball', 'true') === 'true' ? 'checked' : ''}>
           <span class="slider"></span>
         </div>
       </label>
@@ -844,6 +884,13 @@ function injectSettingsTab() {
     document.getElementById('vb2-scores-section').style.opacity     = e.target.checked ? '1' : '0.4';
     document.getElementById('vb2-scores-section').style.pointerEvents = e.target.checked ? '' : 'none';
     updateMainPanelUI(readScores());
+    if (window.updateSportUI) window.updateSportUI();
+  });
+
+  // Show Serve Ball toggle
+  document.getElementById('vb2-show-serve-ball-toggle').addEventListener('change', e => {
+    localStorage.setItem('vb_show_serve_ball', e.target.checked ? 'true' : 'false');
+    broadcast();
   });
   
   // Sport select

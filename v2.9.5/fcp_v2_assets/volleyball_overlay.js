@@ -100,7 +100,8 @@ function renderScoreboard(newState, prevState) {
     maxSets, setLimit, finalSetLimit, timeoutsA, timeoutsB,
     sport, colorActiveScore, colorActiveScoreText, colorSetsBg,
     colorSetsText, colorLogoBg, colorText, colorServe,
-    customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore
+    customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore,
+    showServeBall
   } = newState;
 
   // Custom CSS properties
@@ -181,8 +182,24 @@ function renderScoreboard(newState, prevState) {
 
   // Sport support variables
   const activeSport = sport || 'volleyball';
-  const serveSupport = (activeSport === 'volleyball' || activeSport === 'badminton');
+  const serveSupport = (showServeBall !== false);
   const timeoutSupport = (activeSport !== 'badminton');
+
+  const getSportEmoji = (sp) => {
+    switch (sp) {
+      case 'basketball':
+      case 'streetball':
+        return '🏀';
+      case 'football':
+        return '⚽';
+      case 'badminton':
+        return '🏸';
+      case 'volleyball':
+      default:
+        return '🏐';
+    }
+  };
+  const currentEmoji = getSportEmoji(activeSport);
 
   // Serve
   const elServeA = document.getElementById('serveA');
@@ -191,14 +208,14 @@ function renderScoreboard(newState, prevState) {
     elServeA.style.display = serveSupport ? 'block' : 'none';
     if (serveSupport) {
       elServeA.className = 'serve-indicator' + (serve === 'A' ? ' active' : '');
-      elServeA.textContent = '🏐';
+      elServeA.textContent = currentEmoji;
     }
   }
   if (elServeB) {
     elServeB.style.display = serveSupport ? 'block' : 'none';
     if (serveSupport) {
       elServeB.className = 'serve-indicator' + (serve === 'B' ? ' active' : '');
-      elServeB.textContent = '🏐';
+      elServeB.textContent = currentEmoji;
     }
   }
 
