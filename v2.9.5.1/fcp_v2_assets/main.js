@@ -1127,6 +1127,18 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 };
 
 const applyMatch = () => {
+    // Uncheck and reset bib overrides when match ID changes
+    const bibToggleA = document.getElementById('bibOverrideA');
+    if (bibToggleA && bibToggleA.checked) {
+        bibToggleA.checked = false;
+        bibToggleA.dispatchEvent(new Event('change'));
+    }
+    const bibToggleB = document.getElementById('bibOverrideB');
+    if (bibToggleB && bibToggleB.checked) {
+        bibToggleB.checked = false;
+        bibToggleB.dispatchEvent(new Event('change'));
+    }
+
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
     const header = sheetData[0];
@@ -1161,6 +1173,18 @@ const applyMatch = () => {
 };
 
 const swapTeams = () => {
+    // Uncheck bib overrides on swap to prevent incorrect original color restore behavior
+    const bibToggleA = document.getElementById('bibOverrideA');
+    if (bibToggleA && bibToggleA.checked) {
+        bibToggleA.checked = false;
+        bibToggleA.dispatchEvent(new Event('change'));
+    }
+    const bibToggleB = document.getElementById('bibOverrideB');
+    if (bibToggleB && bibToggleB.checked) {
+        bibToggleB.checked = false;
+        bibToggleB.dispatchEvent(new Event('change'));
+    }
+
     [masterTeamA, masterTeamB] = [masterTeamB, masterTeamA];
     const tempA = { ...masterTeamA };
     const tempB = { ...masterTeamB };
@@ -1255,6 +1279,18 @@ const resetScore2 = () => {
 
 const fullReset = () => {
     pushResetHistory();
+    // Uncheck and reset bib overrides on full reset
+    const bibToggleA = document.getElementById('bibOverrideA');
+    if (bibToggleA && bibToggleA.checked) {
+        bibToggleA.checked = false;
+        bibToggleA.dispatchEvent(new Event('change'));
+    }
+    const bibToggleB = document.getElementById('bibOverrideB');
+    if (bibToggleB && bibToggleB.checked) {
+        bibToggleB.checked = false;
+        bibToggleB.dispatchEvent(new Event('change'));
+    }
+
     masterTeamA.score = masterTeamB.score = 0;
     masterTeamA.score2 = masterTeamB.score2 = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
@@ -1370,7 +1406,37 @@ const toggleHalf = () => {
     if (currentIndex === -1) currentIndex = 0;
 
     let nextIndex = (currentIndex + 1) % activeHalves.length;
-    half = activeHalves[nextIndex];
+    const nextHalf = activeHalves[nextIndex];
+
+    // Check if bib overrides are active before changing half/round back to 1st
+    const bibOverrideA = document.getElementById('bibOverrideA');
+    const bibOverrideB = document.getElementById('bibOverrideB');
+    const hasBib = (bibOverrideA && bibOverrideA.checked) || (bibOverrideB && bibOverrideB.checked);
+    if (nextHalf === '1st' && hasBib) {
+        if (confirm("คุณต้องการสลับทีมที่ใส่เสื้อเอี้ยม (สีชั่วคราว) สำหรับครึ่งแรกใหม่หรือไม่?\n(ตกลง = สลับทีมที่ใส่เสื้อเอี้ยม, ยกเลิก = ปิดการใช้งานเสื้อเอี้ยมทั้งหมด)")) {
+            // Swap the checkbox checked states
+            const aChecked = bibOverrideA ? bibOverrideA.checked : false;
+            const bChecked = bibOverrideB ? bibOverrideB.checked : false;
+            if (aChecked !== bChecked) {
+                if (bibOverrideA) bibOverrideA.checked = bChecked;
+                if (bibOverrideB) bibOverrideB.checked = aChecked;
+                if (bibOverrideA) bibOverrideA.dispatchEvent(new Event('change'));
+                if (bibOverrideB) bibOverrideB.dispatchEvent(new Event('change'));
+            }
+        } else {
+            // Turn off bib overrides on both teams
+            if (bibOverrideA && bibOverrideA.checked) {
+                bibOverrideA.checked = false;
+                bibOverrideA.dispatchEvent(new Event('change'));
+            }
+            if (bibOverrideB && bibOverrideB.checked) {
+                bibOverrideB.checked = false;
+                bibOverrideB.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+
+    half = nextHalf;
 
     // V2.9.2: Styled Half Text
     const html = `<span class="half-ordinal">${half}</span>`;
@@ -1401,6 +1467,7 @@ const handleExcel = () => {
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
+                window.currentWorkbook = workbook; // Save globally for Display Table
                 // V2.9.3: Use selected sheet tab index (re-read from localStorage)
                 const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
                 const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
@@ -1443,6 +1510,7 @@ const fetchGoogleSheet = async () => {
         loadingToast.remove();
 
         const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        window.currentWorkbook = workbook; // Save globally for Display Table
         // V2.9.3: Use selected sheet tab index (re-read from localStorage)
         const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
         const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
@@ -3187,6 +3255,91 @@ window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.2';
-import './display_table_module.js?v=2.9.5.2';
+import './volleyball_module_v2.js?v=2.9.5.1';
+import './display_table_module.js?v=2.9.5.1';
+import { VERSION, UPDATE_DATE } from './version.js';
+
+const versionTextEl = document.getElementById('fcp-version-text');
+const updateDateTextEl = document.getElementById('fcp-update-date-text');
+if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
+if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
+document.title = 'FCP V' + VERSION;
+
+// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
+const initBibOverride = (team) => {
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const bibColors = document.getElementById(`bibColors${team}`);
+    const bibCustomColor = document.getElementById(`bibCustomColor${team}`);
+    const colorInput = document.getElementById(`color${team}`);
+    const defaultBibColor = team === 'A' ? '#84cc16' : '#f97316';
+
+    if (bibToggle && colorInput) {
+        // Clear stale original color backups and active bib color selections on load to ensure clean state
+        localStorage.removeItem(`original_color_${team.toLowerCase()}`);
+        localStorage.removeItem(`bib_active_color_${team.toLowerCase()}`);
+
+        bibToggle.addEventListener('change', e => {
+            if (e.target.checked) {
+                // Save original color if not already overridden
+                if (!localStorage.getItem(`original_color_${team.toLowerCase()}`)) {
+                    localStorage.setItem(`original_color_${team.toLowerCase()}`, colorInput.value);
+                }
+                if (bibColors) bibColors.style.display = 'flex';
+                
+                // Apply active bib color
+                const bibColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultBibColor;
+                colorInput.value = bibColor;
+                if (bibCustomColor) bibCustomColor.value = bibColor;
+                
+                // Trigger events to update overlays
+                colorInput.dispatchEvent(new Event('input'));
+                colorInput.dispatchEvent(new Event('change'));
+            } else {
+                if (bibColors) bibColors.style.display = 'none';
+                
+                // Restore original color
+                const original = localStorage.getItem(`original_color_${team.toLowerCase()}`);
+                if (original) {
+                    colorInput.value = original;
+                    localStorage.removeItem(`original_color_${team.toLowerCase()}`);
+                    
+                    colorInput.dispatchEvent(new Event('input'));
+                    colorInput.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+
+        if (bibCustomColor) {
+            const handleCustomColor = e => {
+                localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, e.target.value);
+                if (bibToggle.checked) {
+                    colorInput.value = e.target.value;
+                    colorInput.dispatchEvent(new Event('input'));
+                    colorInput.dispatchEvent(new Event('change'));
+                }
+            };
+            bibCustomColor.addEventListener('input', handleCustomColor);
+            bibCustomColor.addEventListener('change', handleCustomColor);
+        }
+
+        if (bibColors) {
+            const btns = bibColors.querySelectorAll('.bib-color-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = btn.getAttribute('data-color');
+                    localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, color);
+                    if (bibCustomColor) bibCustomColor.value = color;
+                    if (bibToggle.checked) {
+                        colorInput.value = color;
+                        colorInput.dispatchEvent(new Event('input'));
+                        colorInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+    }
+};
+
+initBibOverride('A');
+initBibOverride('B');
 

@@ -23,7 +23,9 @@ let dtSettings = {
   table_title: 'ผลคะแนน',
   show_header: true,
   score_bg_color: '#f59e0b',
-  score_text_color: '#000000'
+  score_text_color: '#000000',
+  show_control_panel: false,
+  sheet_tab_index: 1
 };
 
 // Load settings
@@ -34,8 +36,22 @@ function loadSettings() {
   } catch (_) {}
 }
 
+function getDisplayTableSheetData() {
+  if (window.currentWorkbook) {
+    const workbook = window.currentWorkbook;
+    const tabIndex = parseInt(dtSettings.sheet_tab_index || 1);
+    const sheetIndex = Math.max(0, Math.min(tabIndex - 1, workbook.SheetNames.length - 1));
+    const sheetName = workbook.SheetNames[sheetIndex];
+    if (sheetName) {
+      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+    }
+  }
+  return window.getSheetData ? window.getSheetData() : [];
+}
+
 function saveSettings() {
   localStorage.setItem(DT_SETTINGS_KEY, JSON.stringify(dtSettings));
+  updateMainControlPanelVisibility();
 }
 
 function getVbState(k, def) {
@@ -115,6 +131,20 @@ function injectDisplayTableTab() {
       ดึงข้อมูลตารางคะแนนจาก Excel หรือ Google Sheets ที่โหลดไว้แล้ว และส่งออกไปยังหน้าจอโอเวอร์เลย์ OBS ที่ออกแบบมาอย่างสวยงาม
     </div>
 
+    <!-- Show Control Panel toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
+      <div>
+        <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">แสดงแผงควบคุมบนหน้าหลัก / Show Control Panel</div>
+        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">แสดงป้ายควบคุมเฉพาะตัวกรองแถว (MatchID) ไว้ที่หน้าหลักใต้กลุ่มเวลา</div>
+      </div>
+      <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
+        <div class="toggle-switch">
+          <input type="checkbox" id="dt-show-control-panel" ${dtSettings.show_control_panel ? 'checked' : ''}>
+          <span class="slider"></span>
+        </div>
+      </label>
+    </div>
+
     <!-- Row Filters -->
     <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
       <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;">🔍 Row Filters / กรองแถว (MatchID)</div>
@@ -126,6 +156,16 @@ function injectDisplayTableTab() {
         style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(34,197,94,0.3);">
         🚀 Confirm & Broadcast Table
       </button>
+    </div>
+
+    <!-- Sheet Tab Index Selection -->
+    <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+      <div style="font-size:.85rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;">📄 Select Sheet Tab / เลือกชีทข้อมูล</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-size:12px;color:#94a3b8;">Sheet Tab Index (ลำดับชีท):</span>
+        <input type="number" id="dt-sheet-tab-index" value="${dtSettings.sheet_tab_index || 1}" min="1" style="width:70px;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;text-align:center;">
+        <span style="font-size:11px;color:#64748b;">(เช่น 1 คือชีทแรก, 2 คือชีทสอง)</span>
+      </div>
     </div>
 
     <!-- Columns Config -->
@@ -229,11 +269,27 @@ function injectDisplayTableTab() {
   // Input changes
   document.getElementById('dt-row-range').addEventListener('change', e => { dtSettings.row_range = e.target.value; saveSettings(); });
 
+  document.getElementById('dt-sheet-tab-index').addEventListener('change', e => {
+    let val = parseInt(e.target.value);
+    if (isNaN(val) || val < 1) val = 1;
+    dtSettings.sheet_tab_index = val;
+    saveSettings();
+    renderDynamicColumns();
+  });
+
   document.getElementById('dt-font-size').addEventListener('change', e => { dtSettings.font_size = e.target.value; saveSettings(); });
 
   document.getElementById('dt-table-title').addEventListener('change', e => { dtSettings.table_title = e.target.value; saveSettings(); });
 
   document.getElementById('dt-show-header').addEventListener('change', e => { dtSettings.show_header = e.target.checked; saveSettings(); });
+
+  const controlPanelToggle = document.getElementById('dt-show-control-panel');
+  if (controlPanelToggle) {
+    controlPanelToggle.addEventListener('change', e => {
+      dtSettings.show_control_panel = e.target.checked;
+      saveSettings();
+    });
+  }
 
   const colorPickers = ['dt-color-bg', 'dt-color-text', 'dt-color-alt-bg', 'dt-color-border', 'dt-color-score-bg', 'dt-color-score-text'];
   colorPickers.forEach(id => {
@@ -315,7 +371,7 @@ function renderDynamicColumns() {
   const container = document.getElementById('dt-columns-list');
   if (!container) return;
 
-  const sheetData = window.getSheetData ? window.getSheetData() : [];
+  const sheetData = getDisplayTableSheetData();
   if (!sheetData || !sheetData.length) {
     container.innerHTML = '<span style="font-size:11px;color:#64748b;padding:5px;">No sheet data loaded. Please fetch GS or load Excel first.</span>';
     return;
@@ -391,7 +447,7 @@ async function broadcastTableData() {
     }
   }
 
-  const sheetData = window.getSheetData ? window.getSheetData() : [];
+  const sheetData = getDisplayTableSheetData();
   if (!sheetData || !sheetData.length) {
     alert('No sheet data loaded to broadcast.');
     return;
@@ -510,9 +566,43 @@ async function createTableSource(btn) {
   }
 }
 
+function updateMainControlPanelVisibility() {
+  const card = document.getElementById('dt-main-control-card');
+  if (card) {
+    card.style.display = dtSettings.show_control_panel ? 'block' : 'none';
+  }
+  // Sync values
+  const mainRangeInput = document.getElementById('dt-main-row-range');
+  if (mainRangeInput) {
+    mainRangeInput.value = dtSettings.row_range || '1-10';
+  }
+  const settingsRangeInput = document.getElementById('dt-row-range');
+  if (settingsRangeInput) {
+    settingsRangeInput.value = dtSettings.row_range || '1-10';
+  }
+}
+
 // Boot
 function dtBoot() {
   injectDisplayTableTab();
+
+  // Wire up main control card elements
+  const mainRangeInput = document.getElementById('dt-main-row-range');
+  if (mainRangeInput) {
+    const handler = e => {
+      dtSettings.row_range = e.target.value;
+      saveSettings();
+    };
+    mainRangeInput.addEventListener('change', handler);
+    mainRangeInput.addEventListener('input', handler);
+  }
+
+  const mainConfirmBtn = document.getElementById('dt-main-confirm-btn');
+  if (mainConfirmBtn) {
+    mainConfirmBtn.addEventListener('click', broadcastTableData);
+  }
+
+  updateMainControlPanelVisibility();
 }
 
 if (document.readyState === 'loading') {
