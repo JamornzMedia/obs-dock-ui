@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+    <title>OBSScore Remote V2.9.5</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --bg2: #0f172a;
+            --card: rgba(30, 41, 59, 0.85);
+            --card-border: rgba(148, 163, 184, 0.12);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent2: #2563eb;
+            --danger: #ef4444;
+            --danger2: #dc2626;
+            --success: #22c55e;
+            --success2: #16a34a;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+            --radius: 14px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 14px;
+            touch-action: manipulation;
+            overflow-y: auto;
+        }
+
+        /* ── LOGIN SCREEN ── */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            background: linear-gradient(160deg, #020617 0%, #0f172a 60%, #1e1b4b 100%);
+        }
+
+        .login-logo {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .login-sub {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+            letter-spacing: 0.05em;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 320px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 28px 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .login-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.8rem;
+            font-family: 'Inter', monospace;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-align: center;
+            padding: 14px 12px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .login-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        .login-btn {
+            width: 100%;
+            margin-top: 16px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .login-btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        .login-status {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--danger);
+            min-height: 20px;
+        }
+
+        .login-footer {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(148, 163, 184, 0.5);
+            font-size: 0.75rem;
+        }
+
+        /* ── MAIN UI ── */
+        #main-ui {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px;
+            gap: 8px;
+        }
+
+        #main-ui.visible {
+            display: flex;
+        }
+
+        /* Custom Scrollbar */
+        #main-ui::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #main-ui::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #main-ui::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 2px;
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            backdrop-filter: blur(12px);
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius);
+            flex-shrink: 0;
+        }
+
+        .topbar-room {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.85);
+            }
+        }
+
+        .topbar-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .topbar-id {
+            font-size: 0.7rem;
+            color: var(--muted);
+            font-family: monospace;
+        }
+
+        .topbar-center {
+            font-weight: 800;
+            font-size: 0.7rem;
+            color: var(--accent);
+            opacity: 0.6;
+            letter-spacing: 0.1em;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .match-badge {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 116, 139, 0.5);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            transition: border-color 0.2s;
+        }
+
+        .match-badge:active {
+            border-color: var(--accent);
+        }
+
+        /* ── TEAM SCORE CARDS ── */
+
+        .team-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .team-color-strip {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--tc1, #3b82f6), var(--tc2, #1e1b4b));
+            transition: background 0.4s;
+        }
+
+        .team-name {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 4px 4px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .team-name:focus {
+            border-bottom-color: var(--accent);
+        }
+
+        /* Color pickers row */
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .color-swatch-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .color-swatch-wrap:active {
+            border-color: var(--accent);
+        }
+
+        .color-swatch-label {
+            font-size: 0.6rem;
+            color: var(--muted);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .color-swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Hidden native color inputs */
+        .hidden-color-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .score-big {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+            color: white;
+        }
+
+        .score-btns-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-score-new {
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            padding: 18px 0;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+
+        .btn-score-new:active {
+            transform: scale(0.95);
+        }
+
+        .btn-score-new.plus-1 {
+            background: linear-gradient(135deg, var(--success), var(--success2));
+        }
+
+        .btn-score-new.plus-2 {
+            background: linear-gradient(135deg, #fb923c, #ea580c);
+        }
+
+        .btn-score-new.plus-3 {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+        }
+
+        .btn-score-new.minus-1 {
+            background: linear-gradient(135deg, var(--danger), var(--danger2));
+            grid-column: span 3;
+            font-size: 1.1rem;
+            padding: 12px 0;
+        }
+
+        /* Responsive Layout Grid */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        @media (orientation: portrait) {
+            .teams-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .score2-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 4px 8px;
+        }
+
+        .score2-label {
+            font-size: 0.65rem;
+            color: var(--warning);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .score2-val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--warning);
+        }
+
+        .score2-btn {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+
+        .score2-btn:active {
+            color: white;
+        }
+
+        /* ── TIMER CARD ── */
+        .timer-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 14px;
+        }
+
+        .timer-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 60px;
+        }
+
+        .half-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .half-label {
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .timer-center {
+            flex: 1;
+            text-align: center;
+        }
+
+        #timer-text {
+            font-size: 2.8rem;
+            font-weight: 800;
+            font-family: 'Inter', monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+            color: #fbbf24;
+            transition: color 0.3s;
+        }
+
+        #timer-text.running {
+            color: #ffffff;
+        }
+
+        .injury-text {
+            font-size: 0.8rem;
+            color: var(--danger);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .timer-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-playpause {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-playpause:active {
+            transform: scale(0.93);
+        }
+
+        /* ── TIMER CONTROLS ── */
+        .timer-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-ctrl {
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 9px 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .btn-ctrl:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .btn-ctrl span {
+            font-size: 1rem;
+        }
+
+        .btn-ctrl i {
+            font-size: 0.8rem;
+        }
+
+        .btn-ctrl.red {
+            background: linear-gradient(180deg, var(--danger), var(--danger2));
+        }
+
+        .btn-ctrl.orange {
+            background: linear-gradient(180deg, #f97316, #ea580c);
+        }
+
+        .btn-ctrl.inj-plus {
+            background: linear-gradient(180deg, #64748b, #475569);
+        }
+
+        .btn-ctrl.inj-minus {
+            background: linear-gradient(180deg, #475569, #334155);
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        /* ── ACTION BUTTONS ── */
+        #action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .action-btn {
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 10px 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        .action-btn:active {
+            transform: scale(0.93);
+        }
+
+        /* ── OBS CONTROL ── */
+        .obs-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-obs-main {
+            width: 100%;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-obs-main:active {
+            transform: scale(0.97);
+        }
+
+        .btn-obs-main.replay {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn-obs-main.main-scene {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+        }
+
+        .btn-obs-main.replay-scene {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+        }
+
+        .obs-scenes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        /* ── DISCONNECT BTN ── */
+        .disconnect-btn {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: rgba(239, 68, 68, 0.6);
+            font-size: 0.8rem;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+
+        .disconnect-btn:active {
+            color: var(--danger);
+        }
+
+        /* ── MATCH POPUP ── */
+        .popup-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            place-items: center;
+        }
+
+        .popup-overlay.visible {
+            display: grid;
+        }
+
+        .popup-box {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 24px;
+            width: calc(100% - 48px);
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .popup-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .popup-counter {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .popup-num {
+            font-size: 4rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: var(--accent);
+            width: 90px;
+            text-align: center;
+        }
+
+        .popup-btn-circle {
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .popup-btn-circle:active {
+            transform: scale(0.92);
+        }
+
+        .popup-btn-circle.red {
+            background: var(--danger);
+        }
+
+        .popup-btn-circle.green {
+            background: var(--success);
+        }
+
+        .popup-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .popup-action-btn {
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .popup-action-btn:active {
+            transform: scale(0.97);
+        }
+
+        .popup-action-btn.cancel {
+            background: #475569;
+        }
+
+        .popup-action-btn.confirm {
+            background: var(--accent);
+        }
+
+        /* ── HELP POPUP ── */
+        .help-box {
+            gap: 12px;
+        }
+
+        .help-item {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .help-item-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .help-item-desc {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .close-btn {
+            width: 100%;
+            border: none;
+            background: rgba(100, 116, 139, 0.4);
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-btn:active {
+            background: rgba(100, 116, 139, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── LOGIN SCREEN ── -->
+    <div id="login-screen">
+        <div class="login-logo">OBSScore</div>
+        <div class="login-sub">Remote Control V2.9.5</div>
+
+        <div class="login-card">
+            <div class="login-label"><i class="fas fa-door-open" style="margin-right:6px;color:#60a5fa"></i>Room ID
+            </div>
+            <input type="tel" id="room-input" class="login-input" maxlength="6" placeholder="000000"
+                oninput="if(this.value.length===6) document.getElementById('connect-btn').focus()">
+            <button id="connect-btn" class="login-btn" onclick="connectToRoom()">
+                <i class="fas fa-plug"></i> เชื่อมต่อ / Connect
+            </button>
+            <div id="status-msg" class="login-status"></div>
+        </div>
+
+        <div class="login-footer">Developed by JamornzMedia</div>
+    </div>
+
+    <!-- ── MAIN UI ── -->
+    <div id="main-ui">
+
+        <!-- Topbar -->
+        <div class="topbar" style="position:relative;">
+            <div class="topbar-room">
+                <div class="topbar-dot"></div>
+                <div>
+                    <div class="topbar-name" id="room-name-display">Room</div>
+                    <div class="topbar-id" id="room-id-display"></div>
+                </div>
+            </div>
+            <div class="topbar-center">OBSScore</div>
+            <div class="topbar-right">
+                <button class="match-badge" onclick="openMatchPopup()">
+                    Match #<span id="current-match-id">1</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden native color inputs (triggered by swatch clicks) -->
+        <input type="color" id="color-a" class="hidden-color-input" value="#3b82f6">
+        <input type="color" id="color-a-2" class="hidden-color-input" value="#1e1b4b">
+        <input type="color" id="color-b" class="hidden-color-input" value="#ef4444">
+        <input type="color" id="color-b-2" class="hidden-color-input" value="#7f1d1d">
+
+        <!-- Teams Score -->
+        <div class="teams-grid">
+
+            <!-- Team A -->
+            <div class="team-card" id="team-a-card">
+                <div class="team-color-strip" id="strip-a" style="--tc1:#3b82f6;--tc2:#1e1b4b;"></div>
+                <input type="text" class="team-name" id="name-a" value="Team A" placeholder="Team A">
+                <!-- Color Pickers for Team A -->
+                <div class="color-row">
+                    <div class="color-swatch-wrap" onclick="document.getElementById('color-a').click()">
+                        <div class="color-swatch" id="swatch-a" style="background:#3b82f6;"></div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                            <span class="color-swatch-label">หลัก</span>
+                        </div>
+                    </div>
+                    <div class="color-swatch-wrap" onclick="document.getElementById('color-a-2').click()">
+                        <div class="color-swatch" id="swatch-a-2" style="background:#1e1b4b;"></div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                            <span class="color-swatch-label">รอง</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Score -->
+                <div class="score-big" id="score-a">0</div>
+                <div class="score-btns-grid">
+                    <button class="btn-score-new plus-1" id="plus-1-a" onclick="sendScore('A', 1)">+1</button>
+                    <button class="btn-score-new plus-2" id="plus-2-a" onclick="sendScore('A', 2)">+2</button>
+                    <button class="btn-score-new plus-3" id="plus-3-a" onclick="sendScore('A', 3)">+3</button>
+                    <button class="btn-score-new minus-1" onclick="sendScore('A', -1)"><i class="fas fa-minus" style="margin-right: 4px;"></i> คะแนน / -1</button>
+                </div>
+                <div class="score2-row">
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <span class="score2-label">Fouls/Sub</span>
+                    </div>
+                    <button class="score2-btn" onclick="sendScore('A', -1, true)"><i class="fas fa-minus"
+                            style="font-size:0.7rem;"></i></button>
+                    <span class="score2-val" id="score2-a">0</span>
+                    <button class="score2-btn" onclick="sendScore('A', 1, true)"><i class="fas fa-plus"
+                            style="font-size:0.7rem;"></i></button>
+                </div>
+            </div>
+
+            <!-- Team B -->
+            <div class="team-card" id="team-b-card">
+                <div class="team-color-strip" id="strip-b" style="--tc1:#ef4444;--tc2:#7f1d1d;"></div>
+                <input type="text" class="team-name" id="name-b" value="Team B" placeholder="Team B">
+                <!-- Color Pickers for Team B -->
+                <div class="color-row">
+                    <div class="color-swatch-wrap" onclick="document.getElementById('color-b').click()">
+                        <div class="color-swatch" id="swatch-b" style="background:#ef4444;"></div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                            <span class="color-swatch-label">หลัก</span>
+                        </div>
+                    </div>
+                    <div class="color-swatch-wrap" onclick="document.getElementById('color-b-2').click()">
+                        <div class="color-swatch" id="swatch-b-2" style="background:#7f1d1d;"></div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                            <span class="color-swatch-label">รอง</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Score -->
+                <div class="score-big" id="score-b">0</div>
+                <div class="score-btns-grid">
+                    <button class="btn-score-new plus-1" id="plus-1-b" onclick="sendScore('B', 1)">+1</button>
+                    <button class="btn-score-new plus-2" id="plus-2-b" onclick="sendScore('B', 2)">+2</button>
+                    <button class="btn-score-new plus-3" id="plus-3-b" onclick="sendScore('B', 3)">+3</button>
+                    <button class="btn-score-new minus-1" onclick="sendScore('B', -1)"><i class="fas fa-minus" style="margin-right: 4px;"></i> คะแนน / -1</button>
+                </div>
+                <div class="score2-row">
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                        <span class="score2-label">Fouls/Sub</span>
+                    </div>
+                    <button class="score2-btn" onclick="sendScore('B', -1, true)"><i class="fas fa-minus"
+                            style="font-size:0.7rem;"></i></button>
+                    <span class="score2-val" id="score2-b">0</span>
+                    <button class="score2-btn" onclick="sendScore('B', 1, true)"><i class="fas fa-plus"
+                            style="font-size:0.7rem;"></i></button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Central Controls Card -->
+        <div class="card" style="padding:10px 14px;">
+            <div class="section-header"><i class="fas fa-sliders" style="margin-right: 6px;"></i> Control Dashboard / แผงควบคุม</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <button class="btn-ctrl orange" onclick="sendCmd('swap')" style="padding:12px;border-radius:10px;font-size:0.8rem;background:linear-gradient(135deg, #f59e0b, #d97706); width: 100%;">
+                    <i class="fas fa-arrows-rotate" style="font-size:1.1rem;margin-bottom:4px;"></i>
+                    สลับฝั่ง / Swap
+                </button>
+                <button class="btn-ctrl orange" onclick="sendCmd('undo')" style="padding:12px;border-radius:10px;font-size:0.8rem;background:linear-gradient(135deg, #3b82f6, #1d4ed8); width: 100%;">
+                    <i class="fas fa-undo" style="font-size:1.1rem;margin-bottom:4px;"></i>
+                    ย้อนกลับ / Undo
+                </button>
+                <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+                    <button class="btn-ctrl red" onclick="if(confirm('Reset Scores?')) sendCmd('resetscores')" style="padding:6px;border-radius:6px;font-size:0.65rem;width:100%;height:100%;justify-content:center;">
+                        <i class="fas fa-rotate-left"></i> Reset Main
+                    </button>
+                    <button class="btn-ctrl red" onclick="if(confirm('Reset Fouls/Sub?')) sendCmd('resetscores2')" style="padding:6px;border-radius:6px;font-size:0.65rem;width:100%;height:100%;justify-content:center;background:linear-gradient(180deg, #dc2626, #991b1b);">
+                        <i class="fas fa-rotate-left"></i> Reset Fouls
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Card -->
+        <div class="card timer-card">
+            <div class="timer-left">
+                <div class="half-label">Half</div>
+                <div class="half-value" id="half-text">1st</div>
+                <button class="btn-ctrl orange" onclick="sendCmd('timer', null, 'half')"
+                    style="padding:6px 10px; border-radius:6px; font-size:0.65rem;">
+                    <i class="fas fa-forward-step"></i> HT
+                </button>
+            </div>
+
+            <div class="timer-center">
+                <div id="timer-text">00:00</div>
+                <div class="injury-text" id="injury-text">+0</div>
+            </div>
+
+            <div class="timer-right">
+                <button class="btn-playpause" id="playpause-btn" onclick="sendCmd('timer', null, 'playpause')">
+                    <i class="fas fa-play" id="playpause-icon"></i>
+                </button>
+                <button class="btn-ctrl red" onclick="sendCmd('timer', null, 'reset')"
+                    style="padding:6px 10px; border-radius:6px; font-size:0.65rem;">
+                    <i class="fas fa-rotate-left"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Injury Time Controls -->
+        <div class="card" style="padding:8px 12px;">
+            <div class="section-header"><i class="fas fa-clock-rotate-left"></i> Injury Time</div>
+            <div class="timer-controls">
+                <button class="btn-ctrl inj-minus" onclick="sendCmd('injury', null, 'minus')">
+                    <i class="fas fa-minus"></i>
+                    <div style="font-size:0.6rem;">ลด</div>
+                </button>
+                <div style="display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:1.4rem; font-weight:800; color:var(--danger);" id="injury-display">+0</span>
+                </div>
+                <button class="btn-ctrl orange" onclick="sendCmd('injury', null, 'plus')">
+                    <i class="fas fa-plus"></i>
+                    <div style="font-size:0.6rem;">เพิ่ม</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card">
+            <div class="section-header"><i class="fas fa-bolt"></i> Actions</div>
+            <div id="action-grid">
+                <div style="grid-column:1/-1; text-align:center; color:var(--muted); font-size:0.8rem; padding:12px;">
+                    Loading actions...
+                </div>
+            </div>
+        </div>
+
+        <!-- OBS Control -->
+        <div class="card">
+            <div class="section-header" style="justify-content:space-between;">
+                <span><i class="fas fa-video"></i> OBS Control</span>
+                <button onclick="openHelpPopup()"
+                    style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;">
+                    <i class="fas fa-circle-question"></i>
+                </button>
+            </div>
+            <div class="obs-grid">
+                <button class="btn-obs-main replay" onclick="sendCmd('obs', null, 'saveReplay')">
+                    <i class="fas fa-floppy-disk"></i> Save Replay Buffer
+                </button>
+                <div class="obs-scenes">
+                    <button class="btn-obs-main replay-scene" onclick="sendCmd('obs', null, 'scene', 'SceneReplay')"
+                        style="font-size:0.85rem; padding:11px;">
+                        <i class="fas fa-film"></i> Scene Replay
+                    </button>
+                    <button class="btn-obs-main main-scene" onclick="sendCmd('obs', null, 'scene', 'MainScene')"
+                        style="font-size:0.85rem; padding:11px;">
+                        <i class="fas fa-tv"></i> Main Scene
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button class="disconnect-btn" onclick="location.reload()">
+            <i class="fas fa-power-off"></i> Disconnect / Reload
+        </button>
+
+    </div><!-- end #main-ui -->
+
+
+    <!-- ── MATCH POPUP ── -->
+    <div id="match-popup" class="popup-overlay">
+        <div class="popup-box">
+            <div class="popup-title">📋 Select Match ID</div>
+            <div class="popup-counter">
+                <button class="popup-btn-circle red" onclick="adjustMatchId(-1)"><i class="fas fa-minus"></i></button>
+                <div class="popup-num" id="popup-match-val">1</div>
+                <button class="popup-btn-circle green" onclick="adjustMatchId(1)"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="popup-actions">
+                <button class="popup-action-btn cancel" onclick="closeMatchPopup()">Cancel</button>
+                <button class="popup-action-btn confirm" onclick="confirmMatchId()">
+                    <i class="fas fa-bolt"></i> LOAD
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── HELP POPUP ── -->
+    <div id="help-popup" class="popup-overlay">
+        <div class="popup-box help-box">
+            <div class="popup-title"><i class="fas fa-circle-info" style="color:var(--accent);"></i> OBS Control Guide
+            </div>
+            <div class="help-item">
+                <div class="help-item-title" style="color:#a78bfa;">💾 Save Replay Buffer</div>
+                <div class="help-item-desc">บันทึก Replay Buffer ใน OBS (ต้องเปิด Replay Buffer ไว้ก่อน)</div>
+            </div>
+            <div class="help-item">
+                <div class="help-item-title" style="color:#818cf8;">🎬 Scene Replay</div>
+                <div class="help-item-desc">สลับไปฉาก <code
+                        style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px;">SceneReplay</code> ใน OBS
+                </div>
+            </div>
+            <div class="help-item">
+                <div class="help-item-title" style="color:#2dd4bf;">📺 Main Scene</div>
+                <div class="help-item-desc">สลับกลับฉากหลัก <code
+                        style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px;">MainScene</code> ใน OBS
+                </div>
+            </div>
+            <button class="close-btn" onclick="closeHelpPopup()">ปิด / Close</button>
+        </div>
+    </div>
+
+
+    <script>
+        // ── FIREBASE CONFIG ──
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            storageBucket: "obscam-p2p.firebasestorage.app",
+            messagingSenderId: "531335072084",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
+
+        let peer, conn;
+        let isPaused = true; // Track timer state for icon
+
+        // Parse URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomUrl = urlParams.get('room');
+
+        window.onload = () => {
+            if (roomUrl) {
+                document.getElementById('room-input').value = roomUrl;
+                // Auto connect after short delay
+                setTimeout(() => connectToRoom(), 300);
+            }
+            setupColorListeners();
+        };
+
+        // ── DEBOUNCE ──
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // ── COLOR PICKER LISTENERS ──
+        function setupColorListeners() {
+            const debouncedUpdateA = debounce(() => updateTeam('A'), 500);
+            const debouncedUpdateB = debounce(() => updateTeam('B'), 500);
+
+            // Color A
+            document.getElementById('color-a').addEventListener('input', (e) => {
+                document.getElementById('swatch-a').style.background = e.target.value;
+                updateColorStrip('a');
+                debouncedUpdateA();
+            });
+            document.getElementById('color-a-2').addEventListener('input', (e) => {
+                document.getElementById('swatch-a-2').style.background = e.target.value;
+                updateColorStrip('a');
+                debouncedUpdateA();
+            });
+
+            // Color B
+            document.getElementById('color-b').addEventListener('input', (e) => {
+                document.getElementById('swatch-b').style.background = e.target.value;
+                updateColorStrip('b');
+                debouncedUpdateB();
+            });
+            document.getElementById('color-b-2').addEventListener('input', (e) => {
+                document.getElementById('swatch-b-2').style.background = e.target.value;
+                updateColorStrip('b');
+                debouncedUpdateB();
+            });
+
+            // Name listeners
+            document.getElementById('name-a').addEventListener('input', debouncedUpdateA);
+            document.getElementById('name-b').addEventListener('input', debouncedUpdateB);
+        }
+
+        function updateColorStrip(team) {
+            const strip = document.getElementById(`strip-${team}`);
+            const c1 = document.getElementById(`color-${team}`).value;
+            const c2 = document.getElementById(`color-${team}-2`).value;
+            if (strip) {
+                strip.style.setProperty('--tc1', c1);
+                strip.style.setProperty('--tc2', c2);
+            }
+        }
+
+        // ── CONNECT TO ROOM ──
+        function connectToRoom() {
+            const rid = document.getElementById('room-input').value.trim();
+            if (rid.length < 6) {
+                showStatus('⚠️ กรุณากรอก Room ID 6 หลัก', true);
+                return;
+            }
+
+            showStatus('🔍 กำลังค้นหาห้อง...');
+
+            database.ref('obs_rooms_score').once('value').then(snap => {
+                if (!snap.exists()) {
+                    showStatus('❌ ไม่พบห้อง! ตรวจสอบว่าเปิด PC แล้ว', true);
+                    return;
+                }
+
+                const allRooms = snap.val();
+                let foundRoom = null;
+                let foundKey = null;
+
+                Object.keys(allRooms).forEach(key => {
+                    const room = allRooms[key];
+                    if (key.startsWith('mobile_') && room.roomID === rid) {
+                        foundRoom = room;
+                        foundKey = key;
+                    }
+                });
+
+                if (!foundRoom) {
+                    showStatus('❌ ไม่พบห้อง! ตรวจสอบ ID อีกครั้ง', true);
+                    return;
+                }
+
+                document.getElementById('room-name-display').textContent = foundRoom.nameMobile || 'Room';
+                document.getElementById('room-id-display').textContent = 'ID: ' + rid;
+
+                const hostPeerId = `fcp-v2-host-${rid}`;
+
+                startPeerConnection(rid, hostPeerId);
+                setupPresence(rid, foundKey);
+
+            }).catch(err => {
+                showStatus('❌ เกิดข้อผิดพลาด: ' + err.message, true);
+            });
+        }
+
+        function showStatus(msg, isError = false) {
+            const el = document.getElementById('status-msg');
+            el.textContent = msg;
+            el.style.color = isError ? '#f87171' : '#6ee7b7';
+        }
+
+        // ── PRESENCE ──
+        function setupPresence(rid, roomKey) {
+            if (!roomKey) return;
+            const mobileStatusRef = database.ref(`obs_rooms_score/${roomKey}/Mobile`);
+            mobileStatusRef.set('on');
+            mobileStatusRef.onDisconnect().set('off');
+        }
+
+        // ── PEER CONNECTION ──
+        function startPeerConnection(rid, hostPeerId) {
+            if (!hostPeerId) hostPeerId = `fcp-v2-host-${rid}`;
+
+            peer = new Peer(peerConfig);
+
+            peer.on('open', () => {
+                conn = peer.connect(hostPeerId);
+                showStatus('🔗 กำลังเชื่อมต่อ...');
+
+                conn.on('open', () => {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-ui').classList.add('visible');
+                    conn.send({ type: 'requestState' });
+                });
+
+                conn.on('data', (data) => {
+                    if (data.type === 'stateUpdate') updateUI(data);
+                });
+
+                conn.on('close', () => {
+                    alert('⚠️ ขาดการเชื่อมต่อจาก Host / Disconnected');
+                    location.reload();
+                });
+
+                conn.on('error', (err) => {
+                    showStatus('❌ Connection Error: ' + err, true);
+                });
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'peer-unavailable') {
+                    showStatus('❌ ไม่พบ Host — ตรวจสอบว่า PC เปิดห้องอยู่', true);
+                } else {
+                    showStatus('❌ Peer Error: ' + err.type, true);
+                }
+            });
+        }
+
+        // ── SEND COMMANDS ──
+        function sendCmd(type, val, action, name) {
+            if (conn && conn.open) conn.send({ type, val, action, name });
+        }
+
+        function sendScore(team, delta, isSub = false) {
+            if (conn && conn.open) conn.send({ type: 'score', team, delta, isSub });
+        }
+
+        function updateTeam(team) {
+            const name = document.getElementById(team === 'A' ? 'name-a' : 'name-b').value;
+            const color1 = document.getElementById(team === 'A' ? 'color-a' : 'color-b').value;
+            const color2 = document.getElementById(team === 'A' ? 'color-a-2' : 'color-b-2').value;
+            if (conn && conn.open) conn.send({ type: 'updateTeam', team, name, color1, color2 });
+        }
+
+        // ── UPDATE UI FROM STATE ──
+        function updateUI(data) {
+            // Scores
+            document.getElementById('score-a').textContent = data.teamA.score;
+            document.getElementById('score-b').textContent = data.teamB.score;
+            document.getElementById('score2-a').textContent = data.teamA.score2;
+            document.getElementById('score2-b').textContent = data.teamB.score2;
+
+            // Team Names
+            document.getElementById('name-a').value = data.teamA.name;
+            document.getElementById('name-b').value = data.teamB.name;
+
+            // Team Colors (A)
+            if (data.teamA.color) {
+                document.getElementById('color-a').value = data.teamA.color;
+                document.getElementById('swatch-a').style.background = data.teamA.color;
+            }
+            if (data.teamA.color2) {
+                document.getElementById('color-a-2').value = data.teamA.color2;
+                document.getElementById('swatch-a-2').style.background = data.teamA.color2;
+            }
+            updateColorStrip('a');
+
+            // Team Colors (B)
+            if (data.teamB.color) {
+                document.getElementById('color-b').value = data.teamB.color;
+                document.getElementById('swatch-b').style.background = data.teamB.color;
+            }
+            if (data.teamB.color2) {
+                document.getElementById('color-b-2').value = data.teamB.color2;
+                document.getElementById('swatch-b-2').style.background = data.teamB.color2;
+            }
+            updateColorStrip('b');
+
+            // Timer & Half
+            document.getElementById('timer-text').textContent = data.timer;
+            document.getElementById('half-text').textContent = data.half;
+
+            // Injury
+            const injEl = document.getElementById('injury-text');
+            const injDisp = document.getElementById('injury-display');
+            if (injEl) injEl.textContent = data.injury || '+0';
+            if (injDisp) injDisp.textContent = data.injury || '+0';
+
+            // Play/Pause icon — FIX: update based on isPaused state
+            isPaused = data.isPaused !== false; // default true if not provided
+            const timerEl = document.getElementById('timer-text');
+            const icon = document.getElementById('playpause-icon');
+            if (icon) {
+                icon.className = isPaused ? 'fas fa-play' : 'fas fa-pause';
+            }
+            if (timerEl) {
+                timerEl.classList.toggle('running', !isPaused);
+            }
+
+            // Match ID
+            const matchIdEl = document.getElementById('current-match-id');
+            if (matchIdEl && data.matchId) matchIdEl.textContent = data.matchId;
+
+            // Action Buttons — FIX: use backgroundColor from PC settings
+            const grid = document.getElementById('action-grid');
+            if (grid && data.actions && Array.isArray(data.actions) && data.actions.length > 0) {
+                grid.innerHTML = '';
+                data.actions.forEach(act => {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    btn.textContent = act.name;
+                    // Use backgroundColor from PC if available, otherwise fallback
+                    btn.style.backgroundColor = act.backgroundColor || '#374151';
+                    btn.onclick = () => {
+                        if (conn && conn.open) conn.send({ type: 'actionBtn', index: act.index });
+                    };
+                    grid.appendChild(btn);
+                });
+            } else if (grid && (!data.actions || data.actions.length === 0)) {
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:0.8rem;padding:12px;">
+                        ไม่มี Action ที่ตั้งค่าไว้
+                        <br><button onclick="if(conn&&conn.open)conn.send({type:'requestState'})"
+                            style="margin-top:6px;font-size:0.75rem;color:var(--accent);background:transparent;border:none;cursor:pointer;text-decoration:underline;">
+                            Retry
+                        </button>
+                    </div>`;
+            }
+
+            // Sport specific +2 +3 score buttons toggle
+            const isBasketball = (data.sport === 'basketball' || data.sport === 'streetball') && (data.vbEnabled !== false);
+            
+            const p1A = document.getElementById('plus-1-a');
+            const p2A = document.getElementById('plus-2-a');
+            const p3A = document.getElementById('plus-3-a');
+            const p1B = document.getElementById('plus-1-b');
+            const p2B = document.getElementById('plus-2-b');
+            const p3B = document.getElementById('plus-3-b');
+
+            if (p1A && p2A && p3A) {
+                p2A.style.display = isBasketball ? 'flex' : 'none';
+                p3A.style.display = isBasketball ? 'flex' : 'none';
+                p1A.style.gridColumn = isBasketball ? '' : 'span 3';
+                p1A.style.fontSize = isBasketball ? '1.4rem' : '1.8rem';
+                p1A.style.padding = isBasketball ? '18px 0' : '22px 0';
+            }
+            if (p1B && p2B && p3B) {
+                p2B.style.display = isBasketball ? 'flex' : 'none';
+                p3B.style.display = isBasketball ? 'flex' : 'none';
+                p1B.style.gridColumn = isBasketball ? '' : 'span 3';
+                p1B.style.fontSize = isBasketball ? '1.4rem' : '1.8rem';
+                p1B.style.padding = isBasketball ? '18px 0' : '22px 0';
+            }
+        }
+
+        // ── MATCH POPUP ──
+        function openMatchPopup() {
+            const curr = document.getElementById('current-match-id').textContent;
+            document.getElementById('popup-match-val').textContent = curr;
+            document.getElementById('match-popup').classList.add('visible');
+        }
+
+        function closeMatchPopup() {
+            document.getElementById('match-popup').classList.remove('visible');
+        }
+
+        function adjustMatchId(delta) {
+            const el = document.getElementById('popup-match-val');
+            let val = parseInt(el.textContent) || 1;
+            val = Math.max(1, val + delta);
+            el.textContent = val;
+        }
+
+        function confirmMatchId() {
+            const val = document.getElementById('popup-match-val').textContent;
+            document.getElementById('current-match-id').textContent = val;
+            // FIX: send as 'loadMatch' with val field (matches handleMobileCommand case 'loadmatch')
+            if (conn && conn.open) conn.send({ type: 'loadMatch', val: val });
+            closeMatchPopup();
+        }
+
+        // ── HELP POPUP ──
+        function openHelpPopup() {
+            document.getElementById('help-popup').classList.add('visible');
+        }
+
+        function closeHelpPopup() {
+            document.getElementById('help-popup').classList.remove('visible');
+        }
+
+        // Close popups on overlay click
+        document.getElementById('match-popup').addEventListener('click', function (e) {
+            if (e.target === this) closeMatchPopup();
+        });
+        document.getElementById('help-popup').addEventListener('click', function (e) {
+            if (e.target === this) closeHelpPopup();
+        });
+
+    </script>
+
+</body>
+
+</html>
