@@ -56,13 +56,21 @@ function setVbState(k, v)   { localStorage.setItem(k, v); broadcast(); }
 
 // ── DOM Score Readers ────────────────────────────────────────────────
 function readScores() {
+  const bibOverrideA = document.getElementById('bibOverrideA');
+  const bibOverrideB = document.getElementById('bibOverrideB');
+  const isBibActiveA = bibOverrideA && bibOverrideA.checked;
+  const isBibActiveB = bibOverrideB && bibOverrideB.checked;
+
+  const colorA = isBibActiveA ? (localStorage.getItem('bib_active_color_a') || '#84cc16') : (document.getElementById('colorA')?.value || '#1e3a8a');
+  const colorB = isBibActiveB ? (localStorage.getItem('bib_active_color_b') || '#f97316') : (document.getElementById('colorB')?.value || '#7f1d1d');
+
   return {
     sA:  parseInt(document.getElementById('scoreA')?.textContent  ?? '0') || 0,
     sB:  parseInt(document.getElementById('scoreB')?.textContent  ?? '0') || 0,
     s2A: parseInt(document.getElementById('score2A')?.textContent ?? '0') || 0,
     s2B: parseInt(document.getElementById('score2B')?.textContent ?? '0') || 0,
-    cA:  document.getElementById('colorA')?.value || '#1e3a8a',
-    cB:  document.getElementById('colorB')?.value || '#7f1d1d',
+    cA:  colorA,
+    cB:  colorB,
     cA2: document.getElementById('colorA2')?.value || '#000000',
     cB2: document.getElementById('colorB2')?.value || '#000000',
     nA:  document.getElementById('nameA')?.textContent || 'TEAM A',
