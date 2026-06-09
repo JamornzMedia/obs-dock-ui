@@ -33,10 +33,15 @@
     --bx-color-header-bg: #0f172a;
     --bx-color-dash-active: #fbbf24;
     --bx-color-dash-inactive: #334155;
+
+    --bx-dash-width: 25px;
+    --bx-dash-height: 6px;
+    --bx-font-team: 'Outfit', sans-serif;
+    --bx-font-score: 'Outfit', sans-serif;
   }
 
   body {
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--bx-font-team);
     background: transparent;
     display: flex;
     align-items: center;
@@ -176,7 +181,10 @@
   .center-header {
     position: absolute;
     top: calc(-18px - var(--bx-logo-size));
-    width: 136px;
+    min-width: 140px;
+    width: max-content;
+    padding-left: 10px;
+    padding-right: 10px;
     height: calc(20px + var(--bx-logo-size));
     background: var(--bx-color-header-bg);
     border-radius: 6px 6px 0 0;
@@ -195,13 +203,13 @@
   .round-bar {
     display: flex;
     gap: 4px;
-    width: 90px;
+    width: max-content;
     justify-content: center;
   }
 
   .round-dash {
-    flex: 1;
-    height: 4px;
+    width: var(--bx-dash-width);
+    height: var(--bx-dash-height);
     background: var(--bx-color-dash-inactive);
     border-radius: 2px;
     transition: all 0.3s ease;
@@ -233,7 +241,7 @@
     color: var(--bx-color-time-txt);
     line-height: 1.05;
     letter-spacing: -1px;
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--bx-font-score);
     font-variant-numeric: tabular-nums;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s ease;
@@ -385,18 +393,48 @@
     }
   }
 
+  function injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore) {
+    let style = document.getElementById('vb-custom-font-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'vb-custom-font-style';
+      document.head.appendChild(style);
+    }
+    
+    let css = '';
+    if (customFontDataTeam && customFontFamilyTeam) {
+      css += `
+        @font-face {
+          font-family: '${customFontFamilyTeam}';
+          src: url('${customFontDataTeam}');
+        }
+      `;
+    }
+    if (customFontDataScore && customFontFamilyScore) {
+      css += `
+        @font-face {
+          font-family: '${customFontFamilyScore}';
+          src: url('${customFontDataScore}');
+        }
+      `;
+    }
+    style.textContent = css;
+  }
+
   function render(state) {
     if (!state) return;
 
     // Apply custom sizing variables to document root
     const root = document.documentElement;
-    root.style.setProperty('--bx-logo-size', (state.bxLogoSize || 20) + 'px');
+    root.style.setProperty('--bx-logo-size', (state.bxLogoSize || 30) + 'px');
     root.style.setProperty('--bx-name-font-size', (state.bxNameFontSize || 20) + 'px');
-    root.style.setProperty('--bx-name-panel-width', (state.bxNamePanelWidth || 250) + 'px');
-    root.style.setProperty('--bx-name-panel-height', (state.bxNamePanelHeight || 66) + 'px');
-    root.style.setProperty('--bx-time-font-size', (state.bxTimeFontSize || 38) + 'px');
-    root.style.setProperty('--bx-label1-width', (state.bxLabel1Width || 120) + 'px');
-    root.style.setProperty('--bx-label1-font-size', (state.bxLabel1FontSize || 10) + 'px');
+    root.style.setProperty('--bx-name-panel-width', (state.bxNamePanelWidth || 350) + 'px');
+    root.style.setProperty('--bx-name-panel-height', (state.bxNamePanelHeight || 50) + 'px');
+    root.style.setProperty('--bx-time-font-size', (state.bxTimeFontSize || 35) + 'px');
+    root.style.setProperty('--bx-label1-width', (state.bxLabel1Width || 165) + 'px');
+    root.style.setProperty('--bx-label1-font-size', (state.bxLabel1FontSize || 20) + 'px');
+    root.style.setProperty('--bx-dash-width', (state.bxDashWidth || 25) + 'px');
+    root.style.setProperty('--bx-dash-height', (state.bxDashHeight || 6) + 'px');
 
     // Apply custom color variables to document root
     root.style.setProperty('--bx-color-left', state.bxColorLeft || '#ef4444');
@@ -413,12 +451,28 @@
     root.style.setProperty('--bx-color-dash-active', state.bxColorDashActive || '#fbbf24');
     root.style.setProperty('--bx-color-dash-inactive', state.bxColorDashInactive || '#334155');
 
+    // Apply custom fonts
+    const activeFontTeam = state.customFontFamilyTeam ? `'${state.customFontFamilyTeam}'` : (state.fontTeam || "'Kanit', sans-serif");
+    root.style.setProperty('--bx-font-team', activeFontTeam);
+
+    const activeFontScore = state.customFontFamilyScore ? `'${state.customFontFamilyScore}'` : (state.fontScore || "'Barlow Condensed', sans-serif");
+    root.style.setProperty('--bx-font-score', activeFontScore);
+
+    // Inject custom font stylesheet
+    injectCustomFont(state.customFontDataTeam, state.customFontFamilyTeam, state.customFontDataScore, state.customFontFamilyScore);
+
     // Names
     document.getElementById('nameA').textContent = state.nameA || 'TEAM A';
     document.getElementById('nameB').textContent = state.nameB || 'TEAM B';
 
     // Label 1
     document.getElementById('label1').textContent = state.label1 || 'MUAY THAI';
+
+    // Bottom Detail Label 1 visibility
+    const label1Container = document.querySelector('.bottom-detail');
+    if (label1Container) {
+      label1Container.style.display = (state.bxShowLabel1 !== false) ? 'flex' : 'none';
+    }
 
     // Event Logo
     const logoImg = document.getElementById('event-logo');
@@ -432,11 +486,13 @@
       }
     }
 
+    const showTeamLogos = state.bxShowTeamLogos !== false;
+
     // Team A Flag/Logo
     const flagA = document.getElementById('flagA');
     const flagAContainer = document.getElementById('flagA-container');
     if (flagA && flagAContainer) {
-      if (state.logoAUrl && !state.logoAUrl.includes('undefined')) {
+      if (showTeamLogos && state.logoAUrl && !state.logoAUrl.includes('undefined')) {
         flagA.src = state.logoAUrl;
         flagAContainer.style.display = 'flex';
       } else {
@@ -449,7 +505,7 @@
     const flagB = document.getElementById('flagB');
     const flagBContainer = document.getElementById('flagB-container');
     if (flagB && flagBContainer) {
-      if (state.logoBUrl && !state.logoBUrl.includes('undefined')) {
+      if (showTeamLogos && state.logoBUrl && !state.logoBUrl.includes('undefined')) {
         flagB.src = state.logoBUrl;
         flagBContainer.style.display = 'flex';
       } else {

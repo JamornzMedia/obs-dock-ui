@@ -112,18 +112,26 @@ function broadcast() {
     // Boxing state additions
     timer: document.getElementById('timerText')?.textContent || '00:00',
     half: document.getElementById('halfText')?.textContent || '1st',
-    label1: document.getElementById('label1')?.textContent || '',
+    label1: (getVbState('bx_label1_type', 'auto') === 'custom') ? getVbState('bx_label1_custom_text', '') : (document.getElementById('label1')?.textContent || ''),
     logoAUrl: document.getElementById('logoA')?.style.display !== 'none' ? document.getElementById('logoA')?.src : '',
     logoBUrl: document.getElementById('logoB')?.style.display !== 'none' ? document.getElementById('logoB')?.src : '',
     
     // Boxing HUD sizing custom values
-    bxLogoSize: parseInt(getVbState('bx_logo_size', '20')),
+    bxLogoSize: parseInt(getVbState('bx_logo_size', '30')),
     bxNameFontSize: parseInt(getVbState('bx_name_font_size', '20')),
-    bxNamePanelWidth: parseInt(getVbState('bx_name_panel_width', '250')),
-    bxNamePanelHeight: parseInt(getVbState('bx_name_panel_height', '66')),
-    bxTimeFontSize: parseInt(getVbState('bx_time_font_size', '38')),
-    bxLabel1Width: parseInt(getVbState('bx_label1_width', '120')),
-    bxLabel1FontSize: parseInt(getVbState('bx_label1_font_size', '10')),
+    bxNamePanelWidth: parseInt(getVbState('bx_name_panel_width', '350')),
+    bxNamePanelHeight: parseInt(getVbState('bx_name_panel_height', '50')),
+    bxTimeFontSize: parseInt(getVbState('bx_time_font_size', '35')),
+    bxLabel1Width: parseInt(getVbState('bx_label1_width', '165')),
+    bxLabel1FontSize: parseInt(getVbState('bx_label1_font_size', '20')),
+
+    // Boxing settings and dash variables
+    bxShowTeamLogos: getVbState('bx_show_team_logos', 'true') === 'true',
+    bxShowLabel1: getVbState('bx_show_label1', 'true') === 'true',
+    bxLabel1Type: getVbState('bx_label1_type', 'auto'),
+    bxLabel1CustomText: getVbState('bx_label1_custom_text', ''),
+    bxDashWidth: parseInt(getVbState('bx_dash_width', '25')),
+    bxDashHeight: parseInt(getVbState('bx_dash_height', '6')),
     
     // Boxing HUD custom color values
     bxColorLeft: getVbState('bx_color_left', '#ef4444'),
@@ -605,8 +613,7 @@ function updateSportUI() {
     if (btnsB) btnsB.style.display = 'none';
   }
   
-  const bxSizes = document.getElementById('vb2-boxing-sizes-container');
-  const bxColors = document.getElementById('vb2-boxing-colors-container');
+  const bxSettings = document.getElementById('vb2-boxing-settings-container');
   const vLimit = document.getElementById('vb2-volleyball-limit-wrapper');
   const vfLimit = document.getElementById('vb2-volleyball-finallimit-wrapper');
   const vHist = document.getElementById('vb2-volleyball-history-wrapper');
@@ -616,14 +623,14 @@ function updateSportUI() {
   // Volleyball / general settings wrappers to hide when boxing is active
   const vbShowServe = document.getElementById('vb2-volleyball-showserve-container');
   const vbFonts = document.getElementById('vb2-volleyball-fonts-container');
+  const vbWidthServe = document.getElementById('vb2-volleyball-width-serve-container');
   const vbColors = document.getElementById('vb2-volleyball-colors-container');
   const vbObs = document.getElementById('vb2-volleyball-obs-container');
   const bxObs = document.getElementById('vb2-boxing-obs-container');
   
   const isBoxing = vbEnabled && sport === 'boxing';
   
-  if (bxSizes) bxSizes.style.display = isBoxing ? 'block' : 'none';
-  if (bxColors) bxColors.style.display = isBoxing ? 'block' : 'none';
+  if (bxSettings) bxSettings.style.display = isBoxing ? 'block' : 'none';
   
   if (vLimit) vLimit.style.display = isBoxing ? 'none' : 'block';
   if (vfLimit) vfLimit.style.display = isBoxing ? 'none' : 'flex';
@@ -631,7 +638,8 @@ function updateSportUI() {
   if (vActions) vActions.style.display = isBoxing ? 'none' : 'grid';
   
   if (vbShowServe) vbShowServe.style.display = isBoxing ? 'none' : 'flex';
-  if (vbFonts) vbFonts.style.display = isBoxing ? 'none' : 'block';
+  if (vbFonts) vbFonts.style.display = vbEnabled ? 'block' : 'none';
+  if (vbWidthServe) vbWidthServe.style.display = isBoxing ? 'none' : 'block';
   if (vbColors) vbColors.style.display = isBoxing ? 'none' : 'block';
   if (vbObs) vbObs.style.display = isBoxing ? 'none' : 'grid';
   if (bxObs) bxObs.style.display = isBoxing ? 'block' : 'none';
@@ -720,98 +728,171 @@ function injectSettingsTab() {
       </select>
     </div>
 
-    <!-- Boxing Graphic Custom Sizes -->
-    <div id="vb2-boxing-sizes-container" style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: none;">
-      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🥊 ปรับขนาดกราฟิกมวย / Boxing Sizing Settings</div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #cbd5e1;">
-        <div>
-          <span style="display:block;margin-bottom:2px;">ความสูงโลโก้รายการ (Logo Height px)</span>
-          <input type="number" id="vb2-bx-logo-size" value="${getVbState('bx_logo_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรชื่อ (Name Font Size px)</span>
-          <input type="number" id="vb2-bx-name-font-size" value="${getVbState('bx_name_font_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">ความกว้างช่องชื่อ (Name Panel Width px)</span>
-          <input type="number" id="vb2-bx-name-panel-width" value="${getVbState('bx_name_panel_width', '250')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">ความสูง HUD (HUD Height px)</span>
-          <input type="number" id="vb2-bx-name-panel-height" value="${getVbState('bx_name_panel_height', '66')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">ขนาดเวลาหลัก (Timer Font Size px)</span>
-          <input type="number" id="vb2-bx-time-font-size" value="${getVbState('bx_time_font_size', '38')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">ความกว้างป้าย1 (Label 1 Width px)</span>
-          <input type="number" id="vb2-bx-label1-width" value="${getVbState('bx_label1_width', '120')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
-        </div>
-        <div style="grid-column: span 2;">
-          <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรป้าย1 (Label 1 Font Size px)</span>
-          <input type="number" id="vb2-bx-label1-font-size" value="${getVbState('bx_label1_font_size', '10')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+    <!-- Boxing Graphic Settings Grouped by Component -->
+    <div id="vb2-boxing-settings-container" style="margin-bottom: 14px; display: none;">
+      
+      <!-- 1. Left Boxer Name Panel -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #ef4444; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(239,68,68,0.2); padding-bottom: 4px;">🥊 ฝั่งซ้าย (Left Boxer Panel)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีแถบฝั่งซ้าย (Accent Color)</span>
+            <input type="color" id="vb2-bx-color-left" value="${getVbState('bx_color_left', '#ef4444')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีตัวอักษรชื่อ (Text Color)</span>
+            <input type="color" id="vb2-bx-color-left-txt" value="${getVbState('bx_color_left_txt', '#ffffff')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งซ้าย (Panel BG)</span>
+            <input type="color" id="vb2-bx-color-left-bg" value="${getVbState('bx_color_left_bg', '#1e293b')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Boxing Graphic Custom Colors -->
-    <div id="vb2-boxing-colors-container" style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: none;">
-      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 ปรับแต่งสีแถบและข้อความมวย / Boxing Colors Settings</div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #cbd5e1;">
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีแถบฝั่งซ้าย (Left Bar Color)</span>
-          <input type="color" id="vb2-bx-color-left" value="${getVbState('bx_color_left', '#ef4444')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีชื่อฝั่งซ้าย (Left Text Color)</span>
-          <input type="color" id="vb2-bx-color-left-txt" value="${getVbState('bx_color_left_txt', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งซ้าย (Left Panel BG)</span>
-          <input type="color" id="vb2-bx-color-left-bg" value="${getVbState('bx_color_left_bg', '#1e293b')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีแถบฝั่งขวา (Right Bar Color)</span>
-          <input type="color" id="vb2-bx-color-right" value="${getVbState('bx_color_right', '#3b82f6')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีชื่อฝั่งขวา (Right Text Color)</span>
-          <input type="color" id="vb2-bx-color-right-txt" value="${getVbState('bx_color_right_txt', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งขวา (Right Panel BG)</span>
-          <input type="color" id="vb2-bx-color-right-bg" value="${getVbState('bx_color_right_bg', '#1e293b')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีพื้นหลังเวลาหลัก (Center BG)</span>
-          <input type="color" id="vb2-bx-color-center-bg" value="${getVbState('bx_color_center_bg', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีตัวเลขเวลาหลัก (Timer Text)</span>
-          <input type="color" id="vb2-bx-color-time-txt" value="${getVbState('bx_color_time_txt', '#020617')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้าย1 (Label 1 BG)</span>
-          <input type="color" id="vb2-bx-color-label1-bg" value="${getVbState('bx_color_label1_bg', '#020617')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีข้อความป้าย1 (Label 1 Text)</span>
-          <input type="color" id="vb2-bx-color-label1-txt" value="${getVbState('bx_color_label1_txt', '#e2e8f0')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สีพื้นหลังยก/โลโก้ (Header BG)</span>
-          <input type="color" id="vb2-bx-color-header-bg" value="${getVbState('bx_color_header_bg', '#0f172a')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div>
-          <span style="display:block;margin-bottom:2px;">สียกปัจจุบัน (Active Round Dash)</span>
-          <input type="color" id="vb2-bx-color-dash-active" value="${getVbState('bx_color_dash_active', '#fbbf24')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
-        </div>
-        <div style="grid-column: span 2;">
-          <span style="display:block;margin-bottom:2px;">สียกทั่วไป (Inactive Round Dash)</span>
-          <input type="color" id="vb2-bx-color-dash-inactive" value="${getVbState('bx_color_dash_inactive', '#334155')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+      <!-- 2. Right Boxer Name Panel -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(59,130,246,0.2); padding-bottom: 4px;">🥊 ฝั่งขวา (Right Boxer Panel)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีแถบฝั่งขวา (Accent Color)</span>
+            <input type="color" id="vb2-bx-color-right" value="${getVbState('bx_color_right', '#3b82f6')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีตัวอักษรชื่อ (Text Color)</span>
+            <input type="color" id="vb2-bx-color-right-txt" value="${getVbState('bx_color_right_txt', '#ffffff')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งขวา (Panel BG)</span>
+            <input type="color" id="vb2-bx-color-right-bg" value="${getVbState('bx_color_right_bg', '#1e293b')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
         </div>
       </div>
+
+      <!-- 3. Boxer HUD & Logos Shared Sizing -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">📐 ขนาดป้ายนักมวย & โลโก้ทีม (HUD Size & Flags)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความกว้างช่องชื่อ (Width px)</span>
+            <input type="number" id="vb2-bx-name-panel-width" value="${getVbState('bx_name_panel_width', '350')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความสูง HUD (Height px)</span>
+            <input type="number" id="vb2-bx-name-panel-height" value="${getVbState('bx_name_panel_height', '50')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรชื่อทีม (Font Size px)</span>
+            <input type="number" id="vb2-bx-name-font-size" value="${getVbState('bx_name_font_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; margin-top: 4px; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 4px;">
+            <span>แสดงโลโก้/ธงทีม A และ B</span>
+            <label class="container-toggle" style="margin: 0; cursor: pointer;">
+              <div class="toggle-switch">
+                <input type="checkbox" id="vb2-bx-show-team-logos" ${getVbState('bx_show_team_logos', 'true') === 'true' ? 'checked' : ''}>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Center Timer Panel -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(251,191,36,0.2); padding-bottom: 4px;">⏱️ บอร์ดเวลาหลัก (Timer Panel)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีพื้นหลังเวลา (Center BG)</span>
+            <input type="color" id="vb2-bx-color-center-bg" value="${getVbState('bx_color_center_bg', '#ffffff')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีตัวเลขเวลา (Timer Text)</span>
+            <input type="color" id="vb2-bx-color-time-txt" value="${getVbState('bx_color_time_txt', '#020617')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรเวลาหลัก (Font Size px)</span>
+            <input type="number" id="vb2-bx-time-font-size" value="${getVbState('bx_time_font_size', '35')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Bottom Detail Panel (Label 1) -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">🏷️ ป้ายข้อมูลด้านล่าง (Label 1)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 4px; margin-bottom: 4px;">
+            <span>แสดงป้ายรายละเอียด Label 1</span>
+            <label class="container-toggle" style="margin: 0; cursor: pointer;">
+              <div class="toggle-switch">
+                <input type="checkbox" id="vb2-bx-show-label1" ${getVbState('bx_show_label1', 'true') === 'true' ? 'checked' : ''}>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+          
+          <div style="grid-column: span 2;">
+            <span style="display:block;margin-bottom:2px;">แหล่งข้อมูลของป้าย 1</span>
+            <select id="vb2-bx-label1-type" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+              <option value="auto" ${getVbState('bx_label1_type', 'auto') === 'auto' ? 'selected' : ''}>ดึงข้อมูลอัตโนมัติ (Auto-Pull)</option>
+              <option value="custom" ${getVbState('bx_label1_type', 'auto') === 'custom' ? 'selected' : ''}>พิมพ์ข้อความเอง (Custom Input)</option>
+            </select>
+          </div>
+          
+          <div id="vb2-bx-label1-custom-text-wrapper" style="grid-column: span 2; display: none;">
+            <span style="display:block;margin-bottom:2px;">พิมพ์ข้อความที่ต้องการแสดง</span>
+            <input type="text" id="vb2-bx-label1-custom-text" value="${getVbState('bx_label1_custom_text', '')}" placeholder="เช่น MUAY THAI, 125 LBS" style="width: 100%; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+          </div>
+          
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความกว้างป้าย 1 (Width px)</span>
+            <input type="number" id="vb2-bx-label1-width" value="${getVbState('bx_label1_width', '165')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษร (Font Size px)</span>
+            <input type="number" id="vb2-bx-label1-font-size" value="${getVbState('bx_label1_font_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้าย 1 (BG Color)</span>
+            <input type="color" id="vb2-bx-color-label1-bg" value="${getVbState('bx_color_label1_bg', '#020617')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีข้อความป้าย 1 (Text Color)</span>
+            <input type="color" id="vb2-bx-color-label1-txt" value="${getVbState('bx_color_label1_txt', '#e2e8f0')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Rounds & Event Logo Header Settings -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">🏆 จุดนับยก & โลโก้รายการ (Rounds & Logo Header)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความสูงโลโก้รายการ (Height px)</span>
+            <input type="number" id="vb2-bx-logo-size" value="${getVbState('bx_logo_size', '30')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สีพื้นหลังยก/โลโก้ (Header BG)</span>
+            <input type="color" id="vb2-bx-color-header-bg" value="${getVbState('bx_color_header_bg', '#0f172a')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความกว้างขีดยก (Dash Width px)</span>
+            <input type="number" id="vb2-bx-dash-width" value="${getVbState('bx_dash_width', '25')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">ความสูงขีดยก (Dash Height px)</span>
+            <input type="number" id="vb2-bx-dash-height" value="${getVbState('bx_dash_height', '6')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สียกปัจจุบัน (Active Dash)</span>
+            <input type="color" id="vb2-bx-color-dash-active" value="${getVbState('bx_color_dash_active', '#fbbf24')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+          <div>
+            <span style="display:block;margin-bottom:2px;">สียกทั่วไป (Inactive Dash)</span>
+            <input type="color" id="vb2-bx-color-dash-inactive" value="${getVbState('bx_color_dash_inactive', '#334155')}" style="width:100%;height:28px;border:none;border-radius:4px;cursor:pointer;">
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Custom Colors -->
@@ -947,19 +1028,22 @@ function injectSettingsTab() {
           </div>
         </div>
 
-        <!-- Team width setting -->
-        <div style="margin-bottom:6px;">
-          <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Team Name Width (px)</div>
-          <input type="number" id="vb2-team-width" value="${parseInt(getVbState(VB_TEAM_WIDTH_KEY, '250'))}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
-        </div>
-        
-        <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin-top:10px;">
-          <div class="toggle-switch">
-            <input type="checkbox" id="vb2-auto-serve" ${getVbState(VB_AUTO_SERVE_KEY, 'true')==='true'?'checked':''}>
-            <span class="slider"></span>
+        <!-- Volleyball Specific Sizing & Serve Toggles -->
+        <div id="vb2-volleyball-width-serve-container">
+          <!-- Team width setting -->
+          <div style="margin-bottom:6px;">
+            <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Team Name Width (px)</div>
+            <input type="number" id="vb2-team-width" value="${parseInt(getVbState(VB_TEAM_WIDTH_KEY, '250'))}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
           </div>
-          <span style="font-size:0.8rem;color:#cbd5e1;">Auto-Serve on Point</span>
-        </label>
+          
+          <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin-top:10px;">
+            <div class="toggle-switch">
+              <input type="checkbox" id="vb2-auto-serve" ${getVbState(VB_AUTO_SERVE_KEY, 'true')==='true'?'checked':''}>
+              <span class="slider"></span>
+            </div>
+            <span style="font-size:0.8rem;color:#cbd5e1;">Auto-Serve on Point</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -1208,7 +1292,9 @@ function injectSettingsTab() {
     { id: 'vb2-bx-name-panel-height', key: 'bx_name_panel_height' },
     { id: 'vb2-bx-time-font-size', key: 'bx_time_font_size' },
     { id: 'vb2-bx-label1-width', key: 'bx_label1_width' },
-    { id: 'vb2-bx-label1-font-size', key: 'bx_label1_font_size' }
+    { id: 'vb2-bx-label1-font-size', key: 'bx_label1_font_size' },
+    { id: 'vb2-bx-dash-width', key: 'bx_dash_width' },
+    { id: 'vb2-bx-dash-height', key: 'bx_dash_height' }
   ];
   bxSizeKeys.forEach(({ id, key }) => {
     const el = document.getElementById(id);
@@ -1221,6 +1307,55 @@ function injectSettingsTab() {
       el.addEventListener('input', handler);
     }
   });
+
+  // Checkboxes
+  const logoToggle = document.getElementById('vb2-bx-show-team-logos');
+  if (logoToggle) {
+    logoToggle.addEventListener('change', e => {
+      localStorage.setItem('bx_show_team_logos', e.target.checked ? 'true' : 'false');
+      broadcast();
+    });
+  }
+
+  const label1Toggle = document.getElementById('vb2-bx-show-label1');
+  if (label1Toggle) {
+    label1Toggle.addEventListener('change', e => {
+      localStorage.setItem('bx_show_label1', e.target.checked ? 'true' : 'false');
+      broadcast();
+    });
+  }
+
+  // Label 1 Select and manual input text
+  const label1TypeSel = document.getElementById('vb2-bx-label1-type');
+  const label1CustomTextWrapper = document.getElementById('vb2-bx-label1-custom-text-wrapper');
+  const label1CustomInput = document.getElementById('vb2-bx-label1-custom-text');
+
+  const updateLabel1Visibility = () => {
+    if (label1TypeSel && label1CustomTextWrapper) {
+      if (label1TypeSel.value === 'custom') {
+        label1CustomTextWrapper.style.display = 'block';
+      } else {
+        label1CustomTextWrapper.style.display = 'none';
+      }
+    }
+  };
+
+  if (label1TypeSel) {
+    label1TypeSel.addEventListener('change', e => {
+      localStorage.setItem('bx_label1_type', e.target.value);
+      updateLabel1Visibility();
+      broadcast();
+    });
+  }
+
+  if (label1CustomInput) {
+    label1CustomInput.addEventListener('input', e => {
+      localStorage.setItem('bx_label1_custom_text', e.target.value);
+      broadcast();
+    });
+  }
+
+  updateLabel1Visibility(); // Run on init
 
   // Boxing Custom Colors Listeners
   const bxColorKeys = [
