@@ -40,6 +40,7 @@ try { bc = new BroadcastChannel(VB_CHANNEL); } catch (_) {}
 let lastA = -1, lastB = -1, last2A = -1, last2B = -1;
 let lastNA = '', lastNB = '', lastCA = '', lastCB = '', lastCA2 = '', lastCB2 = '';
 let lastTimer = '', lastHalf = '', lastLabel1 = '';
+let autoHiddenThisRound = false;
 
 function getSetLimit()      { return Math.max(1, parseInt(localStorage.getItem(VB_LIMIT_KEY) || '25')); }
 function saveSetLimit(v)    { localStorage.setItem(VB_LIMIT_KEY, String(v)); }
@@ -299,13 +300,41 @@ async function toggleVbSource(sourceName, btnElement) {
     await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: item.sceneItemId, sceneItemEnabled: !sceneItemEnabled });
     
     const isNowEnabled = !sceneItemEnabled;
-    const label = sourceName.includes('Main') ? 'Main Score' : (sourceName.includes('Point') ? 'Point History' : 'History');
+    const label = sourceName === 'Boxing_Main_Score' ? 'Boxing HUD' : (sourceName.includes('Main') ? 'Main Score' : (sourceName.includes('Point') ? 'Point History' : 'History'));
     btnElement.innerHTML = isNowEnabled ? `<i class="fas fa-eye"></i> ${label}` : `<i class="fas fa-eye-slash"></i> ${label}`;
     btnElement.className = isNowEnabled ? 'btn-primary' : 'btn-secondary';
     btnElement.style.background = isNowEnabled ? '#3b82f6' : '';
     vbToast(`${sourceName} is now ${isNowEnabled ? 'Visible' : 'Hidden'}`, 'success');
   } catch(e) {
     vbToast(`❌ OBS Error: Source '${sourceName}' not found.`, 'error');
+  }
+}
+
+async function setOBSInputEnabled(sourceName, enabled) {
+  const obs = window.fcpOBS;
+  if (!obs) return;
+  try {
+    const scene = await obs.call('GetCurrentProgramScene');
+    const sceneName = scene.currentProgramSceneName;
+    let itemId;
+    try {
+      const item = await obs.call('GetSceneItemId', { sceneName, sourceName });
+      itemId = item.sceneItemId;
+    } catch (_) {
+      return; // Source not found in current scene
+    }
+    
+    await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: itemId, sceneItemEnabled: enabled });
+    
+    // Update button styling in main panel
+    const btn = document.getElementById('vb-toggle-main');
+    if (btn && sourceName === 'Boxing_Main_Score') {
+      btn.innerHTML = enabled ? `<i class="fas fa-eye"></i> Boxing HUD` : `<i class="fas fa-eye-slash"></i> Boxing HUD`;
+      btn.className = enabled ? 'btn-primary' : 'btn-secondary';
+      btn.style.background = enabled ? '#3b82f6' : '';
+    }
+  } catch (err) {
+    console.error('[VB OBS]', err);
   }
 }
 
@@ -893,6 +922,26 @@ function injectSettingsTab() {
         </div>
       </div>
 
+      <!-- 7. Auto Hide Boxing HUD Settings -->
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #f43f5e; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(244,63,94,0.2); padding-bottom: 4px;">⏱️ ซ่อนอัตโนมัติ (Auto Hide Boxing HUD)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;">
+          <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 4px;">
+            <span>เปิดใช้งาน Auto Hide เมื่อเวลาใกล้หมด</span>
+            <label class="container-toggle" style="margin: 0; cursor: pointer;">
+              <div class="toggle-switch">
+                <input type="checkbox" id="vb2-bx-auto-hide-enabled" ${getVbState('bx_auto_hide_enabled', 'false') === 'true' ? 'checked' : ''}>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+          <div id="vb2-bx-auto-hide-seconds-wrapper" style="grid-column: span 2; display: none;">
+            <span style="display:block;margin-bottom:2px;">ซ่อนเมื่อเวลาเหลือน้อยกว่าหรือเท่ากับ (วินาที / Seconds)</span>
+            <input type="number" id="vb2-bx-auto-hide-seconds" value="${getVbState('bx_auto_hide_seconds', '30')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Custom Colors -->
@@ -1357,6 +1406,36 @@ function injectSettingsTab() {
 
   updateLabel1Visibility(); // Run on init
 
+  // Auto Hide Listeners
+  const autoHideToggle = document.getElementById('vb2-bx-auto-hide-enabled');
+  const autoHideSecsWrapper = document.getElementById('vb2-bx-auto-hide-seconds-wrapper');
+  const autoHideSecsInput = document.getElementById('vb2-bx-auto-hide-seconds');
+
+  const updateAutoHideVisibility = () => {
+    if (autoHideToggle && autoHideSecsWrapper) {
+      autoHideSecsWrapper.style.display = autoHideToggle.checked ? 'block' : 'none';
+    }
+  };
+
+  if (autoHideToggle) {
+    autoHideToggle.addEventListener('change', e => {
+      localStorage.setItem('bx_auto_hide_enabled', e.target.checked ? 'true' : 'false');
+      updateAutoHideVisibility();
+      broadcast();
+    });
+  }
+
+  if (autoHideSecsInput) {
+    const handler = e => {
+      localStorage.setItem('bx_auto_hide_seconds', e.target.value);
+      broadcast();
+    };
+    autoHideSecsInput.addEventListener('change', handler);
+    autoHideSecsInput.addEventListener('input', handler);
+  }
+
+  updateAutoHideVisibility(); // Run on init
+
   // Boxing Custom Colors Listeners
   const bxColorKeys = [
     { id: 'vb2-bx-color-left', key: 'bx_color_left' },
@@ -1449,6 +1528,19 @@ function injectSettingsTab() {
   updateSportUI();
 }
 
+function parseTimeToSeconds(tStr) {
+  if (!tStr) return 0;
+  const parts = tStr.trim().split(':');
+  if (parts.length === 2) {
+    const min = parseInt(parts[0]) || 0;
+    const sec = parseInt(parts[1]) || 0;
+    return min * 60 + sec;
+  } else if (parts.length === 1) {
+    return parseInt(parts[0]) || 0;
+  }
+  return 0;
+}
+
 // ── Poll loop ────────────────────────────────────────────────────────
 function poll() {
   if (!isEnabled()) return;
@@ -1458,6 +1550,10 @@ function poll() {
   const label1Text = document.getElementById('label1')?.textContent || '';
   const sport = localStorage.getItem('vb_sport') || 'volleyball';
   
+  if (halfText !== lastHalf) {
+    autoHiddenThisRound = false;
+  }
+  
   // Sync max rounds if boxing is active
   if (sport === 'boxing') {
     const currentMaxHalves = parseInt(localStorage.getItem('maxHalves') || '2');
@@ -1465,6 +1561,23 @@ function poll() {
       saveMaxSets(currentMaxHalves);
       const maxSetsInput = document.getElementById('vb2-maxsets');
       if (maxSetsInput) maxSetsInput.value = currentMaxHalves;
+    }
+    
+    // Auto Hide Boxing HUD logic
+    const autoHideEnabled = getVbState('bx_auto_hide_enabled', 'false') === 'true';
+    if (autoHideEnabled) {
+      const autoHideSecs = parseInt(getVbState('bx_auto_hide_seconds', '30')) || 30;
+      const secs = parseTimeToSeconds(timerText);
+      if (secs <= autoHideSecs) {
+        if (!autoHiddenThisRound && secs > 0) {
+          setOBSInputEnabled('Boxing_Main_Score', false);
+          autoHiddenThisRound = true;
+        }
+      } else {
+        autoHiddenThisRound = false;
+      }
+    } else {
+      autoHiddenThisRound = false;
     }
   }
   
