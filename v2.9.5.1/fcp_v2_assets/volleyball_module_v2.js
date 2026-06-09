@@ -116,6 +116,30 @@ function broadcast() {
     logoAUrl: document.getElementById('logoA')?.style.display !== 'none' ? document.getElementById('logoA')?.src : '',
     logoBUrl: document.getElementById('logoB')?.style.display !== 'none' ? document.getElementById('logoB')?.src : '',
     
+    // Boxing HUD sizing custom values
+    bxLogoSize: parseInt(getVbState('bx_logo_size', '20')),
+    bxNameFontSize: parseInt(getVbState('bx_name_font_size', '20')),
+    bxNamePanelWidth: parseInt(getVbState('bx_name_panel_width', '250')),
+    bxNamePanelHeight: parseInt(getVbState('bx_name_panel_height', '66')),
+    bxTimeFontSize: parseInt(getVbState('bx_time_font_size', '38')),
+    bxLabel1Width: parseInt(getVbState('bx_label1_width', '120')),
+    bxLabel1FontSize: parseInt(getVbState('bx_label1_font_size', '10')),
+    
+    // Boxing HUD custom color values
+    bxColorLeft: getVbState('bx_color_left', '#ef4444'),
+    bxColorLeftTxt: getVbState('bx_color_left_txt', '#ffffff'),
+    bxColorLeftBg: getVbState('bx_color_left_bg', '#1e293b'),
+    bxColorRight: getVbState('bx_color_right', '#3b82f6'),
+    bxColorRightTxt: getVbState('bx_color_right_txt', '#ffffff'),
+    bxColorRightBg: getVbState('bx_color_right_bg', '#1e293b'),
+    bxColorCenterBg: getVbState('bx_color_center_bg', '#ffffff'),
+    bxColorTimeTxt: getVbState('bx_color_time_txt', '#020617'),
+    bxColorLabel1Bg: getVbState('bx_color_label1_bg', '#020617'),
+    bxColorLabel1Txt: getVbState('bx_color_label1_txt', '#e2e8f0'),
+    bxColorHeaderBg: getVbState('bx_color_header_bg', '#0f172a'),
+    bxColorDashActive: getVbState('bx_color_dash_active', '#fbbf24'),
+    bxColorDashInactive: getVbState('bx_color_dash_inactive', '#334155'),
+    
     // Split Resolved Fonts
     fontTeam: fontTeam,
     fontScore: fontScore,
@@ -323,7 +347,7 @@ function updateMainPanelUI(state) {
           </div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div id="vb-main-set-actions-wrapper" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <button id="vb-main-finish-set" class="btn-success" style="font-size:0.85rem;padding:8px;"><i class="fas fa-flag-checkered"></i> Finish Set</button>
         <button id="vb-main-reset-match" class="btn-danger" style="font-size:0.85rem;padding:8px;"><i class="fas fa-undo"></i> Reset Match</button>
       </div>
@@ -405,6 +429,27 @@ function updateMainPanelUI(state) {
     const valB = document.getElementById('vb-to-b-val');
     if (valA) valA.textContent = state.timeoutsA;
     if (valB) valB.textContent = state.timeoutsB;
+  }
+
+  // Hide/Show Volleyball set actions when boxing
+  const setActions = document.getElementById('vb-main-set-actions-wrapper');
+  if (setActions) {
+    setActions.style.display = sport === 'boxing' ? 'none' : 'grid';
+  }
+
+  // Adjust OBS main panel toggle buttons
+  const toggleMain = document.getElementById('vb-toggle-main');
+  const toggleHist = document.getElementById('vb-toggle-hist');
+  if (toggleMain) {
+    toggleMain.innerHTML = sport === 'boxing' 
+      ? `<i class="fas fa-eye-slash"></i> Boxing HUD` 
+      : `<i class="fas fa-eye-slash"></i> Main Score`;
+    toggleMain.onclick = function() { 
+      toggleVbSource(sport === 'boxing' ? 'Boxing_Main_Score' : 'Volleyball_Main_Score', this); 
+    };
+  }
+  if (toggleHist) {
+    toggleHist.style.display = sport === 'boxing' ? 'none' : 'block';
   }
 }
 
@@ -559,6 +604,41 @@ function updateSportUI() {
     if (btnsA) btnsA.style.display = 'none';
     if (btnsB) btnsB.style.display = 'none';
   }
+  
+  const bxSizes = document.getElementById('vb2-boxing-sizes-container');
+  const bxColors = document.getElementById('vb2-boxing-colors-container');
+  const vLimit = document.getElementById('vb2-volleyball-limit-wrapper');
+  const vfLimit = document.getElementById('vb2-volleyball-finallimit-wrapper');
+  const vHist = document.getElementById('vb2-volleyball-history-wrapper');
+  const vActions = document.getElementById('vb2-volleyball-actions-wrapper');
+  const maxSetsLabel = document.getElementById('vb2-maxsets-label');
+  
+  // Volleyball / general settings wrappers to hide when boxing is active
+  const vbShowServe = document.getElementById('vb2-volleyball-showserve-container');
+  const vbFonts = document.getElementById('vb2-volleyball-fonts-container');
+  const vbColors = document.getElementById('vb2-volleyball-colors-container');
+  const vbObs = document.getElementById('vb2-volleyball-obs-container');
+  const bxObs = document.getElementById('vb2-boxing-obs-container');
+  
+  const isBoxing = vbEnabled && sport === 'boxing';
+  
+  if (bxSizes) bxSizes.style.display = isBoxing ? 'block' : 'none';
+  if (bxColors) bxColors.style.display = isBoxing ? 'block' : 'none';
+  
+  if (vLimit) vLimit.style.display = isBoxing ? 'none' : 'block';
+  if (vfLimit) vfLimit.style.display = isBoxing ? 'none' : 'flex';
+  if (vHist) vHist.style.display = isBoxing ? 'none' : 'block';
+  if (vActions) vActions.style.display = isBoxing ? 'none' : 'grid';
+  
+  if (vbShowServe) vbShowServe.style.display = isBoxing ? 'none' : 'flex';
+  if (vbFonts) vbFonts.style.display = isBoxing ? 'none' : 'block';
+  if (vbColors) vbColors.style.display = isBoxing ? 'none' : 'block';
+  if (vbObs) vbObs.style.display = isBoxing ? 'none' : 'grid';
+  if (bxObs) bxObs.style.display = isBoxing ? 'block' : 'none';
+  
+  if (maxSetsLabel) {
+    maxSetsLabel.textContent = isBoxing ? '🎯 จำนวนยก / Max Rounds' : '🎯 Max Sets';
+  }
 }
 window.updateSportUI = updateSportUI;
 
@@ -614,7 +694,7 @@ function injectSettingsTab() {
     </div>
 
     <!-- Show Serve Ball Toggle -->
-    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
+    <div id="vb2-volleyball-showserve-container" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
       <div>
         <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">แสดงตัวระบุครองบอล/เสิร์ฟ / Show Serve/Possession Ball</div>
         <div style="font-size:.75rem;color:#64748b;margin-top:2px;">แสดงสัญลักษณ์ลูกบอลแสดงสิทธิ์เสิร์ฟหรือครองบอลบนหน้าจอควบคุมและโอเวอร์เลย์</div>
@@ -640,8 +720,102 @@ function injectSettingsTab() {
       </select>
     </div>
 
+    <!-- Boxing Graphic Custom Sizes -->
+    <div id="vb2-boxing-sizes-container" style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: none;">
+      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🥊 ปรับขนาดกราฟิกมวย / Boxing Sizing Settings</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #cbd5e1;">
+        <div>
+          <span style="display:block;margin-bottom:2px;">ความสูงโลโก้รายการ (Logo Height px)</span>
+          <input type="number" id="vb2-bx-logo-size" value="${getVbState('bx_logo_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรชื่อ (Name Font Size px)</span>
+          <input type="number" id="vb2-bx-name-font-size" value="${getVbState('bx_name_font_size', '20')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">ความกว้างช่องชื่อ (Name Panel Width px)</span>
+          <input type="number" id="vb2-bx-name-panel-width" value="${getVbState('bx_name_panel_width', '250')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">ความสูง HUD (HUD Height px)</span>
+          <input type="number" id="vb2-bx-name-panel-height" value="${getVbState('bx_name_panel_height', '66')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">ขนาดเวลาหลัก (Timer Font Size px)</span>
+          <input type="number" id="vb2-bx-time-font-size" value="${getVbState('bx_time_font_size', '38')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">ความกว้างป้าย1 (Label 1 Width px)</span>
+          <input type="number" id="vb2-bx-label1-width" value="${getVbState('bx_label1_width', '120')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+        <div style="grid-column: span 2;">
+          <span style="display:block;margin-bottom:2px;">ขนาดตัวอักษรป้าย1 (Label 1 Font Size px)</span>
+          <input type="number" id="vb2-bx-label1-font-size" value="${getVbState('bx_label1_font_size', '10')}" style="width:100%;padding:4px 8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:#fff;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Boxing Graphic Custom Colors -->
+    <div id="vb2-boxing-colors-container" style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: none;">
+      <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 ปรับแต่งสีแถบและข้อความมวย / Boxing Colors Settings</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; color: #cbd5e1;">
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีแถบฝั่งซ้าย (Left Bar Color)</span>
+          <input type="color" id="vb2-bx-color-left" value="${getVbState('bx_color_left', '#ef4444')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีชื่อฝั่งซ้าย (Left Text Color)</span>
+          <input type="color" id="vb2-bx-color-left-txt" value="${getVbState('bx_color_left_txt', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งซ้าย (Left Panel BG)</span>
+          <input type="color" id="vb2-bx-color-left-bg" value="${getVbState('bx_color_left_bg', '#1e293b')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีแถบฝั่งขวา (Right Bar Color)</span>
+          <input type="color" id="vb2-bx-color-right" value="${getVbState('bx_color_right', '#3b82f6')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีชื่อฝั่งขวา (Right Text Color)</span>
+          <input type="color" id="vb2-bx-color-right-txt" value="${getVbState('bx_color_right_txt', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้ายฝั่งขวา (Right Panel BG)</span>
+          <input type="color" id="vb2-bx-color-right-bg" value="${getVbState('bx_color_right_bg', '#1e293b')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีพื้นหลังเวลาหลัก (Center BG)</span>
+          <input type="color" id="vb2-bx-color-center-bg" value="${getVbState('bx_color_center_bg', '#ffffff')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีตัวเลขเวลาหลัก (Timer Text)</span>
+          <input type="color" id="vb2-bx-color-time-txt" value="${getVbState('bx_color_time_txt', '#020617')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีพื้นหลังป้าย1 (Label 1 BG)</span>
+          <input type="color" id="vb2-bx-color-label1-bg" value="${getVbState('bx_color_label1_bg', '#020617')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีข้อความป้าย1 (Label 1 Text)</span>
+          <input type="color" id="vb2-bx-color-label1-txt" value="${getVbState('bx_color_label1_txt', '#e2e8f0')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สีพื้นหลังยก/โลโก้ (Header BG)</span>
+          <input type="color" id="vb2-bx-color-header-bg" value="${getVbState('bx_color_header_bg', '#0f172a')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div>
+          <span style="display:block;margin-bottom:2px;">สียกปัจจุบัน (Active Round Dash)</span>
+          <input type="color" id="vb2-bx-color-dash-active" value="${getVbState('bx_color_dash_active', '#fbbf24')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+        <div style="grid-column: span 2;">
+          <span style="display:block;margin-bottom:2px;">สียกทั่วไป (Inactive Round Dash)</span>
+          <input type="color" id="vb2-bx-color-dash-inactive" value="${getVbState('bx_color_dash_inactive', '#334155')}" style="width:100%;height:30px;border:none;border-radius:4px;cursor:pointer;">
+        </div>
+      </div>
+    </div>
+
     <!-- Custom Colors -->
-    <div style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+    <div id="vb2-volleyball-colors-container" style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
       <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🎨 Custom Overlay Colors / ปรับแต่งสีกราฟิก</div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #cbd5e1;">
         <div>
@@ -685,7 +859,7 @@ function injectSettingsTab() {
       <img id="vb2-logo-preview" src="${getVbState(VB_LOGO_KEY, '')}" style="max-height:50px;display:${getVbState(VB_LOGO_KEY, '') ? 'block' : 'none'};margin-bottom:10px;border-radius:4px;">
       
       <!-- Custom Fonts Split (Team & Score) -->
-      <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
+      <div id="vb2-volleyball-fonts-container" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06);">
         <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">✍️ Custom Fonts / จัดการแบบอักษร</div>
         
         <!-- Section 1: Team Names Font -->
@@ -778,14 +952,15 @@ function injectSettingsTab() {
           <div style="font-size:.75rem;color:#cbd5e1;margin-bottom:4px;">Team Name Width (px)</div>
           <input type="number" id="vb2-team-width" value="${parseInt(getVbState(VB_TEAM_WIDTH_KEY, '250'))}" style="width:100%;padding:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:12px;">
         </div>
+        
+        <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin-top:10px;">
+          <div class="toggle-switch">
+            <input type="checkbox" id="vb2-auto-serve" ${getVbState(VB_AUTO_SERVE_KEY, 'true')==='true'?'checked':''}>
+            <span class="slider"></span>
+          </div>
+          <span style="font-size:0.8rem;color:#cbd5e1;">Auto-Serve on Point</span>
+        </label>
       </div>
-      <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin-top:10px;">
-        <div class="toggle-switch">
-          <input type="checkbox" id="vb2-auto-serve" ${getVbState(VB_AUTO_SERVE_KEY, 'true')==='true'?'checked':''}>
-          <span class="slider"></span>
-        </div>
-        <span style="font-size:0.8rem;color:#cbd5e1;">Auto-Serve on Point</span>
-      </label>
     </div>
 
     <!-- Point History Section Removed -->
@@ -795,16 +970,16 @@ function injectSettingsTab() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
         <!-- Number of Sets -->
         <div>
-          <label style="font-size:.75rem;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">🎯 Max Sets</label>
+          <label id="vb2-maxsets-label" style="font-size:.75rem;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">🎯 Max Sets</label>
           <div style="display:flex;align-items:center;gap:5px;">
             <button id="vb2-maxsets-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
-            <input id="vb2-maxsets" type="number" min="1" max="9" value="${maxSets}"
+            <input id="vb2-maxsets" type="number" min="1" max="12" value="${maxSets}"
               style="width:100%;text-align:center;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-size:14px;font-weight:700;padding:4px 0;">
             <button id="vb2-maxsets-plus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
           </div>
         </div>
         <!-- Set Point Limit -->
-        <div>
+        <div id="vb2-volleyball-limit-wrapper">
           <label style="font-size:.75rem;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">🎯 Set Point</label>
           <div style="display:flex;align-items:center;gap:5px;">
             <button id="vb2-limit-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
@@ -816,7 +991,7 @@ function injectSettingsTab() {
       </div>
       
       <!-- Final Set Point Limit -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div id="vb2-volleyball-finallimit-wrapper" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <label style="font-size:.85rem;font-weight:600;color:#cbd5e1;">🎯 Final Set Point Limit</label>
         <div style="display:flex;align-items:center;gap:5px;">
           <button id="vb2-finallimit-minus" style="width:28px;height:28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;border-radius:6px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
@@ -827,7 +1002,7 @@ function injectSettingsTab() {
       </div>
 
       <!-- Set History Preview -->
-      <div style="margin-bottom:14px;">
+      <div id="vb2-volleyball-history-wrapper" style="margin-bottom:14px;">
         <div style="font-size:.7rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">📋 Set History</div>
         <div id="vb2-history-prev" style="display:flex;flex-wrap:wrap;gap:5px;min-height:22px;">
           <span style="color:rgba(255,255,255,0.3);font-size:11px">No finished sets yet</span>
@@ -835,7 +1010,7 @@ function injectSettingsTab() {
       </div>
 
       <!-- Action Buttons -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div id="vb2-volleyball-actions-wrapper" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
         <button id="vb2-finish-btn"
           style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a0e00;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(245,158,11,0.3);">
           🏁 Finish Set
@@ -849,7 +1024,7 @@ function injectSettingsTab() {
       <!-- OBS Source Creator -->
       <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
         <div style="font-size:.7rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">🎬 OBS Integration</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div id="vb2-volleyball-obs-container" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <button id="vb2-create-main-btn"
             style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(34,197,94,0.3);border-radius:8px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;">
             🎬 Main Score
@@ -860,7 +1035,7 @@ function injectSettingsTab() {
           </button>
 <!-- Point History OBS Button Removed -->
         </div>
-        <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+        <div id="vb2-boxing-obs-container" style="display:grid;grid-template-columns:1fr;gap:8px;">
           <button id="vb2-create-boxing-btn"
             style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid rgba(220,38,38,0.3);border-radius:8px;background:rgba(220,38,38,0.12);color:#fca5a5;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;">
             🥊 Boxing Score Overlay
@@ -918,7 +1093,7 @@ function injectSettingsTab() {
   // Sport select
   document.getElementById('vb2-sport-select').addEventListener('change', e => {
     localStorage.setItem('vb_sport', e.target.value);
-    if (window.updateSportUI) window.updateSportUI();
+    updateSportUI();
     broadcast();
   });
 
@@ -1025,6 +1200,56 @@ function injectSettingsTab() {
   document.getElementById('vb2-team-width').addEventListener('change', e => setVbState(VB_TEAM_WIDTH_KEY, e.target.value));
   document.getElementById('vb2-auto-serve').addEventListener('change', e => setVbState(VB_AUTO_SERVE_KEY, e.target.checked ? 'true' : 'false'));
 
+  // Boxing Custom Sizes Listeners
+  const bxSizeKeys = [
+    { id: 'vb2-bx-logo-size', key: 'bx_logo_size' },
+    { id: 'vb2-bx-name-font-size', key: 'bx_name_font_size' },
+    { id: 'vb2-bx-name-panel-width', key: 'bx_name_panel_width' },
+    { id: 'vb2-bx-name-panel-height', key: 'bx_name_panel_height' },
+    { id: 'vb2-bx-time-font-size', key: 'bx_time_font_size' },
+    { id: 'vb2-bx-label1-width', key: 'bx_label1_width' },
+    { id: 'vb2-bx-label1-font-size', key: 'bx_label1_font_size' }
+  ];
+  bxSizeKeys.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const handler = e => {
+        localStorage.setItem(key, e.target.value);
+        broadcast();
+      };
+      el.addEventListener('change', handler);
+      el.addEventListener('input', handler);
+    }
+  });
+
+  // Boxing Custom Colors Listeners
+  const bxColorKeys = [
+    { id: 'vb2-bx-color-left', key: 'bx_color_left' },
+    { id: 'vb2-bx-color-left-txt', key: 'bx_color_left_txt' },
+    { id: 'vb2-bx-color-left-bg', key: 'bx_color_left_bg' },
+    { id: 'vb2-bx-color-right', key: 'bx_color_right' },
+    { id: 'vb2-bx-color-right-txt', key: 'bx_color_right_txt' },
+    { id: 'vb2-bx-color-right-bg', key: 'bx_color_right_bg' },
+    { id: 'vb2-bx-color-center-bg', key: 'bx_color_center_bg' },
+    { id: 'vb2-bx-color-time-txt', key: 'bx_color_time_txt' },
+    { id: 'vb2-bx-color-label1-bg', key: 'bx_color_label1_bg' },
+    { id: 'vb2-bx-color-label1-txt', key: 'bx_color_label1_txt' },
+    { id: 'vb2-bx-color-header-bg', key: 'bx_color_header_bg' },
+    { id: 'vb2-bx-color-dash-active', key: 'bx_color_dash_active' },
+    { id: 'vb2-bx-color-dash-inactive', key: 'bx_color_dash_inactive' }
+  ];
+  bxColorKeys.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const handler = e => {
+        localStorage.setItem(key, e.target.value);
+        broadcast();
+      };
+      el.addEventListener('change', handler);
+      el.addEventListener('input', handler);
+    }
+  });
+
   // Limit input
   const limitInput = document.getElementById('vb2-limit');
   const applyLimit = () => {
@@ -1040,14 +1265,24 @@ function injectSettingsTab() {
   // Max Sets input
   const maxSetsInput = document.getElementById('vb2-maxsets');
   const applyMaxSets = () => {
-    const v = Math.max(1, Math.min(9, parseInt(maxSetsInput.value) || 5));
+    const v = Math.max(1, Math.min(12, parseInt(maxSetsInput.value) || 5));
     maxSetsInput.value = v;
     saveMaxSets(v);
+    
+    // Sync with main panel's max halves
+    localStorage.setItem('maxHalves', v);
+    const mainSelect = document.getElementById('maxHalvesSelect');
+    if (mainSelect) {
+      mainSelect.value = v;
+      mainSelect.dispatchEvent(new Event('change'));
+    }
+    
     broadcast();
   };
   maxSetsInput.addEventListener('change', applyMaxSets);
+  maxSetsInput.addEventListener('input', applyMaxSets);
   document.getElementById('vb2-maxsets-minus').addEventListener('click', () => { maxSetsInput.value = Math.max(1, parseInt(maxSetsInput.value) - 1); applyMaxSets(); });
-  document.getElementById('vb2-maxsets-plus').addEventListener('click',  () => { maxSetsInput.value = Math.min(9, parseInt(maxSetsInput.value) + 1); applyMaxSets(); });
+  document.getElementById('vb2-maxsets-plus').addEventListener('click',  () => { maxSetsInput.value = Math.min(12, parseInt(maxSetsInput.value) + 1); applyMaxSets(); });
 
   // Final Limit input
   const finalLimitInput = document.getElementById('vb2-finallimit');
@@ -1076,6 +1311,7 @@ function injectSettingsTab() {
   });
 
   updatePointHistoryList();
+  updateSportUI();
 }
 
 // ── Poll loop ────────────────────────────────────────────────────────
@@ -1085,6 +1321,17 @@ function poll() {
   const timerText = document.getElementById('timerText')?.textContent || '00:00';
   const halfText = document.getElementById('halfText')?.textContent || '1st';
   const label1Text = document.getElementById('label1')?.textContent || '';
+  const sport = localStorage.getItem('vb_sport') || 'volleyball';
+  
+  // Sync max rounds if boxing is active
+  if (sport === 'boxing') {
+    const currentMaxHalves = parseInt(localStorage.getItem('maxHalves') || '2');
+    if (getMaxSets() !== currentMaxHalves) {
+      saveMaxSets(currentMaxHalves);
+      const maxSetsInput = document.getElementById('vb2-maxsets');
+      if (maxSetsInput) maxSetsInput.value = currentMaxHalves;
+    }
+  }
   
   const changed = sA !== lastA || sB !== lastB || s2A !== last2A || s2B !== last2B || 
                   nA !== lastNA || nB !== lastNB || cA !== lastCA || cB !== lastCB ||

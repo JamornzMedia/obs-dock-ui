@@ -1360,7 +1360,7 @@ const saveAndUpdateTime = () => {
 }
 
 const toggleHalf = () => {
-    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
+    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
     // Limit halves array based on maxHalves
     // V2.9.2: Fix slice logic if maxHalves is undefined or logic slightly off
     const limit = maxHalves || 2;
