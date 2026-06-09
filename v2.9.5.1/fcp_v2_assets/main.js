@@ -3187,6 +3187,6 @@ window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js';
-import './display_table_module.js';
+import './volleyball_module_v2.js?v=2.9.5.2';
+import './display_table_module.js?v=2.9.5.2';
 
