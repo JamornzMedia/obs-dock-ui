@@ -2714,8 +2714,21 @@
                         <input type="color" class="color-picker" id="colorA" value="#ffffff">
                         <input type="color" class="color-picker color-picker-2" id="colorA2" value="#000000">
                     </div>
-                    <div class="logo-container"><img id="logoA" src="" alt="">
+                    <div class="logo-container" style="position: relative;"><img id="logoA" src="" alt="">
                         <div class="logo-initials" id="initialsA">A</div>
+                    </div>
+                    <!-- Bib Override A -->
+                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
+                            <input type="checkbox" id="bibOverrideA" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
+                            🎽
+                        </label>
+                        <div id="bibColorsA" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorA" value="#84cc16" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
+                        </div>
                     </div>
                 </div>
                 <!-- Row 2: Name + Buttons -->
@@ -2735,8 +2748,21 @@
                         <input type="color" class="color-picker" id="colorB" value="#ffffff">
                         <input type="color" class="color-picker color-picker-2" id="colorB2" value="#000000">
                     </div>
-                    <div class="logo-container"><img id="logoB" src="" alt="">
+                    <div class="logo-container" style="position: relative;"><img id="logoB" src="" alt="">
                         <div class="logo-initials" id="initialsB">B</div>
+                    </div>
+                    <!-- Bib Override B -->
+                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
+                            <input type="checkbox" id="bibOverrideB" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
+                            🎽
+                        </label>
+                        <div id="bibColorsB" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorB" value="#f97316" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
+                        </div>
                     </div>
                 </div>
                 <!-- Row 2: Name + Buttons -->
@@ -2880,6 +2906,19 @@
             </div>
         </div>
     </div>
+
+    <!-- Display Table Control Panel on Main Page -->
+    <div id="dt-main-control-card" class="card" style="display: none; border: 1.5px solid #22c55e;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #22c55e; text-transform: uppercase; margin-bottom: 8px; text-align: center;">📊 ควบคุมตาราง / Display Table Row Filter</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; color: #cbd5e1;">MatchID Range:</span>
+            <input type="text" id="dt-main-row-range" placeholder="e.g. 1-10" style="flex: 1; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 12px;">
+        </div>
+        <button id="dt-main-confirm-btn" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 8px; border: none; border-radius: 6px; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            🚀 Confirm & Broadcast Table
+        </button>
+    </div>
+
     <div class="card">
         <div class="row center" style="gap: 10px;">
             <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
@@ -2907,7 +2946,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - V2.9.5 (อัพเดต: 5 มิถุนายน 2569)
+            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.1</span> (อัพเดต: <span id="fcp-update-date-text">10 มิถุนายน 2569</span>)
         </div>
     </div>
     </div>
@@ -3075,11 +3114,18 @@
                     <span data-lang="maxHalvesLabel" style="margin-right: 10px;">Max Halves:</span>
                     <select id="maxHalvesSelect"
                         style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
                         <option value="4">4</option>
                         <option value="5">5</option>
                         <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
                     </select>
                 </label>
                 <!-- Color count selector -->
@@ -3532,7 +3578,7 @@
     </script>
 
 
-    <script type="module" src="fcp_v2_assets/main.js"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.1"></script>
 
     <!-- Duplicate Mobile Control Popup Removed (using the one at line ~2160) -->
 

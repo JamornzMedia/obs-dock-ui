@@ -1074,15 +1074,24 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const scoreEl = isA ? elements.scoreA : elements.scoreB;
     const score2El = isA ? elements.score2A : elements.score2B;
 
+    // Calculate effective color for score display background and OBS
+    const bibOverride = document.getElementById(`bibOverride${team}`);
+    const isBibActive = bibOverride && bibOverride.checked;
+    let effectiveColor1 = masterTeam.color1;
+    if (isBibActive) {
+        const defaultBibColor = team === 'A' ? '#84cc16' : '#f97316';
+        effectiveColor1 = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultBibColor;
+    }
+
     nameEl.innerHTML = masterTeam.name.replace(/\//g, '<br>');
     colorEl1.value = masterTeam.color1;
     colorEl2.value = masterTeam.color2;
     initialsEl.textContent = getTeamInitials(masterTeam.name.replace(/\//g, ' '));
     scoreEl.textContent = masterTeam.score;
-    scoreEl.style.backgroundColor = masterTeam.color1;
+    scoreEl.style.backgroundColor = effectiveColor1;
 
     // Contrast text color
-    const contrastColor = getContrastColor(masterTeam.color1);
+    const contrastColor = getContrastColor(effectiveColor1);
     scoreEl.style.color = contrastColor;
     scoreEl.style.webkitTextStroke = "0px";
 
@@ -1118,7 +1127,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
     setText(obsNameSource, masterTeam.name.replace(/\//g, '\n'));
     setImage(obsLogoSource, masterTeam.logoFile);
-    setSourceColor(obsColorSource1, masterTeam.color1);
+    setSourceColor(obsColorSource1, effectiveColor1);
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
     setText(obsScore2Source, masterTeam.score2);
@@ -1127,6 +1136,18 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 };
 
 const applyMatch = () => {
+    // Uncheck and reset bib overrides when match ID changes
+    const bibToggleA = document.getElementById('bibOverrideA');
+    if (bibToggleA && bibToggleA.checked) {
+        bibToggleA.checked = false;
+        bibToggleA.dispatchEvent(new Event('change'));
+    }
+    const bibToggleB = document.getElementById('bibOverrideB');
+    if (bibToggleB && bibToggleB.checked) {
+        bibToggleB.checked = false;
+        bibToggleB.dispatchEvent(new Event('change'));
+    }
+
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
     const header = sheetData[0];
@@ -1162,6 +1183,26 @@ const applyMatch = () => {
 
 const swapTeams = () => {
     [masterTeamA, masterTeamB] = [masterTeamB, masterTeamA];
+
+    const bibOverrideA = document.getElementById('bibOverrideA');
+    const bibOverrideB = document.getElementById('bibOverrideB');
+    if (bibOverrideA && bibOverrideB) {
+        const aChecked = bibOverrideA.checked;
+        const bChecked = bibOverrideB.checked;
+        
+        // Swap active bib colors in localStorage
+        const colorA = localStorage.getItem('bib_active_color_a') || '#84cc16';
+        const colorB = localStorage.getItem('bib_active_color_b') || '#f97316';
+        localStorage.setItem('bib_active_color_a', colorB);
+        localStorage.setItem('bib_active_color_b', colorA);
+        
+        bibOverrideA.checked = bChecked;
+        bibOverrideB.checked = aChecked;
+        
+        bibOverrideA.dispatchEvent(new Event('change'));
+        bibOverrideB.dispatchEvent(new Event('change'));
+    }
+
     const tempA = { ...masterTeamA };
     const tempB = { ...masterTeamB };
     updateTeamUI('A', tempA.name, tempA.logoFile, tempA.color1, tempA.color2, tempA.score, tempA.score2);
@@ -1255,6 +1296,18 @@ const resetScore2 = () => {
 
 const fullReset = () => {
     pushResetHistory();
+    // Uncheck and reset bib overrides on full reset
+    const bibToggleA = document.getElementById('bibOverrideA');
+    if (bibToggleA && bibToggleA.checked) {
+        bibToggleA.checked = false;
+        bibToggleA.dispatchEvent(new Event('change'));
+    }
+    const bibToggleB = document.getElementById('bibOverrideB');
+    if (bibToggleB && bibToggleB.checked) {
+        bibToggleB.checked = false;
+        bibToggleB.dispatchEvent(new Event('change'));
+    }
+
     masterTeamA.score = masterTeamB.score = 0;
     masterTeamA.score2 = masterTeamB.score2 = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
@@ -1359,8 +1412,8 @@ const saveAndUpdateTime = () => {
     showToast(translations[currentLang].toastTimeSet, 'success');
 }
 
-const toggleHalf = () => {
-    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
+const toggleHalf = async () => {
+    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
     // Limit halves array based on maxHalves
     // V2.9.2: Fix slice logic if maxHalves is undefined or logic slightly off
     const limit = maxHalves || 2;
@@ -1370,7 +1423,91 @@ const toggleHalf = () => {
     if (currentIndex === -1) currentIndex = 0;
 
     let nextIndex = (currentIndex + 1) % activeHalves.length;
-    half = activeHalves[nextIndex];
+    const nextHalf = activeHalves[nextIndex];
+
+    const bibOverrideA = document.getElementById('bibOverrideA');
+    const bibOverrideB = document.getElementById('bibOverrideB');
+    const hasBib = (bibOverrideA && bibOverrideA.checked) || (bibOverrideB && bibOverrideB.checked);
+
+    // Ask to swap bib color when transitioning from 1st to 2nd half
+    if (half === '1st' && nextHalf === '2nd' && hasBib) {
+        const isThai = currentLang === 'th';
+        const msg = isThai ? 
+            'คุณต้องการสลับสีเสื้อเอี้ยม (ดึงสีเสื้อเอี้ยมไปอีกฝั่ง) หรือไม่?' : 
+            'Do you want to swap the bib colors (pull the bib color to the other side)?';
+        const title = isThai ? 'สลับสีเสื้อเอี้ยม' : 'Swap Bib Color';
+        const yesText = isThai ? 'สลับ' : 'Swap';
+        
+        const confirmed = await window.customConfirm(msg, title, 'fa-exchange-alt', yesText, 'btn-warning');
+        if (confirmed) {
+            const aChecked = bibOverrideA ? bibOverrideA.checked : false;
+            const bChecked = bibOverrideB ? bibOverrideB.checked : false;
+            
+            // Swap active bib colors in localStorage
+            const colorA = localStorage.getItem('bib_active_color_a') || '#84cc16';
+            const colorB = localStorage.getItem('bib_active_color_b') || '#f97316';
+            localStorage.setItem('bib_active_color_a', colorB);
+            localStorage.setItem('bib_active_color_b', colorA);
+            
+            // Update the custom color inputs
+            const bibCustomColorA = document.getElementById('bibCustomColorA');
+            const bibCustomColorB = document.getElementById('bibCustomColorB');
+            if (bibCustomColorA) bibCustomColorA.value = colorB;
+            if (bibCustomColorB) bibCustomColorB.value = colorA;
+            
+            if (bibOverrideA) bibOverrideA.checked = bChecked;
+            if (bibOverrideB) bibOverrideB.checked = aChecked;
+            
+            if (bibOverrideA) bibOverrideA.dispatchEvent(new Event('change'));
+            if (bibOverrideB) bibOverrideB.dispatchEvent(new Event('change'));
+        }
+    }
+    // Check if bib overrides are active before changing half/round back to 1st
+    else if (nextHalf === '1st' && hasBib) {
+        const isThai = currentLang === 'th';
+        const msg = isThai ?
+            'คุณต้องการสลับทีมที่ใส่เสื้อเอี้ยม สำหรับครึ่งแรกใหม่หรือไม่?\n(ตกลง = สลับทีมที่ใส่เสื้อเอี้ยม, ยกเลิก = ปิดการใช้งานเสื้อเอี้ยมทั้งหมด)' :
+            'Do you want to swap the bib teams for the first half?\n(OK = Swap bib teams, Cancel = Disable all bibs)';
+        const title = isThai ? 'สลับเสื้อเอี้ยมสำหรับครึ่งแรก' : 'Swap Bib for First Half';
+        const yesText = isThai ? 'สลับ' : 'Swap';
+
+        const confirmed = await window.customConfirm(msg, title, 'fa-exchange-alt', yesText, 'btn-warning');
+        if (confirmed) {
+            // Swap the checkbox checked states
+            const aChecked = bibOverrideA ? bibOverrideA.checked : false;
+            const bChecked = bibOverrideB ? bibOverrideB.checked : false;
+            if (aChecked !== bChecked) {
+                // Swap active bib colors in localStorage
+                const colorA = localStorage.getItem('bib_active_color_a') || '#84cc16';
+                const colorB = localStorage.getItem('bib_active_color_b') || '#f97316';
+                localStorage.setItem('bib_active_color_a', colorB);
+                localStorage.setItem('bib_active_color_b', colorA);
+
+                // Update the custom color inputs
+                const bibCustomColorA = document.getElementById('bibCustomColorA');
+                const bibCustomColorB = document.getElementById('bibCustomColorB');
+                if (bibCustomColorA) bibCustomColorA.value = colorB;
+                if (bibCustomColorB) bibCustomColorB.value = colorA;
+
+                if (bibOverrideA) bibOverrideA.checked = bChecked;
+                if (bibOverrideB) bibOverrideB.checked = aChecked;
+                if (bibOverrideA) bibOverrideA.dispatchEvent(new Event('change'));
+                if (bibOverrideB) bibOverrideB.dispatchEvent(new Event('change'));
+            }
+        } else {
+            // Turn off bib overrides on both teams
+            if (bibOverrideA && bibOverrideA.checked) {
+                bibOverrideA.checked = false;
+                bibOverrideA.dispatchEvent(new Event('change'));
+            }
+            if (bibOverrideB && bibOverrideB.checked) {
+                bibOverrideB.checked = false;
+                bibOverrideB.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+
+    half = nextHalf;
 
     // V2.9.2: Styled Half Text
     const html = `<span class="half-ordinal">${half}</span>`;
@@ -1401,6 +1538,7 @@ const handleExcel = () => {
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
+                window.currentWorkbook = workbook; // Save globally for Display Table
                 // V2.9.3: Use selected sheet tab index (re-read from localStorage)
                 const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
                 const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
@@ -1443,6 +1581,7 @@ const fetchGoogleSheet = async () => {
         loadingToast.remove();
 
         const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        window.currentWorkbook = workbook; // Save globally for Display Table
         // V2.9.3: Use selected sheet tab index (re-read from localStorage)
         const currentTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1');
         const sheetIndex = Math.max(0, Math.min(currentTabIndex - 1, workbook.SheetNames.length - 1));
@@ -2984,6 +3123,14 @@ window.broadcastToMobile = () => {
     const matchIdEl = document.getElementById('matchID');
     const currentMatchId = matchIdEl ? matchIdEl.textContent : "1";
 
+    const bibOverrideA = document.getElementById('bibOverrideA');
+    const isBibActiveA = bibOverrideA && bibOverrideA.checked;
+    const effectiveColorA1 = isBibActiveA ? (localStorage.getItem('bib_active_color_a') || '#84cc16') : masterTeamA.color1;
+
+    const bibOverrideB = document.getElementById('bibOverrideB');
+    const isBibActiveB = bibOverrideB && bibOverrideB.checked;
+    const effectiveColorB1 = isBibActiveB ? (localStorage.getItem('bib_active_color_b') || '#f97316') : masterTeamB.color1;
+
     const state = {
         type: 'stateUpdate', // FIXED: Match OBSScorePhone.html
         matchId: currentMatchId, // Added Match ID
@@ -2991,14 +3138,14 @@ window.broadcastToMobile = () => {
             name: masterTeamA.name,
             score: masterTeamA.score,
             score2: masterTeamA.score2,
-            color: masterTeamA.color1, // FIXED: Mobile expects 'color', not 'color1'
+            color: effectiveColorA1, // FIXED: Mobile expects 'color', not 'color1'
             color2: masterTeamA.color2
         },
         teamB: {
             name: masterTeamB.name,
             score: masterTeamB.score,
             score2: masterTeamB.score2,
-            color: masterTeamB.color1, // FIXED: Mobile expects 'color'
+            color: effectiveColorB1, // FIXED: Mobile expects 'color'
             color2: masterTeamB.color2
         },
         timer: elements.timerText.textContent,
@@ -3187,6 +3334,73 @@ window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js';
-import './display_table_module.js';
+import './volleyball_module_v2.js?v=2.9.5.1';
+import './display_table_module.js?v=2.9.5.1';
+import { VERSION, UPDATE_DATE } from './version.js';
+
+const versionTextEl = document.getElementById('fcp-version-text');
+const updateDateTextEl = document.getElementById('fcp-update-date-text');
+if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
+if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
+document.title = 'FCP V' + VERSION;
+
+// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
+const initBibOverride = (team) => {
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const bibColors = document.getElementById(`bibColors${team}`);
+    const bibCustomColor = document.getElementById(`bibCustomColor${team}`);
+    const colorInput = document.getElementById(`color${team}`);
+    const defaultBibColor = team === 'A' ? '#84cc16' : '#f97316';
+
+    if (bibToggle && colorInput) {
+        // Clear stale active bib color selections on load to ensure clean state
+        localStorage.removeItem(`bib_active_color_${team.toLowerCase()}`);
+
+        bibToggle.addEventListener('change', e => {
+            const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+            if (e.target.checked) {
+                if (bibColors) bibColors.style.display = 'flex';
+                
+                // Get active bib color
+                const bibColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultBibColor;
+                if (bibCustomColor) bibCustomColor.value = bibColor;
+            } else {
+                if (bibColors) bibColors.style.display = 'none';
+            }
+            
+            // Just update team UI which will route the effective color properly
+            updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+        });
+
+        if (bibCustomColor) {
+            const handleCustomColor = e => {
+                localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, e.target.value);
+                if (bibToggle.checked) {
+                    const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+                    updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                }
+            };
+            bibCustomColor.addEventListener('input', handleCustomColor);
+            bibCustomColor.addEventListener('change', handleCustomColor);
+        }
+
+        if (bibColors) {
+            const btns = bibColors.querySelectorAll('.bib-color-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = btn.getAttribute('data-color');
+                    localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, color);
+                    if (bibCustomColor) bibCustomColor.value = color;
+                    if (bibToggle.checked) {
+                        const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+                        updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                    }
+                });
+            });
+        }
+    }
+};
+
+initBibOverride('A');
+initBibOverride('B');
 
