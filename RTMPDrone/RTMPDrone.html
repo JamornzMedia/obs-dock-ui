@@ -336,7 +336,7 @@
         /* ส่วนคู่มือตั้งค่า */
         .guide-panel {
             max-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
             opacity: 0;
             margin-top: 0;
@@ -345,7 +345,7 @@
         }
 
         .guide-panel.open {
-            max-height: 600px;
+            max-height: 2500px;
             opacity: 1;
             margin-top: 20px;
             border-top: 1px dashed var(--border-color);
@@ -373,6 +373,53 @@
             border-radius: 4px;
             font-family: monospace;
             color: #fbbf24;
+        }
+
+        .guide-section {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+
+        .guide-section h4 {
+            font-size: 13px;
+            color: #a5b4fc;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-pc {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-mobile {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-net {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         /* หน้าต่างสแกน QR Code (Modal) */
@@ -599,22 +646,70 @@
 
     <!-- แผงแนะนำการใช้งาน (ซ่อนอยู่โดยค่าเริ่มต้น) -->
     <div id="guidePanel" class="guide-panel">
-        <h3>ขั้นตอนการตั้งค่าใน OBS Studio:</h3>
-        <ol>
-            <li>เปิดโปรแกรม OBS Studio ขึ้นมา</li>
-            <li>ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
-            <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
-            <li>จดพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน</li>
-            <li>นำข้อมูลมากรอกในแท็บ "ตั้งค่าการเชื่อมต่อ OBS WebSocket" ด้านบน</li>
-        </ol>
-        <h3 style="margin-top: 15px;">การทำเป็นเมนู Dock ในโปรแกรม OBS (แนะนำ!):</h3>
-        <ol>
-            <li>หลังจากกรอกการตั้งค่าเสร็จแล้ว ให้กดปุ่ม <strong>สร้างลิงก์ด่วน</strong> ลิงก์เชื่อมต่อที่มีรหัสผ่านจะถูกก๊อปปี้</li>
-            <li>ในโปรแกรม OBS ไปที่เมนูด้านบน <strong>Docks (แถบเครื่องมือ)</strong> &gt; <strong>Custom Browser Docks... (ด็อคบราวเซอร์แบบกำหนดเอง...)</strong></li>
-            <li>ในช่อง <strong>Dock Name</strong> ตั้งชื่อเช่น <code>Drone Remote</code></li>
-            <li>ในช่อง <strong>URL</strong> ให้วางลิงก์ที่ก๊อปปี้มาลงไป แล้วกดปุ่ม <strong>Apply (นำไปใช้)</strong></li>
-            <li>โปรแกรม OBS จะเปิดหน้าต่างรีโมทนี้ขึ้นมาเชื่อมต่อกับระบบควบคุมของท่านทันทีโดยไม่ต้องเปิดเบราว์เซอร์แยก!</li>
-        </ol>
+        <div class="guide-section">
+            <h4><span class="badge-net">เครือข่าย</span> 1. เชื่อมต่อ Wi-Fi วงเดียวกัน</h4>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+                เพื่อให้อุปกรณ์ควบคุม (เช่น มือถือ/แท็บเล็ต) สามารถสื่อสารกับโปรแกรม OBS บนคอมพิวเตอร์ได้ ทั้งคอมพิวเตอร์และมือถือต้องเชื่อมต่อ <strong>Wi-Fi ตัวเดียวกัน</strong> (หรือคอมพิวเตอร์เชื่อมต่อ Wi-Fi Hotspot ที่เปิดจากมือถือเครื่องที่ใช้ควบคุม)
+            </p>
+        </div>
+
+        <div class="guide-section">
+            <h4><span class="badge-pc">ฝั่งคอมพิวเตอร์ (PC)</span> 2. วิธีหา IP ของเครื่องคอมพิวเตอร์</h4>
+            <ol style="margin-bottom: 0;">
+                <li><strong>บนระบบ Windows:</strong> กดปุ่ม <code>Windows + R</code> บนคีย์บอร์ด พิมพ์ <code>cmd</code> แล้วกด Enter เพื่อเปิด Command Prompt</li>
+                <li>พิมพ์คำสั่ง <code>ipconfig</code> แล้วกด Enter</li>
+                <li>มองหาหัวข้อ <strong>Wireless LAN adapter Wi-Fi</strong> (หากต่อ Wi-Fi) หรือ <strong>Ethernet adapter</strong> (หากต่อสายแลน)</li>
+                <li>มองหาบรรทัด <strong>IPv4 Address</strong> จะเห็นตัวเลข IP เช่น <code>192.168.1.50</code> (จดหมายเลข IP นี้ไว้เพื่อนำไปกรอกบนมือถือ)</li>
+                <li style="margin-top: 6px;"><strong>บนระบบ macOS:</strong> ไปที่ <em>การตั้งค่าระบบ (System Settings) > Network (เครือข่าย)</em> แล้วเลือกการเชื่อมต่อที่กำลังใช้งานอยู่ จะมีหมายเลข IP แสดงชัดเจน</li>
+            </ol>
+        </div>
+
+        <div class="guide-section">
+            <h4><span class="badge-pc">ฝั่งคอมพิวเตอร์ (PC)</span> 3. ตั้งค่า OBS WebSocket Settings</h4>
+            <ol style="margin-bottom: 0;">
+                <li>เปิดโปรแกรม <strong>OBS Studio</strong></li>
+                <li>ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
+                <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
+                <li>จดจำหมายเลขพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน <strong>(Server Password)</strong></li>
+                <li>ในช่อง Sources ของ OBS ให้คลิกขวา Add > <strong>Media Source</strong> (ตั้งชื่อตรงกับหน้าควบคุม เช่น <code>DroneSource</code>) และห้ามเลือก <em>Local File</em></li>
+            </ol>
+        </div>
+
+        <div class="guide-section">
+            <h4><span class="badge-mobile">ฝั่งมือถือ (Mobile)</span> 4. วิธีเปิดใช้งานและเชื่อมต่อจากโทรศัพท์</h4>
+            <ol style="margin-bottom: 0;">
+                <li><strong>ทางเลือกเปิดใช้งานหน้าเว็บ:</strong>
+                    <ul style="margin-left: 15px; margin-top: 4px; font-size: 11px; list-style-type: circle; line-height: 1.4;">
+                        <li>ส่งไฟล์ <code>RTMPDrone.html</code> ไปเปิดในบราวเซอร์มือถือตรงๆ</li>
+                        <li>หรือโฮสต์ขึ้นเว็บเซิร์ฟเวอร์ฟรี (เช่น GitHub Pages) เพื่อความสะดวกในการเปิดและใช้ฟีเจอร์กล้องสแกน QR</li>
+                    </ul>
+                </li>
+                <li style="margin-top: 6px;">กดเมนู <strong>"ตั้งค่าการเชื่อมต่อ OBS WebSocket"</strong> ด้านบน</li>
+                <li>กรอกข้อมูลที่ได้จากคอมพิวเตอร์:
+                    <ul style="margin-left: 15px; margin-top: 4px; font-size: 11px; list-style-type: circle; line-height: 1.4;">
+                        <li><strong>OBS IP/Host:</strong> ใส่ IP คอมพิวเตอร์จากข้อ 2 (เช่น <code>192.168.1.50</code>) <em>(ห้ามใช้ 127.0.0.1 บนมือถือ เพราะจะอ้างอิงตัวมือถือเอง)</em></li>
+                        <li><strong>Port:</strong> <code>4455</code> (ตามที่ตั้งใน OBS)</li>
+                        <li><strong>รหัสผ่าน OBS WebSocket:</strong> ใส่รหัสผ่านที่คัดลอกมาจาก OBS</li>
+                    </ul>
+                </li>
+                <li>กดปุ่ม <strong>"เชื่อมต่อ & บันทึก"</strong> เพื่อจำการตั้งค่า (แถบสถานะด้านบนจะเปลี่ยนเป็นสีเขียว "เชื่อมต่อ OBS สำเร็จ")</li>
+            </ol>
+            <p style="font-size: 11.5px; color: #fbbf24; margin-top: 8px; line-height: 1.4;">
+                💡 <strong>เคล็ดลับทางลัด (สร้างลิงก์ด่วน):</strong> บน PC คุณสามารถกรอก IP เครื่อง PC, พอร์ต, รหัสผ่าน ไว้ล่วงหน้า แล้วกดปุ่ม <strong>"สร้างลิงก์ด่วน"</strong> จากนั้นส่งลิงก์ยาวๆ ที่ถูกคัดลอกนั้นไปเปิดในมือถือ หน้าเว็บมือถือจะตั้งค่าและเชื่อมต่อให้ทันที!
+            </p>
+            <p style="font-size: 11px; color: var(--error-color); margin-top: 6px; line-height: 1.4;">
+                ⚠️ <strong>หมายเหตุเรื่องกล้อง:</strong> บราวเซอร์บนมือถือจะอนุญาตให้ใช้กล้องสแกน QR Code เฉพาะหน้าเว็บที่ทำงานผ่านโปรโตคอล <strong>HTTPS://</strong> (เช่น โฮสต์บนอินเทอร์เน็ต) หรือ localhost เท่านั้น หากเปิดไฟล์ธรรมดา (file://) หรือ HTTP กล้องอาจจะไม่ทำงาน และต้องใช้วิธีก๊อปปี้ลิงก์ RTMP มาวางเองครับ
+            </p>
+        </div>
+
+        <div class="guide-section">
+            <h4><span class="badge-mobile">ฝั่งมือถือ (Mobile)</span> 5. ส่งสตรีมโดรนเข้า OBS</h4>
+            <ol style="margin-bottom: 0;">
+                <li>นำลิงก์ RTMP สตรีมของโดรนที่ได้จากแอปสตรีมหรือรีโมทโดรน มาวางในช่อง <strong>ลิงก์สตรีมวิดีโอ</strong> (เช่น <code>rtmp://192.168.1.100/live/drone</code>)</li>
+                <li>หรือกดปุ่ม 📷 <strong>สแกน QR Code</strong> บนหน้าควบคุมนี้ แล้วใช้กล้องสแกนคิวอาร์โค้ดของลิงก์สตรีม</li>
+                <li>กดปุ่ม <strong>"ส่งภาพฉายใน OBS"</strong> ปุ่มสีน้ำเงินด้านบน ลิงก์จะถูกส่งไปฉายบน OBS ทันที!</li>
+            </ol>
+        </div>
     </div>
 </div>
 
