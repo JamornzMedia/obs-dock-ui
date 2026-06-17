@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>L3 Graphics Renderer - Browser Source</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,500;0,700;1,700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            color: #fff;
+            font-family: 'Kanit', 'Outfit', sans-serif;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+        }
+
+        /* Container for all active cards */
+        #graphics-container {
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+        }
+
+        /* --- BASE GRAPHIC CARD --- */
+        .graphic-card {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.85);
+            border-left: 5px solid #00aaff;
+            border-radius: 6px;
+            padding: 12px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            width: fit-content;
+            max-width: 100%;
+            gap: 15px;
+            position: absolute;
+            
+            /* Animation transitions */
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Animations */
+        /* Slide in */
+        .graphic-card.trans-slide {
+            transform: translateX(-120%);
+        }
+        .graphic-card.trans-slide.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Fade */
+        .graphic-card.trans-fade {
+            transform: none;
+        }
+        .graphic-card.trans-fade.active {
+            opacity: 1;
+        }
+
+        /* Zoom */
+        .graphic-card.trans-zoom {
+            transform: scale(0.6);
+        }
+        .graphic-card.trans-zoom.active {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Hidden cards should still animate out before disappearing */
+        .graphic-card.hidden {
+            display: none !important;
+        }
+
+        /* --- COMPONENT STYLES --- */
+        .field-id {
+            font-weight: 700;
+            color: #888;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            min-width: 25px;
+        }
+
+        .field-image {
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            background: #111;
+        }
+
+        .field-text-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .field-name {
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        .field-label {
+            font-size: 14px;
+            color: #ccc;
+            font-weight: 300;
+        }
+
+        /* --- DOUBLE SIDE-BY-SIDE GRAPHIC --- */
+        .double-standard-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .double-divider {
+            width: 2px;
+            height: 35px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* --- SPORTS SUBSTITUTION MODE --- */
+        .sports-sub-card {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+            width: 450px;
+            position: absolute;
+            
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sports-sub-card.hidden {
+            display: none !important;
+        }
+        
+        .sports-sub-card.active {
+            opacity: 1;
+        }
+
+        .sports-row {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            gap: 12px;
+            width: 100%;
+            height: 60px;
+            
+            /* Slide transition details */
+            opacity: 0;
+            transform: translateX(-100%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+        }
+
+        .sports-row.row-out {
+            border-left: 5px solid #ff3333;
+        }
+
+        .sports-row.row-in {
+            border-left: 5px solid #00ff66;
+        }
+
+        /* Active animations */
+        .sports-sub-card.active .sports-row.row-out {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .sports-sub-card.active .sports-row.row-in {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* When deactivating, remove transition delay immediately */
+        .sports-sub-card:not(.active) .sports-row.row-in {
+            transition-delay: 0s !important;
+        }
+
+        /* Details */
+        .sports-icon-panel-sub {
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .sports-icon-panel-sub.out-color {
+            background: rgba(255, 51, 51, 0.2);
+            color: #ff3333;
+            box-shadow: 0 0 8px rgba(255, 51, 51, 0.3);
+        }
+
+        .sports-icon-panel-sub.in-color {
+            background: rgba(0, 255, 102, 0.2);
+            color: #00ff66;
+            box-shadow: 0 0 8px rgba(0, 255, 102, 0.3);
+        }
+
+        .sports-player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            flex: 1;
+        }
+
+        .sports-player-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .sports-player-label {
+            font-size: 11px;
+            color: #aaa;
+            font-weight: 300;
+        }
+
+        .sports-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .sports-badge.out {
+            background: #ff3333;
+            color: #fff;
+            box-shadow: 0 0 6px rgba(255, 51, 51, 0.3);
+        }
+
+        .sports-badge.in {
+            background: #00ff66;
+            color: #000;
+            box-shadow: 0 0 6px rgba(0, 255, 102, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="graphics-container">
+        <!-- Rendered graphics will appear here -->
+    </div>
+
+    <script>
+        // Track the intervals for substitution card animations
+        const subCardIntervals = {};
+
+        // Listen for data updates from the control dock
+        const bc = new BroadcastChannel('l3_graphics_channel');
+
+        bc.onmessage = function (event) {
+            if (event.data && event.data.type === 'STATE_UPDATE') {
+                renderGraphics(event.data.cards);
+            }
+        };
+
+        // On load, request current state from the control center
+        window.addEventListener('load', () => {
+            console.log("Graphics renderer loaded, requesting state...");
+            bc.postMessage({ type: 'REQUEST_STATE' });
+        });
+
+        // Function to build and update elements in DOM
+        function renderGraphics(cards) {
+            const container = document.getElementById('graphics-container');
+            
+            // Loop through all cards and manage their DOM presence
+            cards.forEach(card => {
+                const isGraphicsEnabled = card.graphicsSettings && card.graphicsSettings.enabled;
+                const cardId = card.id;
+                const elementId = `card-g-${cardId}`;
+                let el = document.getElementById(elementId);
+
+                // If not enabled, make sure it is hidden/removed
+                if (!isGraphicsEnabled) {
+                    if (el) {
+                        el.classList.add('hidden');
+                        el.classList.remove('active');
+                        // Clean up substitution loop if any
+                        if (subCardIntervals[cardId]) {
+                            clearInterval(subCardIntervals[cardId]);
+                            delete subCardIntervals[cardId];
+                        }
+                    }
+                    return;
+                }
+
+                // Prepare configuration
+                const gs = card.graphicsSettings;
+                const transitionClass = `trans-${gs.transition || 'slide'}`;
+                const isSportsSubMode = card.type === 'double' && gs.mode === 'sports';
+
+                // Calculate CSS values
+                const bgStyle = `${gs.bgColor || '#141414'}`;
+                const opacityVal = gs.bgOpacity !== undefined ? gs.bgOpacity : 0.85;
+                const finalBg = bgStyle.startsWith('rgba') ? bgStyle : hexToRgba(bgStyle, opacityVal);
+                const themeColor = gs.themeColor || '#00aaff';
+                const borderRadius = `${gs.borderRadius !== undefined ? gs.borderRadius : 6}px`;
+
+                // If the element doesn't exist, create it!
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = elementId;
+                    container.appendChild(el);
+                }
+
+                // Clean up intervals for standard card or if switching modes
+                if (!isSportsSubMode) {
+                    if (subCardIntervals[cardId]) {
+                        clearInterval(subCardIntervals[cardId]);
+                        delete subCardIntervals[cardId];
+                    }
+                }
+
+                // Caching check to prevent layout redraw and transition resets
+                const renderStateKey = `${JSON.stringify(card.selectedItem || card.selectedItemHome || {})}_${JSON.stringify(card.selectedItemAway || {})}_${card.isVisible}_${JSON.stringify(gs)}`;
+                if (el.dataset.renderKey === renderStateKey) {
+                    // Update visibility classes in case it changed
+                    if (card.isVisible) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                    return;
+                }
+                el.dataset.renderKey = renderStateKey;
+
+                // Reset base structure classes
+                el.className = isSportsSubMode ? 'sports-sub-card' : 'graphic-card';
+                el.classList.add(transitionClass);
+                el.classList.remove('hidden');
+
+                // Absolute Positioning Setup
+                el.style.position = 'absolute';
+                el.style.top = '';
+                el.style.bottom = '';
+                el.style.left = '';
+                el.style.right = '';
+
+                const posX = gs.posX !== undefined ? gs.posX : 20;
+                const posY = gs.posY !== undefined ? gs.posY : 20;
+                const scale = gs.scale !== undefined ? gs.scale : 1.0;
+
+                // Position presets
+                if (gs.position === 'topRight') {
+                    el.style.top = `${posY}px`;
+                    el.style.right = `${posX}px`;
+                } else if (gs.position === 'bottomLeft') {
+                    el.style.bottom = `${posY}px`;
+                    el.style.left = `${posX}px`;
+                } else if (gs.position === 'bottomRight') {
+                    el.style.bottom = `${posY}px`;
+                    el.style.right = `${posX}px`;
+                } else { // topLeft & custom
+                    el.style.top = `${posY}px`;
+                    el.style.left = `${posX}px`;
+                }
+
+                // Generate inner HTML contents
+                let innerHtml = '';
+                if (isSportsSubMode) {
+                    innerHtml = renderSportsSubCard(card, gs);
+                } else {
+                    el.style.backgroundColor = finalBg;
+                    el.style.borderRadius = borderRadius;
+                    el.style.borderLeftColor = themeColor;
+                    innerHtml = renderStandardCard(card, gs);
+                }
+
+                // Wrap in scale container
+                let origin = 'top left';
+                if (gs.position === 'topRight') origin = 'top right';
+                else if (gs.position === 'bottomLeft') origin = 'bottom left';
+                else if (gs.position === 'bottomRight') origin = 'bottom right';
+
+                el.innerHTML = `<div class="card-scale-wrapper" style="transform: scale(${scale}); transform-origin: ${origin}; width: fit-content; height: fit-content; display: flex; flex-direction: column;">${innerHtml}</div>`;
+
+                // Trigger Visibility Transition
+                if (card.isVisible) {
+                    setTimeout(() => {
+                        el.classList.add('active');
+                    }, 50);
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+        }
+
+        // Standard card builder
+        function renderStandardCard(card, gs) {
+            const fieldsConfig = [];
+            Object.keys(gs.fields).forEach(key => {
+                if (gs.fields[key].show) {
+                    fieldsConfig.push({ key: key, ...gs.fields[key] });
+                }
+            });
+            fieldsConfig.sort((a, b) => a.order - b.order);
+
+            const textLayout = gs.textLayout || 'vertical';
+
+            if (card.type === 'double') {
+                let html = '<div class="double-standard-container">';
+                
+                // Left Side (Home)
+                html += '<div style="display:flex; align-items:center; gap:12px;">';
+                html += renderFieldsHTML(fieldsConfig, card.selectedItemHome, textLayout);
+                html += '</div>';
+
+                // Middle Divider
+                html += '<div class="double-divider"></div>';
+
+                // Right Side (Away)
+                html += '<div style="display:flex; align-items:center; gap:12px;">';
+                html += renderFieldsHTML(fieldsConfig, card.selectedItemAway, textLayout);
+                html += '</div>';
+
+                html += '</div>';
+                return html;
+            } else {
+                // Single card simple layout
+                return renderFieldsHTML(fieldsConfig, card.selectedItem, textLayout);
+            }
+        }
+
+        // Helper to output fields HTML aligned in columns or rows
+        function renderFieldsHTML(fieldsConfig, item, textLayout) {
+            if (!item) {
+                return '<div style="font-style:italic; color:#666; font-size:12px;">(ไม่มีข้อมูล)</div>';
+            }
+
+            let html = '';
+            let textGroupHtml = '';
+            const isHorizontal = textLayout === 'horizontal';
+            const textGroupStyle = isHorizontal 
+                ? 'display: flex; flex-direction: row; align-items: center; gap: 8px;' 
+                : 'display: flex; flex-direction: column; gap: 2px;';
+
+            fieldsConfig.forEach(f => {
+                const val = getFieldValue(f.key, item);
+                
+                if (f.key === 'image') {
+                    if (textGroupHtml) {
+                        html += `<div class="field-text-group" style="${textGroupStyle}">${textGroupHtml}</div>`;
+                        textGroupHtml = '';
+                    }
+
+                    const imgUrl = val ? val : '';
+                    if (imgUrl) {
+                        html += `<img class="field-image" src="${imgUrl}" style="width:${f.width}px; height:${f.width}px;" onerror="this.style.display='none'">`;
+                    }
+                } else if (f.key === 'id') {
+                    if (textGroupHtml) {
+                        html += `<div class="field-text-group" style="${textGroupStyle}">${textGroupHtml}</div>`;
+                        textGroupHtml = '';
+                    }
+                    html += `<div class="field-id" style="font-size:${f.size}px; color:${f.color || '#888'}; min-width:${f.width}px;">${val}</div>`;
+                } else {
+                    const labelClass = f.key === 'name' ? 'field-name' : 'field-label';
+                    textGroupHtml += `<div class="${labelClass}" style="color:${f.color || '#fff'}; font-size:${f.size}px; width:${f.width ? f.width + 'px' : 'auto'};">${val}</div>`;
+                }
+            });
+
+            if (textGroupHtml) {
+                html += `<div class="field-text-group" style="${textGroupStyle}">${textGroupHtml}</div>`;
+            }
+
+            return html;
+        }
+
+        // Sports Substitution Renderer (Dual row display with stagger sliding)
+        function renderSportsSubCard(card, gs) {
+            const itemHome = card.selectedItemHome || { name: 'Player Out', label1: 'HOME' };
+            const itemAway = card.selectedItemAway || { name: 'Player In', label1: 'AWAY' };
+
+            let html = '';
+            // Row 1: OUT (Home side)
+            html += '<div class="sports-row row-out">';
+            html += '<div class="sports-icon-panel-sub out-color">⬇️</div>';
+            html += '<span class="sports-badge out">OUT</span>';
+            html += '<div class="sports-player-info">';
+            html += `<div class="sports-player-name">${itemHome.name}</div>`;
+            if (itemHome.label1) html += `<div class="sports-player-label">${itemHome.label1}</div>`;
+            html += '</div>';
+            html += '</div>';
+
+            // Row 2: IN (Away side)
+            const delaySec = gs.subDelay !== undefined ? gs.subDelay : 1.5;
+            html += `<div class="sports-row row-in" style="transition-delay: ${delaySec}s;">`;
+            html += '<div class="sports-icon-panel-sub in-color">⬆️</div>';
+            html += '<span class="sports-badge in">IN</span>';
+            html += '<div class="sports-player-info">';
+            html += `<div class="sports-player-name">${itemAway.name}</div>`;
+            if (itemAway.label1) html += `<div class="sports-player-label">${itemAway.label1}</div>`;
+            html += '</div>';
+            html += '</div>';
+
+            return html;
+        }
+
+        // Helper to grab fields from item
+        function getFieldValue(key, item) {
+            if (!item) return '';
+            if (key === 'id') return item.id || '';
+            if (key === 'image') return item.image || '';
+            if (key === 'name') return item.name || '';
+            if (key === 'label1') return item.label1 || '';
+            if (key === 'label2') return item.label2 || '';
+            if (key === 'label3') return item.label3 || '';
+            return '';
+        }
+
+        // Helper to convert color hex to rgba format
+        function hexToRgba(hex, alpha) {
+            hex = hex.replace('#', '');
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+    </script>
+</body>
+</html>

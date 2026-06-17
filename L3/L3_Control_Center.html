@@ -12,9 +12,14 @@
 
 <body>
 
-    <div class="app-header">
+    <div class="app-header" style="position:relative;">
         <div class="logo-header-main">LOWER THIRD</div>
-        <div class="logo-header-sub">OBS DOCK CONTROLLER</div>
+        <div class="logo-header-sub">OBS DOCK CONTROLLER v1.1</div>
+        <div class="visitor-counter" id="visitor-counter" style="position:absolute; top:8px; right:10px; font-size:9px; color:#888; display:flex; align-items:center; gap:8px;">
+            <span>👥 <span id="visitor-count-val">0</span></span>
+            <span style="color:#444;">|</span>
+            <span>👁️ <span id="total-views-val">0</span></span>
+        </div>
     </div>
 
     <div class="status-bar">
@@ -57,13 +62,39 @@
                     ใส่แค่ชื่อไฟล์ใน Excel (ไม่ต้องใส่นามสกุล) เช่น player1
                 </div>
             </div>
-            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display:none;">
-            <div id="drop-zone" class="drop-zone">
-                <div class="drop-zone-icon">📁</div>
-                <div><b>คลิกเพื่อเลือกไฟล์</b> หรือ ลากไฟล์มาวางที่นี่</div>
-                <div style="font-size:9px; color:#666; margin-top:5px;">รองรับ: .xlsx, .xls, .csv</div>
-                <div style="font-size:9px; color:#555; margin-top:3px;">Columns: ID, name, LabelName1, LabelName2,
-                    LabelName3, image</div>
+            <!-- Import Source Toggle -->
+            <div style="margin-bottom:8px; display:flex; gap:10px; align-items:center;">
+                <span style="font-size:10px; color:#888;">📂 แหล่งข้อมูล:</span>
+                <label style="display:inline-flex; align-items:center; gap:3px; font-size:10px; cursor:pointer; color:#eee;">
+                    <input type="radio" name="import-source-type" value="local" checked onchange="toggleImportSource('local')" style="width:auto; margin:0; cursor:pointer;"> Local File
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:3px; font-size:10px; cursor:pointer; color:#eee;">
+                    <input type="radio" name="import-source-type" value="gsheet" onchange="toggleImportSource('gsheet')" style="width:auto; margin:0; cursor:pointer;"> Google Sheets
+                </label>
+            </div>
+
+            <!-- 1. Local File Container -->
+            <div id="local-file-container">
+                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display:none;">
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-icon">📁</div>
+                    <div><b>คลิกเพื่อเลือกไฟล์</b> หรือ ลากไฟล์มาวางที่นี่</div>
+                    <div style="font-size:9px; color:#666; margin-top:5px;">รองรับ: .xlsx, .xls, .csv</div>
+                    <div style="font-size:9px; color:#555; margin-top:3px;">Columns: ID, name, LabelName1, LabelName2, LabelName3, image</div>
+                </div>
+            </div>
+
+            <!-- 2. Google Sheets Container (Hidden by default) -->
+            <div id="gsheet-container" style="display:none; background:#1a1a1a; border:2px dashed #444; padding:15px; border-radius:6px; text-align:center;">
+                <div class="drop-zone-icon">🔗</div>
+                <div style="font-size:11px; font-weight:bold; color:#ccc; margin-bottom:6px;">นำเข้าจาก Google Sheets</div>
+                <input type="text" id="gsheet-url-input" placeholder="วางลิงก์ Google Sheet ที่นี่..." style="width:100%; font-size:10px; margin-bottom:8px; padding:6px; background:#111; border:1px solid #444; color:#fff; border-radius:4px;">
+                <button class="btn-settings" onclick="loadGoogleSheet()" style="width:100%; padding:6px; font-size:10px; font-weight:bold; background: linear-gradient(135deg, #0f9d58, #0b7541); border:none; color:#fff; cursor:pointer; border-radius:4px;">⚡ ดึงข้อมูล</button>
+                <div style="font-size:8px; color:#888; margin-top:6px; line-height:1.2; text-align:left;">
+                    ⚠️ <b>คำแนะนำการแชร์:</b><br>
+                    1. ตั้งค่าการแชร์เป็น <b>"ทุกคนที่มีลิงก์มีสิทธิ์อ่าน"</b> (Anyone with the link can view)<br>
+                    2. คอลัมน์แถวแรกต้องมี: <code style="color:#0f9d58;">ID, name, LabelName1, LabelName2, LabelName3, image</code>
+                </div>
             </div>
             <!-- Settings Buttons -->
             <div style="display:flex; gap:5px; margin-top:10px;">
@@ -188,6 +219,19 @@
                     2. คลิกขวา → Group Selected Items<br>
                     3. ตั้งชื่อ Group ตามที่แสดง เช่น <code style="color:#4ade80;">G_LowerThird_1</code>
                 </p>
+                <p><b>6. วิธีใช้งาน Browser Source (🎨 ทางเลือกสำหรับเล่นแอนิเมชัน)</b><br>
+                    1. คลิกปุ่มด้านล่างเพื่อสร้าง Browser Source เข้า OBS อัตโนมัติ:<br>
+                    <div style="margin:6px 0;">
+                        <button class="btn-save" style="background:linear-gradient(135deg, #00ff66, #005f73); color:#000; font-size:10px; font-weight:bold; padding:6px 12px; width:100%; border:none; border-radius:4px; cursor:pointer;" onclick="createBrowserSourceInOBS(this)">🔧 สร้าง Browser Source ใน Scene ปัจจุบัน</button>
+                    </div>
+                    2. หรือใส่ URL ด้วยตนเองใน OBS (ไม่ต้องติ๊กเลือก Local file):<br>
+                    <div style="display:flex; gap:4px; margin:4px 0;">
+                        <input type="text" id="help-graphics-url" readonly style="flex:1; font-size:10px; padding:4px; background:#111; border:1px solid #444; color:#00aaff; border-radius:4px; box-sizing:border-box;" value="">
+                        <button class="btn-save" id="btn-copy-help-url" style="flex:0; padding:4px 10px; font-size:10px; white-space:nowrap; width:auto;" onclick="copyHelpGraphicsUrl(this)">📋 คัดลอก</button>
+                    </div>
+                    3. ตั้งค่าขนาดกว้าง 1920 สูง 1080<br>
+                    4. เปิดใช้งานกราฟิกที่เมนูตั้งค่าของแต่ละ Card (⚙️ → ติ๊ก "เปิดใช้งานกราฟิกสำหรับ Card นี้")
+                </p>
             </div>
         </div>
     </div>
@@ -203,9 +247,15 @@
             </div>
 
             <div style="margin-top:12px; border-top:1px solid #333; padding-top:10px;">
+                <div id="card-sheet-selector-container" style="margin-bottom:10px;">
+                    <!-- Sheet selector will be generated here -->
+                </div>
                 <div style="font-size:10px; color:#888; margin-bottom:6px;">📊 แสดงใน Dropdown:</div>
-                <div id="column-visibility-toggles" style="display:flex; flex-wrap:wrap; gap:6px;">
+                <div id="column-visibility-toggles" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
                     <!-- Column toggles will be generated here -->
+                </div>
+                <div id="card-graphics-settings-container">
+                    <!-- Graphics settings will be generated here -->
                 </div>
             </div>
         </div>
@@ -226,6 +276,10 @@
         </div>
     </div>
 
+    <!-- Firebase SDK (needed for remote.js) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="js/remote.js"></script>
     <script src="js/app.js"></script>
 </body>
 

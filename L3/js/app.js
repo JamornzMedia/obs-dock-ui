@@ -1,48 +1,83 @@
-﻿// Global variables - use var to avoid hoisting issues with onclick handlers
+// Global variables - use var to avoid hoisting issues with onclick handlers
 var obs = null;
 var obsConnected = false;
 var requestId = 0;
 var pendingCallbacks = {}; // Map of requestId -> callback function
 var dbData = [];
+var workbookData = {};
+var workbookSheets = [];
 var cards = [];
 var MAX_CARDS = 10;
 var OBS_URL = "ws://localhost:4455";
 var imageFolder = ""; // Base folder for images
 
-// ============ IMAGE PATH HELPER ============
-// Build full image path: folder + filename + extension (auto-detect .png/.jpg)
-function buildImagePath(imageName) {
-    if (!imageName) return "";
+// ============ IMAGE PATH HELPERS ============
 
-    // If already has extension, use as-is
-    var hasExt = /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(imageName);
-    if (hasExt) {
-        // If has folder, combine; otherwise use as-is
-        if (imageFolder) {
-            return imageFolder + imageName;
-        }
+// Build image path for OBS WebSocket (requires direct OS filesystem path, e.g. C:\Images\img.png)
+function buildOBSImagePath(imageName) {
+    if (!imageName) return "";
+    
+    // If it's a web URL or base64, return as-is
+    if (/^(http|https|data):/i.test(imageName)) {
         return imageName;
     }
 
-    // No extension - need to add one
-    // Try .png first (most common for avatars)
-    var basePath = imageFolder ? imageFolder + imageName : imageName;
-    // We'll send .png to OBS - if file doesn't exist, OBS will just not show it
-    // User should use consistent extensions in their folder
-    return basePath + ".png";
+    var hasExt = /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(imageName);
+    var nameWithExt = hasExt ? imageName : imageName + ".png";
+    var basePath = imageFolder ? imageFolder + nameWithExt : nameWithExt;
+
+    // Ensure it has backward slashes for Windows compatibility
+    if (/^[a-zA-Z]:\\/.test(basePath) || /^[a-zA-Z]:\//.test(basePath)) {
+        return basePath.replace(/\//g, "\\");
+    }
+    return basePath;
 }
 
-// Save/Load image folder setting
+// Build image path for Web browser (requires file:/// prefix for local absolute paths)
+function buildBrowserImagePath(imageName) {
+    if (!imageName) return "";
+
+    // If it's a web URL or base64, return as-is
+    if (/^(http|https|data):/i.test(imageName)) {
+        return imageName;
+    }
+
+    var hasExt = /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(imageName);
+    var nameWithExt = hasExt ? imageName : imageName + ".png";
+    var basePath = imageFolder ? imageFolder + nameWithExt : nameWithExt;
+
+    // Check if it is a Windows absolute path (e.g. C:\path)
+    if (/^[a-zA-Z]:\\/.test(basePath) || /^[a-zA-Z]:\//.test(basePath)) {
+        return "file:///" + basePath.replace(/\\/g, "/");
+    }
+    return basePath;
+}
+
+// Save/Load image folder setting (with sanitization for file:/// and forward slashes)
 function saveImageFolder(value) {
-    imageFolder = value || "";
+    var rawValue = value || "";
+    // Sanitize file:/// prefix if pasted
+    if (rawValue.startsWith("file:///")) {
+        rawValue = rawValue.substring(8);
+        rawValue = rawValue.replace(/\//g, "\\");
+    }
+    
+    imageFolder = rawValue;
     // Ensure trailing slash
     if (imageFolder && !imageFolder.endsWith("\\") && !imageFolder.endsWith("/")) {
         imageFolder += "\\";
     }
+    
     try {
         localStorage.setItem('l3_image_folder', imageFolder);
     } catch (e) { }
-    console.log('Image folder saved:', imageFolder);
+
+    // Update text field to show normalized path
+    var input = document.getElementById('image-folder-input');
+    if (input) {
+        input.value = imageFolder;
+    }
+    console.log('Image folder saved & sanitized:', imageFolder);
 }
 
 function loadImageFolder() {
@@ -51,7 +86,6 @@ function loadImageFolder() {
         if (saved) {
             imageFolder = saved;
         }
-        // Try to set input value (might be called before or after DOM ready)
         var input = document.getElementById('image-folder-input');
         if (input) {
             input.value = imageFolder || '';
@@ -76,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     loadCardsFromStorage();
+    loadWorkbookFromStorage();
     loadImageFolder();
     renderCards();
     renderSettingsList();
@@ -83,7 +118,33 @@ document.addEventListener('DOMContentLoaded', function () {
     setupAddCardButton();
     connectOBS();
 
+    // Restore import source type & URL
+    try {
+        var savedType = localStorage.getItem('l3_import_source_type');
+        if (savedType) {
+            var radios = document.getElementsByName('import-source-type');
+            for (var i = 0; i < radios.length; i++) {
+                if (radios[i].value === savedType) {
+                    radios[i].checked = true;
+                    toggleImportSource(savedType);
+                }
+            }
+        }
+        var savedGSheetUrl = localStorage.getItem('l3_gsheet_url');
+        if (savedGSheetUrl) {
+            var input = document.getElementById('gsheet-url-input');
+            if (input) input.value = savedGSheetUrl;
+        }
+    } catch(e) {}
+
+    // Set Help Modal Browser Source URL
+    var helpUrlInput = document.getElementById('help-graphics-url');
+    if (helpUrlInput) {
+        helpUrlInput.value = getGraphicsUrl();
+    }
+
     console.log('Init complete, cards:', cards.length);
+    setTimeout(broadcastStateUpdate, 1000);
 });
 
 // ============ FILE INPUT SETUP ============
@@ -183,31 +244,84 @@ function processFile(file) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rawData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
 
-            console.log('Raw data:', rawData);
+            workbookSheets = workbook.SheetNames || [];
+            workbookData = {};
 
-            dbData = rawData.map(function (row, index) {
-                return {
-                    id: row.ID || index,
-                    name: row.name || "",
-                    label1: row.LabelName1 || "",
-                    label2: row.LabelName2 || "",
-                    label3: row.LabelName3 || "",
-                    image: row.image || ""
-                };
+            workbookSheets.forEach(function (sheetName) {
+                const sheet = workbook.Sheets[sheetName];
+                const rawData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+                var processed = rawData.map(function (row, index) {
+                    function val(key) {
+                        var foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
+                        return foundKey ? row[foundKey] : undefined;
+                    }
+
+                    var rowId = val('id');
+                    var nameVal = val('name') || "";
+                    var label1Val = val('labelname1') || val('label1') || "";
+                    var label2Val = val('labelname2') || val('label2') || "";
+                    var label3Val = val('labelname3') || val('label3') || "";
+                    var imageVal = val('image') || "";
+
+                    return {
+                        id: rowId,
+                        name: nameVal,
+                        label1: label1Val,
+                        label2: label2Val,
+                        label3: label3Val,
+                        image: imageVal
+                    };
+                });
+
+                // Filter out empty rows
+                processed = processed.filter(function (item) {
+                    return (item.id !== undefined && item.id !== "") ||
+                        item.name !== "" ||
+                        item.label1 !== "" ||
+                        item.label2 !== "" ||
+                        item.label3 !== "" ||
+                        item.image !== "";
+                });
+
+                // Assign IDs to rows without ID
+                processed.forEach(function (item, index) {
+                    if (item.id === undefined || item.id === "") {
+                        item.id = index + 1;
+                    }
+                });
+
+                // Sort by ID
+                processed.sort(function (a, b) {
+                    var aNum = parseFloat(a.id);
+                    var bNum = parseFloat(b.id);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return aNum - bNum;
+                    }
+                    return String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+                workbookData[sheetName] = processed;
             });
 
-            console.log('Processed data:', dbData);
+            // Compatibility fallback
+            if (workbookSheets.length > 0) {
+                dbData = workbookData[workbookSheets[0]] || [];
+            } else {
+                dbData = [];
+            }
 
-            // Update UI
+            console.log('Processed workbook data:', workbookData);
+
+            saveWorkbookToStorage();
             updateImportStatus();
             populateDropdowns();
 
             // Show success in drop zone
             const dropZone = document.getElementById('drop-zone');
-            dropZone.innerHTML = '<div class="drop-zone-icon">✅</div><div style="color:#4ade80; font-weight:bold;">โหลดสำเร็จ: ' + dbData.length + ' รายการ</div><div style="font-size:9px; color:#888; margin-top:5px;">คลิกเพื่อเลือกไฟล์ใหม่</div>';
+            var firstSheetLen = workbookSheets.length > 0 ? workbookData[workbookSheets[0]].length : 0;
+            dropZone.innerHTML = '<div class="drop-zone-icon">✅</div><div style="color:#4ade80; font-weight:bold;">โหลดสำเร็จ: ' + firstSheetLen + ' รายการ</div><div style="font-size:9px; color:#888; margin-top:5px;">คลิกเพื่อเลือกไฟล์ใหม่</div>';
 
         } catch (err) {
             console.error('Error processing file:', err);
@@ -227,10 +341,18 @@ function updateImportStatus() {
     const statusEl = document.getElementById('import-status');
     const dataCountEl = document.getElementById('data-count');
 
-    if (dbData.length > 0) {
-        statusEl.textContent = '✓ ' + dbData.length + ' รายการ';
+    var totalRows = 0;
+    if (workbookSheets && workbookSheets.length > 0) {
+        var firstSheetName = workbookSheets[0];
+        if (workbookData[firstSheetName]) {
+            totalRows = workbookData[firstSheetName].length;
+        }
+    }
+
+    if (totalRows > 0) {
+        statusEl.textContent = '✓ ' + totalRows + ' รายการ';
         statusEl.classList.remove('empty');
-        dataCountEl.textContent = 'Data: ' + dbData.length + ' rows';
+        dataCountEl.textContent = 'Data: ' + totalRows + ' rows (' + workbookSheets.length + ' sheets)';
         dataCountEl.style.color = '#4ade80';
     } else {
         statusEl.textContent = 'ยังไม่มีข้อมูล';
@@ -539,6 +661,8 @@ function renderCards() {
 
 function renderSingleCard(card, index) {
     const cardId = card.id;
+    const autoCloseChecked = card.autoCloseEnabled ? 'checked' : '';
+    const autoCloseSec = card.autoCloseSec !== undefined ? card.autoCloseSec : 5;
     return '<div class="control-card single" data-card-index="' + index + '" data-card-id="' + cardId + '">' +
         '<button class="btn-card-settings" onclick="openCardSettings(' + cardId + ', \'single\')" title="ตั้งค่า">⚙️</button>' +
         '<div class="card-header">' +
@@ -547,6 +671,13 @@ function renderSingleCard(card, index) {
         '<select id="sel_single_' + cardId + '" class="data-select" onchange="applySingleL3(' + cardId + ')"></select>' +
         '<div class="switch-container">' +
         '<span style="font-size:9px; font-weight:bold;">SHOW</span>' +
+        '<div style="display:flex; align-items:center; gap:2px; background:#111; padding:2px 4px; border-radius:3px;">' +
+        '<label style="display:inline-flex; align-items:center; gap:2px; font-size:8px; margin:0; cursor:pointer; color:#bbb;">' +
+        '<input type="checkbox" id="auto_close_chk_' + cardId + '" style="margin:0; width:auto; height:auto; cursor:pointer;" ' + autoCloseChecked + ' onchange="toggleAutoClose(' + cardId + ', this.checked)"> Auto' +
+        '</label>' +
+        '<input type="number" id="auto_close_sec_' + cardId + '" value="' + autoCloseSec + '" min="1" style="width:28px; padding:0px 2px; font-size:9px; height:12px; text-align:center; background:#000; border:1px solid #444; color:#fff; border-radius:2px; margin-left:3px;" onchange="changeAutoCloseSec(' + cardId + ', this.value)">' +
+        '<span style="font-size:8px; color:#888; margin-left:1px;">s</span>' +
+        '</div>' +
         '<label class="switch">' +
         '<input type="checkbox" id="vis_single_' + cardId + '" onchange="toggleSingleVisibility(' + cardId + ', this.checked)">' +
         '<span class="slider"></span>' +
@@ -557,6 +688,8 @@ function renderSingleCard(card, index) {
 
 function renderDoubleCard(card, index) {
     const cardId = card.id;
+    const autoCloseChecked = card.autoCloseEnabled ? 'checked' : '';
+    const autoCloseSec = card.autoCloseSec !== undefined ? card.autoCloseSec : 5;
     return '<div class="control-card double" data-card-index="' + index + '" data-card-id="' + cardId + '">' +
         '<button class="btn-card-settings" onclick="openCardSettings(' + cardId + ', \'double\')" title="ตั้งค่า">⚙️</button>' +
         '<div class="card-header">' +
@@ -572,6 +705,13 @@ function renderDoubleCard(card, index) {
         '</div>' +
         '<div class="switch-container">' +
         '<span style="font-size:9px; font-weight:bold;">SHOW</span>' +
+        '<div style="display:flex; align-items:center; gap:2px; background:#111; padding:2px 4px; border-radius:3px;">' +
+        '<label style="display:inline-flex; align-items:center; gap:2px; font-size:8px; margin:0; cursor:pointer; color:#bbb;">' +
+        '<input type="checkbox" id="auto_close_chk_' + cardId + '" style="margin:0; width:auto; height:auto; cursor:pointer;" ' + autoCloseChecked + ' onchange="toggleAutoClose(' + cardId + ', this.checked)"> Auto' +
+        '</label>' +
+        '<input type="number" id="auto_close_sec_' + cardId + '" value="' + autoCloseSec + '" min="1" style="width:28px; padding:0px 2px; font-size:9px; height:12px; text-align:center; background:#000; border:1px solid #444; color:#fff; border-radius:2px; margin-left:3px;" onchange="changeAutoCloseSec(' + cardId + ', this.value)">' +
+        '<span style="font-size:8px; color:#888; margin-left:1px;">s</span>' +
+        '</div>' +
         '<label class="switch">' +
         '<input type="checkbox" id="vis_double_' + cardId + '" onchange="toggleDoubleVisibility(' + cardId + ', this.checked)">' +
         '<span class="slider"></span>' +
@@ -608,25 +748,25 @@ function padStr(str, len) {
 }
 
 function populateDropdowns() {
-    // First, calculate max width for each column
-    var maxId = 4, maxName = 8, maxLabel1 = 6, maxLabel2 = 6, maxLabel3 = 6;
-
-    dbData.forEach(function (item) {
-        var idStr = String(item.id || '');
-        var nameStr = String(item.name || '');
-        var l1Str = String(item.label1 || '');
-        var l2Str = String(item.label2 || '');
-        var l3Str = String(item.label3 || '');
-
-        if (idStr.length > maxId) maxId = Math.min(idStr.length, 6);
-        if (nameStr.length > maxName) maxName = Math.min(nameStr.length, 20);
-        if (l1Str.length > maxLabel1) maxLabel1 = Math.min(l1Str.length, 15);
-        if (l2Str.length > maxLabel2) maxLabel2 = Math.min(l2Str.length, 15);
-        if (l3Str.length > maxLabel3) maxLabel3 = Math.min(l3Str.length, 15);
-    });
-
-    // For each card, populate its dropdowns with visible columns
     cards.forEach(function (card) {
+        var cardData = getCardData(card);
+
+        // First, calculate max width for each column
+        var maxId = 4, maxName = 8, maxLabel1 = 6, maxLabel2 = 6, maxLabel3 = 6;
+        cardData.forEach(function (item) {
+            var idStr = String(item.id || '');
+            var nameStr = String(item.name || '');
+            var l1Str = String(item.label1 || '');
+            var l2Str = String(item.label2 || '');
+            var l3Str = String(item.label3 || '');
+
+            if (idStr.length > maxId) maxId = Math.min(idStr.length, 6);
+            if (nameStr.length > maxName) maxName = Math.min(nameStr.length, 20);
+            if (l1Str.length > maxLabel1) maxLabel1 = Math.min(l1Str.length, 15);
+            if (l2Str.length > maxLabel2) maxLabel2 = Math.min(l2Str.length, 15);
+            if (l3Str.length > maxLabel3) maxLabel3 = Math.min(l3Str.length, 15);
+        });
+
         const visibility = card.columnVisibility || { id: true, name: true, label1: true, label2: false, label3: false };
 
         // Get dropdowns for this card
@@ -641,9 +781,11 @@ function populateDropdowns() {
         selectors.forEach(function (sel) {
             if (!sel) return;
 
+            var currentVal = sel.value;
+
             sel.innerHTML = '<option value="">-- เลือก --</option>';
-            for (let i = 0; i < dbData.length; i++) {
-                const item = dbData[i];
+            for (let i = 0; i < cardData.length; i++) {
+                const item = cardData[i];
                 const opt = document.createElement('option');
                 opt.value = i;
 
@@ -678,20 +820,26 @@ function populateDropdowns() {
                 opt.text = text || '(ไม่มีข้อมูล)';
                 sel.add(opt);
             }
+
+            if (currentVal !== "" && currentVal < cardData.length) {
+                sel.value = currentVal;
+            }
         });
     });
 }
 
 // ============ CONTROL LOGIC: SINGLE ============
 async function applySingleL3(cardId) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const cardData = getCardData(card);
     const sel = document.getElementById('sel_single_' + cardId);
     const idx = sel ? sel.value : null;
-    if (!idx || !dbData[idx]) {
-        // Silent return for auto-update
+    if (idx === null || idx === "" || !cardData[idx]) {
         return;
     }
 
-    const item = dbData[idx];
+    const item = cardData[idx];
     const batch = [];
 
     batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Name_' + cardId, inputSettings: { text: String(item.name) } } });
@@ -700,15 +848,19 @@ async function applySingleL3(cardId) {
     batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_' + cardId, inputSettings: { text: String(item.label3) } } });
 
     if (item.image) {
-        batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+        batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
     }
 
     sendOBSBatch(batch);
     console.log('Single L3 updated for card', cardId);
+    broadcastStateUpdate();
 }
 
 // ============ CONTROL LOGIC: DOUBLE ============
 async function applyDoubleL3(cardId) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const cardData = getCardData(card);
     const selHome = document.getElementById('sel_home_' + cardId);
     const selAway = document.getElementById('sel_away_' + cardId);
     const idxHome = selHome ? selHome.value : null;
@@ -717,26 +869,26 @@ async function applyDoubleL3(cardId) {
     const batch = [];
 
     // Home Side
-    if (dbData[idxHome]) {
-        const item = dbData[idxHome];
+    if (idxHome !== null && idxHome !== "" && cardData[idxHome]) {
+        const item = cardData[idxHome];
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Name_Home_' + cardId, inputSettings: { text: String(item.name) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label1_Home_' + cardId, inputSettings: { text: String(item.label1) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label2_Home_' + cardId, inputSettings: { text: String(item.label2) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_Home_' + cardId, inputSettings: { text: String(item.label3) } } });
         if (item.image) {
-            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Home_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Home_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
         }
     }
 
     // Away Side
-    if (dbData[idxAway]) {
-        const item = dbData[idxAway];
+    if (idxAway !== null && idxAway !== "" && cardData[idxAway]) {
+        const item = cardData[idxAway];
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Name_Away_' + cardId, inputSettings: { text: String(item.name) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label1_Away_' + cardId, inputSettings: { text: String(item.label1) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label2_Away_' + cardId, inputSettings: { text: String(item.label2) } } });
         batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'T_Label3_Away_' + cardId, inputSettings: { text: String(item.label3) } } });
         if (item.image) {
-            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Away_' + cardId, inputSettings: { file: buildImagePath(item.image) } } });
+            batch.push({ requestType: 'SetInputSettings', requestData: { inputName: 'I_Avatar_Away_' + cardId, inputSettings: { file: buildOBSImagePath(item.image) } } });
         }
     }
 
@@ -744,12 +896,15 @@ async function applyDoubleL3(cardId) {
         sendOBSBatch(batch);
         console.log('Double L3 updated for card', cardId);
     }
+    broadcastStateUpdate();
 }
 
 // ============ VISIBILITY TOGGLE ============
 function toggleSingleVisibility(cardId, isVisible) {
     const groupName = 'G_LowerThird_' + cardId;
     toggleSourceVisibility(groupName, isVisible);
+    broadcastStateUpdate();
+    handleAutoCloseTrigger(cardId, isVisible);
 }
 
 function toggleDoubleVisibility(cardId, isVisible) {
@@ -757,6 +912,8 @@ function toggleDoubleVisibility(cardId, isVisible) {
     const groupAway = 'G_LowerThird_Away_' + cardId;
     toggleSourceVisibility(groupHome, isVisible);
     toggleSourceVisibility(groupAway, isVisible);
+    broadcastStateUpdate();
+    handleAutoCloseTrigger(cardId, isVisible);
 }
 
 function toggleSourceVisibility(sourceName, isVisible) {
@@ -826,17 +983,22 @@ function closeModal(e, id) {
 // ============ CARD SETTINGS MODAL ============
 var currentSettingsCardId = null;
 var currentSettingsCardType = null;
+var graphicsCollapsed = true;
 
 function openCardSettings(cardId, cardType) {
     currentSettingsCardId = cardId;
     currentSettingsCardType = cardType;
 
     const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
     const titleEl = document.getElementById('card-settings-title');
     const contentEl = document.getElementById('card-settings-content');
     const togglesEl = document.getElementById('column-visibility-toggles');
+    const sheetSelectorContainer = document.getElementById('card-sheet-selector-container');
+    const graphicsSettingsContainer = document.getElementById('card-graphics-settings-container');
 
-    titleEl.textContent = '⚙️ ' + (card ? card.name : 'Card ' + cardId);
+    titleEl.textContent = '⚙️ ' + card.name;
 
     // Build source names HTML
     let html = '<div class="source-mapping" style="margin:0;">';
@@ -870,6 +1032,22 @@ function openCardSettings(cardId, cardType) {
     html += '</div>';
     contentEl.innerHTML = html;
 
+    // Generate Sheet Selector
+    if (sheetSelectorContainer) {
+        if (workbookSheets && workbookSheets.length > 0) {
+            let sheetHtml = '<label style="font-size:10px; color:#888; margin-bottom:4px; display:block;">📄 เลือกชีทใน Excel:</label>';
+            sheetHtml += '<select id="card-sheet-select" style="width:100%; font-size:11px;" onchange="changeCardSheet(' + cardId + ', this.value)">';
+            workbookSheets.forEach(sheetName => {
+                const selected = (card.sheetName === sheetName || (!card.sheetName && sheetName === workbookSheets[0])) ? 'selected' : '';
+                sheetHtml += '<option value="' + sheetName + '" ' + selected + '>' + sheetName + '</option>';
+            });
+            sheetHtml += '</select>';
+            sheetSelectorContainer.innerHTML = sheetHtml;
+        } else {
+            sheetSelectorContainer.innerHTML = '<label style="font-size:10px; color:#888;">📄 เลือกชีทใน Excel:</label><div style="font-size:9px; color:#666; margin-top:2px;">(ยังไม่ได้โหลดไฟล์ Excel)</div>';
+        }
+    }
+
     // Column visibility toggles
     const columns = ['id', 'name', 'label1', 'label2', 'label3'];
     const columnLabels = { id: 'ID', name: 'ชื่อ', label1: 'Label1', label2: 'Label2', label3: 'Label3' };
@@ -884,7 +1062,248 @@ function openCardSettings(cardId, cardType) {
     });
     togglesEl.innerHTML = togglesHtml;
 
+    // Generate Graphics Settings Panel
+    if (graphicsSettingsContainer) {
+        const gs = getCardGraphicsSettings(card);
+        const gEnabledChecked = gs.enabled ? 'checked' : '';
+        const trans = gs.transition || 'slide';
+        const mode = gs.mode || 'standard';
+
+        let gHtml = '<div style="margin-top:12px; border-top:1px solid #333; padding-top:10px;">';
+        gHtml += '<div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleGraphicsCollapse()">';
+        gHtml += '<div style="font-size:10px; font-weight:bold; color:#00aaff;">🎨 กราฟิก Browser Source Settings <span id="graphics-collapse-arrow">' + (graphicsCollapsed ? '▼' : '▲') + '</span></div>';
+        gHtml += '</div>';
+
+        gHtml += '<div id="graphics-settings-panel" style="display:' + (graphicsCollapsed ? 'none' : 'block') + '; margin-top:8px; background:#1e1e1e; padding:8px; border-radius:4px; border:1px solid #333;">';
+
+        // Enable checkbox
+        gHtml += '<div style="display:flex; align-items:center; gap:5px; margin-bottom:8px;">' +
+            '<input type="checkbox" id="g-enabled" ' + gEnabledChecked + ' onchange="updateGraphicsSetting(' + cardId + ', \'enabled\', this.checked)" style="width:auto; margin:0; cursor:pointer;">' +
+            '<label for="g-enabled" style="font-size:10px; font-weight:bold; color:#fff; cursor:pointer; margin:0;">เปิดใช้งานกราฟิกสำหรับ Card นี้</label>' +
+            '</div>';
+
+        // Settings grid
+        gHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">';
+
+        // BG Color & Opacity
+        gHtml += '<div>' +
+            '<label>สีพื้นหลัง</label>' +
+            '<div style="display:flex; gap:3px;">' +
+            '<input type="color" id="g-bgcolor" value="' + (gs.bgColor || '#141414') + '" onchange="updateGraphicsSetting(' + cardId + ', \'bgColor\', this.value)" style="padding:0; height:20px; width:30px; border:none; cursor:pointer;">' +
+            '<input type="number" id="g-bgopacity" value="' + (gs.bgOpacity !== undefined ? gs.bgOpacity : 0.85) + '" min="0" max="1" step="0.1" onchange="updateGraphicsSetting(' + cardId + ', \'bgOpacity\', parseFloat(this.value))" style="flex:1; height:20px; font-size:9px; padding:2px;" title="ความโปร่งใส 0-1">' +
+            '</div>' +
+            '</div>';
+
+        // Theme Color
+        gHtml += '<div>' +
+            '<label>สีธีมหลัก (เส้น/ไอคอน)</label>' +
+            '<input type="color" id="g-themecolor" value="' + (gs.themeColor || '#00aaff') + '" onchange="updateGraphicsSetting(' + cardId + ', \'themeColor\', this.value)" style="padding:0; height:20px; width:100%; border:none; cursor:pointer;">' +
+            '</div>';
+
+        // Border Radius & Transition
+        gHtml += '<div>' +
+            '<label>ความโค้งมุม (px)</label>' +
+            '<input type="number" id="g-borderradius" value="' + (gs.borderRadius !== undefined ? gs.borderRadius : 6) + '" min="0" onchange="updateGraphicsSetting(' + cardId + ', \'borderRadius\', parseInt(this.value))" style="height:20px; font-size:10px; padding:2px;">' +
+            '</div>';
+
+        gHtml += '<div>' +
+            '<label>แอนิเมชันเปิด/ปิด</label>' +
+            '<select id="g-transition" onchange="updateGraphicsSetting(' + cardId + ', \'transition\', this.value)" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '<option value="slide" ' + (trans === 'slide' ? 'selected' : '') + '>Slide (เลื่อน)</option>' +
+            '<option value="fade" ' + (trans === 'fade' ? 'selected' : '') + '>Fade (เลือนหาย)</option>' +
+            '<option value="zoom" ' + (trans === 'zoom' ? 'selected' : '') + '>Zoom (ย่อขยาย)</option>' +
+            '</select>' +
+            '</div>';
+
+        gHtml += '</div>'; // end grid
+
+        // NEW: Position & Scale Row
+        gHtml += '<div style="margin-bottom:8px; border-top:1px dashed #333; padding-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+        gHtml += '<div>' +
+            '<label>ตำแหน่งการแสดงผล</label>' +
+            '<select id="g-position" onchange="updateGraphicsPositionMode(' + cardId + ', this.value)" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '<option value="topLeft" ' + (gs.position === 'topLeft' ? 'selected' : '') + '>ซ้ายบน (Top-Left)</option>' +
+            '<option value="topRight" ' + (gs.position === 'topRight' ? 'selected' : '') + '>ขวาบน (Top-Right)</option>' +
+            '<option value="bottomLeft" ' + (gs.position === 'bottomLeft' ? 'selected' : '') + '>ซ้ายล่าง (Bottom-Left)</option>' +
+            '<option value="bottomRight" ' + (gs.position === 'bottomRight' ? 'selected' : '') + '>ขวาล่าง (Bottom-Right)</option>' +
+            '<option value="custom" ' + (gs.position === 'custom' ? 'selected' : '') + '>กำหนดเอง (Custom)</option>' +
+            '</select>' +
+            '</div>';
+
+        gHtml += '<div>' +
+            '<label>ขนาดอัตราส่วน (Scale)</label>' +
+            '<input type="number" step="0.1" min="0.1" max="3.0" value="' + (gs.scale || 1.0) + '" onchange="updateGraphicsSetting(' + cardId + ', \'scale\', parseFloat(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>';
+        gHtml += '</div>';
+
+        // NEW: Custom Coordinates Row
+        var customCoordsDisplay = gs.position === 'custom' ? 'grid' : 'none';
+        gHtml += '<div id="g-custom-coords-row" style="margin-bottom:8px; display:' + customCoordsDisplay + '; grid-template-columns:1fr 1fr; gap:6px;">' +
+            '<div>' +
+            '<label>ตำแหน่งแกน X (px)</label>' +
+            '<input type="number" value="' + (gs.posX !== undefined ? gs.posX : 20) + '" onchange="updateGraphicsSetting(' + cardId + ', \'posX\', parseInt(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>' +
+            '<div>' +
+            '<label>ตำแหน่งแกน Y (px)</label>' +
+            '<input type="number" value="' + (gs.posY !== undefined ? gs.posY : 20) + '" onchange="updateGraphicsSetting(' + cardId + ', \'posY\', parseInt(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '</div>' +
+            '</div>';
+
+        // NEW: Text Layout & Sub Delay Row
+        gHtml += '<div style="margin-bottom:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+        gHtml += '<div>' +
+            '<label>การจัดเรียงข้อความ (Text Layout)</label>' +
+            '<select id="g-textlayout" onchange="updateGraphicsSetting(' + cardId + ', \'textLayout\', this.value)" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+            '<option value="vertical" ' + (gs.textLayout === 'vertical' ? 'selected' : '') + '>ต่อแถวลงมา (Vertical)</option>' +
+            '<option value="horizontal" ' + (gs.textLayout === 'horizontal' ? 'selected' : '') + '>เรียงไปด้านข้าง (Horizontal)</option>' +
+            '</select>' +
+            '</div>';
+
+        if (cardType === 'double') {
+            gHtml += '<div id="g-subdelay-container" style="display:' + (mode === 'sports' ? 'block' : 'none') + ';">' +
+                '<label>เวลาหน่วงสลับเปลี่ยนตัว (วิ)</label>' +
+                '<input type="number" step="0.5" min="0.5" max="20" value="' + (gs.subDelay !== undefined ? gs.subDelay : 1.5) + '" onchange="updateGraphicsSetting(' + cardId + ', \'subDelay\', parseFloat(this.value))" style="height:20px; font-size:10px; padding:2px; width:100%;">' +
+                '</div>';
+        }
+        gHtml += '</div>';
+
+        // Mode selection for Double Cards
+        if (cardType === 'double') {
+            gHtml += '<div style="margin-bottom:8px; border-top:1px dashed #333; padding-top:6px;">' +
+                '<label style="font-weight:bold; color:#fbbf24;">รูปแบบกราฟิก (โหมดพิเศษ)</label>' +
+                '<select id="g-mode" onchange="updateGraphicsModeSetting(' + cardId + ', this.value)" style="height:22px; font-size:10px; padding:2px; width:100%; background:#111; border-color:#fbbf24;">' +
+                '<option value="standard" ' + (mode === 'standard' ? 'selected' : '') + '>Standard Side-by-Side (คู่ ซ้าย-ขวา)</option>' +
+                '<option value="sports" ' + (mode === 'sports' ? 'selected' : '') + '>⚽ Sports Substitution (เปลี่ยนตัวนักกีฬา)</option>' +
+                '</select>' +
+                '</div>';
+        }
+
+        // Fields settings table
+        gHtml += '<div style="border-top:1px dashed #333; padding-top:6px;">' +
+            '<div style="font-size:9px; font-weight:bold; color:#ccc; margin-bottom:4px;">จัดเรียงและตั้งค่าฟิลด์:</div>';
+
+        gHtml += '<table style="width:100%; border-collapse:collapse; font-size:9px;">' +
+            '<thead>' +
+            '<tr style="color:#666; border-bottom:1px solid #333; text-align:left;">' +
+            '<th style="padding:2px;">ฟิลด์</th>' +
+            '<th style="padding:2px; text-align:center;">โชว์</th>' +
+            '<th style="padding:2px; text-align:center; width:30px;">ลำดับ</th>' +
+            '<th style="padding:2px; text-align:center; width:40px;">กว้าง(px)</th>' +
+            '<th style="padding:2px; text-align:center;">สี</th>' +
+            '<th style="padding:2px; text-align:center; width:35px;">ขนาด(px)</th>' +
+            '</tr>' +
+            '</thead>' +
+            '<tbody>';
+
+        const fieldsList = ['id', 'image', 'name', 'label1', 'label2', 'label3'];
+        const fieldLabels = { id: 'ID', image: 'รูปภาพ', name: 'ชื่อ', label1: 'L1', label2: 'L2', label3: 'L3' };
+
+        fieldsList.forEach(f => {
+            const fConfig = gs.fields[f] || { show: true, order: 1, width: 100, color: '#ffffff', size: 14 };
+            const fShowChecked = fConfig.show ? 'checked' : '';
+            const isImage = f === 'image';
+
+            gHtml += '<tr style="border-bottom:1px solid #222;">' +
+                '<td style="padding:2px; font-weight:bold; color:#bbb;">' + fieldLabels[f] + '</td>' +
+                '<td style="padding:2px; text-align:center;"><input type="checkbox" onchange="updateGraphicsFieldSetting(' + cardId + ', \'' + f + '\', \'show\', this.checked)" ' + fShowChecked + ' style="width:auto; margin:0; cursor:pointer;"></td>' +
+                '<td style="padding:2px;"><input type="number" value="' + fConfig.order + '" min="1" onchange="updateGraphicsFieldSetting(' + cardId + ', \'' + f + '\', \'order\', parseInt(this.value))" style="padding:1px; height:16px; font-size:8px; text-align:center; width:100%;"></td>' +
+                '<td style="padding:2px;"><input type="number" value="' + fConfig.width + '" min="0" onchange="updateGraphicsFieldSetting(' + cardId + ', \'' + f + '\', \'width\', parseInt(this.value))" style="padding:1px; height:16px; font-size:8px; text-align:center; width:100%;"></td>' +
+                '<td style="padding:2px; text-align:center;">' + (isImage ? '-' : '<input type="color" value="' + (fConfig.color || '#ffffff') + '" onchange="updateGraphicsFieldSetting(' + cardId + ', \'' + f + '\', \'color\', this.value)" style="padding:0; height:14px; width:20px; border:none; cursor:pointer;">') + '</td>' +
+                '<td style="padding:2px;"><input type="number" value="' + (isImage ? 0 : fConfig.size || 12) + '" min="6" onchange="updateGraphicsFieldSetting(' + cardId + ', \'' + f + '\', \'size\', parseInt(this.value))" style="padding:1px; height:16px; font-size:8px; text-align:center; width:100%;" ' + (isImage ? 'disabled' : '') + '></td>' +
+                '</tr>';
+        });
+
+        gHtml += '</tbody></table>';
+        gHtml += '</div>';
+
+        gHtml += '<div style="margin-top:10px; border-top:1px solid #333; padding-top:6px; font-size:8px; color:#888; line-height:1.2;">' +
+            '📌 <b>วิธีใช้งานใน OBS:</b><br>' +
+            '1. เพิ่ม Browser Source ใน OBS หรือคลิกปุ่มด้านล่างเพื่อสร้างอัตโนมัติ:<br>' +
+            '<div style="margin:5px 0;">' +
+            '<button class="btn-settings" onclick="createBrowserSourceInOBS(this)" style="font-size:10px; padding:4px 8px; width:100%; font-weight:bold; background:linear-gradient(135deg, #00ff66, #005f73); border:none; color:#000; cursor:pointer; border-radius:4px;">🔧 สร้าง Browser Source ใน Scene ปัจจุบัน</button>' +
+            '</div>' +
+            '2. หรือใส่ URL ด้วยตนเองด้านล่างนี้ (ไม่ต้องติ๊กเลือก Local file):<br>' +
+            '<div style="display:flex; gap:3px; margin-top:3px; margin-bottom:4px;">' +
+            '<input type="text" readonly value="' + getGraphicsUrl() + '" style="font-size:8px; height:18px; padding:2px 4px; background:#111; border:1px solid #444; color:#00aaff; flex:1; box-sizing:border-box;">' +
+            '<button class="btn-copy" onclick="copyGraphicsUrl(this)" style="font-size:8px; padding:2px 4px; height:18px; line-height:1; width:auto; flex:0;">คัดลอก</button>' +
+            '</div>' +
+            '3. ตั้งค่าขนาดกว้าง 1920 สูง 1080' +
+            '</div>';
+
+        gHtml += '</div>'; // end panel
+        gHtml += '</div>'; // end outer container
+        graphicsSettingsContainer.innerHTML = gHtml;
+    }
+
     openModal('modal-card-settings');
+}
+
+// ============ OBS BROWSER SOURCE AUTOMATED CREATION & COMPONENT EVENT HANDLERS ============
+function createBrowserSourceInOBS(btn) {
+    if (!obsConnected) {
+        alert('ไม่สามารถสร้างได้ (OBS ไม่เชื่อมต่อ)');
+        return;
+    }
+    
+    sendOBSRequestWithCallback('GetCurrentProgramScene', {}, function (err, response) {
+        if (err || !response) {
+            console.error('Failed to get current scene:', err);
+            alert('ไม่สามารถดึงข้อมูล Scene ปัจจุบันได้');
+            return;
+        }
+
+        var sceneName = response.currentProgramSceneName;
+        if (!sceneName) {
+            alert('ไม่พบชื่อ Scene ปัจจุบัน');
+            return;
+        }
+
+        var sourceName = prompt('ระบุชื่อ Browser Source ที่ต้องการสร้างใน OBS:', 'L3 Graphics Overlay');
+        if (!sourceName) return;
+
+        // Visual loading feedback
+        var oldHtml = btn.innerHTML;
+        btn.innerHTML = '⌛ กำลังสร้าง...';
+        btn.disabled = true;
+
+        sendOBSRequestWithCallback('CreateInput', {
+            sceneName: sceneName,
+            inputName: sourceName,
+            inputKind: 'browser_source',
+            inputSettings: {
+                url: getGraphicsUrl(),
+                width: 1920,
+                height: 1080
+            }
+        }, function (errCreate, responseCreate) {
+            // Restore button state
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+
+            if (errCreate) {
+                console.error('CreateInput error:', errCreate);
+                alert('สร้างไม่สำเร็จ: ' + (errCreate.comment || 'เกิดข้อผิดพลาดในการส่งคำสั่ง (อาจมีชื่อ Source นี้ซ้ำอยู่แล้ว)'));
+            } else {
+                alert('✅ สร้าง Browser Source "' + sourceName + '" ใน Scene "' + sceneName + '" สำเร็จเรียบร้อย!');
+            }
+        });
+    });
+}
+
+function updateGraphicsPositionMode(cardId, value) {
+    updateGraphicsSetting(cardId, 'position', value);
+    const row = document.getElementById('g-custom-coords-row');
+    if (row) {
+        row.style.display = value === 'custom' ? 'grid' : 'none';
+    }
+}
+
+function updateGraphicsModeSetting(cardId, value) {
+    updateGraphicsSetting(cardId, 'mode', value);
+    const subDelayContainer = document.getElementById('g-subdelay-container');
+    if (subDelayContainer) {
+        subDelayContainer.style.display = value === 'sports' ? 'block' : 'none';
+    }
 }
 
 function renderSourceRowWithCreate(sourceName, label, sourceType, cardId, side) {
@@ -915,6 +1334,7 @@ function toggleColumnVisibility(cardId, column, isVisible) {
     card.columnVisibility[column] = isVisible;
     saveCardsToStorage();
     populateDropdowns();
+    broadcastStateUpdate();
 }
 
 // ============ OBS SOURCE CREATION ============
@@ -954,22 +1374,31 @@ function confirmCreateSource() {
         return;
     }
 
-    // Prompt user for scene name
-    var sceneName = prompt('ใส่ชื่อ Scene ที่ต้องการสร้าง Group:', 'Scene');
-    if (!sceneName) {
-        return;
-    }
+    // Fetch current program scene dynamically
+    sendOBSRequestWithCallback('GetCurrentProgramScene', {}, function (err, response) {
+        if (err || !response) {
+            console.error('Failed to get current scene:', err);
+            alert('ไม่สามารถดึงข้อมูล Scene ปัจจุบันได้');
+            return;
+        }
 
-    var cardId = pendingSourceCreation.cardId;
-    var side = pendingSourceCreation.side;
-    var prefix = side.includes('home') ? '_Home_' : (side.includes('away') ? '_Away_' : '_');
-    var groupName = pendingSourceCreation.groupName;
+        var sceneName = response.currentProgramSceneName;
+        if (!sceneName) {
+            alert('ไม่พบชื่อ Scene ปัจจุบัน');
+            return;
+        }
 
-    // Create Group with all Sources inside
-    createGroupWithSources(sceneName, groupName, cardId, prefix);
+        var cardId = pendingSourceCreation.cardId;
+        var side = pendingSourceCreation.side;
+        var prefix = side.includes('home') ? '_Home_' : (side.includes('away') ? '_Away_' : '_');
+        var groupName = pendingSourceCreation.groupName;
 
-    pendingSourceCreation = null;
-    closeModal(null, 'modal-confirm-create');
+        // Create Group with all Sources inside in the current active scene
+        createGroupWithSources(sceneName, groupName, cardId, prefix);
+
+        pendingSourceCreation = null;
+        closeModal(null, 'modal-confirm-create');
+    });
 }
 
 // Create Group and Sources in the same scene, user drags sources into group
@@ -1031,65 +1460,16 @@ function createGroupWithSources(sceneName, groupName, cardId, prefix) {
         var delay = 0;
         var delayIncrement = 250;
 
-        // Create all sources in the specified scene
-        setTimeout(function () {
-            console.log('Creating:', sourceNames[0], 'in scene:', sceneName);
-            sendOBSRequest('CreateInput', {
-                sceneName: sceneName,
-                inputName: sourceNames[0],
-                inputKind: textKind,
-                inputSettings: { text: 'Name' }
-            });
-        }, delay);
-        delay += delayIncrement;
-
-        setTimeout(function () {
-            console.log('Creating:', sourceNames[1], 'in scene:', sceneName);
-            sendOBSRequest('CreateInput', {
-                sceneName: sceneName,
-                inputName: sourceNames[1],
-                inputKind: textKind,
-                inputSettings: { text: 'Label1' }
-            });
-        }, delay);
-        delay += delayIncrement;
-
-        setTimeout(function () {
-            console.log('Creating:', sourceNames[2], 'in scene:', sceneName);
-            sendOBSRequest('CreateInput', {
-                sceneName: sceneName,
-                inputName: sourceNames[2],
-                inputKind: textKind,
-                inputSettings: { text: 'Label2' }
-            });
-        }, delay);
-        delay += delayIncrement;
-
-        setTimeout(function () {
-            console.log('Creating:', sourceNames[3], 'in scene:', sceneName);
-            sendOBSRequest('CreateInput', {
-                sceneName: sceneName,
-                inputName: sourceNames[3],
-                inputKind: textKind,
-                inputSettings: { text: 'Label3' }
-            });
-        }, delay);
-        delay += delayIncrement;
-
-        setTimeout(function () {
-            console.log('Creating:', sourceNames[4], 'in scene:', sceneName);
-            sendOBSRequest('CreateInput', {
-                sceneName: sceneName,
-                inputName: sourceNames[4],
-                inputKind: imageKind,
-                inputSettings: { file: '' }
-            });
-        }, delay);
-        delay += delayIncrement;
+        // Create all sources in the specified scene with Fit bounds automatically!
+        setTimeout(function () { createInputWithFitBounds(sceneName, sourceNames[0], textKind, { text: 'Name' }); }, delay); delay += delayIncrement;
+        setTimeout(function () { createInputWithFitBounds(sceneName, sourceNames[1], textKind, { text: 'Label1' }); }, delay); delay += delayIncrement;
+        setTimeout(function () { createInputWithFitBounds(sceneName, sourceNames[2], textKind, { text: 'Label2' }); }, delay); delay += delayIncrement;
+        setTimeout(function () { createInputWithFitBounds(sceneName, sourceNames[3], textKind, { text: 'Label3' }); }, delay); delay += delayIncrement;
+        setTimeout(function () { createInputWithFitBounds(sceneName, sourceNames[4], imageKind, { file: '' }); }, delay); delay += delayIncrement;
 
         // Show success message with instructions
         setTimeout(function () {
-            alert('✅ สร้าง Sources สำเร็จ!\n\n' +
+            alert('✅ สร้าง Sources สำเร็จ และตั้งค่า Bounds เป็น Fit เรียบร้อย!\n\n' +
                 'Sources ที่สร้าง:\n' +
                 '• ' + sourceNames.join('\n• ') + '\n\n' +
                 '📌 ขั้นตอนถัดไป:\n' +
@@ -1119,3 +1499,442 @@ function createImageSource(sceneName, inputName) {
     });
     console.log('Sent create image source:', inputName);
 }
+
+// ============ NEW HELPERS FOR SHEET SELECTION, GRAPHICS, AUTO CLOSE & FIT BOUNDS ============
+
+function getCardData(card) {
+    if (!workbookSheets || workbookSheets.length === 0) return [];
+    var sheetName = card.sheetName || workbookSheets[0];
+    return workbookData[sheetName] || [];
+}
+
+function saveWorkbookToStorage() {
+    try {
+        localStorage.setItem('l3_workbook_data', JSON.stringify(workbookData));
+        localStorage.setItem('l3_workbook_sheets', JSON.stringify(workbookSheets));
+    } catch (e) {
+        console.warn('Failed to save workbook:', e);
+    }
+}
+
+function loadWorkbookFromStorage() {
+    try {
+        var savedData = localStorage.getItem('l3_workbook_data');
+        var savedSheets = localStorage.getItem('l3_workbook_sheets');
+        if (savedData && savedSheets) {
+            workbookData = JSON.parse(savedData);
+            workbookSheets = JSON.parse(savedSheets);
+            console.log('Loaded workbook from storage:', workbookSheets);
+            if (workbookSheets.length > 0) {
+                dbData = workbookData[workbookSheets[0]] || [];
+            }
+            updateImportStatus();
+        }
+    } catch (e) {
+        console.warn('Failed to load workbook:', e);
+    }
+}
+
+function toggleAutoClose(cardId, checked) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    card.autoCloseEnabled = checked;
+    saveCardsToStorage();
+}
+
+function changeAutoCloseSec(cardId, value) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    card.autoCloseSec = parseInt(value) || 5;
+    saveCardsToStorage();
+}
+
+var autoCloseTimeouts = {};
+function handleAutoCloseTrigger(cardId, isVisible) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    if (autoCloseTimeouts[cardId]) {
+        clearTimeout(autoCloseTimeouts[cardId]);
+        delete autoCloseTimeouts[cardId];
+    }
+
+    if (isVisible && card.autoCloseEnabled) {
+        var sec = card.autoCloseSec !== undefined ? card.autoCloseSec : 5;
+        console.log('Scheduling auto-close for card', cardId, 'in', sec, 'seconds');
+        autoCloseTimeouts[cardId] = setTimeout(function () {
+            console.log('Auto-closing card', cardId);
+            const chkId = card.type === 'single' ? 'vis_single_' + cardId : 'vis_double_' + cardId;
+            const chk = document.getElementById(chkId);
+            if (chk && chk.checked) {
+                chk.checked = false;
+                if (card.type === 'single') {
+                    toggleSingleVisibility(cardId, false);
+                } else {
+                    toggleDoubleVisibility(cardId, false);
+                }
+            }
+        }, sec * 1000);
+    }
+}
+
+function createInputWithFitBounds(sceneName, inputName, inputKind, inputSettings) {
+    sendOBSRequestWithCallback('CreateInput', {
+        sceneName: sceneName,
+        inputName: inputName,
+        inputKind: inputKind,
+        inputSettings: inputSettings
+    }, function (err, response) {
+        if (err || !response) {
+            console.error('Failed to create input:', inputName, err);
+            return;
+        }
+        const sceneItemId = response.sceneItemId;
+        console.log('Created input:', inputName, 'sceneItemId:', sceneItemId);
+
+        // Set bounds to Fit to Screen
+        sendOBSRequest('SetSceneItemTransform', {
+            sceneName: sceneName,
+            sceneItemId: sceneItemId,
+            sceneItemTransform: {
+                boundsType: 'OBS_BOUNDS_SCALE_INNER',
+                boundsWidth: 1920,
+                boundsHeight: 1080
+            }
+        });
+        console.log('Set bounds to Fit for:', inputName);
+    });
+}
+
+// Broadcast Channel
+const bc = new BroadcastChannel('l3_graphics_channel');
+
+bc.onmessage = function (event) {
+    if (event.data && event.data.type === 'REQUEST_STATE') {
+        broadcastStateUpdate();
+    }
+};
+
+function broadcastStateUpdate() {
+    const payload = cards.map(function (card) {
+        const cardData = getCardData(card);
+        let selectedItem = null;
+        let selectedItemHome = null;
+        let selectedItemAway = null;
+        let isVisible = false;
+
+        if (card.type === 'single') {
+            const sel = document.getElementById('sel_single_' + card.id);
+            const idx = sel ? sel.value : null;
+            if (idx !== null && idx !== "" && cardData[idx]) {
+                selectedItem = { ...cardData[idx] };
+                selectedItem.image = buildBrowserImagePath(selectedItem.image);
+            }
+            const visChk = document.getElementById('vis_single_' + card.id);
+            isVisible = visChk ? visChk.checked : false;
+        } else {
+            const selHome = document.getElementById('sel_home_' + card.id);
+            const selAway = document.getElementById('sel_away_' + card.id);
+            const idxHome = selHome ? selHome.value : null;
+            const idxAway = selAway ? selAway.value : null;
+            if (idxHome !== null && idxHome !== "" && cardData[idxHome]) {
+                selectedItemHome = { ...cardData[idxHome] };
+                selectedItemHome.image = buildBrowserImagePath(selectedItemHome.image);
+            }
+            if (idxAway !== null && idxAway !== "" && cardData[idxAway]) {
+                selectedItemAway = { ...cardData[idxAway] };
+                selectedItemAway.image = buildBrowserImagePath(selectedItemAway.image);
+            }
+            const visChk = document.getElementById('vis_double_' + card.id);
+            isVisible = visChk ? visChk.checked : false;
+        }
+
+        return {
+            id: card.id,
+            name: card.name,
+            type: card.type,
+            sheetName: card.sheetName || (workbookSheets[0] || ""),
+            graphicsSettings: getCardGraphicsSettings(card),
+            isVisible: isVisible,
+            selectedItem: selectedItem,
+            selectedItemHome: selectedItemHome,
+            selectedItemAway: selectedItemAway
+        };
+    });
+
+    bc.postMessage({
+        type: 'STATE_UPDATE',
+        cards: payload
+    });
+}
+
+function toggleGraphicsCollapse() {
+    graphicsCollapsed = !graphicsCollapsed;
+    const panel = document.getElementById('graphics-settings-panel');
+    const arrow = document.getElementById('graphics-collapse-arrow');
+    if (panel) panel.style.display = graphicsCollapsed ? 'none' : 'block';
+    if (arrow) arrow.textContent = graphicsCollapsed ? '▼' : '▲';
+}
+
+function changeCardSheet(cardId, sheetName) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    card.sheetName = sheetName;
+    saveCardsToStorage();
+    populateDropdowns();
+    broadcastStateUpdate();
+}
+
+function getCardGraphicsSettings(card) {
+    if (!card.graphicsSettings) {
+        card.graphicsSettings = {
+            enabled: false,
+            mode: 'standard',
+            bgColor: '#141414',
+            bgOpacity: 0.85,
+            themeColor: card.type === 'single' ? '#4ade80' : '#fbbf24',
+            borderRadius: 6,
+            transition: 'slide',
+            textColor: '#ffffff',
+            position: 'topLeft',
+            posX: 20,
+            posY: 20,
+            scale: 1.0,
+            textLayout: 'vertical',
+            subDelay: 1.5,
+            fields: {
+                id: { show: card.type === 'single', order: 1, width: 40, color: '#888888', size: 12 },
+                image: { show: true, order: 2, width: 50, color: '', size: 0 },
+                name: { show: true, order: 3, width: 150, color: '#ffffff', size: 16 },
+                label1: { show: true, order: 4, width: 120, color: '#aaaaaa', size: 12 },
+                label2: { show: false, order: 5, width: 100, color: '#aaaaaa', size: 12 },
+                label3: { show: false, order: 6, width: 100, color: '#aaaaaa', size: 12 }
+            }
+        };
+    }
+    
+    // Fill in newer parameters if missing from localStorage
+    if (card.graphicsSettings.position === undefined) card.graphicsSettings.position = 'topLeft';
+    if (card.graphicsSettings.posX === undefined) card.graphicsSettings.posX = 20;
+    if (card.graphicsSettings.posY === undefined) card.graphicsSettings.posY = 20;
+    if (card.graphicsSettings.scale === undefined) card.graphicsSettings.scale = 1.0;
+    if (card.graphicsSettings.textLayout === undefined) card.graphicsSettings.textLayout = 'vertical';
+    if (card.graphicsSettings.subDelay === undefined) card.graphicsSettings.subDelay = 1.5;
+
+    return card.graphicsSettings;
+}
+
+function updateGraphicsSetting(cardId, key, value) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const gs = getCardGraphicsSettings(card);
+    gs[key] = value;
+    saveCardsToStorage();
+    broadcastStateUpdate();
+}
+
+function updateGraphicsFieldSetting(cardId, field, key, value) {
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const gs = getCardGraphicsSettings(card);
+    if (!gs.fields[field]) {
+        gs.fields[field] = { show: true, order: 1, width: 100, color: '#ffffff', size: 12 };
+    }
+    gs.fields[field][key] = value;
+    saveCardsToStorage();
+    broadcastStateUpdate();
+}
+
+function toggleImportSource(type) {
+    const localContainer = document.getElementById('local-file-container');
+    const gsheetContainer = document.getElementById('gsheet-container');
+    if (type === 'gsheet') {
+        if (localContainer) localContainer.style.display = 'none';
+        if (gsheetContainer) gsheetContainer.style.display = 'block';
+    } else {
+        if (localContainer) localContainer.style.display = 'block';
+        if (gsheetContainer) gsheetContainer.style.display = 'none';
+    }
+    try {
+        localStorage.setItem('l3_import_source_type', type);
+    } catch (e) {}
+}
+
+function loadGoogleSheet() {
+    const input = document.getElementById('gsheet-url-input');
+    const url = input ? (input.value || '').trim() : '';
+    if (!url) {
+        alert("กรุณาใส่ลิงก์ Google Sheets");
+        return;
+    }
+    importGoogleSheet(url);
+}
+
+function importGoogleSheet(url) {
+    const matches = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!matches) {
+        alert("ลิงก์ Google Sheets ไม่ถูกต้อง กรุณาใช้ลิงก์ในรูปแบบ https://docs.google.com/spreadsheets/d/.../edit");
+        return;
+    }
+    const spreadsheetId = matches[1];
+    
+    // Construct export URL
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
+    
+    console.log("Fetching Google Sheet from:", exportUrl);
+    
+    // Show loading state in Drop Zone element
+    const dropZone = document.getElementById('drop-zone');
+    const oldHtml = dropZone ? dropZone.innerHTML : '';
+    const statusEl = document.getElementById('import-status');
+    
+    if (statusEl) {
+        statusEl.textContent = 'กำลังโหลด...';
+        statusEl.className = 'import-status empty';
+    }
+
+    fetch(exportUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("ไม่สามารถโหลดไฟล์ได้ (กรุณาเปิดแชร์ลิงก์เป็นสาธารณะ / Anyone with the link can view)");
+            }
+            return response.arrayBuffer();
+        })
+        .then(buffer => {
+            const data = new Uint8Array(buffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            workbookSheets = workbook.SheetNames || [];
+            workbookData = {};
+
+            workbookSheets.forEach(function (sheetName) {
+                const sheet = workbook.Sheets[sheetName];
+                const rawData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+                var processed = rawData.map(function (row, index) {
+                    function val(key) {
+                        var foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === key.toLowerCase());
+                        return foundKey ? row[foundKey] : undefined;
+                    }
+
+                    var rowId = val('id');
+                    var nameVal = val('name') || "";
+                    var label1Val = val('labelname1') || val('label1') || "";
+                    var label2Val = val('labelname2') || val('label2') || "";
+                    var label3Val = val('labelname3') || val('label3') || "";
+                    var imageVal = val('image') || "";
+
+                    return {
+                        id: rowId,
+                        name: nameVal,
+                        label1: label1Val,
+                        label2: label2Val,
+                        label3: label3Val,
+                        image: imageVal
+                    };
+                });
+
+                // Filter out empty rows
+                processed = processed.filter(function (item) {
+                    return (item.id !== undefined && item.id !== "") ||
+                        item.name !== "" ||
+                        item.label1 !== "" ||
+                        item.label2 !== "" ||
+                        item.label3 !== "" ||
+                        item.image !== "";
+                });
+
+                // Assign IDs to rows without ID
+                processed.forEach(function (item, index) {
+                    if (item.id === undefined || item.id === "") {
+                        item.id = index + 1;
+                    }
+                });
+
+                // Sort by ID
+                processed.sort(function (a, b) {
+                    var aNum = parseFloat(a.id);
+                    var bNum = parseFloat(b.id);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return aNum - bNum;
+                    }
+                    return String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+                workbookData[sheetName] = processed;
+            });
+
+            // Compatibility fallback
+            if (workbookSheets.length > 0) {
+                dbData = workbookData[workbookSheets[0]] || [];
+            } else {
+                dbData = [];
+            }
+
+            console.log('Processed Google Sheets data:', workbookData);
+
+            saveWorkbookToStorage();
+            
+            try {
+                localStorage.setItem('l3_gsheet_url', url);
+            } catch (e) {}
+
+            updateImportStatus();
+            populateDropdowns();
+            broadcastStateUpdate();
+
+            var firstSheetLen = workbookSheets.length > 0 ? workbookData[workbookSheets[0]].length : 0;
+            if (dropZone) {
+                dropZone.innerHTML = '<div class="drop-zone-icon">✅</div><div style="color:#4ade80; font-weight:bold;">โหลดสำเร็จ: ' + firstSheetLen + ' รายการ</div><div style="font-size:9px; color:#888; margin-top:5px;">คลิกเพื่อเลือกไฟล์ใหม่</div>';
+            }
+            alert("✅ นำเข้าข้อมูลจาก Google Sheets สำเร็จ!");
+        })
+        .catch(err => {
+            console.error(err);
+            alert("เกิดข้อผิดพลาด: " + err.message + "\n\nคำแนะนำ:\n1. ตรวจสอบให้แน่ใจว่าได้ตั้งค่าการแชร์ Google Sheet เป็น 'ทุกคนที่มีลิงก์มีสิทธิ์อ่าน' (Anyone with the link can view)\n2. หรือไปที่ File -> Share -> Publish to web และแชร์แบบ Microsoft Excel (.xlsx) แล้วนำลิงก์นั้นมาวาง");
+            updateImportStatus();
+        });
+}
+
+// ============ GRAPHICS URL DYNAMIC RESOLUTION ============
+function getGraphicsUrl() {
+    var loc = window.location.href;
+    var idx = loc.lastIndexOf('/');
+    if (idx !== -1) {
+        return loc.substring(0, idx) + '/graphicsl3.html';
+    }
+    return 'graphicsl3.html';
+}
+
+function copyGraphicsUrl(btn) {
+    var url = getGraphicsUrl();
+    navigator.clipboard.writeText(url).then(function () {
+        btn.classList.add('copied');
+        var oldText = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(function () {
+            btn.classList.remove('copied');
+            btn.textContent = oldText;
+        }, 1500);
+    }).catch(function (err) {
+        console.error("Failed to copy URL:", err);
+    });
+}
+
+function copyHelpGraphicsUrl(btn) {
+    var url = getGraphicsUrl();
+    navigator.clipboard.writeText(url).then(function () {
+        var oldText = btn.innerHTML;
+        btn.innerHTML = '✓ สำเร็จ';
+        btn.style.background = '#2d4a3e';
+        btn.style.color = '#4ade80';
+        setTimeout(function () {
+            btn.innerHTML = oldText;
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 1500);
+    }).catch(function (err) {
+        console.error("Failed to copy URL:", err);
+    });
+}
+
