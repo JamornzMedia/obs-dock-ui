@@ -628,8 +628,13 @@
 
         <div class="form-group">
             <label for="sourceName">ชื่อ Media Source ใน OBS:</label>
-            <input type="text" id="sourceName" placeholder="DroneSource" value="DroneSource">
-            <div class="help-text">ชื่อ Source ในแถบ Sources ของ OBS ที่จะรับภาพนี้</div>
+            <div class="input-wrapper" style="gap: 8px;">
+                <input type="text" id="sourceName" placeholder="DroneSource" value="DroneSource" style="flex: 1;">
+                <button id="createSourceBtn" class="btn-secondary" onclick="createSourceInOBS()" style="width: auto; padding: 0 16px; height: 45px; white-space: nowrap;" disabled>
+                    ➕ สร้าง Source
+                </button>
+            </div>
+            <div class="help-text">ชื่อ Source ใน OBS ที่จะรับภาพนี้ (กดเพื่อสร้างใน Scene ปัจจุบันอัตโนมัติ)</div>
         </div>
 
         <div class="settings-actions">
@@ -671,7 +676,7 @@
                 <li>ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
                 <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
                 <li>จดจำหมายเลขพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน <strong>(Server Password)</strong></li>
-                <li>ในช่อง Sources ของ OBS ให้คลิกขวา Add > <strong>Media Source</strong> (ตั้งชื่อตรงกับหน้าควบคุม เช่น <code>DroneSource</code>) และห้ามเลือก <em>Local File</em></li>
+                <li>ในช่อง Sources ของ OBS จะต้องมี Media Source ชื่อตรงกับที่ระบุ (เช่น <code>DroneSource</code>) โดยคุณสามารถกดปุ่ม <strong>"➕ สร้าง Source"</strong> ในแผงตั้งค่าด้านบนเพื่อให้ระบบสร้างใน Scene ปัจจุบันอัตโนมัติ หรือจะแอดมือเองก็ได้ (ห้ามเลือก <em>Local File</em>)</li>
             </ol>
         </div>
 
@@ -742,6 +747,7 @@
     const statusText = document.getElementById('statusText');
     const sendBtn = document.getElementById('sendBtn');
     const connectBtn = document.getElementById('connectBtn');
+    const createSourceBtn = document.getElementById('createSourceBtn');
 
     // โหลดค่าจาก URL Query Parameters หรือ localStorage หรือดึง IP ของอุปกรณ์มาใช้งาน
     function loadSettings() {
@@ -977,16 +983,19 @@
             statusBadge.className = 'status-badge connected';
             statusText.textContent = 'สถานะ: เชื่อมต่อ OBS สำเร็จ';
             sendBtn.disabled = false;
+            if (createSourceBtn) createSourceBtn.disabled = false;
         } else if (state === 'connecting') {
             isConnected = false;
             statusBadge.className = 'status-badge connecting';
             statusText.textContent = 'สถานะ: กำลังเชื่อมต่อ OBS...';
             sendBtn.disabled = true;
+            if (createSourceBtn) createSourceBtn.disabled = true;
         } else {
             isConnected = false;
             statusBadge.className = 'status-badge disconnected';
             statusText.textContent = 'สถานะ: ไม่ได้เชื่อมต่อ OBS';
             sendBtn.disabled = true;
+            if (createSourceBtn) createSourceBtn.disabled = true;
         }
     }
 
@@ -1048,6 +1057,56 @@
     function manualConnect() {
         saveSettings();
         connectToOBS();
+    }
+
+    // ฟังก์ชันสร้าง Media Source ใหม่ใน Scene ปัจจุบันของ OBS
+    async function createSourceInOBS() {
+        if (!isConnected || !obs) {
+            alert("กรุณาเชื่อมต่อ OBS ก่อนครับ");
+            return;
+        }
+
+        const targetSourceName = document.getElementById('sourceName').value.trim();
+        if (!targetSourceName) {
+            alert("กรุณาระบุชื่อ Media Source ที่ต้องการสร้าง");
+            return;
+        }
+
+        const urlValue = document.getElementById('streamUrl').value.trim();
+        const initialStream = (urlValue && urlValue !== 'rtmp://') ? urlValue : '';
+
+        try {
+            // 1. ดึงชื่อ Scene ปัจจุบันที่กำลังแสดงผล (Active Program Scene)
+            const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene');
+            
+            if (!currentProgramSceneName) {
+                alert("ไม่สามารถหา Scene ปัจจุบันได้ กรุณาตรวจสอบสถานะ OBS");
+                return;
+            }
+
+            // 2. สร้าง Input ชนิด ffmpeg_source ใน Scene นั้น
+            await obs.call('CreateInput', {
+                sceneName: currentProgramSceneName,
+                inputName: targetSourceName,
+                inputKind: 'ffmpeg_source',
+                inputSettings: {
+                    input: initialStream,
+                    is_local_file: false,
+                    looping: false,
+                    restart_on_activate: true
+                },
+                sceneItemEnabled: true
+            });
+
+            showToast(`สร้าง Source "${targetSourceName}" ใน Scene "${currentProgramSceneName}" สำเร็จ!`);
+        } catch (error) {
+            console.error("สร้าง Source ล้มเหลว:", error);
+            if (error.code === 601) { // รหัสข้อผิดพลาดของ OBS-WebSocket เมื่อทรัพยากรซ้ำ
+                alert(`ล้มเหลว: มี Source ชื่อ "${targetSourceName}" อยู่แล้วใน OBS`);
+            } else {
+                alert("ไม่สามารถสร้าง Source ได้: " + error.message);
+            }
+        }
     }
 
     // ฟังก์ชันส่งลิงก์วิดีโอไปเปลี่ยนใน Input ของ Media Source ใน OBS
