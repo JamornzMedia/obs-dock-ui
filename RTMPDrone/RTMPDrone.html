@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js"></script>
     <!-- ดึงไลบรารีสแกน QR Code จากกล้อง (html5-qrcode) -->
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <!-- ดึงไลบรารีสร้าง QR Code (QRCode.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
 
@@ -564,6 +566,236 @@
         .toast.show {
             transform: translateX(-50%) translateY(0);
         }
+
+        /* สไตล์สำหรับ Presets */
+        .presets-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            min-height: 42px;
+            align-items: center;
+        }
+
+        .no-presets-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-style: italic;
+            width: 100%;
+            text-align: center;
+        }
+
+        .preset-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: #a5b4fc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-pill:hover {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        }
+
+        .preset-pill-delete {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            transition: all 0.1s;
+        }
+
+        .preset-pill-delete:hover {
+            color: var(--error-color);
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        /* สไตล์สำหรับ Live Control Panel */
+        .live-control-panel {
+            background: rgba(22, 30, 49, 0.4);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.05);
+            display: none; /* แสดงเมื่อเชื่อมต่อ OBS เท่านั้น */
+        }
+
+        .live-control-panel.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .live-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .live-control-header h3 {
+            font-size: 13px;
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+
+        .live-status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: rgba(15, 23, 42, 0.6);
+            padding: 3px 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-indicator-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .live-status-indicator.active .status-indicator-dot {
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        .live-status-indicator.muted .status-indicator-dot {
+            background: var(--warning-color);
+            box-shadow: 0 0 8px var(--warning-color);
+        }
+
+        .live-control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-live-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 5px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-live-control svg {
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        .btn-live-control:hover:not(:disabled) {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-live-control:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .btn-live-control:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* สถานะปุ่มพิเศษ */
+        .btn-live-control.on {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .btn-live-control.on svg {
+            color: #34d399;
+            filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.4));
+        }
+
+        .btn-live-control.off {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .btn-live-control.off svg {
+            color: #f87171;
+        }
+
+        .btn-live-control.danger:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        /* ตู้คอนเทนเนอร์ QR Code ลิงก์ด่วน */
+        .qr-container {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .qr-container p {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .qrcode-wrapper {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-flex;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .qrcode-wrapper canvas, .qrcode-wrapper img {
+            width: 130px;
+            height: 130px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -592,10 +824,46 @@
         <div class="help-text">กรอกที่อยู่ RTMP สตรีมของโดรน เช่น rtmp://192.168.1.50/live/drone</div>
     </div>
 
+    <!-- ส่วนรายการที่บันทึกไว้ (Presets) -->
+    <div class="form-group" style="margin-top: -10px; margin-bottom: 20px;">
+        <div class="label-row">
+            <label>รายการสตรีมที่บันทึกไว้ (Presets):</label>
+            <span class="preset-badge" onclick="saveCurrentAsPreset()">💾 บันทึกปัจจุบัน</span>
+        </div>
+        <div id="presetsContainer" class="presets-container">
+            <span class="no-presets-text">ยังไม่มีรายการที่บันทึกไว้</span>
+        </div>
+    </div>
+
     <button id="sendBtn" class="btn-primary" onclick="sendStreamToOBS()" disabled>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         ส่งภาพฉายใน OBS
     </button>
+
+    <!-- แผงควบคุมสด (Live Controls) จะแสดงเมื่อต่อ OBS WebSocket สำเร็จ -->
+    <div id="liveControlPanel" class="live-control-panel">
+        <div class="live-control-header">
+            <h3>🎮 ควบคุมสื่อใน OBS</h3>
+            <div id="liveStatusIndicator" class="live-status-indicator">
+                <span class="status-indicator-dot"></span>
+                <span id="liveStatusText">ไม่ได้ใช้งานสตรีม</span>
+            </div>
+        </div>
+        <div class="live-control-grid">
+            <button id="toggleVisBtn" class="btn-live-control" onclick="toggleSourceVisibility()" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span id="visText">แสดงภาพ</span>
+            </button>
+            <button id="toggleMuteBtn" class="btn-live-control" onclick="toggleSourceMute()" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <span id="muteText">เปิดเสียง</span>
+            </button>
+            <button id="restartStreamBtn" class="btn-live-control danger" onclick="restartSourceStream()" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span>รีโหลดสตรีม</span>
+            </button>
+        </div>
+    </div>
 
     <div class="toggle-links">
         <button class="btn-link" onclick="toggleSettingsPanel()">ตั้งค่าการเชื่อมต่อ OBS WebSocket</button>
@@ -629,12 +897,13 @@
         <div class="form-group">
             <label for="sourceName">ชื่อ Media Source ใน OBS:</label>
             <div class="input-wrapper" style="gap: 8px;">
-                <input type="text" id="sourceName" placeholder="DroneSource" value="DroneSource" style="flex: 1;">
+                <input type="text" id="sourceName" list="obsSourcesDatalist" placeholder="DroneSource" value="DroneSource" style="flex: 1;">
+                <datalist id="obsSourcesDatalist"></datalist>
                 <button id="createSourceBtn" class="btn-secondary" onclick="createSourceInOBS()" style="width: auto; padding: 0 16px; height: 45px; white-space: nowrap;" disabled>
                     ➕ สร้าง Source
                 </button>
             </div>
-            <div class="help-text">ชื่อ Source ใน OBS ที่จะรับภาพนี้ (กดเพื่อสร้างใน Scene ปัจจุบันอัตโนมัติ)</div>
+            <div class="help-text">ชื่อ Source ใน OBS ที่จะรับภาพนี้ (พิมพ์ชื่อเองหรือกดเลือก และกดสร้างใน Scene ได้)</div>
         </div>
 
         <div class="settings-actions">
@@ -647,73 +916,68 @@
                 สร้างลิงก์ด่วน
             </button>
         </div>
+
+        <!-- บล็อกแสดง QR Code สำหรับสแกนด่วน -->
+        <div id="quickLinkQrContainer" class="qr-container" style="display: none;">
+            <p>📱 สแกน QR Code เพื่อรีโมทควบคุมบนอุปกรณ์อื่น:</p>
+            <div id="quickLinkQr" class="qrcode-wrapper"></div>
+            <button class="btn-link" onclick="closeQrCodeContainer()" style="margin-top: 8px;">ซ่อน QR Code</button>
+        </div>
+
+        <!-- คู่มือการตั้งค่า WebSocket ย้ายมาไว้ตรงนี้ (ตั้งค่าครั้งแรก) -->
+        <div style="margin-top: 20px; padding: 15px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 12px; font-size: 11.5px; line-height: 1.6;">
+            <strong style="color: #a5b4fc; display: block; margin-bottom: 8px; font-size: 12.5px;">📝 วิธีเปิดใช้งาน WebSocket ใน OBS (ทำเฉพาะครั้งแรก):</strong>
+            <ol style="margin-left: 18px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+                <li>ในโปรแกรม OBS Studio ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
+                <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
+                <li>จดพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน <strong>(Server Password)</strong> แล้วนำมากรอกด้านบน</li>
+            </ol>
+        </div>
     </div>
 
     <!-- แผงแนะนำการใช้งาน (ซ่อนอยู่โดยค่าเริ่มต้น) -->
     <div id="guidePanel" class="guide-panel">
         <div class="guide-section">
-            <h4><span class="badge-net">เครือข่าย</span> 1. เชื่อมต่อ Wi-Fi วงเดียวกัน</h4>
-            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
-                เพื่อให้อุปกรณ์ควบคุม (เช่น มือถือ/แท็บเล็ต) สามารถสื่อสารกับโปรแกรม OBS บนคอมพิวเตอร์ได้ ทั้งคอมพิวเตอร์และมือถือต้องเชื่อมต่อ <strong>Wi-Fi ตัวเดียวกัน</strong> (หรือคอมพิวเตอร์เชื่อมต่อ Wi-Fi Hotspot ที่เปิดจากมือถือเครื่องที่ใช้ควบคุม)
+            <h4><span class="badge-net">เครือข่าย</span> 1. เชื่อมต่อ Wi-Fi เดียวกัน</h4>
+            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0;">
+                คอมพิวเตอร์ที่เปิด OBS และรีโมทโดรน (หรือโทรศัพท์มือถือที่คุมโดรน) ต้องเชื่อมต่อ <strong>Wi-Fi ตัวเดียวกัน</strong> (หรือเปิด Hotspot จากมือถือแล้วเอาคอมพิวเตอร์มาเชื่อมต่อร่วมกันก็ได้)
             </p>
         </div>
 
         <div class="guide-section">
-            <h4><span class="badge-pc">ฝั่งคอมพิวเตอร์ (PC)</span> 2. วิธีหา IP ของเครื่องคอมพิวเตอร์</h4>
+            <h4><span class="badge-pc">ฝั่งคอมพิวเตอร์ (PC)</span> 2. วิธีค้นหา IP ของคอมพิวเตอร์</h4>
             <ol style="margin-bottom: 0;">
-                <li><strong>บนระบบ Windows:</strong> กดปุ่ม <code>Windows + R</code> บนคีย์บอร์ด พิมพ์ <code>cmd</code> แล้วกด Enter เพื่อเปิด Command Prompt</li>
+                <li><strong>ระบบ Windows:</strong> กดปุ่ม <code>Windows + R</code> บนแป้นพิมพ์ พิมพ์ <code>cmd</code> แล้วกด Enter</li>
                 <li>พิมพ์คำสั่ง <code>ipconfig</code> แล้วกด Enter</li>
-                <li>มองหาหัวข้อ <strong>Wireless LAN adapter Wi-Fi</strong> (หากต่อ Wi-Fi) หรือ <strong>Ethernet adapter</strong> (หากต่อสายแลน)</li>
-                <li>มองหาบรรทัด <strong>IPv4 Address</strong> จะเห็นตัวเลข IP เช่น <code>192.168.1.50</code> (จดหมายเลข IP นี้ไว้เพื่อนำไปกรอกบนมือถือ)</li>
-                <li style="margin-top: 6px;"><strong>บนระบบ macOS:</strong> ไปที่ <em>การตั้งค่าระบบ (System Settings) > Network (เครือข่าย)</em> แล้วเลือกการเชื่อมต่อที่กำลังใช้งานอยู่ จะมีหมายเลข IP แสดงชัดเจน</li>
+                <li>เลื่อนหาหัวข้อ <strong>Wireless LAN adapter Wi-Fi</strong> (หากใช้ Wi-Fi) หรือ <strong>Ethernet adapter</strong> (หากใช้สายแลน)</li>
+                <li>จดหมายเลขในบรรทัด <strong>IPv4 Address</strong> เช่น <code>192.168.1.50</code> (นี่คือ IP คอมพิวเตอร์ของคุณ)</li>
+                <li style="margin-top: 6px;"><strong>ระบบ macOS:</strong> ไปที่ <em>System Settings > Network</em> แล้วเลือกเครือข่ายที่ใช้งานเพื่อดู IP</li>
             </ol>
         </div>
 
         <div class="guide-section">
-            <h4><span class="badge-pc">ฝั่งคอมพิวเตอร์ (PC)</span> 3. ตั้งค่า OBS WebSocket Settings</h4>
+            <h4><span class="badge-mobile">ฝั่งโดรน (DJI App)</span> 3. การใส่ IP ในแอปโดรน DJI</h4>
             <ol style="margin-bottom: 0;">
-                <li>เปิดโปรแกรม <strong>OBS Studio</strong></li>
-                <li>ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
-                <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
-                <li>จดจำหมายเลขพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน <strong>(Server Password)</strong></li>
-                <li>ในช่อง Sources ของ OBS จะต้องมี Media Source ชื่อตรงกับที่ระบุ (เช่น <code>DroneSource</code>) โดยคุณสามารถกดปุ่ม <strong>"➕ สร้าง Source"</strong> ในแผงตั้งค่าด้านบนเพื่อให้ระบบสร้างใน Scene ปัจจุบันอัตโนมัติ หรือจะแอดมือเองก็ได้ (ห้ามเลือก <em>Local File</em>)</li>
+                <li>เปิดแอปควบคุมโดรน (เช่น DJI Fly หรือ DJI Pilot) ➡️ เข้าสู่โหมดสตรีมมิ่งสด <strong>Live Stream / Live Broadcast</strong></li>
+                <li>เลือกสตรีมมิ่งผ่านโปรโตคอล <strong>RTMP</strong></li>
+                <li>ใส่ช่องกรอก URL สตรีมด้วย IP ของคอมพิวเตอร์ที่จดไว้จากข้อ 2 ตามโครงสร้างดังนี้:
+                    <br><code style="color: #fbbf24; font-size: 11px;">rtmp://[IP คอมพิวเตอร์]/live/drone</code>
+                    <br><span style="font-size: 11px; color: var(--text-secondary);">(เช่น: <code>rtmp://192.168.1.50/live/drone</code>)</span>
+                </li>
+                <li>กดเริ่มสตรีมในแอปโดรน</li>
             </ol>
         </div>
 
         <div class="guide-section">
-            <h4><span class="badge-mobile">ฝั่งมือถือ (Mobile)</span> 4. วิธีเปิดใช้งานและเชื่อมต่อจากโทรศัพท์</h4>
+            <h4><span class="badge-mobile">การควบคุม</span> 4. เชื่อมโยงสตรีมเข้า OBS</h4>
             <ol style="margin-bottom: 0;">
-                <li><strong>ทางเลือกเปิดใช้งานหน้าเว็บ:</strong>
-                    <ul style="margin-left: 15px; margin-top: 4px; font-size: 11px; list-style-type: circle; line-height: 1.4;">
-                        <li>ส่งไฟล์ <code>RTMPDrone.html</code> ไปเปิดในบราวเซอร์มือถือตรงๆ</li>
-                        <li>หรือโฮสต์ขึ้นเว็บเซิร์ฟเวอร์ฟรี (เช่น GitHub Pages) เพื่อความสะดวกในการเปิดและใช้ฟีเจอร์กล้องสแกน QR</li>
-                    </ul>
-                </li>
-                <li style="margin-top: 6px;">กดเมนู <strong>"ตั้งค่าการเชื่อมต่อ OBS WebSocket"</strong> ด้านบน</li>
-                <li>กรอกข้อมูลที่ได้จากคอมพิวเตอร์:
-                    <ul style="margin-left: 15px; margin-top: 4px; font-size: 11px; list-style-type: circle; line-height: 1.4;">
-                        <li><strong>OBS IP/Host:</strong> ใส่ IP คอมพิวเตอร์จากข้อ 2 (เช่น <code>192.168.1.50</code>) <em>(ห้ามใช้ 127.0.0.1 บนมือถือ เพราะจะอ้างอิงตัวมือถือเอง)</em></li>
-                        <li><strong>Port:</strong> <code>4455</code> (ตามที่ตั้งใน OBS)</li>
-                        <li><strong>รหัสผ่าน OBS WebSocket:</strong> ใส่รหัสผ่านที่คัดลอกมาจาก OBS</li>
-                    </ul>
-                </li>
-                <li>กดปุ่ม <strong>"เชื่อมต่อ & บันทึก"</strong> เพื่อจำการตั้งค่า (แถบสถานะด้านบนจะเปลี่ยนเป็นสีเขียว "เชื่อมต่อ OBS สำเร็จ")</li>
+                <li>บนมือถือ/รีโมทที่เปิดหน้าบราวเซอร์ควบคุมนี้ ให้กรอกข้อมูลการตั้งค่าเชื่อมต่อ OBS (ใช้เลข IP คอมพิวเตอร์ข้อ 2 และรหัสผ่าน)</li>
+                <li>นำลิงก์ RTMP เดียวกับที่ใส่ในโดรน DJI (ข้อ 3) มาใส่ในช่อง **ลิงก์สตรีมวิดีโอ** (หรือสแกน QR Code จากโดรน)</li>
+                <li>กดปุ่ม **"ส่งภาพฉายใน OBS"** เพื่อส่งสตรีมเข้าไปเล่นใน OBS ทันที!</li>
             </ol>
             <p style="font-size: 11.5px; color: #fbbf24; margin-top: 8px; line-height: 1.4;">
-                💡 <strong>เคล็ดลับทางลัด (สร้างลิงก์ด่วน):</strong> บน PC คุณสามารถกรอก IP เครื่อง PC, พอร์ต, รหัสผ่าน ไว้ล่วงหน้า แล้วกดปุ่ม <strong>"สร้างลิงก์ด่วน"</strong> จากนั้นส่งลิงก์ยาวๆ ที่ถูกคัดลอกนั้นไปเปิดในมือถือ หน้าเว็บมือถือจะตั้งค่าและเชื่อมต่อให้ทันที!
+                💡 <strong>เคล็ดลับความสะดวก:</strong> คุณสามารถกดปุ่ม **"สร้างลิงก์ด่วน"** หลังจากตั้งค่าบนคอมพิวเตอร์ครั้งแรกเสร็จ แล้วส่งลิงก์นั้นไปเปิดในมือถือ หน้าจอมือถือจะจำการตั้งค่าเชื่อมต่อทั้งหมดอัตโนมัติ ไม่ต้องกรอกซ้ำครับ
             </p>
-            <p style="font-size: 11px; color: var(--error-color); margin-top: 6px; line-height: 1.4;">
-                ⚠️ <strong>หมายเหตุเรื่องกล้อง:</strong> บราวเซอร์บนมือถือจะอนุญาตให้ใช้กล้องสแกน QR Code เฉพาะหน้าเว็บที่ทำงานผ่านโปรโตคอล <strong>HTTPS://</strong> (เช่น โฮสต์บนอินเทอร์เน็ต) หรือ localhost เท่านั้น หากเปิดไฟล์ธรรมดา (file://) หรือ HTTP กล้องอาจจะไม่ทำงาน และต้องใช้วิธีก๊อปปี้ลิงก์ RTMP มาวางเองครับ
-            </p>
-        </div>
-
-        <div class="guide-section">
-            <h4><span class="badge-mobile">ฝั่งมือถือ (Mobile)</span> 5. ส่งสตรีมโดรนเข้า OBS</h4>
-            <ol style="margin-bottom: 0;">
-                <li>นำลิงก์ RTMP สตรีมของโดรนที่ได้จากแอปสตรีมหรือรีโมทโดรน มาวางในช่อง <strong>ลิงก์สตรีมวิดีโอ</strong> (เช่น <code>rtmp://192.168.1.100/live/drone</code>)</li>
-                <li>หรือกดปุ่ม 📷 <strong>สแกน QR Code</strong> บนหน้าควบคุมนี้ แล้วใช้กล้องสแกนคิวอาร์โค้ดของลิงก์สตรีม</li>
-                <li>กดปุ่ม <strong>"ส่งภาพฉายใน OBS"</strong> ปุ่มสีน้ำเงินด้านบน ลิงก์จะถูกส่งไปฉายบน OBS ทันที!</li>
-            </ol>
         </div>
     </div>
 </div>
@@ -742,6 +1006,12 @@
     let isConnected = false;
     let autoReconnectTimer = null;
     let html5QrcodeScanner = null;
+    let presets = [];
+    let currentSceneName = '';
+    let currentSceneItemId = null;
+    let isSourceVisible = false;
+    let isSourceMuted = false;
+    let liveControlTimer = null;
 
     const statusBadge = document.getElementById('connectionStatus');
     const statusText = document.getElementById('statusText');
@@ -778,6 +1048,9 @@
         if (urlHost || urlPort || urlPassword !== null || urlSource || urlStream) {
             saveSettings();
         }
+
+        // โหลด Presets
+        loadPresets();
     }
 
     // บันทึกค่าลง localStorage
@@ -840,12 +1113,44 @@
         const baseUrl = window.location.href.split('?')[0];
         const quickLink = `${baseUrl}?host=${host}&port=${port}&password=${password}&source=${source}&stream=${stream}`;
 
+        // 1. คัดลอกลิงก์ไปยังคลิปบอร์ด
         navigator.clipboard.writeText(quickLink).then(() => {
             showToast('คัดลอกลิงก์ด่วนไปยังคลิปบอร์ดแล้ว!');
         }).catch(err => {
             console.error('ไม่สามารถคัดลอกลิงก์ด่วน:', err);
             alert('ไม่สามารถก๊อปปี้อัตโนมัติได้ กรุณาก๊อปปี้ลิงก์นี้:\n\n' + quickLink);
         });
+
+        // 2. สร้าง QR Code แสดงใน Settings Panel
+        const qrContainer = document.getElementById('quickLinkQrContainer');
+        const qrDiv = document.getElementById('quickLinkQr');
+        if (qrContainer && qrDiv) {
+            qrDiv.innerHTML = '';
+            qrContainer.style.display = 'flex';
+            
+            try {
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(qrDiv, {
+                        text: quickLink,
+                        width: 130,
+                        height: 130,
+                        colorDark: "#0b0f19",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } else {
+                    // Fallback to QR API
+                    const img = document.createElement('img');
+                    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(quickLink)}`;
+                    qrDiv.appendChild(img);
+                }
+            } catch (e) {
+                console.error("สร้าง QR Code ผิดพลาด ใช้ API สำรอง:", e);
+                const img = document.createElement('img');
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(quickLink)}`;
+                qrDiv.appendChild(img);
+            }
+        }
     }
 
     // แสดงแจ้งเตือน Toast สั้นๆ
@@ -957,6 +1262,294 @@
         // เงียบไว้เพื่อความเสถียรในการประมวลผลกล้อง
     }
 
+    // --- ระบบจำและจัดการที่อยู่สตรีม (Presets) ---
+    function loadPresets() {
+        const savedPresets = localStorage.getItem('drone_presets');
+        if (savedPresets) {
+            try {
+                presets = JSON.parse(savedPresets);
+            } catch (e) {
+                console.error("โหลด Presets ล้มเหลว:", e);
+                presets = [];
+            }
+        } else {
+            // ค่าเริ่มต้นตัวอย่าง
+            presets = [
+                { name: "โดรน 1 (หลัก)", url: "rtmp://192.168.1.50/live/drone" }
+            ];
+            savePresets();
+        }
+        renderPresets();
+    }
+
+    function savePresets() {
+        localStorage.setItem('drone_presets', JSON.stringify(presets));
+    }
+
+    function renderPresets() {
+        const container = document.getElementById('presetsContainer');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        if (presets.length === 0) {
+            container.innerHTML = '<span class="no-presets-text">ยังไม่มีรายการที่บันทึกไว้</span>';
+            return;
+        }
+
+        presets.forEach((preset, index) => {
+            const pill = document.createElement('span');
+            pill.className = 'preset-pill';
+            pill.title = preset.url;
+            pill.onclick = () => selectPreset(preset.url);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = preset.name;
+            pill.appendChild(nameSpan);
+
+            const delBtn = document.createElement('span');
+            delBtn.className = 'preset-pill-delete';
+            delBtn.innerHTML = '&times;';
+            delBtn.onclick = (e) => deletePreset(e, index);
+            pill.appendChild(delBtn);
+
+            container.appendChild(pill);
+        });
+    }
+
+    function selectPreset(url) {
+        document.getElementById('streamUrl').value = url;
+        showToast('เลือกสตรีม: ' + url);
+    }
+
+    function saveCurrentAsPreset() {
+        const url = document.getElementById('streamUrl').value.trim();
+        if (!url || url === 'rtmp://') {
+            alert('กรุณากรอกลิงก์สตรีมก่อนกดบันทึกครับ');
+            return;
+        }
+        const name = prompt('ตั้งชื่อให้กับที่อยู่สตรีมนี้ (เช่น โดรน A, สตรีมทดสอบ):', 'โดรนใหม่');
+        if (name === null) return; // กดยกเลิก
+        const presetName = name.trim() || url;
+        
+        presets.push({ name: presetName, url: url });
+        savePresets();
+        renderPresets();
+        showToast('บันทึก Preset สำเร็จ');
+    }
+
+    function deletePreset(event, index) {
+        event.stopPropagation(); // เพื่อไม่ให้ไปกดเลือกตัวสตรีม
+        if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+            presets.splice(index, 1);
+            savePresets();
+            renderPresets();
+            showToast('ลบ Preset สำเร็จ');
+        }
+    }
+
+    // --- ระบบดึงรายชื่อ Source ใน OBS อัตโนมัติ ---
+    async function fetchOBSSources() {
+        if (!isConnected || !obs) return;
+        try {
+            const response = await obs.call('GetInputList');
+            const inputs = response.inputs || [];
+            
+            // กรองเฉพาะ ffmpeg_source (Media Source) และ vlc_source
+            const mediaInputs = inputs.filter(inp => 
+                inp.inputKind === 'ffmpeg_source' || 
+                inp.inputKind === 'vlc_source' ||
+                inp.unversionedInputKind === 'ffmpeg_source' ||
+                inp.unversionedInputKind === 'vlc_source'
+            );
+
+            const datalist = document.getElementById('obsSourcesDatalist');
+            if (datalist) {
+                datalist.innerHTML = '';
+                mediaInputs.forEach(inp => {
+                    const option = document.createElement('option');
+                    option.value = inp.inputName;
+                    datalist.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error("ดึงข้อมูลรายชื่อ Source ล้มเหลว:", error);
+        }
+    }
+
+    // --- ระบบแผงควบคุมสด (Live Controls) ---
+    function startStatusPolling() {
+        if (liveControlTimer) clearInterval(liveControlTimer);
+        liveControlTimer = setInterval(checkSourceStatus, 3000);
+        checkSourceStatus();
+    }
+
+    function stopStatusPolling() {
+        if (liveControlTimer) {
+            clearInterval(liveControlTimer);
+            liveControlTimer = null;
+        }
+    }
+
+    async function checkSourceStatus() {
+        if (!isConnected || !obs) return;
+        const targetSourceName = document.getElementById('sourceName').value.trim();
+        if (!targetSourceName) return;
+
+        try {
+            // 1. ดึงชื่อ Scene ปัจจุบัน
+            const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene');
+            currentSceneName = currentProgramSceneName;
+
+            // 2. ดึงรายการใน Scene เพื่อหา Visibility
+            const { sceneItems } = await obs.call('GetSceneItemList', { sceneName: currentSceneName });
+            const item = sceneItems.find(i => i.sourceName === targetSourceName);
+
+            const toggleVisBtn = document.getElementById('toggleVisBtn');
+            const visText = document.getElementById('visText');
+            
+            if (item) {
+                currentSceneItemId = item.sceneItemId;
+                isSourceVisible = item.sceneItemEnabled;
+                toggleVisBtn.disabled = false;
+                
+                if (isSourceVisible) {
+                    toggleVisBtn.className = 'btn-live-control on';
+                    visText.textContent = 'แสดงภาพอยู่';
+                } else {
+                    toggleVisBtn.className = 'btn-live-control off';
+                    visText.textContent = 'ซ่อนภาพอยู่';
+                }
+            } else {
+                currentSceneItemId = null;
+                toggleVisBtn.disabled = true;
+                toggleVisBtn.className = 'btn-live-control';
+                visText.textContent = 'ไม่มีใน Scene';
+            }
+
+            // 3. ดึงสถานะการปิดเสียง (Mute)
+            const toggleMuteBtn = document.getElementById('toggleMuteBtn');
+            const muteText = document.getElementById('muteText');
+            try {
+                const { inputMuted } = await obs.call('GetInputMute', { inputName: targetSourceName });
+                isSourceMuted = inputMuted;
+                toggleMuteBtn.disabled = false;
+                if (isSourceMuted) {
+                    toggleMuteBtn.className = 'btn-live-control off';
+                    muteText.textContent = 'ปิดเสียงอยู่';
+                } else {
+                    toggleMuteBtn.className = 'btn-live-control on';
+                    muteText.textContent = 'เปิดเสียงอยู่';
+                }
+            } catch (e) {
+                // Source ไม่มีส่วนควบคุมเสียง
+                toggleMuteBtn.disabled = true;
+                toggleMuteBtn.className = 'btn-live-control';
+                muteText.textContent = 'ไม่มีเสียง';
+            }
+
+            // 4. ดึงสถานะการเล่นสตรีม (Playback State)
+            const liveStatusIndicator = document.getElementById('liveStatusIndicator');
+            const liveStatusText = document.getElementById('liveStatusText');
+            try {
+                const { mediaState } = await obs.call('GetMediaInputStatus', { inputName: targetSourceName });
+                if (mediaState === 'OBS_MEDIA_STATE_PLAYING') {
+                    liveStatusIndicator.className = 'live-status-indicator active';
+                    liveStatusText.textContent = 'กำลังเล่นสตรีม';
+                } else if (mediaState === 'OBS_MEDIA_STATE_BUFFERING' || mediaState === 'OBS_MEDIA_STATE_OPENING') {
+                    liveStatusIndicator.className = 'live-status-indicator active muted';
+                    liveStatusText.textContent = 'กำลังโหลดสตรีม...';
+                } else {
+                    liveStatusIndicator.className = 'live-status-indicator';
+                    liveStatusText.textContent = 'สตรีมหยุดทำงาน';
+                }
+            } catch (e) {
+                liveStatusIndicator.className = 'live-status-indicator';
+                liveStatusText.textContent = 'เชื่อมต่อแล้ว';
+            }
+
+            document.getElementById('restartStreamBtn').disabled = false;
+
+        } catch (err) {
+            console.error("ตรวจสอบสถานะ Source ล้มเหลว:", err);
+        }
+    }
+
+    async function toggleSourceVisibility() {
+        if (!isConnected || !obs || !currentSceneName || currentSceneItemId === null) return;
+        try {
+            await obs.call('SetSceneItemEnabled', {
+                sceneName: currentSceneName,
+                sceneItemId: currentSceneItemId,
+                sceneItemEnabled: !isSourceVisible
+            });
+            isSourceVisible = !isSourceVisible;
+            checkSourceStatus();
+        } catch (error) {
+            console.error("สลับการแสดงผลล้มเหลว:", error);
+        }
+    }
+
+    async function toggleSourceMute() {
+        if (!isConnected || !obs) return;
+        const targetSourceName = document.getElementById('sourceName').value.trim();
+        if (!targetSourceName) return;
+        try {
+            await obs.call('SetInputMute', {
+                inputName: targetSourceName,
+                inputMuted: !isSourceMuted
+            });
+            isSourceMuted = !isSourceMuted;
+            checkSourceStatus();
+        } catch (error) {
+            console.error("สลับสถานะเสียงล้มเหลว:", error);
+        }
+    }
+
+    async function restartSourceStream() {
+        if (!isConnected || !obs) return;
+        const targetSourceName = document.getElementById('sourceName').value.trim();
+        if (!targetSourceName) return;
+        
+        showToast('กำลังสั่งรีโหลดสตรีม...');
+        
+        try {
+            if (currentSceneName && currentSceneItemId !== null) {
+                // บังคับปิดและเปิดการแสดงผล Scene Item เพื่อสั่งโหลดมีเดียใหม่
+                await obs.call('SetSceneItemEnabled', {
+                    sceneName: currentSceneName,
+                    sceneItemId: currentSceneItemId,
+                    sceneItemEnabled: false
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                await obs.call('SetSceneItemEnabled', {
+                    sceneName: currentSceneName,
+                    sceneItemId: currentSceneItemId,
+                    sceneItemEnabled: true
+                });
+                
+                showToast('รีโหลดสตรีมสำเร็จ!');
+                checkSourceStatus();
+            } else {
+                // Fallback: รีโหลด Input Settings
+                const { inputSettings } = await obs.call('GetInputSettings', { inputName: targetSourceName });
+                await obs.call('SetInputSettings', {
+                    inputName: targetSourceName,
+                    inputSettings: inputSettings
+                });
+                showToast('รีโหลดสตรีม (Settings) สำเร็จ!');
+            }
+        } catch (error) {
+            console.error("รีโหลดสตรีมล้มเหลว:", error);
+            showToast('รีโหลดล้มเหลว: ' + error.message);
+        }
+    }
+
+    function closeQrCodeContainer() {
+        document.getElementById('quickLinkQrContainer').style.display = 'none';
+    }
+
     // ค้นหาคลาส OBSWebSocket จาก global หรือ window object
     function getOBSWebSocketClass() {
         if (typeof window.OBSWebSocket === 'function') {
@@ -978,24 +1571,39 @@
 
     // อัปเดตสถานะ UI การเชื่อมต่อ
     function updateUIState(state) {
+        const livePanel = document.getElementById('liveControlPanel');
+        
         if (state === 'connected') {
             isConnected = true;
             statusBadge.className = 'status-badge connected';
             statusText.textContent = 'สถานะ: เชื่อมต่อ OBS สำเร็จ';
             sendBtn.disabled = false;
             if (createSourceBtn) createSourceBtn.disabled = false;
+            
+            // แสดงแผงควบคุมสด และเริ่มดึงสถานะ
+            if (livePanel) livePanel.classList.add('active');
+            fetchOBSSources();
+            startStatusPolling();
         } else if (state === 'connecting') {
             isConnected = false;
             statusBadge.className = 'status-badge connecting';
             statusText.textContent = 'สถานะ: กำลังเชื่อมต่อ OBS...';
             sendBtn.disabled = true;
             if (createSourceBtn) createSourceBtn.disabled = true;
+            
+            // ซ่อนแผงควบคุมสด
+            if (livePanel) livePanel.classList.remove('active');
+            stopStatusPolling();
         } else {
             isConnected = false;
             statusBadge.className = 'status-badge disconnected';
             statusText.textContent = 'สถานะ: ไม่ได้เชื่อมต่อ OBS';
             sendBtn.disabled = true;
             if (createSourceBtn) createSourceBtn.disabled = true;
+            
+            // ซ่อนแผงควบคุมสด
+            if (livePanel) livePanel.classList.remove('active');
+            stopStatusPolling();
         }
     }
 
@@ -1036,6 +1644,38 @@
             obs.on('ConnectionError', (err) => {
                 console.error("OBS Connection Error:", err);
                 updateUIState('disconnected');
+            });
+
+            // เพิ่ม Event Listeners สำหรับอัปเดตแผงควบคุมสดเรียลไทม์
+            obs.on('SceneItemEnableStateChanged', (data) => {
+                if (data.sceneName === currentSceneName && data.sceneItemId === currentSceneItemId) {
+                    checkSourceStatus();
+                }
+            });
+
+            obs.on('InputMuteStateChanged', (data) => {
+                const targetSourceName = document.getElementById('sourceName').value.trim();
+                if (data.inputName === targetSourceName) {
+                    checkSourceStatus();
+                }
+            });
+
+            obs.on('MediaInputPlaybackStarted', (data) => {
+                const targetSourceName = document.getElementById('sourceName').value.trim();
+                if (data.inputName === targetSourceName) {
+                    checkSourceStatus();
+                }
+            });
+
+            obs.on('MediaInputPlaybackEnded', (data) => {
+                const targetSourceName = document.getElementById('sourceName').value.trim();
+                if (data.inputName === targetSourceName) {
+                    checkSourceStatus();
+                }
+            });
+
+            obs.on('CurrentProgramSceneChanged', (data) => {
+                checkSourceStatus();
             });
 
             await obs.connect(`ws://${ip}:${port}`, password);
@@ -1144,6 +1784,16 @@
     // เริ่มทำงานเชื่อมต่อทันทีที่เปิดหน้าเว็บ
     window.addEventListener('DOMContentLoaded', () => {
         loadSettings();
+        
+        // ติดตั้ง Event Listener สำหรับช่องชื่อ Source
+        const sourceInput = document.getElementById('sourceName');
+        if (sourceInput) {
+            sourceInput.addEventListener('change', checkSourceStatus);
+            sourceInput.addEventListener('input', () => {
+                clearTimeout(window.sourceNameTimeout);
+                window.sourceNameTimeout = setTimeout(checkSourceStatus, 500);
+            });
+        }
         
         const urlParams = new URLSearchParams(window.location.search);
         const hasParams = urlParams.has('host') || urlParams.has('port') || urlParams.has('password') || urlParams.has('source');
