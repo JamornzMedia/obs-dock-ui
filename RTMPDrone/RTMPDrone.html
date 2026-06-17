@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Media Stream Controller</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="ควบคุมสตรีม RTMP โดรนเข้า OBS Studio ได้อย่างง่ายดายผ่าน Web Interface">
+    <!-- ดึงไลบรารี OBS WebSocket JS เวอร์ชัน 5 จาก jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js"></script>
+    <!-- ดึงไลบรารีสแกน QR Code จากกล้อง (html5-qrcode) -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 30, 49, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at top, #1e1b4b 0%, var(--bg-color) 70%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.connected {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .status-badge.connecting {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .status-badge.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .status-badge.connected .status-dot {
+            background: var(--success-color);
+            box-shadow: 0 0 12px var(--success-color);
+        }
+
+        .status-badge.connecting .status-dot {
+            background: var(--warning-color);
+            box-shadow: 0 0 12px var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-badge.disconnected .status-dot {
+            background: var(--error-color);
+            box-shadow: 0 0 12px var(--error-color);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .label-row label {
+            margin-bottom: 0;
+        }
+
+        .preset-badge {
+            font-size: 11px;
+            color: var(--accent-color);
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            transition: all 0.2s;
+        }
+
+        .preset-badge:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--text-primary);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--accent-color), #4f46e5);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .toggle-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+
+        .btn-link:hover {
+            color: var(--accent-color);
+        }
+
+        .settings-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            opacity: 0;
+            margin-top: 0;
+            border-top: 1px dashed transparent;
+            padding-top: 0;
+        }
+
+        .settings-panel.open {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 20px;
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+        }
+
+        .settings-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ส่วนคู่มือตั้งค่า */
+        .guide-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            opacity: 0;
+            margin-top: 0;
+            border-top: 1px dashed transparent;
+            padding-top: 0;
+        }
+
+        .guide-panel.open {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 20px;
+        }
+
+        .guide-panel h3 {
+            font-size: 13px;
+            color: #a5b4fc;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .guide-panel ol {
+            margin-left: 18px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .guide-panel code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #fbbf24;
+        }
+
+        /* หน้าต่างสแกน QR Code (Modal) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 2000;
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #161e31;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            padding: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--error-color);
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        #qr-reader {
+            width: 100%;
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid var(--border-color) !important;
+            overflow: hidden;
+        }
+
+        /* ตกแต่ง UI ในไลบรารี html5-qrcode */
+        #qr-reader button {
+            background: linear-gradient(135deg, var(--accent-color), #4f46e5) !important;
+            border: none !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            margin: 10px 0 !important;
+            transition: all 0.2s !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+        }
+
+        #qr-reader button:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4) !important;
+        }
+
+        #qr-reader select {
+            background: #1e293b !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            outline: none !important;
+            margin-bottom: 10px !important;
+        }
+
+        #qr-reader__scan_region {
+            background: #0b0f19 !important;
+        }
+
+        #qr-reader__status_span {
+            color: var(--text-secondary) !important;
+            font-size: 12px !important;
+        }
+
+        /* แจ้งเตือน Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #6366f1;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>OBS Stream Input Controller</h1>
+        <p>ส่งลิงก์วิดีโอ (เช่น RTMP จากโดรน) ไปยัง Media Source ใน OBS</p>
+    </div>
+
+    <!-- ส่วนแสดงสถานะการเชื่อมต่อกับ OBS -->
+    <div id="connectionStatus" class="status-badge disconnected">
+        <div class="status-dot"></div>
+        <span id="statusText">กำลังดึงคลาสเชื่อมต่อ...</span>
+    </div>
+
+    <!-- ส่วนกรอกข้อมูลเพื่อส่งภาพ -->
+    <div class="form-group">
+        <div class="label-row">
+            <label for="streamUrl">ลิงก์สตรีมวิดีโอ (RTMP / HLS / RTSP):</label>
+            <span class="preset-badge" onclick="openScanner()">📷 สแกน QR Code</span>
+        </div>
+        <div class="input-wrapper">
+            <input type="text" id="streamUrl" placeholder="rtmp://192.168.1.50/live/drone" value="rtmp://">
+        </div>
+        <div class="help-text">กรอกที่อยู่ RTMP สตรีมของโดรน เช่น rtmp://192.168.1.50/live/drone</div>
+    </div>
+
+    <button id="sendBtn" class="btn-primary" onclick="sendStreamToOBS()" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        ส่งภาพฉายใน OBS
+    </button>
+
+    <div class="toggle-links">
+        <button class="btn-link" onclick="toggleSettingsPanel()">ตั้งค่าการเชื่อมต่อ OBS WebSocket</button>
+        <button class="btn-link" onclick="toggleGuidePanel()">ดูคู่มือการใช้งาน</button>
+    </div>
+
+    <!-- แผงตั้งค่าการเชื่อมต่อ (ซ่อนอยู่โดยค่าเริ่มต้น) -->
+    <div id="settingsPanel" class="settings-panel">
+        <div class="settings-row">
+            <div class="form-group">
+                <div class="label-row">
+                    <label for="obsHost">OBS IP/Host:</label>
+                    <span class="preset-badge" onclick="fillLocalhost()">ใช้ localhost</span>
+                </div>
+                <input type="text" id="obsHost" placeholder="127.0.0.1" value="127.0.0.1">
+            </div>
+            <div class="form-group">
+                <label for="obsPort">Port:</label>
+                <input type="text" id="obsPort" placeholder="4455" value="4455">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="obsPassword">รหัสผ่าน OBS WebSocket:</label>
+            <div class="input-wrapper">
+                <input type="password" id="obsPassword" placeholder="ใส่รหัสผ่านที่ตั้งไว้ใน OBS">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">แสดง</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="sourceName">ชื่อ Media Source ใน OBS:</label>
+            <input type="text" id="sourceName" placeholder="DroneSource" value="DroneSource">
+            <div class="help-text">ชื่อ Source ในแถบ Sources ของ OBS ที่จะรับภาพนี้</div>
+        </div>
+
+        <div class="settings-actions">
+            <button id="connectBtn" class="btn-secondary" onclick="manualConnect()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                เชื่อมต่อ & บันทึก
+            </button>
+            <button id="quickLinkBtn" class="btn-secondary" onclick="generateQuickLink()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                สร้างลิงก์ด่วน
+            </button>
+        </div>
+    </div>
+
+    <!-- แผงแนะนำการใช้งาน (ซ่อนอยู่โดยค่าเริ่มต้น) -->
+    <div id="guidePanel" class="guide-panel">
+        <h3>ขั้นตอนการตั้งค่าใน OBS Studio:</h3>
+        <ol>
+            <li>เปิดโปรแกรม OBS Studio ขึ้นมา</li>
+            <li>ไปที่เมนูด้านบน <strong>Tools (เครื่องมือ)</strong> &gt; <strong>OBS WebSocket Settings</strong></li>
+            <li>ติ๊กถูกที่ช่อง <strong>Enable WebSocket server (เปิดใช้งานเซิร์ฟเวอร์ WebSocket)</strong></li>
+            <li>จดพอร์ต (ปกติคือ <code>4455</code>) และกดปุ่ม <strong>Show Connect Info</strong> เพื่อดูรหัสผ่าน</li>
+            <li>นำข้อมูลมากรอกในแท็บ "ตั้งค่าการเชื่อมต่อ OBS WebSocket" ด้านบน</li>
+        </ol>
+        <h3 style="margin-top: 15px;">การทำเป็นเมนู Dock ในโปรแกรม OBS (แนะนำ!):</h3>
+        <ol>
+            <li>หลังจากกรอกการตั้งค่าเสร็จแล้ว ให้กดปุ่ม <strong>สร้างลิงก์ด่วน</strong> ลิงก์เชื่อมต่อที่มีรหัสผ่านจะถูกก๊อปปี้</li>
+            <li>ในโปรแกรม OBS ไปที่เมนูด้านบน <strong>Docks (แถบเครื่องมือ)</strong> &gt; <strong>Custom Browser Docks... (ด็อคบราวเซอร์แบบกำหนดเอง...)</strong></li>
+            <li>ในช่อง <strong>Dock Name</strong> ตั้งชื่อเช่น <code>Drone Remote</code></li>
+            <li>ในช่อง <strong>URL</strong> ให้วางลิงก์ที่ก๊อปปี้มาลงไป แล้วกดปุ่ม <strong>Apply (นำไปใช้)</strong></li>
+            <li>โปรแกรม OBS จะเปิดหน้าต่างรีโมทนี้ขึ้นมาเชื่อมต่อกับระบบควบคุมของท่านทันทีโดยไม่ต้องเปิดเบราว์เซอร์แยก!</li>
+        </ol>
+    </div>
+</div>
+
+<!-- หน้าต่างสแกน QR Code (Modal Overlay) -->
+<div id="scannerModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>สแกน QR Code ลิงก์สตรีม</h2>
+            <button class="close-btn" onclick="closeScanner()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="qr-reader"></div>
+            <div class="help-text" style="margin-top: 12px; text-align: center; line-height: 1.4;">
+                หัน QR Code ที่ได้จากรีโมทหรือโทรศัพท์โดรน เข้าหากล้องเพื่อกรอกและส่งสตรีมลิงก์เข้า OBS โดยอัตโนมัติ
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- แจ้งเตือน Toast คัดลอกสำเร็จ -->
+<div id="toast" class="toast">คัดลอกสำเร็จ!</div>
+
+<script>
+    let obs = null;
+    let isConnected = false;
+    let autoReconnectTimer = null;
+    let html5QrcodeScanner = null;
+
+    const statusBadge = document.getElementById('connectionStatus');
+    const statusText = document.getElementById('statusText');
+    const sendBtn = document.getElementById('sendBtn');
+    const connectBtn = document.getElementById('connectBtn');
+
+    // โหลดค่าจาก URL Query Parameters หรือ localStorage หรือดึง IP ของอุปกรณ์มาใช้งาน
+    function loadSettings() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlHost = urlParams.get('host');
+        const urlPort = urlParams.get('port');
+        const urlPassword = urlParams.get('password');
+        const urlSource = urlParams.get('source');
+        const urlStream = urlParams.get('stream');
+
+        // ดึง Host IP ปัจจุบันที่ใช้เข้าถึงเว็บ (กรณีเปิดจากเครื่องอื่นๆ ในเครือข่ายเดียวกับคอมพิวเตอร์ที่เปิด OBS)
+        const isFileProtocol = window.location.protocol === 'file:';
+        const currentHostname = window.location.hostname;
+        const autoDetectedHost = (!isFileProtocol && currentHostname && currentHostname !== 'localhost') ? currentHostname : '127.0.0.1';
+
+        document.getElementById('obsHost').value = urlHost || localStorage.getItem('obs_host') || autoDetectedHost;
+        document.getElementById('obsPort').value = urlPort || localStorage.getItem('obs_port') || '4455';
+        document.getElementById('obsPassword').value = urlPassword !== null ? urlPassword : (localStorage.getItem('obs_password') || '');
+        document.getElementById('sourceName').value = urlSource || localStorage.getItem('obs_source') || 'DroneSource';
+        
+        if (urlStream) {
+            document.getElementById('streamUrl').value = urlStream;
+        } else if (localStorage.getItem('drone_stream_url')) {
+            document.getElementById('streamUrl').value = localStorage.getItem('drone_stream_url');
+        }
+
+        // หากเปิดผ่านลิงก์ที่มี Parameter ให้บันทึกทับ localStorage ทันที
+        if (urlHost || urlPort || urlPassword !== null || urlSource || urlStream) {
+            saveSettings();
+        }
+    }
+
+    // บันทึกค่าลง localStorage
+    function saveSettings() {
+        localStorage.setItem('obs_host', document.getElementById('obsHost').value.trim());
+        localStorage.setItem('obs_port', document.getElementById('obsPort').value.trim());
+        localStorage.setItem('obs_password', document.getElementById('obsPassword').value);
+        localStorage.setItem('obs_source', document.getElementById('sourceName').value.trim());
+        localStorage.setItem('drone_stream_url', document.getElementById('streamUrl').value.trim());
+    }
+
+    // สลับซ่อน/แสดงรหัสผ่าน
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('obsPassword');
+        const toggleBtn = document.querySelector('.password-toggle');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.textContent = 'ซ่อน';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.textContent = 'แสดง';
+        }
+    }
+
+    // สลับแสดงแผงตั้งค่าการเชื่อมต่อ
+    function toggleSettingsPanel() {
+        const panel = document.getElementById('settingsPanel');
+        const guidePanel = document.getElementById('guidePanel');
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            guidePanel.classList.remove('open');
+        }
+    }
+
+    // สลับแสดงแผงคู่มือการใช้งาน
+    function toggleGuidePanel() {
+        const panel = document.getElementById('guidePanel');
+        const settingsPanel = document.getElementById('settingsPanel');
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            settingsPanel.classList.remove('open');
+        }
+    }
+
+    // เลือกใช้ Host แบบ localhost รวดเร็ว
+    function fillLocalhost() {
+        document.getElementById('obsHost').value = '127.0.0.1';
+        document.getElementById('obsPort').value = '4455';
+        showToast('กรอกข้อมูล Localhost สำเร็จ');
+    }
+
+    // สร้างลิงก์สากลสำหรับการใส่ Dock ใน OBS เพื่อลดขั้นตอนการตั้งค่า
+    function generateQuickLink() {
+        const host = document.getElementById('obsHost').value.trim();
+        const port = document.getElementById('obsPort').value.trim();
+        const password = encodeURIComponent(document.getElementById('obsPassword').value);
+        const source = encodeURIComponent(document.getElementById('sourceName').value.trim());
+        const stream = encodeURIComponent(document.getElementById('streamUrl').value.trim());
+
+        const baseUrl = window.location.href.split('?')[0];
+        const quickLink = `${baseUrl}?host=${host}&port=${port}&password=${password}&source=${source}&stream=${stream}`;
+
+        navigator.clipboard.writeText(quickLink).then(() => {
+            showToast('คัดลอกลิงก์ด่วนไปยังคลิปบอร์ดแล้ว!');
+        }).catch(err => {
+            console.error('ไม่สามารถคัดลอกลิงก์ด่วน:', err);
+            alert('ไม่สามารถก๊อปปี้อัตโนมัติได้ กรุณาก๊อปปี้ลิงก์นี้:\n\n' + quickLink);
+        });
+    }
+
+    // แสดงแจ้งเตือน Toast สั้นๆ
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // เล่นเสียงปี๊บตอบรับเมื่อสแกนสำเร็จ
+    function playBeep() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // โน้ต A5
+            gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+                audioCtx.close();
+            }, 120);
+        } catch (e) {
+            console.error('Audio feedback error:', e);
+        }
+    }
+
+    // ฟังก์ชันเปิดใช้งานกล้องสแกน QR Code
+    function openScanner() {
+        const modal = document.getElementById('scannerModal');
+        modal.classList.add('open');
+
+        if (typeof Html5QrcodeScanner === 'undefined') {
+            alert('กำลังดาวน์โหลดสคริปต์สแกนเนอร์ กรุณารอสักครู่แล้วกดอีกครั้งครับ');
+            return;
+        }
+
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader", 
+                { 
+                    fps: 10, 
+                    qrbox: function(width, height) {
+                        const min = Math.min(width, height);
+                        return {
+                            width: Math.floor(min * 0.75),
+                            height: Math.floor(min * 0.75)
+                        };
+                    },
+                    aspectRatio: 1.0
+                }
+            );
+        }
+
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    // ปิดใช้งานกล้องสแกน QR Code
+    function closeScanner() {
+        const modal = document.getElementById('scannerModal');
+        modal.classList.remove('open');
+        
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(err => {
+                console.error("Failed to clear scanner:", err);
+            });
+        }
+    }
+
+    // จัดการข้อมูลเมื่อสแกน QR Code สำเร็จ
+    function onScanSuccess(decodedText, decodedResult) {
+        playBeep();
+        if (navigator.vibrate) {
+            navigator.vibrate(100);
+        }
+
+        closeScanner();
+
+        const urlInput = document.getElementById('streamUrl');
+        urlInput.value = decodedText;
+        
+        showToast('สแกนสำเร็จ: กำลังส่งเข้า OBS...');
+
+        // หากต่ออยู่กับ OBS จะส่งสตรีมเข้า OBS ให้ทันที (Zero-Click)
+        if (isConnected && obs) {
+            setTimeout(async () => {
+                try {
+                    await sendStreamToOBS();
+                    showToast('ส่งเข้า OBS สำเร็จแล้ว!');
+                } catch (err) {
+                    showToast('ส่งล้มเหลว: ' + err.message);
+                }
+            }, 300);
+        } else {
+            alert('สแกนลิงก์สำเร็จแล้ว!\n\nลิงก์: ' + decodedText + '\n\n*ระบบยังไม่ได้ต่อ OBS กรุณาเชื่อมต่อ OBS ก่อนส่งภาพ');
+        }
+    }
+
+    function onScanFailure(error) {
+        // เงียบไว้เพื่อความเสถียรในการประมวลผลกล้อง
+    }
+
+    // ค้นหาคลาส OBSWebSocket จาก global หรือ window object
+    function getOBSWebSocketClass() {
+        if (typeof window.OBSWebSocket === 'function') {
+            return window.OBSWebSocket;
+        }
+        if (window.OBSWebSocket) {
+            if (typeof window.OBSWebSocket.OBSWebSocket === 'function') {
+                return window.OBSWebSocket.OBSWebSocket;
+            }
+            if (typeof window.OBSWebSocket.default === 'function') {
+                return window.OBSWebSocket.default;
+            }
+        }
+        if (typeof OBSWebSocket === 'function') {
+            return OBSWebSocket;
+        }
+        return null;
+    }
+
+    // อัปเดตสถานะ UI การเชื่อมต่อ
+    function updateUIState(state) {
+        if (state === 'connected') {
+            isConnected = true;
+            statusBadge.className = 'status-badge connected';
+            statusText.textContent = 'สถานะ: เชื่อมต่อ OBS สำเร็จ';
+            sendBtn.disabled = false;
+        } else if (state === 'connecting') {
+            isConnected = false;
+            statusBadge.className = 'status-badge connecting';
+            statusText.textContent = 'สถานะ: กำลังเชื่อมต่อ OBS...';
+            sendBtn.disabled = true;
+        } else {
+            isConnected = false;
+            statusBadge.className = 'status-badge disconnected';
+            statusText.textContent = 'สถานะ: ไม่ได้เชื่อมต่อ OBS';
+            sendBtn.disabled = true;
+        }
+    }
+
+    // ฟังก์ชันเชื่อมต่อไปยัง OBS
+    async function connectToOBS() {
+        if (autoReconnectTimer) {
+            clearTimeout(autoReconnectTimer);
+            autoReconnectTimer = null;
+        }
+
+        const OBSWebSocketClass = getOBSWebSocketClass();
+        if (!OBSWebSocketClass) {
+            statusBadge.className = 'status-badge disconnected';
+            statusText.textContent = 'ผิดพลาด: ไม่สามารถโหลดไลบรารี OBS ได้';
+            return;
+        }
+
+        const ip = document.getElementById('obsHost').value.trim();
+        const port = document.getElementById('obsPort').value.trim();
+        const password = document.getElementById('obsPassword').value;
+
+        updateUIState('connecting');
+
+        try {
+            if (obs) {
+                try {
+                    await obs.disconnect();
+                } catch (e) {}
+            }
+
+            obs = new OBSWebSocketClass();
+
+            obs.on('ConnectionClosed', () => {
+                updateUIState('disconnected');
+                autoReconnect();
+            });
+
+            obs.on('ConnectionError', (err) => {
+                console.error("OBS Connection Error:", err);
+                updateUIState('disconnected');
+            });
+
+            await obs.connect(`ws://${ip}:${port}`, password);
+            updateUIState('connected');
+        } catch (error) {
+            console.error("การเชื่อมต่อ OBS ล้มเหลว:", error);
+            updateUIState('disconnected');
+            autoReconnect();
+        }
+    }
+
+    function autoReconnect() {
+        if (!autoReconnectTimer) {
+            autoReconnectTimer = setTimeout(connectToOBS, 5000);
+        }
+    }
+
+    // ปุ่มเชื่อมต่อแบบ Manual
+    function manualConnect() {
+        saveSettings();
+        connectToOBS();
+    }
+
+    // ฟังก์ชันส่งลิงก์วิดีโอไปเปลี่ยนใน Input ของ Media Source ใน OBS
+    async function sendStreamToOBS() {
+        const urlValue = document.getElementById('streamUrl').value.trim();
+        const targetSourceName = document.getElementById('sourceName').value.trim();
+
+        if (!urlValue || urlValue === "rtmp://") {
+            alert("กรุณากรอกลิงก์สตรีมให้ถูกต้องก่อนครับ");
+            return;
+        }
+
+        if (!targetSourceName) {
+            alert("กรุณาระบุชื่อ Media Source ใน OBS");
+            return;
+        }
+
+        saveSettings();
+
+        try {
+            await obs.call('SetInputSettings', {
+                inputName: targetSourceName,
+                inputSettings: {
+                    input: urlValue,       // ใส่ลิงก์ URL ลงในช่อง Input ของ Media Source
+                    is_local_file: false   // ปิด Local File เพื่อโหลดผ่านเครือข่าย/เน็ตเวิร์ก
+                }
+            });
+            alert("ส่งลิงก์เข้า OBS และเริ่มฉายภาพสำเร็จ!");
+        } catch (error) {
+            console.error("ส่งลิงก์ล้มเหลว:", error);
+            alert("ไม่สามารถส่งภาพได้: " + error.message);
+        }
+    }
+
+    // เริ่มทำงานเชื่อมต่อทันทีที่เปิดหน้าเว็บ
+    window.addEventListener('DOMContentLoaded', () => {
+        loadSettings();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasParams = urlParams.has('host') || urlParams.has('port') || urlParams.has('password') || urlParams.has('source');
+        
+        setTimeout(connectToOBS, hasParams ? 150 : 500);
+    });
+</script>
+
+</body>
+</html>
