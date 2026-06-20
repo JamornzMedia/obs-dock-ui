@@ -1,0 +1,80 @@
+flowchart TD
+    %% Subgraph 1: Inputs
+    subgraph Inputs ["1. Input Channels / ช่องทางการรับข้อมูล"]
+        A1["PC Operator UI Clicks<br>(Score +/- Buttons, Team Name/Logo edits)"]
+        A2["Keyboard Hotkeys<br>(keydown event listener in main.js)"]
+        A3["Data Import<br>(Excel File Upload / Google Sheet Sync API)"]
+        A4["Mobile Remote App<br>(OBSScorePhone.html Controller)"]
+    end
+
+    %% Subgraph 2: Core Processing
+    subgraph CoreEngine ["2. Core Processing Engine / ตัวประมวลผลหลัก"]
+        B1["main.js Controller State"]
+        B2["masterTeamA / masterTeamB Object State<br>(Names, Scores, Colors, Logos)"]
+        B3["Timer & Injury Time Loop<br>(play/pause interval execution)"]
+        B4["Bib Override Logic<br>(Checks if Bib Override is checked;<br>maps effectiveColor1 = Bib Color/Color 3,<br>keeping Color 1 input unchanged)"]
+        B5["LocalStorage Caching<br>(Saves team colors, settings, keybinds, history)"]
+        B6["volleyball_module_v2.js Polling Loop<br>(Runs every 300ms to poll DOM and save state)"]
+        B7["display_table_module.js<br>(Manages match schedule filters)"]
+    end
+
+    %% Subgraph 3: Adapters / Communications
+    subgraph Communicators ["3. Data Communication / ช่องทางการส่งต่อข้อมูล"]
+        C1["BroadcastChannel ('vb_score_channel')<br>& LocalStorage ('vb_state')"]
+        C2["OBS WebSocket Connection<br>(obs-websocket-js v5 protocol)"]
+        C3["PeerJS WebRTC Server Room<br>(Host-Remote messaging)"]
+        C4["Firebase Registry<br>(obs_rooms_score/ for room presence)"]
+    end
+
+    %% Subgraph 4: Outputs
+    subgraph Outputs ["4. Output Displays / การแสดงผล"]
+        D1["OBS Control Panel UI<br>(Real-time updates to HTML elements)"]
+        D2["Volleyball score.html Overlay<br>(Sets, serving ball, timeouts, colors)"]
+        D3["Boxing boxing_score.html Overlay<br>(Rounds, fighter colors, timer)"]
+        D4["Timeline point_history.html Overlay<br>(Real-time score scrolling log)"]
+        D5["display_table.html Overlay<br>(Renders active match rows)"]
+        D6["OBS Studio Video Sources<br>(Colors, names, logos, score text sources)"]
+        D7["OBS Studio Scene Controls<br>(Set Scene, Toggle Source, Replay Buffer)"]
+        D8["Remote Phone UI State Update<br>(Receives updated state on WebRTC)"]
+    end
+
+    %% Flow connections
+    A1 --> B1
+    A2 --> B1
+    A3 --> B1
+    A4 -->|WebRTC Commands| C3
+    C3 -->|handleMobileCommand| B1
+
+    B1 --> B2
+    B1 --> B3
+    B1 --> B4
+    B1 --> B5
+    B2 --> B6
+    B4 --> B6
+    B1 --> B7
+
+    B6 --> C1
+    B1 --> C2
+    B1 --> C3
+    B1 --> C4
+
+    B1 --> D1
+    C1 --> D2
+    C1 --> D3
+    C1 --> D4
+    B7 --> C1
+    C1 --> D5
+    C2 --> D6
+    C2 --> D7
+    C3 -->|stateUpdate payload| D8
+
+    %% Style classes
+    classDef input fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;
+    classDef core fill:#0f172a,stroke:#fbbf24,stroke-width:2px,color:#fff;
+    classDef comm fill:#1e1b4b,stroke:#a855f7,stroke-width:2px,color:#fff;
+    classDef out fill:#022c22,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    class A1,A2,A3,A4 input;
+    class B1,B2,B3,B4,B5,B6,B7 core;
+    class C1,C2,C3,C4 comm;
+    class D1,D2,D3,D4,D5,D6,D7,D8 out;

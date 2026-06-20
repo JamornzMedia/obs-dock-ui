@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Point History Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Kanit:wght@500;600;700&display=swap');
+
+  :root {
+    --vb-font: 'Barlow Condensed', 'Kanit', sans-serif;
+    --bg-glass: rgba(15, 23, 42, 0.65);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--vb-font);
+    background: transparent;
+    color: var(--text-primary);
+    overflow: hidden;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  #history-wrapper {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 380px;
+    max-height: 480px;
+    overflow: hidden;
+  }
+
+  .history-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: bottom center;
+  }
+
+  .history-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .history-action {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .history-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .history-score {
+    font-size: 26px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Team Specific Accent Left-Border */
+  .team-a-accent { border-left: 4px solid #3b82f6; }
+  .team-b-accent { border-left: 4px solid #ef4444; }
+  .reset-accent { border-left: 4px solid #64748b; }
+</style>
+</head>
+<body>
+
+<div id="history-wrapper">
+  <!-- Dynamic cards inject here -->
+</div>
+
+<script>
+  const wrapper = document.getElementById('history-wrapper');
+
+  // Custom Font loader
+  function injectCustomFont() {
+    const fontData = localStorage.getItem('vb_custom_font_data');
+    const fontFamily = localStorage.getItem('vb_custom_font_family');
+    if (fontData && fontFamily) {
+      let style = document.getElementById('vb-custom-font-style');
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'vb-custom-font-style';
+        document.head.appendChild(style);
+      }
+      style.textContent = `
+        @font-face {
+          font-family: '${fontFamily}';
+          src: url('${fontData}');
+        }
+        body { font-family: '${fontFamily}', var(--vb-font); }
+      `;
+    }
+  }
+
+  function renderHistory() {
+    let history = [];
+    try {
+      history = JSON.parse(localStorage.getItem('score_action_history') || '[]');
+    } catch (_) {}
+
+    // Take the last 5 items
+    const last5 = history.slice(-5);
+    
+    wrapper.innerHTML = '';
+    
+    if (last5.length === 0) {
+      return;
+    }
+
+    last5.forEach(entry => {
+      const card = document.createElement('div');
+      let accentClass = 'reset-accent';
+      let actionText = '';
+      let scoreText = '';
+
+      if (entry.type === 'reset') {
+        accentClass = 'reset-accent';
+        actionText = '<span style="color:#94a3b8">RESET SCORE</span>';
+        scoreText = `${entry.scoreA}-${entry.scoreB}`;
+      } else if (entry.type === 'score') {
+        const isA = entry.team === 'A';
+        accentClass = isA ? 'team-a-accent' : 'team-b-accent';
+        const teamName = isA ? 'Team A' : 'Team B';
+        const color = isA ? '#60a5fa' : '#f87171';
+        actionText = `<span style="color:${color}">${teamName}</span> scored`;
+        
+        const delta = entry.delta || 0;
+        const newScoreA = entry.scoreA + (isA ? delta : 0);
+        const newScoreB = entry.scoreB + (isA ? 0 : delta);
+        scoreText = `${newScoreA}-${newScoreB}`;
+      } else if (entry.type === 'score2') {
+        const isA = entry.team === 'A';
+        accentClass = isA ? 'team-a-accent' : 'team-b-accent';
+        const teamName = isA ? 'Team A' : 'Team B';
+        const color = isA ? '#34d399' : '#fb7185';
+        actionText = `<span style="color:${color}">${teamName}</span> foul/set`;
+        
+        const delta = entry.delta || 0;
+        const newScore2A = entry.score2A + (isA ? delta : 0);
+        const newScore2B = entry.score2B + (isA ? 0 : delta);
+        scoreText = `S: ${newScore2A}-${newScore2B}`;
+      }
+
+      const timeString = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      card.className = `history-card ${accentClass}`;
+      card.innerHTML = `
+        <div class="history-details">
+          <div class="history-action">${actionText}</div>
+          <div class="history-time">${timeString}</div>
+        </div>
+        <div class="history-score">${scoreText}</div>
+      `;
+      wrapper.appendChild(card);
+    });
+  }
+
+  // Listen for storage changes
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'score_action_history') {
+      renderHistory();
+    } else if (e.key === 'vb_custom_font_data' || e.key === 'vb_custom_font_family') {
+      injectCustomFont();
+    }
+  });
+
+  // Init
+  injectCustomFont();
+  renderHistory();
+</script>
+</body>
+</html>
