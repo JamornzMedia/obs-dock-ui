@@ -1,4 +1,4 @@
-# 📖 OBSScore Control Panel — System Guideline V2.9.4.1
+# 📖 OBSScore Control Panel — System Guideline V2.9.5.2
 
 > เอกสารสำหรับนักพัฒนา อธิบายโครงสร้างระบบ, Data Flow, และการทำงานของทุกส่วน  
 > อัพเดทล่าสุด: 16 พ.ค. 2026
@@ -426,5 +426,5 @@ sanitizeKey(name) → name.trim().replace(/[.#$\[\]\/]/g, '').replace(/\s+/g, '_
 
 ---
 
-**เวอร์ชัน**: 2.9.4.1  
+**เวอร์ชัน**: 2.9.5.2  
 **ผู้พัฒนา**: JamornzMedia

@@ -1,7 +1,20 @@
 // fcp_v2_assets/main.js
 
+import { VERSION, UPDATE_DATE } from './version.js';
 import { translations } from './languages.js';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
+
+// Update version text elements as early as possible
+const versionTextEl = document.getElementById('fcp-version-text');
+const updateDateTextEl = document.getElementById('fcp-update-date-text');
+if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
+if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
+const welcomeVersionTextEl = document.getElementById('fcp-welcome-version-text');
+if (welcomeVersionTextEl) {
+    welcomeVersionTextEl.textContent = `Developed by JamornzMedia - Version ${VERSION} (อัพเดต: ${UPDATE_DATE})`;
+}
+document.title = 'FCP V' + VERSION;
+
 
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
@@ -3356,15 +3369,8 @@ window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.1';
-import './display_table_module.js?v=2.9.5.1';
-import { VERSION, UPDATE_DATE } from './version.js';
-
-const versionTextEl = document.getElementById('fcp-version-text');
-const updateDateTextEl = document.getElementById('fcp-update-date-text');
-if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
-if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
-document.title = 'FCP V' + VERSION;
+import './volleyball_module_v2.js?v=2.9.5.2';
+import './display_table_module.js?v=2.9.5.2';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

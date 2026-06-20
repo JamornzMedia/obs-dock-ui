@@ -1,10 +1,10 @@
-﻿// fcp_v2_assets/languages.js
+// fcp_v2_assets/languages.js
 // ไฟล์สำหรับเก็บคำแปลทั้งหมด
 
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V2.9.5 (OBSScore)",
+        appTitle: "Football Scoreboard Controller - V2.9.5.2 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.9.5",
+        changelog: "Update Version 2.9.5.2",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -184,7 +184,15 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <li>
+                    <h5>Version 2.9.5.2</h5>
+                    <ul>
+                        <li>**Layout-Independent Hotkeys:** Keyboard shortcuts now work seamlessly regardless of whether English or Thai input language layout is active.</li>
+                        <li>**Spacebar Shortcut Fix:** Resolved spacebar key binding bugs caused by string trim operations.</li>
+                        <li>**Instant Timer Sync:** Timer start and stop commands now update OBS overlays and mobile controllers immediately without a 1-second delay.</li>
+                        <li>**Polled Presence System:** Switched to a highly optimized polling query model for Firebase, reducing data bandwidth and queries by over 95%.</li>
+                    </ul>
+                </li>
+                <li>
                     <h5>Version 2.9.5</h5>
                     <ul>
                         <li>**Multi-Sport Settings:** Dropdown settings to select Volleyball, Basketball, Football, Streetball, or Badminton, with custom layout adaptations.</li>
@@ -195,7 +203,6 @@ export const translations = {
                         <li>**Display Table Overlay:** Create custom spreadsheet table rendering overlay with column ordering, row filtering, and alternating row colors.</li>
                         <li>**Custom Fonts:** Load and cache custom font files (TTF/OTF/WOFF/WOFF2) in base64 or specify custom local font-family names dynamically.</li>
                     </ul>
-                </li>
                 </li>
                 <li>
                     <h5>Version 2.9.2</h5>
@@ -279,7 +286,7 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.5 (OBSScore)",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.5.2 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -316,7 +323,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.9.5",
+        changelog: "อัปเดตเวอร์ชัน 2.9.5.2",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -460,7 +467,15 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <li>
+                    <h5>เวอร์ชัน 2.9.5.2</h5>
+                    <ul>
+                        <li>**ระบบคีย์ลัดอิสระตามแป้นพิมพ์:** ปุ่มคีย์ลัดทำงานได้ปกติทันทีแม้สลับภาษาแป้นพิมพ์เป็นภาษาไทยหรือภาษาอังกฤษ</li>
+                        <li>**แก้บั๊กปุ่ม Spacebar:** แก้ไขปัญหาการบันทึกคีย์ลัด Spacebar ล้มเหลวเนื่องจากการตัดช่องว่าง (Trim) ทิ้ง</li>
+                        <li>**ซิงค์เวลาทันที:** เมื่อเริ่มหรือหยุดเวลา ข้อมูลจะแสดงผลบน OBS และหน้าควบคุมมือถือทันทีโดยไม่ต้องรอดีเลย์ 1 วินาที</li>
+                        <li>**ประหยัดข้อมูล Firebase:** ปรับปรุงระบบแสดงผู้ใช้ออนไลน์ให้เป็นแบบดึงข้อมูล (Polling) แทนเรียลไทม์ ลดการโหลดและประหยัดข้อมูลอินเทอร์เน็ตลงกว่า 95%</li>
+                    </ul>
+                </li>
+                <li>
                     <h5>เวอร์ชัน 2.9.5</h5>
                     <ul>
                         <li>**ระบบหลายชนิดกีฬา:** เลือกตั้งค่าบาสเกตบอล, ฟุตบอล, สตรีทบอล, และแบดมินตัน เพิ่มเติมจากวอลเลย์บอล พร้อมการปรับเปลี่ยนการแสดงผลตามประเภทกีฬา</li>
@@ -471,7 +486,6 @@ export const translations = {
                         <li>**การแสดงผลตารางคะแนน (Display Table):** เพิ่มหน้าแสดงผลตารางคะแนนจาก Excel/Google Sheets โดยกำหนดคอลัมน์ ฟิลเตอร์ MatchID และสีสลับแถวได้อิสระ</li>
                         <li>**รองรับฟอนต์กำหนดเอง:** อัปโหลดไฟล์ฟอนต์เก็บในแคช (.ttf/.otf/.woff/.woff2) หรือพิมพ์ฟอนต์ในเครื่องเพื่อแสดงผลได้ทันที</li>
                     </ul>
-                </li>
                 </li>
                 <li>
                     <h5>เวอร์ชัน 2.9.2</h5>
@@ -512,7 +526,7 @@ export const translations = {
         toastInvalidTime: "รูปแบบเวลาไม่ถูกต้อง กรุณาตรวจสอบนาทีและวินาที (0-59)",
         toastTimeSet: "ตั้งค่าและอัปเดตเวลาเริ่มต้นแล้ว",
         logoCacheTitle: "Logo Cache (การแสดงผล Dock UI)",
-        logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราว์เซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
+        logoCacheDesc: "ลากไฟล์โลโก้ (PNG/JPG) มาวางที่นี่เพื่อแสดงบน Dock UI โดยตรงเพื่อเลี่ยงข้อจำกัดด้านความปลอดภัยของไฟล์ในเบราบรเซอร์ ชื่อไฟล์ (ไม่ต้องใส่นามสกุล) จะเป็นชื่อ Key ของโลโก้",
         logoDropZoneText: "ลากและวางไฟล์โลโก้ที่นี่",
         logoCacheListTitle: "โลโก้ที่ถูก Cache ไว้:",
         logoCacheEmpty: "ไม่มีโลโก้ถูก Cache ไว้",

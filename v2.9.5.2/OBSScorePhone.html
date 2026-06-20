@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-    <title>OBSScore Remote V2.9.5</title>
+    <title>OBSScore Remote V2.9.5.2</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -875,7 +875,7 @@
     <!-- ── LOGIN SCREEN ── -->
     <div id="login-screen">
         <div class="login-logo">OBSScore</div>
-        <div class="login-sub">Remote Control V2.9.5</div>
+        <div class="login-sub" id="login-version-text">Remote Control V2.9.5.2</div>
 
         <div class="login-card">
             <div class="login-label"><i class="fas fa-door-open" style="margin-right:6px;color:#60a5fa"></i>Room ID
@@ -1187,6 +1187,17 @@
         const roomUrl = urlParams.get('room');
 
         window.onload = () => {
+            // Dynamically import version to update UI
+            import('./fcp_v2_assets/version.js').then(module => {
+                const verText = document.getElementById('login-version-text') || document.querySelector('.login-sub');
+                if (verText) {
+                    verText.textContent = `Remote Control V${module.VERSION}`;
+                }
+                document.title = `OBSScore Remote V${module.VERSION}`;
+            }).catch(err => {
+                console.error("Failed to load version.js", err);
+            });
+
             if (roomUrl) {
                 document.getElementById('room-input').value = roomUrl;
                 // Auto connect after short delay
