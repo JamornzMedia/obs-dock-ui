@@ -4,8 +4,8 @@
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `volleyball_score.html` | `/v2.9.4.1/` | OBS Browser Source overlay |
-| `volleyball_module.js` | `/v2.9.4.1/fcp_v2_assets/` | Auto-injects Manager card into FCP |
+| `volleyball_score.html` | `/v2.9.5.2/` | OBS Browser Source overlay |
+| `volleyball_module.js` | `/v2.9.5.2/fcp_v2_assets/` | Auto-injects Manager card into FCP |
 
 ---
 

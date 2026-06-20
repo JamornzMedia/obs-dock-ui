@@ -1,7 +1,20 @@
 // fcp_v2_assets/main.js
 
+import { VERSION, UPDATE_DATE } from './version.js';
 import { translations } from './languages.js';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
+
+// Update version text elements as early as possible
+const versionTextEl = document.getElementById('fcp-version-text');
+const updateDateTextEl = document.getElementById('fcp-update-date-text');
+if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
+if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
+const welcomeVersionTextEl = document.getElementById('fcp-welcome-version-text');
+if (welcomeVersionTextEl) {
+    welcomeVersionTextEl.textContent = `Developed by JamornzMedia - Version ${VERSION} (อัพเดต: ${UPDATE_DATE})`;
+}
+document.title = 'FCP V' + VERSION;
+
 
 // --- DOM ELEMENTS ---
 const $ = id => document.getElementById(id);
@@ -448,12 +461,23 @@ const captureKeyInput = (e, inputElement, saveButton) => {
     if (e.ctrlKey) modifiers.push('Ctrl');
     if (e.altKey) modifiers.push('Alt');
     if (e.shiftKey) modifiers.push('Shift');
-    let key = e.key.toUpperCase();
-    if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT' || key === 'META') {
+    
+    let key = e.key;
+    if (key === ' ') {
+        key = 'SPACE';
+    } else if (key === 'Control' || key === 'Alt' || key === 'Shift' || key === 'Meta') {
         key = '';
-    } else if (key.length > 1 && !key.startsWith('F') && key !== 'SPACE') {
-        key = key;
+    } else {
+        // Normalize using layout-independent code if it is a standard Key or Digit
+        if (e.code && e.code.startsWith('Key')) {
+            key = e.code.slice(3).toUpperCase();
+        } else if (e.code && e.code.startsWith('Digit')) {
+            key = e.code.slice(5);
+        } else {
+            key = key.toUpperCase();
+        }
     }
+    
     const finalKey = [...modifiers, key].filter(k => k).join('+');
     inputElement.value = finalKey;
     saveButton.style.display = 'inline-flex';
@@ -502,7 +526,7 @@ const toggleKeybindEditMode = (id, enable) => {
 const saveKeybind = (id) => {
     const inputElement = $(`keybind-input-${id}`);
     const keyString = inputElement.value.trim().toUpperCase();
-    const rawKeyString = keyString.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT').replace(/SPACE/g, ' ');
+    const rawKeyString = keyString.replace(/CTRL/g, 'CONTROL').replace(/ALT/g, 'ALT').replace(/SHIFT/g, 'SHIFT');
 
     const savedKeybinds = JSON.parse(localStorage.getItem(KEYBINDS_KEY) || '{}');
     savedKeybinds[id] = rawKeyString;
@@ -1337,6 +1361,7 @@ const startTimer = () => {
     // V2.9.2: Timer state color
     elements.timerText.classList.add('timer-running');
     elements.timerText.classList.remove('timer-paused');
+    updateTimerDisplay(); // Update immediately
     interval = setInterval(() => {
         if (isCountdown) {
             if (timer > 0) timer--;
@@ -1354,6 +1379,7 @@ const stopTimer = () => {
     // V2.9.2: Timer state color
     elements.timerText.classList.remove('timer-running');
     elements.timerText.classList.add('timer-paused');
+    updateTimerDisplay(); // Sync stop state immediately
 };
 
 const resetToStartTime = () => {
@@ -1721,11 +1747,20 @@ const setupEventListeners = () => {
         if (e.altKey) modifiers.push('ALT');
         if (e.shiftKey) modifiers.push('SHIFT');
 
-        let key = e.key.toUpperCase();
-        if (key === 'CONTROL' || key === 'ALT' || key === 'SHIFT') {
+        let key = e.key;
+        if (key === ' ') {
+            key = 'SPACE';
+        } else if (key === 'Control' || key === 'Alt' || key === 'Shift' || key === 'Meta') {
             key = '';
-        } else if (key.length > 1 && !key.startsWith('F') && key !== 'SPACE') {
-            if (key === ' ') key = 'SPACE';
+        } else {
+            // Normalize using layout-independent code if it is a standard Key or Digit
+            if (e.code && e.code.startsWith('Key')) {
+                key = e.code.slice(3).toUpperCase();
+            } else if (e.code && e.code.startsWith('Digit')) {
+                key = e.code.slice(5);
+            } else {
+                key = key.toUpperCase();
+            }
         }
 
         if (!key && modifiers.length === 0) return;
@@ -3334,15 +3369,8 @@ window.fcpOBS = obs;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.1';
-import './display_table_module.js?v=2.9.5.1';
-import { VERSION, UPDATE_DATE } from './version.js';
-
-const versionTextEl = document.getElementById('fcp-version-text');
-const updateDateTextEl = document.getElementById('fcp-update-date-text');
-if (versionTextEl) versionTextEl.textContent = 'V' + VERSION;
-if (updateDateTextEl) updateDateTextEl.textContent = UPDATE_DATE;
-document.title = 'FCP V' + VERSION;
+import './volleyball_module_v2.js?v=2.9.5.2';
+import './display_table_module.js?v=2.9.5.2';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

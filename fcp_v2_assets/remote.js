@@ -112,61 +112,86 @@ window.initOnlinePresenceSystem = () => {
     if (window.presenceRefreshInterval) clearInterval(window.presenceRefreshInterval);
     window.presenceRefreshInterval = setInterval(window.refreshOnlinePresence, 30000); // 30 seconds
 
-    // --- Monitor All Users ---
+    // --- Monitor All Users (Polled for Optimization) ---
     const allRoomsRef = firebase.database().ref(ROOMS_PATH);
 
-    allRoomsRef.on('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const keys = Object.keys(users);
-        const now = Date.now() + (window.serverTimeOffset || 0);
+    let isFetchingPresence = false;
+    window.fetchOnlinePresenceData = async () => {
+        if (isFetchingPresence) return;
+        isFetchingPresence = true;
+        try {
+            const snapshot = await allRoomsRef.once('value');
+            const users = snapshot.val() || {};
+            const keys = Object.keys(users);
+            const now = Date.now() + (window.serverTimeOffset || 0);
 
-        let pcCount = 0;
-        let phoneCount = 0;
-        keys.forEach(key => {
-            if (key.startsWith('com_')) {
-                const user = users[key];
-                if (user) {
-                    if (user.lastActive) {
-                        const isStale = (now - user.lastActive) > 60000; // 60 seconds (2 * 30s)
-                        if (isStale) {
-                            console.log(`Detected stale user: ${key}. Cleaning up...`);
-                            firebase.database().ref(`${ROOMS_PATH}/${key}`).remove()
-                                .catch(() => {});
-                            const mobileKey = key.replace('com_', 'mobile_');
-                            firebase.database().ref(`${ROOMS_PATH}/${mobileKey}`).remove()
-                                .catch(() => {});
-                            return; // Skip counting
+            let pcCount = 0;
+            let phoneCount = 0;
+            const staleKeys = [];
+
+            keys.forEach(key => {
+                if (key.startsWith('com_')) {
+                    const user = users[key];
+                    if (user) {
+                        if (user.lastActive) {
+                            const isStale = (now - user.lastActive) > 60000; // 60 seconds (2 * 30s)
+                            if (isStale) {
+                                staleKeys.push(key);
+                                return; // Skip counting
+                            }
+                        } else {
+                            // Legacy/stuck entry without lastActive: set initial timestamp
+                            firebase.database().ref(`${ROOMS_PATH}/${key}`).update({
+                                lastActive: firebase.database.ServerValue.TIMESTAMP
+                            }).catch(() => {});
                         }
-                    } else {
-                        // Legacy/stuck entry without lastActive: set initial timestamp
-                        console.log(`Legacy/stuck entry detected without lastActive: ${key}. Setting temporary lastActive...`);
-                        firebase.database().ref(`${ROOMS_PATH}/${key}`).update({
-                            lastActive: firebase.database.ServerValue.TIMESTAMP
-                        }).catch(() => {});
+                        pcCount++;
                     }
-                    pcCount++;
+                } else if (key.startsWith('mobile_')) {
+                    const mobileRoom = users[key];
+                    if (mobileRoom && mobileRoom.Mobile === 'on') {
+                        phoneCount++;
+                    }
                 }
-            } else if (key.startsWith('mobile_')) {
-                const mobileRoom = users[key];
-                if (mobileRoom && mobileRoom.Mobile === 'on') {
-                    phoneCount++;
-                }
+            });
+
+            // Clean up stale users in database
+            if (staleKeys.length > 0) {
+                staleKeys.forEach(key => {
+                    firebase.database().ref(`${ROOMS_PATH}/${key}`).remove().catch(() => {});
+                    const mobileKey = key.replace('com_', 'mobile_');
+                    firebase.database().ref(`${ROOMS_PATH}/${mobileKey}`).remove().catch(() => {});
+                });
             }
-        });
 
-        const countEl = document.getElementById('onlineCountVal');
-        if (countEl) countEl.innerText = pcCount;
+            const countEl = document.getElementById('onlineCountVal');
+            if (countEl) countEl.innerText = pcCount;
 
-        const phoneCountEl = document.getElementById('onlinePhoneCountVal');
-        if (phoneCountEl) phoneCountEl.innerText = phoneCount;
+            const phoneCountEl = document.getElementById('onlinePhoneCountVal');
+            if (phoneCountEl) phoneCountEl.innerText = phoneCount;
 
-        window.onlineUsersSnapshot = snapshot;
+            window.onlineUsersSnapshot = snapshot;
 
-        const popup = document.getElementById('onlineUsersPopup');
-        if (popup && popup.style.display !== 'none') {
-            renderOnlineUsersList();
+            const popup = document.getElementById('onlineUsersPopup');
+            if (popup && popup.style.display !== 'none') {
+                renderOnlineUsersList();
+            }
+        } catch (e) {
+            console.warn("Fetch online presence failed", e);
+        } finally {
+            isFetchingPresence = false;
         }
-    });
+    };
+
+    // Randomized startup delay (2-5s) to prevent thundering herd when starting up
+    setTimeout(() => {
+        if (window.fetchOnlinePresenceData) window.fetchOnlinePresenceData();
+    }, 2000 + Math.random() * 3000);
+
+    if (window.onlinePresenceInterval) clearInterval(window.onlinePresenceInterval);
+    window.onlinePresenceInterval = setInterval(() => {
+        if (window.fetchOnlinePresenceData) window.fetchOnlinePresenceData();
+    }, 45000); // Poll every 45 seconds
 
     // --- New User Notification ---
     let initialLoad = true;
@@ -198,6 +223,7 @@ window.openOnlineUsersPopup = () => {
     if (window.refreshOnlinePresence) window.refreshOnlinePresence();
     const popup = document.getElementById('onlineUsersPopup');
     if (popup) popup.style.display = 'flex';
+    if (window.fetchOnlinePresenceData) window.fetchOnlinePresenceData();
     renderOnlineUsersList();
     if (window.renderGlobalRanking) window.renderGlobalRanking();
 };
