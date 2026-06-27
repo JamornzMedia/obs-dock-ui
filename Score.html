@@ -3,89 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap');
+        body { font-family: sans-serif; padding: 10px; background: #f0f0f0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; }
+        th, td { padding: 8px; text-align: center; border: 1px solid #ddd; }
         
-        body { 
-            font-family: 'Kanit', sans-serif; 
-            background-color: #0f172a; 
-            color: #ffffff; 
-            padding: 20px; 
-            display: flex; 
-            justify-content: center; 
-        }
-        .main-container { width: 100%; max-width: 600px; }
-        .header-box { 
-            text-align: center; 
-            margin-bottom: 25px; 
-            background: #1e293b; 
-            padding: 20px; 
-            border-radius: 15px; 
-            border-bottom: 4px solid #ef4444;
-        }
-        .match-row { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #ffffff; color: #1e293b; margin: 10px 0; 
-            padding: 12px 20px; border-radius: 50px; /* ขอบมน */
-        }
-        .team { width: 35%; text-align: center; font-weight: 700; font-size: 1.1em; }
-        .score-box { 
-            width: 80px; /* กำหนดความกว้างคงที่ */
-            height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(to right, #6b21a8, #ef4444); 
-            color: white; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 1.2em;
-        }
-        .info-label { font-size: 0.9em; color: #cbd5e1; display: block; margin-top: 5px; }
+        /* การปรับแต่งคอลัมน์ 6 และ 7 */
+        .col-bold { font-weight: bold; font-size: 1.1em; }
+        .col-sep { border-right: 3px solid #333 !important; }
+
+        /* ระบบสีช่องคะแนน */
+        .score-input { width: 80%; padding: 5px; border: 1px solid #ccc; text-align: center; }
+        .score-empty { background-color: #FFD700; } /* เหลือบส้มเหลือง */
+        .score-cut { background-color: #FF0000; color: white; font-weight: bold; } /* แดง */
+        .score-normal { background-color: #FFFFFF; }
+
+        /* Accordion */
+        .round-header { background: #333; color: white; padding: 10px; cursor: pointer; border-radius: 5px; margin-top: 10px; }
+        .round-content { display: none; padding: 10px; border: 1px solid #ccc; background: #fff; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <div class="header-box">
-        <h2 style="margin:0;">การแข่งขันฟุตบอล 7 คน</h2>
-        <div style="font-size: 1.2em; color: #fbbf24;">รายการ แก้เหงาเพื่อเสี่ยนุ๊ก</div>
-        <div style="font-size: 0.9em;">วันที่ 27 มิถุนายน 2569</div>
-        <div style="font-size: 0.9em;">ณ สนามใกล้บริเวณ สถานีอนามัยตำบลบ้านท้อแท้ อำเภอวัดโบสถ์ จังหวัดพิษณุโลก</div>
+    <div class="round-header" onclick="toggleRound('round1')">▼ รอบแรก (กดเพื่อเปิด/ซ่อน)</div>
+    <div id="round1" class="round-content">
+        <table>
+            <thead>
+                <tr>
+                    <th>ทีม</th>
+                    <th class="col-bold col-sep">คอลัมน์ 6</th>
+                    <th class="col-bold">คอลัมน์ 7</th>
+                    <th>คะแนน</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ทีม A</td>
+                    <td class="col-sep">ข้อมูล</td>
+                    <td>ข้อมูล</td>
+                    <td><input type="text" class="score-input score-empty" oninput="checkStyle(this)" placeholder="ว่าง"></td>
+                </tr>
+                <tr>
+                    <td>ทีม B</td>
+                    <td class="col-sep">ข้อมูล</td>
+                    <td>ข้อมูล</td>
+                    <td><input type="text" class="score-input score-cut" oninput="checkStyle(this)" value="ตัด"></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-    <div id="match-list"></div>
-</div>
-
 <script>
-    const sheetID = "1kx1u-vD_xSBHSVqCYZTPSl29U4l2yjGqE8EvJx07Ohc";
-    const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
+    // ฟังก์ชันซ่อน/แสดง
+    function toggleRound(id) {
+        var el = document.getElementById(id);
+        el.style.display = (el.style.display === "block") ? "none" : "block";
+    }
 
-    fetch(url)
-        .then(res => res.text())
-        .then(text => {
-            const json = JSON.parse(text.substr(47).slice(0, -2));
-            const container = document.getElementById('match-list');
-            
-            json.table.rows.forEach(row => {
-                const teamLeft = row.c[2]?.v; // คอลัมน์ 3
-                const teamRight = row.c[4]?.v; // คอลัมน์ 5
-                const info1 = row.c[5]?.v; // คอลัมน์ 6
-                const info2 = row.c[6]?.v; // คอลัมน์ 7
-                const score = row.c[7]?.v; // คอลัมน์ 8
-
-                if (teamLeft || teamRight) {
-                    container.innerHTML += `
-                        <div style="text-align: center; margin-top: 15px; font-size: 0.85em; color: #94a3b8;">
-                            ${info1 || ""} ${info2 || ""}
-                        </div>
-                        <div class="match-row">
-                            <div class="team">${teamLeft || "-"}</div>
-                            <div class="score-box">${score || "VS"}</div>
-                            <div class="team">${teamRight || "-"}</div>
-                        </div>
-                    `;
-                }
-            });
-        });
+    // ฟังก์ชันเปลี่ยนสีอัตโนมัติเมื่อพิมพ์
+    function checkStyle(el) {
+        const val = el.value.trim();
+        if (val === "ตัด") {
+            el.className = "score-input score-cut";
+        } else if (val === "") {
+            el.className = "score-input score-empty";
+        } else {
+            el.className = "score-input score-normal";
+        }
+    }
 </script>
+
 </body>
 </html>
 
