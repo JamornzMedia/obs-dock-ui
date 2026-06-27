@@ -3,25 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; color: white; padding: 20px; }
-        .match-container { max-width: 600px; margin: auto; }
-        .header-info { text-align: center; color: #fbbf24; margin-bottom: 20px; font-size: 1.2em; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap');
+        
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background-color: #0f172a; 
+            color: #ffffff; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+        }
+        .main-container { width: 100%; max-width: 600px; }
+        .header-box { 
+            text-align: center; 
+            margin-bottom: 25px; 
+            background: #1e293b; 
+            padding: 20px; 
+            border-radius: 15px; 
+            border-bottom: 4px solid #ef4444;
+        }
         .match-row { 
             display: flex; align-items: center; justify-content: space-between; 
-            background: #1e293b; margin: 8px 0; padding: 15px; border-radius: 10px; 
-            border-left: 4px solid #4f46e5;
+            background: #ffffff; color: #1e293b; margin: 10px 0; 
+            padding: 12px 20px; border-radius: 50px; /* ขอบมน */
         }
-        .team { width: 35%; text-align: center; font-weight: 600; font-size: 1.1em; }
-        .score { 
-            background: #ef4444; padding: 6px 16px; border-radius: 8px; 
-            font-weight: bold; font-size: 1.2em; min-width: 40px; text-align: center;
+        .team { width: 35%; text-align: center; font-weight: 700; font-size: 1.1em; }
+        .score-box { 
+            width: 80px; /* กำหนดความกว้างคงที่ */
+            height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(to right, #6b21a8, #ef4444); 
+            color: white; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 1.2em;
         }
+        .info-label { font-size: 0.9em; color: #cbd5e1; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="match-container" id="match-list">
-    <div id="header" class="header-info">กำลังโหลด...</div>
+<div class="main-container">
+    <div class="header-box">
+        <h2 style="margin:0;">การแข่งขันฟุตบอล 7 คน</h2>
+        <div style="font-size: 1.2em; color: #fbbf24;">รายการ แก้เหงาเพื่อเสี่ยนุ๊ก</div>
+        <div style="font-size: 0.9em;">วันที่ 27 มิถุนายน 2569</div>
+        <div style="font-size: 0.9em;">ณ สนามใกล้บริเวณ สถานีอนามัยตำบลบ้านท้อแท้ อำเภอวัดโบสถ์ จังหวัดพิษณุโลก</div>
+    </div>
+
+    <div id="match-list"></div>
 </div>
 
 <script>
@@ -33,30 +63,22 @@
         .then(text => {
             const json = JSON.parse(text.substr(47).slice(0, -2));
             const container = document.getElementById('match-list');
-            const headerDiv = document.getElementById('header');
             
-            // ดึงข้อมูลจากแถวแรก (สมมติว่าเป็นหัวข้อ) มาโชว์ด้านบน
-            const h1 = json.table.rows[0].c[5]?.v || ""; // คอลัมน์ 6
-            const h2 = json.table.rows[0].c[6]?.v || ""; // คอลัมน์ 7
-            headerDiv.innerHTML = `${h1} ${h2}`;
-
-            // ล้างข้อมูลเก่า
-            container.innerHTML = `<div class="header-info">${h1} ${h2}</div>`;
-
-            // ดึงข้อมูลแถวถัดไปทั้งหมด
-            json.table.rows.forEach((row, index) => {
-                if (index === 0) return; // ข้ามแถวหัวข้อ
-
+            json.table.rows.forEach(row => {
                 const teamLeft = row.c[2]?.v; // คอลัมน์ 3
-                const score = row.c[7]?.v;    // คอลัมน์ 8
                 const teamRight = row.c[4]?.v; // คอลัมน์ 5
+                const info1 = row.c[5]?.v; // คอลัมน์ 6
+                const info2 = row.c[6]?.v; // คอลัมน์ 7
+                const score = row.c[7]?.v; // คอลัมน์ 8
 
-                // ถ้าแถวนั้นมีข้อมูลอย่างน้อย 1 อย่างให้แสดง
-                if (teamLeft || teamRight || score) {
+                if (teamLeft || teamRight) {
                     container.innerHTML += `
+                        <div style="text-align: center; margin-top: 15px; font-size: 0.85em; color: #94a3b8;">
+                            ${info1 || ""} ${info2 || ""}
+                        </div>
                         <div class="match-row">
                             <div class="team">${teamLeft || "-"}</div>
-                            <div class="score">${score || "-"}</div>
+                            <div class="score-box">${score || "VS"}</div>
                             <div class="team">${teamRight || "-"}</div>
                         </div>
                     `;
