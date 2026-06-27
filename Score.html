@@ -2,24 +2,20 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>ผลบอลล่าสุด</title>
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; color: white; display: flex; justify-content: center; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #334155; }
-        .score { background: #ef4444; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 1.1em; margin: 0 10px; }
-        .team { font-weight: 500; }
+        body { font-family: 'Kanit', sans-serif; background-color: #0f172a; color: white; padding: 20px; }
+        .match-container { max-width: 600px; margin: auto; }
+        .date-label { color: #94a3b8; padding: 15px 0 5px; font-weight: bold; border-bottom: 2px solid #334155; margin-top: 10px; }
+        .match-row { display: flex; align-items: center; justify-content: space-between; background: #1e293b; margin: 8px 0; padding: 12px; border-radius: 8px; }
+        .team { width: 40%; text-align: center; font-weight: 600; }
+        .score { background: linear-gradient(to right, #4f46e5, #ec4899); padding: 5px 15px; border-radius: 6px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card" id="football-table">
-    <h3 style="text-align:center;">ตารางการแข่งขัน</h3>
-    <div id="content">กำลังโหลดข้อมูล...</div>
-</div>
+<div class="match-container" id="match-list"></div>
 
 <script>
-    // ดึง ID จาก URL ของคุณ
     const sheetID = "1kx1u-vD_xSBHSVqCYZTPSl29U4l2yjGqE8EvJx07Ohc";
     const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json`;
 
@@ -27,26 +23,30 @@
         .then(res => res.text())
         .then(text => {
             const json = JSON.parse(text.substr(47).slice(0, -2));
-            const container = document.getElementById('content');
-            container.innerHTML = ""; // ล้างคำว่ากำลังโหลด
-
+            const container = document.getElementById('match-list');
+            
             json.table.rows.forEach(row => {
-                // สมมติคอลัมน์คือ ทีม A, สกอร์, ทีม B
-                const teamA = row.c[0]?.v || "-";
-                const score = row.c[1]?.v || "-";
-                const teamB = row.c[2]?.v || "-";
+                const label = row.c[0]?.v; // คอลัมน์ A
+                const teamHome = row.c[1]?.v; // คอลัมน์ B
+                const score = row.c[2]?.v; // คอลัมน์ C
+                const teamAway = row.c[3]?.v; // คอลัมน์ D
 
-                container.innerHTML += `
-                    <div class="row">
-                        <span class="team">${teamA}</span>
-                        <span class="score">${score}</span>
-                        <span class="team">${teamB}</span>
-                    </div>
-                `;
+                // ถ้ามี Label ให้แสดงหัวข้อคั่น
+                if (label) {
+                    container.innerHTML += `<div class="date-label">${label}</div>`;
+                }
+                
+                // แสดงผลตารางแมตช์
+                if (teamHome && teamAway) {
+                    container.innerHTML += `
+                        <div class="match-row">
+                            <div class="team">${teamHome}</div>
+                            <div class="score">${score || "VS"}</div>
+                            <div class="team">${teamAway}</div>
+                        </div>
+                    `;
+                }
             });
-        })
-        .catch(err => {
-            document.getElementById('content').innerHTML = "เกิดข้อผิดพลาดในการโหลดข้อมูล โปรดเช็คการตั้งค่าการแชร์ไฟล์";
         });
 </script>
 </body>
