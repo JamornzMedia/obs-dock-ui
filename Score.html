@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap');
         
@@ -22,23 +23,54 @@
             border-radius: 15px; 
             border-bottom: 4px solid #ef4444;
         }
+        
+        /* สไตล์สำหรับหัวข้อรอบการแข่งขัน */
+        .round-header {
+            background: #334155;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 20px 0 10px 0;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .round-header:hover { background: #475569; }
+
         .match-row { 
             display: flex; align-items: center; justify-content: space-between; 
             background: #ffffff; color: #1e293b; margin: 10px 0; 
-            padding: 12px 20px; border-radius: 50px; /* ขอบมน */
+            padding: 12px 20px; border-radius: 50px;
         }
         .team { width: 35%; text-align: center; font-weight: 700; font-size: 1.1em; }
+        
+        /* สไตล์ Scorebox */
         .score-box { 
-            width: 80px; /* กำหนดความกว้างคงที่ */
-            height: 40px;
+            width: 80px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(to right, #6b21a8, #ef4444); 
-            color: white; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 1.2em;
+            color: white; border-radius: 20px; font-weight: bold; font-size: 1.2em;
+            transition: 0.3s;
         }
-        .info-label { font-size: 0.9em; color: #cbd5e1; display: block; margin-top: 5px; }
+        /* สถานะปกติ */
+        .score-normal { background: linear-gradient(to right, #6b21a8, #ef4444); }
+        /* สถานะว่าง */
+        .score-empty { background: #f59e0b; } 
+        /* สถานะตัด */
+        .score-cut { background: #dc2626; }
+
+        /* สไตล์คอลัมน์ 6 และ 7 */
+        .info-text { 
+            text-align: center; 
+            font-size: 1em; 
+            font-weight: 700; 
+            color: #94a3b8; 
+            margin-top: 5px; 
+        }
+        
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -48,7 +80,6 @@
         <h2 style="margin:0;">การแข่งขันฟุตบอล 7 คน</h2>
         <div style="font-size: 1.2em; color: #fbbf24;">รายการ แก้เหงาเพื่อเสี่ยนุ๊ก</div>
         <div style="font-size: 0.9em;">วันที่ 27 มิถุนายน 2569</div>
-        <div style="font-size: 0.9em;">ณ สนามใกล้บริเวณ สถานีอนามัยตำบลบ้านท้อแท้ อำเภอวัดโบสถ์ จังหวัดพิษณุโลก</div>
     </div>
 
     <div id="match-list"></div>
@@ -63,29 +94,75 @@
         .then(text => {
             const json = JSON.parse(text.substr(47).slice(0, -2));
             const container = document.getElementById('match-list');
-            
-            json.table.rows.forEach(row => {
-                const teamLeft = row.c[2]?.v; // คอลัมน์ 3
-                const teamRight = row.c[4]?.v; // คอลัมน์ 5
-                const info1 = row.c[5]?.v; // คอลัมน์ 6
-                const info2 = row.c[6]?.v; // คอลัมน์ 7
-                const score = row.c[7]?.v; // คอลัมน์ 8
+            const groupedData = {};
 
-                if (teamLeft || teamRight) {
-                    container.innerHTML += `
-                        <div style="text-align: center; margin-top: 15px; font-size: 0.85em; color: #94a3b8;">
-                            ${info1 || ""} ${info2 || ""}
-                        </div>
-                        <div class="match-row">
-                            <div class="team">${teamLeft || "-"}</div>
-                            <div class="score-box">${score || "VS"}</div>
-                            <div class="team">${teamRight || "-"}</div>
-                        </div>
-                    `;
-                }
+            // จัดกลุ่มข้อมูลตาม คอลัมน์ 6 (info1)
+            json.table.rows.forEach(row => {
+                const roundName = row.c[5]?.v || "รอบทั่วไป";
+                if (!groupedData[roundName]) groupedData[roundName] = [];
+                groupedData[roundName].push(row);
+            });
+
+            // สร้าง HTML จากกลุ่มข้อมูล
+            Object.keys(groupedData).forEach((round, index) => {
+                const sectionId = `section-${index}`;
+                
+                // สร้าง Header ของแต่ละรอบ
+                container.innerHTML += `
+                    <div class="round-header" onclick="toggleSection('${sectionId}')">
+                        <span>${round}</span>
+                        <span style="font-size: 0.8em;">(กดเพื่อซ่อน/แสดง)</span>
+                    </div>
+                    <div id="${sectionId}" class="match-content">
+                        ${generateMatches(groupedData[round])}
+                    </div>
+                `;
             });
         });
+
+    function generateMatches(rows) {
+        let html = "";
+        rows.forEach(row => {
+            const teamLeft = row.c[2]?.v;
+            const teamRight = row.c[4]?.v;
+            const info1 = row.c[5]?.v || "";
+            const info2 = row.c[6]?.v || ""; // คอลัมน์ 7
+            const score = row.c[7]?.v;
+
+            // ตรวจสอบสถานะคะแนน
+            let scoreClass = "score-normal";
+            let scoreText = score;
+
+            if (!score) {
+                scoreClass = "score-empty";
+                scoreText = "VS";
+            } else if (score === "ตัด") {
+                scoreClass = "score-cut";
+                scoreText = "ตัด";
+            }
+
+            if (teamLeft || teamRight) {
+                html += `
+                    <div class="info-text">${info1} ${info2}</div>
+                    <div class="match-row">
+                        <div class="team">${teamLeft || "-"}</div>
+                        <div class="score-box ${scoreClass}">${scoreText}</div>
+                        <div class="team">${teamRight || "-"}</div>
+                    </div>
+                `;
+            }
+        });
+        return html;
+    }
+
+    function toggleSection(id) {
+        const element = document.getElementById(id);
+        if (element.classList.contains('hidden')) {
+            element.classList.remove('hidden');
+        } else {
+            element.classList.add('hidden');
+        }
+    }
 </script>
 </body>
 </html>
-
