@@ -23,9 +23,10 @@
       width: 100%;
       max-width: 500px;
       display: flex;
-      flex-direction: column;
+      flex-direction: var(--panel-layout, column);
       gap: 12px;
       margin-bottom: 1rem;
+      min-height: var(--panel-height, auto);
     }
 
     .shootout-block {
@@ -41,7 +42,7 @@
     #shootout_0 {
       border-top: 4px solid #3b82f6;
       box-shadow: 0 4px 24px rgba(59, 130, 246, 0.08);
-      background: linear-gradient(180deg, rgba(59, 130, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+      background: var(--shootout1-bg, linear-gradient(180deg, rgba(59, 130, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%));
     }
     #shootout_0:hover {
       border-color: rgba(59, 130, 246, 0.3);
@@ -55,7 +56,7 @@
     #shootout_1 {
       border-top: 4px solid #8b5cf6;
       box-shadow: 0 4px 24px rgba(139, 92, 246, 0.08);
-      background: linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+      background: var(--shootout2-bg, linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%));
     }
     #shootout_1:hover {
       border-color: rgba(139, 92, 246, 0.3);
@@ -703,12 +704,20 @@
             <input type="color" id="panelBg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
           </label>
           <label>
-            <span data-lang="panelBorderLabel">Panel Border Color</span>: 
-            <input type="color" id="panelBorder" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
+            <span data-lang="shootout1BgLabel">Shootout 1 BG Color</span>: 
+            <input type="color" id="shootout1Bg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
+          </label>
+          <label>
+            <span data-lang="shootout2BgLabel">Shootout 2 BG Color</span>: 
+            <input type="color" id="shootout2Bg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
           </label>
           <label>
             <span data-lang="panelDotSizeLabel">Panel Dot Size</span>: 
             <span class="val-input"><input type="number" id="panelDotSize" min="10" max="50"> px</span>
+          </label>
+          <label>
+            <span data-lang="panelHeightLabel">Panel Height</span>: 
+            <span class="val-input"><input type="number" id="panelHeight" min="0" max="1000" placeholder="auto"> px</span>
           </label>
           <label>
             <span data-lang="panelBtnSizeLabel">Button Size</span>: 
@@ -718,6 +727,13 @@
               <option value="large" data-lang="btnSizeLarge">Large</option>
             </select>
           </label>
+          <div class="setting-row">
+            <span data-lang="panelLayoutLabel">Panel Layout</span>:
+            <div class="radio-group">
+              <label><input type="radio" name="panelLayout" value="column" id="panelLayoutColumn"> <span data-lang="panelLayoutTopBottom">Top-Bottom</span></label>
+              <label><input type="radio" name="panelLayout" value="row" id="panelLayoutRow"> <span data-lang="panelLayoutSideBySide">Side-by-Side</span></label>
+            </div>
+          </div>
           <div style="text-align: right; margin-top: 10px;">
             <button type="button" class="reset-btn" onclick="resetDefaultColors()" style="display: inline-flex;"><span data-lang="resetColorsBtn">Reset Colors</span></button>
           </div>
@@ -883,9 +899,14 @@
         showUnshotDotsLabel: "แสดงจุดรอที่ยังไม่ยิง",
         unshotColorLabel: "สีจุดที่ยังไม่ยิง (สีเทา/สีอื่น)",
         panelBgLabel: "สีพื้นหลังแผงควบคุม",
-        panelBorderLabel: "สีเส้นขอบแผงควบคุม",
+        shootout1BgLabel: "สีพื้นหลังกรอบจุดโทษชุดที่ 1",
+        shootout2BgLabel: "สีพื้นหลังกรอบจุดโทษชุดที่ 2",
         panelDotSizeLabel: "ขนาดจุดในแผงควบคุม",
+        panelHeightLabel: "ความสูงแผงควบคุม (0 = อัตโนมัติ)",
         panelBtnSizeLabel: "ขนาดปุ่มกดแผงควบคุม",
+        panelLayoutLabel: "รูปแบบจัดวางแผงควบคุม",
+        panelLayoutTopBottom: "บน-ล่าง",
+        panelLayoutSideBySide: "ซ้าย-ขวา",
         btnSizeSmall: "เล็ก",
         btnSizeMedium: "กลาง",
         btnSizeLarge: "ใหญ่",
@@ -976,9 +997,14 @@
         showUnshotDotsLabel: "Show Unshot Dots",
         unshotColorLabel: "Unshot Dot Color",
         panelBgLabel: "Panel Background",
-        panelBorderLabel: "Panel Border Color",
+        shootout1BgLabel: "Shootout 1 BG Color",
+        shootout2BgLabel: "Shootout 2 BG Color",
         panelDotSizeLabel: "Panel Dot Size",
+        panelHeightLabel: "Panel Height (0 = auto)",
         panelBtnSizeLabel: "Button Size",
+        panelLayoutLabel: "Panel Layout",
+        panelLayoutTopBottom: "Top-Bottom",
+        panelLayoutSideBySide: "Side-by-Side",
         btnSizeSmall: "Small",
         btnSizeMedium: "Medium",
         btnSizeLarge: "Large",
@@ -1125,13 +1151,21 @@
       });
     }
 
+    function getCurrentBaseUrl() {
+      // Use current page location to build dynamic base URL
+      const loc = window.location;
+      const pathParts = loc.pathname.split('/');
+      pathParts.pop(); // remove current filename (Penalty-Shootout.html)
+      return loc.origin + pathParts.join('/');
+    }
+
     async function autoCreateSources(setIndex) {
       try {
         const sceneRes = await sendOBSRequest("GetCurrentProgramScene");
         const sceneName = sceneRes.currentProgramSceneName;
 
         let createdCount = 0;
-        const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui";
+        const baseUrl = getCurrentBaseUrl();
         
         if (setIndex === 1) {
           // Create Score_A
@@ -1210,7 +1244,7 @@
         }
 
         const lang = languageSelector.value;
-        const successMsg = lang === 'th' ? `สร้าง Source แล้ว ${createdCount}/3 รายการ ใน Scene: ${sceneName}` : `Created ${createdCount}/3 sources in Scene: ${sceneName}`;
+        const successMsg = lang === 'th' ? `สร้าง Source แล้ว ${createdCount}/3 รายการ ใน Scene: ${sceneName}\nURL: ${baseUrl}` : `Created ${createdCount}/3 sources in Scene: ${sceneName}\nURL: ${baseUrl}`;
         alert(successMsg);
 
       } catch (err) {
@@ -1297,8 +1331,20 @@
 
       // Apply control panel custom styling variables
       document.documentElement.style.setProperty('--panel-bg', settings.panelBg || '#0f172a');
-      document.documentElement.style.setProperty('--panel-border-color', settings.panelBorderColor || '#334155');
       document.documentElement.style.setProperty('--panel-dot-size', (settings.panelDotSize || 24) + 'px');
+
+      // Shootout block background colors
+      const s1Bg = settings.shootout1Bg || '#0a1628';
+      const s2Bg = settings.shootout2Bg || '#140a28';
+      document.documentElement.style.setProperty('--shootout1-bg', s1Bg);
+      document.documentElement.style.setProperty('--shootout2-bg', s2Bg);
+
+      // Panel height
+      const panelH = parseInt(settings.panelHeight) || 0;
+      document.documentElement.style.setProperty('--panel-height', panelH > 0 ? panelH + 'px' : 'auto');
+
+      // Panel layout direction
+      document.documentElement.style.setProperty('--panel-layout', settings.panelLayout || 'column');
       
       let btnPadding = '0.5rem 0.6rem';
       let btnFontSize = '0.85rem';
@@ -1340,7 +1386,7 @@
       const lang = languageSelector.value;
       const listEl = document.getElementById('helpObsSourcesList');
       
-      const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui";
+      const baseUrl = getCurrentBaseUrl();
       const url1 = baseUrl + "/dots_AB.html";
       const url2 = baseUrl + "/dots_AB_2.html";
 
@@ -1473,9 +1519,12 @@
 
         // Control Panel UI styles
         panelBg: document.getElementById('panelBg').value,
-        panelBorderColor: document.getElementById('panelBorder').value,
+        shootout1Bg: document.getElementById('shootout1Bg').value,
+        shootout2Bg: document.getElementById('shootout2Bg').value,
         panelDotSize: parseInt(document.getElementById('panelDotSize').value),
-        panelBtnSize: document.getElementById('panelBtnSize').value
+        panelHeight: parseInt(document.getElementById('panelHeight').value) || 0,
+        panelBtnSize: document.getElementById('panelBtnSize').value,
+        panelLayout: document.querySelector('input[name="panelLayout"]:checked')?.value || 'column'
       };
     }
 
@@ -1487,7 +1536,8 @@
 
     function resetDefaultColors() {
       document.getElementById('panelBg').value = '#0f172a';
-      document.getElementById('panelBorder').value = '#334155';
+      document.getElementById('shootout1Bg').value = '#0a1628';
+      document.getElementById('shootout2Bg').value = '#140a28';
       document.getElementById('dotBorderColor').value = '#bbbbbb';
       document.getElementById('unshotColor').value = '#bbbbbb';
       
@@ -1584,9 +1634,16 @@
 
         // Control Panel UI styles
         document.getElementById('panelBg').value = saved.panelBg !== undefined ? saved.panelBg : '#0f172a';
-        document.getElementById('panelBorder').value = saved.panelBorderColor !== undefined ? saved.panelBorderColor : '#334155';
+        document.getElementById('shootout1Bg').value = saved.shootout1Bg !== undefined ? saved.shootout1Bg : '#0a1628';
+        document.getElementById('shootout2Bg').value = saved.shootout2Bg !== undefined ? saved.shootout2Bg : '#140a28';
         document.getElementById('panelDotSize').value = saved.panelDotSize !== undefined ? saved.panelDotSize : 24;
+        document.getElementById('panelHeight').value = saved.panelHeight !== undefined ? saved.panelHeight : 0;
         document.getElementById('panelBtnSize').value = saved.panelBtnSize !== undefined ? saved.panelBtnSize : 'medium';
+        if (saved.panelLayout === 'row') {
+          document.getElementById('panelLayoutRow').checked = true;
+        } else {
+          document.getElementById('panelLayoutColumn').checked = true;
+        }
       } else {
         document.getElementById('dotSize').value = 24; 
         document.getElementById('dotGap').value = 8;
@@ -1610,9 +1667,12 @@
 
         // Default Control Panel UI styles
         document.getElementById('panelBg').value = '#0f172a';
-        document.getElementById('panelBorder').value = '#334155';
+        document.getElementById('shootout1Bg').value = '#0a1628';
+        document.getElementById('shootout2Bg').value = '#140a28';
         document.getElementById('panelDotSize').value = 24;
+        document.getElementById('panelHeight').value = 0;
         document.getElementById('panelBtnSize').value = 'medium';
+        document.getElementById('panelLayoutColumn').checked = true;
       }
       renderAll(); 
     }
