@@ -5,7 +5,7 @@
   <title data-lang="appTitle">Penalty Shootout UI</title>
   <style>
     body {
-      background: linear-gradient(135deg, #0a0a0c 0%, #14141c 100%);
+      background: var(--panel-bg, #0a0a0c);
       color: #e2e8f0;
       font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
       padding: 0.75rem;
@@ -16,6 +16,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      transition: background 0.3s ease;
     }
     
     #shootoutsContainer {
@@ -31,7 +32,7 @@
       background: rgba(255, 255, 255, 0.01);
       border-radius: 12px;
       padding: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border-color, rgba(255, 255, 255, 0.05));
       backdrop-filter: blur(12px);
       transition: all 0.3s ease;
       margin-bottom: 4px;
@@ -93,7 +94,7 @@
       flex: 1;
       border-radius: 8px;
       padding: 8px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--panel-border-color, rgba(255, 255, 255, 0.04));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -137,7 +138,7 @@
       line-height: 1;
     }
 
-    /* Restored original preview dot styles */
+    /* Restored original preview dot styles, customizable in panel size settings */
     .dots {
       display: flex;
       justify-content: center;
@@ -148,8 +149,8 @@
     }
 
     .dot {
-      width: 24px;
-      height: 24px;
+      width: var(--panel-dot-size, 24px);
+      height: var(--panel-dot-size, 24px);
       border-radius: 50%;
       background-color: transparent;
       border: 2px solid rgba(255, 255, 255, 0.3);
@@ -179,8 +180,8 @@
     }
 
     button {
-      padding: 0.5rem 0.6rem;
-      font-size: 0.85rem;
+      padding: var(--panel-btn-padding, 0.5rem 0.6rem);
+      font-size: var(--panel-btn-font-size, 0.85rem);
       font-weight: 600;
       border-radius: 6px;
       border: none;
@@ -268,10 +269,10 @@
     .create-source-btn {
       background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
       color: white;
-      margin-top: 12px;
+      margin-top: 8px;
       width: 100%;
-      padding: 0.75rem;
-      font-size: 0.95rem;
+      padding: 0.6rem;
+      font-size: 0.85rem;
     }
 
     /* Styles for Popup Modals */
@@ -336,6 +337,7 @@
     .section-general h3 { color: #60a5fa; border-color: rgba(96, 165, 250, 0.2); }
     .section-sizing h3 { color: #34d399; border-color: rgba(52, 211, 153, 0.2); }
     .section-shape h3 { color: #fb923c; border-color: rgba(251, 146, 60, 0.2); }
+    .section-panel-style h3 { color: #c084fc; border-color: rgba(192, 132, 252, 0.2); }
 
     .setting-row {
       display: flex;
@@ -373,7 +375,8 @@
       gap: 4px;
       color: #94a3b8;
     }
-    .setting-panel input[type="number"] {
+    .setting-panel input[type="number"],
+    .setting-panel select {
       width: 55px;
       padding: 0.25rem;
       text-align: center;
@@ -382,6 +385,10 @@
       border: 1px solid #3b82f6;
       border-radius: 6px;
       font-weight: bold;
+    }
+    .setting-panel select {
+      width: 85px;
+      text-align: left;
     }
     .setting-panel input[type="radio"] {
       margin-right: 5px;
@@ -623,10 +630,10 @@
           <h3>⚙️ <span data-lang="settingsGeneralTitle">General Settings</span></h3>
           <div class="setting-row">
             <span data-lang="shootoutCountLabel">Shootout Count</span>:
-            <div class="radio-group">
-              <label><input type="radio" name="shootoutCount" value="1" id="shootoutCount1"> <span data-lang="shootoutCount1">1 Set</span></label>
-              <label><input type="radio" name="shootoutCount" value="2" id="shootoutCount2"> <span data-lang="shootoutCount2">2 Sets</span></label>
-            </div>
+            <select id="shootoutCount" style="width: 85px; padding: 0.2rem;">
+              <option value="1" data-lang="shootoutCount1">1 Set</option>
+              <option value="2" data-lang="shootoutCount2">2 Sets</option>
+            </select>
           </div>
           <div class="setting-row">
             <span data-lang="graphicLayoutLabel">Graphic Layout</span>:
@@ -677,7 +684,7 @@
             <input type="color" id="dotBorderColor" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
           </label>
 
-          <!-- New unshot dots controls -->
+          <!-- unshot dots controls -->
           <label style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; margin-top: 10px;">
             <span data-lang="showUnshotDotsLabel">Show Unshot Dots</span>: 
             <input type="checkbox" id="showUnshotDots" style="transform: scale(1.2); margin-right: 4px;">
@@ -686,6 +693,34 @@
             <span data-lang="unshotColorLabel">Unshot Dot Color</span>: 
             <input type="color" id="unshotColor" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
           </label>
+        </div>
+
+        <!-- Section 4: Control Panel Appearance (สีม่วง) -->
+        <div class="setting-section section-panel-style">
+          <h3>🖥️ <span data-lang="settingsPanelStyleTitle">Control Panel Appearance</span></h3>
+          <label>
+            <span data-lang="panelBgLabel">Panel Background</span>: 
+            <input type="color" id="panelBg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
+          </label>
+          <label>
+            <span data-lang="panelBorderLabel">Panel Border Color</span>: 
+            <input type="color" id="panelBorder" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;">
+          </label>
+          <label>
+            <span data-lang="panelDotSizeLabel">Panel Dot Size</span>: 
+            <span class="val-input"><input type="number" id="panelDotSize" min="10" max="50"> px</span>
+          </label>
+          <label>
+            <span data-lang="panelBtnSizeLabel">Button Size</span>: 
+            <select id="panelBtnSize" style="width: 85px; padding: 0.25rem;">
+              <option value="small" data-lang="btnSizeSmall">Small</option>
+              <option value="medium" data-lang="btnSizeMedium">Medium</option>
+              <option value="large" data-lang="btnSizeLarge">Large</option>
+            </select>
+          </label>
+          <div style="text-align: right; margin-top: 10px;">
+            <button type="button" class="reset-btn" onclick="resetDefaultColors()" style="display: inline-flex;"><span data-lang="resetColorsBtn">Reset Colors</span></button>
+          </div>
         </div>
 
         <div class="dialog-buttons">
@@ -701,9 +736,12 @@
       <h2><span data-lang="helpTitle">Help / How to Use with OBS</span></h2>
       <p><span data-lang="helpIntro">This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.</span></p>
 
-      <button type="button" class="create-source-btn" onclick="autoCreateSources()"><span data-lang="createSourcesBtn">Auto-Create OBS Sources</span></button>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="create-source-btn" onclick="autoCreateSources(1)" style="flex: 1;"><span data-lang="createSourcesBtn1">Create Shootout 1 Sources</span></button>
+        <button type="button" class="create-source-btn" onclick="autoCreateSources(2)" style="flex: 1; background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);"><span data-lang="createSourcesBtn2">Create Shootout 2 Sources</span></button>
+      </div>
 
-      <div class="help-section help-section-sources">
+      <div class="help-section help-section-sources" style="margin-top: 12px;">
         <h3>📋 <span data-lang="obsSourcesTitle">OBS Sources Needed</span></h3>
         <div class="item-list">
           <ul id="helpObsSourcesList">
@@ -762,6 +800,7 @@
               <li><span data-lang="v1_3_feature5">Introduced advanced dot border controls (radius slider, border width, border color picker, show border toggle).</span></li>
               <li><span data-lang="v1_3_feature6">Added safety confirmation dialogs to all reset actions.</span></li>
               <li><span data-lang="v1_3_feature7">Added option to toggle unshot placeholder dots and customize their fill color.</span></li>
+              <li><span data-lang="v1_3_feature8">Divided settings and help modals into beautiful, categorized sections. Added control panel appearance custom styling (custom bg, borders, dot size, button sizes, and a color reset button).</span></li>
             </ul>
           </li>
           <li>
@@ -833,6 +872,7 @@
         settingsGeneralTitle: "ตั้งค่าการใช้งานหลัก",
         settingsSizingTitle: "ขนาดและระยะห่าง",
         settingsShapeTitle: "รูปทรงจุดและเส้นขอบ",
+        settingsPanelStyleTitle: "รูปลักษณ์แผงควบคุม",
         dotSizeLabel: "ขนาดจุด",
         dotGapLabel: "ช่องว่างจุด",
         teamGapLabel: "ช่องว่างทีม",
@@ -842,6 +882,14 @@
         dotBorderColorLabel: "สีของเส้นขอบ",
         showUnshotDotsLabel: "แสดงจุดรอที่ยังไม่ยิง",
         unshotColorLabel: "สีจุดที่ยังไม่ยิง (สีเทา/สีอื่น)",
+        panelBgLabel: "สีพื้นหลังแผงควบคุม",
+        panelBorderLabel: "สีเส้นขอบแผงควบคุม",
+        panelDotSizeLabel: "ขนาดจุดในแผงควบคุม",
+        panelBtnSizeLabel: "ขนาดปุ่มกดแผงควบคุม",
+        btnSizeSmall: "เล็ก",
+        btnSizeMedium: "กลาง",
+        btnSizeLarge: "ใหญ่",
+        resetColorsBtn: "รีเซ็ตสีเริ่มต้น",
         dotShapeLabel: "รูปทรงจุด",
         shapeCircle: "วงกลม",
         shapeSquare: "สี่เหลี่ยม",
@@ -849,13 +897,14 @@
         layoutSideBySide: "ซ้าย-ขวา",
         layoutTopBottom: "บน-ล่าง",
         shootoutCountLabel: "จำนวนชุดจุดโทษ",
-        shootoutCount1: "1 ชุด (1 ประตู)",
-        shootoutCount2: "2 ชุดพร้อมกัน (2 ประตู)",
+        shootoutCount1: "1 ชุดจุดโทษ",
+        shootoutCount2: "2 ชุดจุดโทษพร้อมกัน",
         shootout1Title: "ชุดจุดโทษที่ 1",
         shootout2Title: "ชุดจุดโทษที่ 2",
         helpTitle: "ช่วยเหลือ / วิธีใช้งานกับ OBS",
         helpIntro: "แผงควบคุมนี้จะส่งข้อมูลคะแนนและจุดยิงจุดโทษไปยัง OBS หากต้องการแสดงผล โปรดตั้งค่า Source ดังต่อไปนี้ใน OBS.",
-        createSourcesBtn: "คลิกเพื่อสร้าง Source ทั้งหมดอัตโนมัติใน Scene ปัจจุบัน",
+        createSourcesBtn1: "สร้าง Source จุดโทษชุดที่ 1",
+        createSourcesBtn2: "สร้าง Source จุดโทษชุดที่ 2",
         obsSourcesTitle: "OBS Sources ที่จำเป็น",
         scoreASource: "Score_A",
         scoreBSource: "Score_B",
@@ -884,6 +933,7 @@
         v1_3_feature5: "เพิ่มการตั้งค่าเส้นขอบจุดขั้นสูง (ระดับความโค้งมน 0-50%, เปิด/ปิดขอบ, ขนาดขอบ และเลือกสีขอบผ่าน Color Picker)",
         v1_3_feature6: "เพิ่มระบบกล่องข้อความแจ้งเตือนยืนยันการ Reset ทุกๆ ปุ่มเพื่อความปลอดภัย",
         v1_3_feature7: "เพิ่มตัวเลือกเปิด/ปิดการแสดงผลจุดจุดโทษที่ยังไม่ได้ยิง และปรับแต่งสีของจุดที่ยังไม่ยิงได้",
+        v1_3_feature8: "แบ่งหน้าต่างตั้งค่าและช่วยเหลือเป็นสัดส่วนชัดเจน เพิ่มความสามารถในการปรับแต่งรูปลักษณ์แผงควบคุม (สีพื้นหลัง, สีขอบ, ขนาดจุด, ขนาดปุ่มกด และปุ่ม Reset สีดั้งเดิม)",
         version1_2: "เวอร์ชั่น 1.2",
         v1_2_feature1: "ปรับโฉมหน้าตา UI ใหม่ให้สวยงามและทันสมัย",
         v1_2_feature2: "เพิ่มปุ่มสร้าง OBS Source อัตโนมัติ (Text และ Browser) ในหน้าช่วยเหลือ",
@@ -915,6 +965,7 @@
         settingsGeneralTitle: "General Configuration",
         settingsSizingTitle: "Sizing & Spacing",
         settingsShapeTitle: "Dot Shape & Borders",
+        settingsPanelStyleTitle: "Control Panel Appearance",
         dotSizeLabel: "Dot Size",
         dotGapLabel: "Dot Gap",
         teamGapLabel: "Team Gap",
@@ -924,6 +975,14 @@
         dotBorderColorLabel: "Border Color",
         showUnshotDotsLabel: "Show Unshot Dots",
         unshotColorLabel: "Unshot Dot Color",
+        panelBgLabel: "Panel Background",
+        panelBorderLabel: "Panel Border Color",
+        panelDotSizeLabel: "Panel Dot Size",
+        panelBtnSizeLabel: "Button Size",
+        btnSizeSmall: "Small",
+        btnSizeMedium: "Medium",
+        btnSizeLarge: "Large",
+        resetColorsBtn: "Reset Colors",
         dotShapeLabel: "Dot Shape",
         shapeCircle: "Circle",
         shapeSquare: "Square",
@@ -931,13 +990,14 @@
         layoutSideBySide: "Side-by-Side (Left-Right)",
         layoutTopBottom: "Top-Bottom (Up-Down)",
         shootoutCountLabel: "Shootout Count",
-        shootoutCount1: "1 Shootout (1 Goal)",
-        shootoutCount2: "2 Shootouts (2 Goals)",
+        shootoutCount1: "1 Shootout Set",
+        shootoutCount2: "2 Shootout Sets",
         shootout1Title: "Shootout 1",
         shootout2Title: "Shootout 2",
         helpTitle: "Help / How to Use with OBS",
         helpIntro: "This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.",
-        createSourcesBtn: "Click to Auto-Create Sources in Current Scene",
+        createSourcesBtn1: "Create Shootout 1 Sources",
+        createSourcesBtn2: "Create Shootout 2 Sources",
         obsSourcesTitle: "OBS Sources Needed",
         scoreASource: "Score_A",
         scoreBSource: "Score_B",
@@ -966,6 +1026,7 @@
         v1_3_feature5: "Introduced advanced dot border settings (0-50% border radius slider, border toggle, border width, and border color picker).",
         v1_3_feature6: "Added safety confirmation prompts for all reset actions.",
         v1_3_feature7: "Added option to toggle unshot placeholder dots and customize their fill color.",
+        v1_3_feature8: "Divided settings and help modals into clean, categorized sections. Added custom control panel styles (panel background, borders, dot size, button sizes, and a color reset button).",
         version1_2: "Version 1.2",
         v1_2_feature1: "Redesigned UI for a modern, premium look.",
         v1_2_feature2: "Added Auto-Create OBS Sources button.",
@@ -1064,59 +1125,52 @@
       });
     }
 
-    async function autoCreateSources() {
+    async function autoCreateSources(setIndex) {
       try {
         const sceneRes = await sendOBSRequest("GetCurrentProgramScene");
         const sceneName = sceneRes.currentProgramSceneName;
-        const settings = getSettings();
-        const shootoutCount = parseInt(settings.shootoutCount) || 1;
 
         let createdCount = 0;
-        let totalCount = shootoutCount * 3;
-
-        // Base URL pointing to production github repository (Not hardcoded to localhost)
         const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui";
         
-        // --- Shootout 1 ---
-        // Create Score_A
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Score_A",
-            inputKind: "text_gdiplus_v2",
-            inputSettings: { text: shootoutData[0].scores.A.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
-          });
-          createdCount++;
-        } catch (e) { console.log("Score_A might already exist", e); }
+        if (setIndex === 1) {
+          // Create Score_A
+          try {
+            await sendOBSRequest("CreateInput", {
+              sceneName: sceneName,
+              inputName: "Score_A",
+              inputKind: "text_gdiplus_v2",
+              inputSettings: { text: shootoutData[0].scores.A.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
+            });
+            createdCount++;
+          } catch (e) { console.log("Score_A might already exist", e); }
 
-        // Create Score_B
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Score_B",
-            inputKind: "text_gdiplus_v2",
-            inputSettings: { text: shootoutData[0].scores.B.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
-          });
-          createdCount++;
-        } catch (e) { console.log("Score_B might already exist", e); }
+          // Create Score_B
+          try {
+            await sendOBSRequest("CreateInput", {
+              sceneName: sceneName,
+              inputName: "Score_B",
+              inputKind: "text_gdiplus_v2",
+              inputSettings: { text: shootoutData[0].scores.B.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
+            });
+            createdCount++;
+          } catch (e) { console.log("Score_B might already exist", e); }
 
-        // Create Browser Source for dots_AB.html
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Penalty_Dots_AB",
-            inputKind: "browser_source",
-            inputSettings: { 
-                url: baseUrl + "/dots_AB.html", 
-                width: 800, 
-                height: 150 
-            }
-          });
-          createdCount++;
-        } catch (e) { console.log("Penalty_Dots_AB might already exist", e); }
-
-        // --- Shootout 2 ---
-        if (shootoutCount === 2) {
+          // Create Browser Source for dots_AB.html
+          try {
+            await sendOBSRequest("CreateInput", {
+              sceneName: sceneName,
+              inputName: "Penalty_Dots_AB",
+              inputKind: "browser_source",
+              inputSettings: { 
+                  url: baseUrl + "/dots_AB.html", 
+                  width: 800, 
+                  height: 150 
+              }
+            });
+            createdCount++;
+          } catch (e) { console.log("Penalty_Dots_AB might already exist", e); }
+        } else if (setIndex === 2) {
           // Create Score_A2
           try {
             await sendOBSRequest("CreateInput", {
@@ -1149,390 +1203,430 @@
                   url: baseUrl + "/dots_AB_2.html", 
                   width: 800, 
                   height: 150 
-            }
-          });
-          createdCount++;
-        } catch (e) { console.log("Penalty_Dots_AB2 might already exist", e); }
+              }
+            });
+            createdCount++;
+          } catch (e) { console.log("Penalty_Dots_AB2 might already exist", e); }
+        }
+
+        const lang = languageSelector.value;
+        const successMsg = lang === 'th' ? `สร้าง Source แล้ว ${createdCount}/3 รายการ ใน Scene: ${sceneName}` : `Created ${createdCount}/3 sources in Scene: ${sceneName}`;
+        alert(successMsg);
+
+      } catch (err) {
+        const lang = languageSelector.value;
+        const errMsg = lang === 'th' ? "เกิดข้อผิดพลาดในการสร้าง Source กรุณาตรวจสอบการเชื่อมต่อ OBS WebSocket" : "Error creating sources. Check OBS WebSocket connection.";
+        alert(errMsg + "\n" + err);
+      }
+    }
+
+    function updateOBSScore(shootoutIndex, team, value) {
+      if (!obs || obs.readyState !== 1) return;
+      const sourceName = (shootoutIndex === 0) 
+        ? (team === 'A' ? "Score_A" : "Score_B")
+        : (team === 'A' ? "Score_A2" : "Score_B2");
+
+      sendOBSRequest("SetInputSettings", {
+        inputName: sourceName,
+        inputSettings: { text: value.toString() },
+        overlay: true
+      }).catch(err => {
+        // Silently fail if source doesn't exist
+      });
+    }
+
+    // --- UI Rendering ---
+    // In control panel, dots use fixed original styling (no border radius slider override, only toggles square if shape is 'square')
+    function renderDotsUI(container, shotsToRender, shape) {
+      container.innerHTML = "";
+      for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        if (shape === 'square') {
+            dot.style.borderRadius = "4px";
+        }
+        const shot = shotsToRender[i];
+        if (shot === true) dot.classList.add("goal");
+        else if (shot === false) dot.classList.add("miss");
+        container.appendChild(dot);
+      }
+    }
+
+    function getShotsForCurrentPage(index, team) {
+        const data = shootoutData[index];
+        if (!data.shots[team][data.currentPage]) {
+            return Array(MAX_SHOTS_DISPLAY).fill(null);
+        }
+        const pageShots = data.shots[team][data.currentPage];
+        const displayArray = Array(MAX_SHOTS_DISPLAY).fill(null);
+        for (let i = 0; i < pageShots.length; i++) {
+            displayArray[i] = pageShots[i];
+        }
+        return displayArray;
+    }
+
+    function renderAll() {
+      const settings = getSettings();
+      const shootoutCount = parseInt(settings.shootoutCount) || 1;
+
+      // Show/Hide shootout 2 based on selection
+      if (shootoutCount === 2) {
+        document.getElementById('shootout_1').style.display = 'block';
+      } else {
+        document.getElementById('shootout_1').style.display = 'none';
       }
 
+      // Render states for both Shootout 1 and 2 (preview dots in control panel use standard circles/squares)
+      for (let i = 0; i < 2; i++) {
+        const data = shootoutData[i];
+        const currentShotsA = getShotsForCurrentPage(i, 'A');
+        const currentShotsB = getShotsForCurrentPage(i, 'B');
+
+        const containerA = document.getElementById(`dotsA_${i}`);
+        const scoreDisplayA = document.getElementById(`scoreA_${i}`);
+        renderDotsUI(containerA, currentShotsA, settings.dotShape);
+        scoreDisplayA.textContent = data.scores.A;
+        updateOBSScore(i, 'A', data.scores.A);
+
+        const containerB = document.getElementById(`dotsB_${i}`);
+        const scoreDisplayB = document.getElementById(`scoreB_${i}`);
+        renderDotsUI(containerB, currentShotsB, settings.dotShape);
+        scoreDisplayB.textContent = data.scores.B;
+        updateOBSScore(i, 'B', data.scores.B);
+      }
+
+      // Apply control panel custom styling variables
+      document.documentElement.style.setProperty('--panel-bg', settings.panelBg || '#0f172a');
+      document.documentElement.style.setProperty('--panel-border-color', settings.panelBorderColor || '#334155');
+      document.documentElement.style.setProperty('--panel-dot-size', (settings.panelDotSize || 24) + 'px');
+      
+      let btnPadding = '0.5rem 0.6rem';
+      let btnFontSize = '0.85rem';
+      if (settings.panelBtnSize === 'small') {
+        btnPadding = '0.35rem 0.5rem';
+        btnFontSize = '0.75rem';
+      } else if (settings.panelBtnSize === 'large') {
+        btnPadding = '0.65rem 0.8rem';
+        btnFontSize = '0.95rem';
+      }
+      document.documentElement.style.setProperty('--panel-btn-padding', btnPadding);
+      document.documentElement.style.setProperty('--panel-btn-font-size', btnFontSize);
+      
+      // Broadcast updates via channel 1
+      channel1.postMessage({
+        type: "update",
+        data: {
+          shotsA: getShotsForCurrentPage(0, 'A'),
+          shotsB: getShotsForCurrentPage(0, 'B'),
+          settings: settings
+        }
+      });
+
+      // Broadcast updates via channel 2
+      channel2.postMessage({
+        type: "update",
+        data: {
+          shotsA: getShotsForCurrentPage(1, 'A'),
+          shotsB: getShotsForCurrentPage(1, 'B'),
+          settings: settings
+        }
+      });
+    }
+
+    // --- Dynamic Help Dialog Builder ---
+    function renderHelpSources() {
+      const settings = getSettings();
+      const shootoutCount = parseInt(settings.shootoutCount) || 1;
       const lang = languageSelector.value;
-      const successMsg = lang === 'th' ? `สร้าง Source แล้ว ${createdCount}/${totalCount} รายการ ใน Scene: ${sceneName}` : `Created ${createdCount}/${totalCount} sources in Scene: ${sceneName}`;
-      alert(successMsg);
+      const listEl = document.getElementById('helpObsSourcesList');
+      
+      const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui";
+      const url1 = baseUrl + "/dots_AB.html";
+      const url2 = baseUrl + "/dots_AB_2.html";
 
-    } catch (err) {
-      const lang = languageSelector.value;
-      const errMsg = lang === 'th' ? "เกิดข้อผิดพลาดในการสร้าง Source กรุณาตรวจสอบการเชื่อมต่อ OBS WebSocket" : "Error creating sources. Check OBS WebSocket connection.";
-      alert(errMsg + "\n" + err);
-    }
-  }
-
-  function updateOBSScore(shootoutIndex, team, value) {
-    if (!obs || obs.readyState !== 1) return;
-    const sourceName = (shootoutIndex === 0) 
-      ? (team === 'A' ? "Score_A" : "Score_B")
-      : (team === 'A' ? "Score_A2" : "Score_B2");
-
-    sendOBSRequest("SetInputSettings", {
-      inputName: sourceName,
-      inputSettings: { text: value.toString() },
-      overlay: true
-    }).catch(err => {
-      // Silently fail if source doesn't exist
-    });
-  }
-
-  // --- UI Rendering ---
-  // In control panel, dots use fixed original styling (no border radius slider override, only toggles square if shape is 'square')
-  function renderDotsUI(container, shotsToRender, shape) {
-    container.innerHTML = "";
-    for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
-      const dot = document.createElement("div");
-      dot.className = "dot";
-      if (shape === 'square') {
-          dot.style.borderRadius = "4px";
-      }
-      const shot = shotsToRender[i];
-      if (shot === true) dot.classList.add("goal");
-      else if (shot === false) dot.classList.add("miss");
-      container.appendChild(dot);
-    }
-  }
-
-  function getShotsForCurrentPage(index, team) {
-      const data = shootoutData[index];
-      if (!data.shots[team][data.currentPage]) {
-          return Array(MAX_SHOTS_DISPLAY).fill(null);
-      }
-      const pageShots = data.shots[team][data.currentPage];
-      const displayArray = Array(MAX_SHOTS_DISPLAY).fill(null);
-      for (let i = 0; i < pageShots.length; i++) {
-          displayArray[i] = pageShots[i];
-      }
-      return displayArray;
-  }
-
-  function renderAll() {
-    const settings = getSettings();
-    const shootoutCount = parseInt(settings.shootoutCount) || 1;
-
-    // Show/Hide shootout 2 based on selection
-    if (shootoutCount === 2) {
-      document.getElementById('shootout_1').style.display = 'block';
-    } else {
-      document.getElementById('shootout_1').style.display = 'none';
-    }
-
-    // Render states for both Shootout 1 and 2 (preview dots in control panel use standard circles/squares)
-    for (let i = 0; i < 2; i++) {
-      const data = shootoutData[i];
-      const currentShotsA = getShotsForCurrentPage(i, 'A');
-      const currentShotsB = getShotsForCurrentPage(i, 'B');
-
-      const containerA = document.getElementById(`dotsA_${i}`);
-      const scoreDisplayA = document.getElementById(`scoreA_${i}`);
-      renderDotsUI(containerA, currentShotsA, settings.dotShape);
-      scoreDisplayA.textContent = data.scores.A;
-      updateOBSScore(i, 'A', data.scores.A);
-
-      const containerB = document.getElementById(`dotsB_${i}`);
-      const scoreDisplayB = document.getElementById(`scoreB_${i}`);
-      renderDotsUI(containerB, currentShotsB, settings.dotShape);
-      scoreDisplayB.textContent = data.scores.B;
-      updateOBSScore(i, 'B', data.scores.B);
-    }
-    
-    // Broadcast updates via channel 1
-    channel1.postMessage({
-      type: "update",
-      data: {
-        shotsA: getShotsForCurrentPage(0, 'A'),
-        shotsB: getShotsForCurrentPage(0, 'B'),
-        settings: settings
-      }
-    });
-
-    // Broadcast updates via channel 2
-    channel2.postMessage({
-      type: "update",
-      data: {
-        shotsA: getShotsForCurrentPage(1, 'A'),
-        shotsB: getShotsForCurrentPage(1, 'B'),
-        settings: settings
-      }
-    });
-  }
-
-  // --- Dynamic Help Dialog Builder ---
-  function renderHelpSources() {
-    const settings = getSettings();
-    const shootoutCount = parseInt(settings.shootoutCount) || 1;
-    const lang = languageSelector.value;
-    const listEl = document.getElementById('helpObsSourcesList');
-    
-    const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui";
-    const url1 = baseUrl + "/dots_AB.html";
-    const url2 = baseUrl + "/dots_AB_2.html";
-
-    let html = '';
-    
-    // Shootout 1
-    html += `
-      <li class="obs-source-item source-set1">
-        <div class="source-set-badge set1-badge">${lang === 'th' ? 'จุดโทษชุดที่ 1' : 'Shootout Set 1'}</div>
-        <ul>
-          <li class="source-sub-item source-text">
-            <strong>Score_A</strong>
-            <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม A' : 'Text (GDI+) for Team A\'s score'}</span>
-          </li>
-          <li class="source-sub-item source-text">
-            <strong>Score_B</strong>
-            <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม B' : 'Text (GDI+) for Team B\'s score'}</span>
-          </li>
-          <li class="source-sub-item source-browser">
-            <div class="browser-title">
-              <strong>Penalty_Dots_AB</strong>
-              <span>${lang === 'th' ? 'Browser source' : 'Browser source'}</span>
-            </div>
-            <span class="url-label">URL:</span> <code>${url1}</code>
-          </li>
-        </ul>
-      </li>
-    `;
-    
-    // Shootout 2
-    if (shootoutCount === 2) {
+      let html = '';
+      
+      // Shootout 1
       html += `
-        <li class="obs-source-item source-set2" style="margin-top: 12px;">
-          <div class="source-set-badge set2-badge">${lang === 'th' ? 'จุดโทษชุดที่ 2' : 'Shootout Set 2'}</div>
+        <li class="obs-source-item source-set1">
+          <div class="source-set-badge set1-badge">${lang === 'th' ? 'จุดโทษชุดที่ 1' : 'Shootout Set 1'}</div>
           <ul>
             <li class="source-sub-item source-text">
-              <strong>Score_A2</strong>
-              <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม A ชุดที่ 2' : 'Text (GDI+) for Team A Set 2'}</span>
+              <strong>Score_A</strong>
+              <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม A' : 'Text (GDI+) for Team A\'s score'}</span>
             </li>
             <li class="source-sub-item source-text">
-              <strong>Score_B2</strong>
-              <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม B ชุดที่ 2' : 'Text (GDI+) for Team B Set 2'}</span>
+              <strong>Score_B</strong>
+              <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม B' : 'Text (GDI+) for Team B\'s score'}</span>
             </li>
             <li class="source-sub-item source-browser">
               <div class="browser-title">
-                <strong>Penalty_Dots_AB2</strong>
+                <strong>Penalty_Dots_AB</strong>
                 <span>${lang === 'th' ? 'Browser source' : 'Browser source'}</span>
               </div>
-              <span class="url-label">URL:</span> <code>${url2}</code>
+              <span class="url-label">URL:</span> <code>${url1}</code>
             </li>
           </ul>
         </li>
       `;
-    }
-    
-    listEl.innerHTML = html;
-  }
-
-  // --- Game Logic ---
-  function shoot(index, team, isGoal) {
-    const data = shootoutData[index];
-    const isStartingNewPage = (data.shots[team][data.currentPage].length === MAX_SHOTS_DISPLAY);
-    if (isStartingNewPage) {
-      data.currentPage++;
-      if (!data.shots['A'][data.currentPage]) data.shots['A'].push([]);
-      if (!data.shots['B'][data.currentPage]) data.shots['B'].push([]);
-    }
-    data.shots[team][data.currentPage].push(isGoal);
-    if (isGoal) data.scores[team]++;
-    renderAll();
-  }
-
-  function undo(index, team) {
-    const data = shootoutData[index];
-    if (data.shots[team][data.currentPage].length === 0) {
-      if (data.currentPage > 0) {
-        data.currentPage--;
-      } else {
-          return; 
-      }
-    }
-    const last = data.shots[team][data.currentPage].pop();
-    if (last === true) data.scores[team]--;
-    renderAll(); 
-  }
-
-  function reset(index) {
-    const lang = languageSelector.value;
-    let confirmMsg = "";
-    if (index === undefined) {
-      confirmMsg = lang === 'th' ? "คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลจุดโทษทั้งหมด?" : "Are you sure you want to reset all shootout data?";
-    } else {
-      const num = index + 1;
-      confirmMsg = lang === 'th' ? `คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลชุดที่ ${num}?` : `Are you sure you want to reset Shootout ${num}?`;
-    }
-    
-    if (!confirm(confirmMsg)) return;
-
-    if (index === undefined) {
-      // Reset all
-      shootoutData = [
-        { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 },
-        { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 }
-      ];
-    } else {
-      shootoutData[index] = { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 };
-    }
-    renderAll();
-  }
-
-  // --- Settings Management ---
-  function getSettings() {
-    const countRadio = document.querySelector('input[name="shootoutCount"]:checked');
-    const layoutRadio = document.querySelector('input[name="layout"]:checked');
-    const dotBorderRadiusVal = parseInt(document.getElementById('dotBorderRadius').value);
-    return {
-      dotSize: document.getElementById('dotSize').value,
-      dotGap: document.getElementById('dotGap').value,
-      teamGap: document.getElementById('teamGap').value,
-      layout: layoutRadio ? layoutRadio.value : 'side-by-side',
-      shootoutCount: countRadio ? parseInt(countRadio.value) : 1,
       
-      dotBorderRadius: dotBorderRadiusVal,
-      dotShape: dotBorderRadiusVal === 0 ? 'square' : 'circle', // map to old shape key for backwards compatibility
-      dotBorder: document.getElementById('dotBorder').checked,
-      dotBorderWidth: parseInt(document.getElementById('dotBorderWidth').value),
-      dotBorderColor: document.getElementById('dotBorderColor').value,
-
-      showUnshotDots: document.getElementById('showUnshotDots').checked,
-      unshotColor: document.getElementById('unshotColor').value
-    };
-  }
-
-  function updateSettings() {
-    const settings = getSettings();
-    localStorage.setItem("penalty_settings", JSON.stringify(settings));
-    renderAll();
-  }
-
-  function loadSettings() {
-    // Event listeners for Settings panel micro-interactions
-    const radiusSlider = document.getElementById('dotBorderRadius');
-    const radiusValSpan = document.getElementById('borderRadiusVal');
-    if (radiusSlider && radiusValSpan) {
-      radiusSlider.addEventListener('input', (e) => {
-        radiusValSpan.textContent = e.target.value;
-      });
+      // Shootout 2
+      if (shootoutCount === 2) {
+        html += `
+          <li class="obs-source-item source-set2" style="margin-top: 12px;">
+            <div class="source-set-badge set2-badge">${lang === 'th' ? 'จุดโทษชุดที่ 2' : 'Shootout Set 2'}</div>
+            <ul>
+              <li class="source-sub-item source-text">
+                <strong>Score_A2</strong>
+                <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม A ชุดที่ 2' : 'Text (GDI+) for Team A Set 2'}</span>
+              </li>
+              <li class="source-sub-item source-text">
+                <strong>Score_B2</strong>
+                <span>${lang === 'th' ? 'Text (GDI+) สำหรับคะแนนทีม B ชุดที่ 2' : 'Text (GDI+) for Team B Set 2'}</span>
+              </li>
+              <li class="source-sub-item source-browser">
+                <div class="browser-title">
+                  <strong>Penalty_Dots_AB2</strong>
+                  <span>${lang === 'th' ? 'Browser source' : 'Browser source'}</span>
+                </div>
+                <span class="url-label">URL:</span> <code>${url2}</code>
+              </li>
+            </ul>
+          </li>
+        `;
+      }
+      
+      listEl.innerHTML = html;
     }
 
-    const borderCheckbox = document.getElementById('dotBorder');
-    const borderWidthRow = document.getElementById('borderWidthRow');
-    const borderColorRow = document.getElementById('borderColorRow');
-    if (borderCheckbox) {
-      borderCheckbox.addEventListener('change', (e) => {
-        if (e.target.checked) {
+    // --- Game Logic ---
+    function shoot(index, team, isGoal) {
+      const data = shootoutData[index];
+      const isStartingNewPage = (data.shots[team][data.currentPage].length === MAX_SHOTS_DISPLAY);
+      if (isStartingNewPage) {
+        data.currentPage++;
+        if (!data.shots['A'][data.currentPage]) data.shots['A'].push([]);
+        if (!data.shots['B'][data.currentPage]) data.shots['B'].push([]);
+      }
+      data.shots[team][data.currentPage].push(isGoal);
+      if (isGoal) data.scores[team]++;
+      renderAll();
+    }
+
+    function undo(index, team) {
+      const data = shootoutData[index];
+      if (data.shots[team][data.currentPage].length === 0) {
+        if (data.currentPage > 0) {
+          data.currentPage--;
+        } else {
+            return; 
+        }
+      }
+      const last = data.shots[team][data.currentPage].pop();
+      if (last === true) data.scores[team]--;
+      renderAll(); 
+    }
+
+    function reset(index) {
+      const lang = languageSelector.value;
+      let confirmMsg = "";
+      if (index === undefined) {
+        confirmMsg = lang === 'th' ? "คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลจุดโทษทั้งหมด?" : "Are you sure you want to reset all shootout data?";
+      } else {
+        const num = index + 1;
+        confirmMsg = lang === 'th' ? `คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลชุดที่ ${num}?` : `Are you sure you want to reset Shootout ${num}?`;
+      }
+      
+      if (!confirm(confirmMsg)) return;
+
+      if (index === undefined) {
+        // Reset all
+        shootoutData = [
+          { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 },
+          { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 }
+        ];
+      } else {
+        shootoutData[index] = { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0 };
+      }
+      renderAll();
+    }
+
+    // --- Settings Management ---
+    function getSettings() {
+      const layoutRadio = document.querySelector('input[name="layout"]:checked');
+      const dotBorderRadiusVal = parseInt(document.getElementById('dotBorderRadius').value);
+      return {
+        dotSize: document.getElementById('dotSize').value,
+        dotGap: document.getElementById('dotGap').value,
+        teamGap: document.getElementById('teamGap').value,
+        layout: layoutRadio ? layoutRadio.value : 'side-by-side',
+        shootoutCount: parseInt(document.getElementById('shootoutCount').value),
+        
+        dotBorderRadius: dotBorderRadiusVal,
+        dotShape: dotBorderRadiusVal === 0 ? 'square' : 'circle', // map to old shape key for backwards compatibility
+        dotBorder: document.getElementById('dotBorder').checked,
+        dotBorderWidth: parseInt(document.getElementById('dotBorderWidth').value),
+        dotBorderColor: document.getElementById('dotBorderColor').value,
+
+        showUnshotDots: document.getElementById('showUnshotDots').checked,
+        unshotColor: document.getElementById('unshotColor').value,
+
+        // Control Panel UI styles
+        panelBg: document.getElementById('panelBg').value,
+        panelBorderColor: document.getElementById('panelBorder').value,
+        panelDotSize: parseInt(document.getElementById('panelDotSize').value),
+        panelBtnSize: document.getElementById('panelBtnSize').value
+      };
+    }
+
+    function updateSettings() {
+      const settings = getSettings();
+      localStorage.setItem("penalty_settings", JSON.stringify(settings));
+      renderAll();
+    }
+
+    function resetDefaultColors() {
+      document.getElementById('panelBg').value = '#0f172a';
+      document.getElementById('panelBorder').value = '#334155';
+      document.getElementById('dotBorderColor').value = '#bbbbbb';
+      document.getElementById('unshotColor').value = '#bbbbbb';
+      
+      const isTh = languageSelector.value === 'th';
+      alert(isTh ? 'รีเซ็ตสีทั้งหมดเป็นค่าเริ่มต้นเรียบร้อยแล้ว กรุณากด Apply เพื่อบันทึกผล' : 'Colors reset to default. Click Apply to save.');
+    }
+
+    function loadSettings() {
+      // Event listeners for Settings panel micro-interactions
+      const radiusSlider = document.getElementById('dotBorderRadius');
+      const radiusValSpan = document.getElementById('borderRadiusVal');
+      if (radiusSlider && radiusValSpan) {
+        radiusSlider.addEventListener('input', (e) => {
+          radiusValSpan.textContent = e.target.value;
+        });
+      }
+
+      const borderCheckbox = document.getElementById('dotBorder');
+      const borderWidthRow = document.getElementById('borderWidthRow');
+      const borderColorRow = document.getElementById('borderColorRow');
+      if (borderCheckbox) {
+        borderCheckbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            borderWidthRow.style.display = 'flex';
+            borderColorRow.style.display = 'flex';
+          } else {
+            borderWidthRow.style.display = 'none';
+            borderColorRow.style.display = 'none';
+          }
+        });
+      }
+
+      // New event listeners for unshot placeholder dots
+      const showUnshotCheckbox = document.getElementById('showUnshotDots');
+      const unshotColorRow = document.getElementById('unshotColorRow');
+      if (showUnshotCheckbox && unshotColorRow) {
+        showUnshotCheckbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            unshotColorRow.style.display = 'flex';
+          } else {
+            unshotColorRow.style.display = 'none';
+          }
+        });
+      }
+
+      const saved = JSON.parse(localStorage.getItem("penalty_settings"));
+      if (saved) {
+        document.getElementById('dotSize').value = saved.dotSize;
+        document.getElementById('dotGap').value = saved.dotGap;
+        document.getElementById('teamGap').value = saved.teamGap;
+        
+        if (saved.layout === 'top-bottom') {
+            document.getElementById('layoutTopBottom').checked = true;
+        } else {
+            document.getElementById('layoutSideBySide').checked = true;
+        }
+        
+        document.getElementById('shootoutCount').value = saved.shootoutCount !== undefined ? saved.shootoutCount : 1;
+
+        // Map shape parameters
+        let bRadius = 50;
+        if (saved.dotBorderRadius !== undefined) {
+          bRadius = saved.dotBorderRadius;
+        } else if (saved.dotShape === 'square') {
+          bRadius = 0;
+        }
+        
+        document.getElementById('dotBorderRadius').value = bRadius;
+        document.getElementById('borderRadiusVal').textContent = bRadius;
+        
+        const isBorder = saved.dotBorder !== false;
+        document.getElementById('dotBorder').checked = isBorder;
+        document.getElementById('dotBorderWidth').value = saved.dotBorderWidth !== undefined ? saved.dotBorderWidth : 2;
+        document.getElementById('dotBorderColor').value = saved.dotBorderColor !== undefined ? saved.dotBorderColor : '#bbbbbb';
+
+        if (isBorder) {
           borderWidthRow.style.display = 'flex';
           borderColorRow.style.display = 'flex';
         } else {
           borderWidthRow.style.display = 'none';
           borderColorRow.style.display = 'none';
         }
-      });
-    }
 
-    // New event listeners for unshot placeholder dots
-    const showUnshotCheckbox = document.getElementById('showUnshotDots');
-    const unshotColorRow = document.getElementById('unshotColorRow');
-    if (showUnshotCheckbox && unshotColorRow) {
-      showUnshotCheckbox.addEventListener('change', (e) => {
-        if (e.target.checked) {
+        // Load unshot placeholder settings
+        const isUnshot = saved.showUnshotDots !== false;
+        document.getElementById('showUnshotDots').checked = isUnshot;
+        document.getElementById('unshotColor').value = saved.unshotColor !== undefined ? saved.unshotColor : '#bbbbbb';
+
+        if (isUnshot) {
           unshotColorRow.style.display = 'flex';
         } else {
           unshotColorRow.style.display = 'none';
         }
-      });
-    }
 
-    const saved = JSON.parse(localStorage.getItem("penalty_settings"));
-    if (saved) {
-      document.getElementById('dotSize').value = saved.dotSize;
-      document.getElementById('dotGap').value = saved.dotGap;
-      document.getElementById('teamGap').value = saved.teamGap;
-      
-      if (saved.layout === 'top-bottom') {
-          document.getElementById('layoutTopBottom').checked = true;
+        // Control Panel UI styles
+        document.getElementById('panelBg').value = saved.panelBg !== undefined ? saved.panelBg : '#0f172a';
+        document.getElementById('panelBorder').value = saved.panelBorderColor !== undefined ? saved.panelBorderColor : '#334155';
+        document.getElementById('panelDotSize').value = saved.panelDotSize !== undefined ? saved.panelDotSize : 24;
+        document.getElementById('panelBtnSize').value = saved.panelBtnSize !== undefined ? saved.panelBtnSize : 'medium';
       } else {
-          document.getElementById('layoutSideBySide').checked = true;
-      }
-      
-      if (saved.shootoutCount == 2) {
-          document.getElementById('shootoutCount2').checked = true;
-      } else {
-          document.getElementById('shootoutCount1').checked = true;
-      }
+        document.getElementById('dotSize').value = 24; 
+        document.getElementById('dotGap').value = 8;
+        document.getElementById('teamGap').value = 80;
+        document.getElementById('layoutSideBySide').checked = true;
+        document.getElementById('shootoutCount').value = 1;
 
-      // Map shape parameters
-      let bRadius = 50;
-      if (saved.dotBorderRadius !== undefined) {
-        bRadius = saved.dotBorderRadius;
-      } else if (saved.dotShape === 'square') {
-        bRadius = 0;
-      }
-      
-      document.getElementById('dotBorderRadius').value = bRadius;
-      document.getElementById('borderRadiusVal').textContent = bRadius;
-      
-      const isBorder = saved.dotBorder !== false;
-      document.getElementById('dotBorder').checked = isBorder;
-      document.getElementById('dotBorderWidth').value = saved.dotBorderWidth !== undefined ? saved.dotBorderWidth : 2;
-      document.getElementById('dotBorderColor').value = saved.dotBorderColor !== undefined ? saved.dotBorderColor : '#666666';
+        document.getElementById('dotBorderRadius').value = 50;
+        document.getElementById('borderRadiusVal').textContent = 50;
+        document.getElementById('dotBorder').checked = true;
+        document.getElementById('dotBorderWidth').value = 2;
+        document.getElementById('dotBorderColor').value = '#bbbbbb';
 
-      if (isBorder) {
         borderWidthRow.style.display = 'flex';
         borderColorRow.style.display = 'flex';
-      } else {
-        borderWidthRow.style.display = 'none';
-        borderColorRow.style.display = 'none';
-      }
 
-      // Load unshot placeholder settings
-      const isUnshot = saved.showUnshotDots !== false;
-      document.getElementById('showUnshotDots').checked = isUnshot;
-      document.getElementById('unshotColor').value = saved.unshotColor !== undefined ? saved.unshotColor : '#555555';
-
-      if (isUnshot) {
+        // Load default unshot placeholder settings
+        document.getElementById('showUnshotDots').checked = true;
+        document.getElementById('unshotColor').value = '#bbbbbb';
         unshotColorRow.style.display = 'flex';
-      } else {
-        unshotColorRow.style.display = 'none';
+
+        // Default Control Panel UI styles
+        document.getElementById('panelBg').value = '#0f172a';
+        document.getElementById('panelBorder').value = '#334155';
+        document.getElementById('panelDotSize').value = 24;
+        document.getElementById('panelBtnSize').value = 'medium';
       }
-    } else {
-      document.getElementById('dotSize').value = 24; 
-      document.getElementById('dotGap').value = 8;
-      document.getElementById('teamGap').value = 80;
-      document.getElementById('layoutSideBySide').checked = true;
-      document.getElementById('shootoutCount1').checked = true;
-
-      document.getElementById('dotBorderRadius').value = 50;
-      document.getElementById('borderRadiusVal').textContent = 50;
-      document.getElementById('dotBorder').checked = true;
-      document.getElementById('dotBorderWidth').value = 2;
-      document.getElementById('dotBorderColor').value = '#666666';
-
-      borderWidthRow.style.display = 'flex';
-      borderColorRow.style.display = 'flex';
-
-      // Load default unshot placeholder settings
-      document.getElementById('showUnshotDots').checked = true;
-      document.getElementById('unshotColor').value = '#555555';
-      unshotColorRow.style.display = 'flex';
+      renderAll(); 
     }
-    renderAll(); 
-  }
 
-  // --- Initial Setup ---
-  document.addEventListener('DOMContentLoaded', () => {
-    const savedLang = localStorage.getItem('penalty_language') || 'th';
-    languageSelector.value = savedLang;
-    applyTranslations(savedLang);
+    // --- Initial Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('penalty_language') || 'th';
+      languageSelector.value = savedLang;
+      applyTranslations(savedLang);
 
-    connectOBS();
-    loadSettings();
-    reset();
-  });
-</script>
+      connectOBS();
+      loadSettings();
+      reset();
+    });
+  </script>
 </body>
 </html>
