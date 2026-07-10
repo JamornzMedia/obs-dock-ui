@@ -5,189 +5,815 @@
   <title data-lang="appTitle">Penalty Shootout UI</title>
   <style>
     body {
-      background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
-      color: #f0f0f0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 1.5rem;
+      background: var(--panel-bg, #0a0a0c);
+      color: #e2e8f0;
+      font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      padding: 0.75rem;
       text-align: center;
       min-height: 100vh;
       margin: 0;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.3s ease;
     }
-    .row { display: flex; justify-content: center; gap: 40px; margin-bottom: 1.5rem; }
-    .team { 
-      flex: 1; 
-      max-width: 320px;
-      background: rgba(255,255,255,0.05); 
-      border-radius: 12px; 
-      padding: 1.5rem 1rem; 
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+    
+    #shootoutsContainer {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: var(--panel-layout, column);
+      gap: 12px;
+      margin-bottom: 1rem;
+      min-height: var(--panel-height, auto);
+      justify-content: center;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .shootout-block {
+      background: rgba(255, 255, 255, 0.01);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      transition: all 0.3s ease;
+      margin-bottom: 4px;
+      flex: 1;
+      min-width: 280px;
+    }
+    
+    #shootout_0 {
+      border-top: 4px solid #3b82f6;
+      box-shadow: 0 4px 24px rgba(59, 130, 246, 0.08);
+      background: var(--shootout1-bg, linear-gradient(180deg, rgba(59, 130, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%));
+    }
+    #shootout_0:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 6px 28px rgba(59, 130, 246, 0.15);
+    }
+    #shootout_0 .shootout-header span:first-child {
+      color: #60a5fa;
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+    
+    #shootout_1 {
+      border-top: 4px solid #8b5cf6;
+      box-shadow: 0 4px 24px rgba(139, 92, 246, 0.08);
+      background: var(--shootout2-bg, linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%));
+    }
+    #shootout_1:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 0 6px 28px rgba(139, 92, 246, 0.15);
+    }
+    #shootout_1 .shootout-header span:first-child {
+      color: #a78bfa;
+      text-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+    }
+
+    .shootout-header {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .match-id-btn {
+      background: rgba(255,255,255,0.06);
+      color: #94a3b8;
       border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: none;
+      white-space: nowrap;
+      transition: all 0.15s ease;
     }
-    .team h3 { margin: 0 0 10px 0; color: #4facfe; font-size: 1.6rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .dots { display: flex; justify-content: center; gap: 8px; margin: 1rem 0; height: 30px; align-items: center;}
-    .dot { width: 24px; height: 24px; border-radius: 50%; background-color: transparent; border: 2px solid rgba(255,255,255,0.3); opacity: 0.5; transition: all 0.2s ease;}
-    .dot.goal { background-color: limegreen; opacity: 1; border-color: limegreen; box-shadow: 0 0 12px rgba(50,205,50,0.6);}
-    .dot.miss { background-color: crimson; opacity: 1; border-color: crimson; box-shadow: 0 0 12px rgba(220,20,60,0.6);}
-    .score { font-size: 3rem; font-weight: bold; margin-top: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-    
-    .controls.vertical { display: flex; flex-direction: row; justify-content: center; gap: 40px; margin-top: 1rem; }
-    .controls .side { display: flex; flex-direction: column; gap: 12px; flex: 1; max-width: 320px; }
-    button { 
-      padding: 0.8rem 1.2rem; 
-      font-size: 1.05rem; 
-      font-weight: 600; 
-      border-radius: 8px; 
-      border: none; 
-      cursor: pointer; 
-      transition: transform 0.1s, filter 0.2s; 
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    .match-id-btn:hover {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+      border-color: rgba(59,130,246,0.3);
+      transform: none;
     }
-    button:hover { filter: brightness(1.1); transform: translateY(-2px); }
-    button:active { transform: translateY(0); box-shadow: 0 2px 3px rgba(0,0,0,0.2); }
-    .goal-btn { background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%); color: white; }
-    .miss-btn { background: linear-gradient(180deg, #F44336 0%, #C62828 100%); color: white; }
-    .undo-btn { background: linear-gradient(180deg, #757575 0%, #424242 100%); color: white; }
+
+    .team-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    @media (max-width: 420px) {
+      .team-container {
+        flex-direction: column;
+      }
+    }
+
+    .team-card {
+      flex: 1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .team-card.team-a {
+      border-left: 4.5px solid #0ea5e9;
+      background: rgba(14, 165, 233, 0.02);
+    }
+    .team-card.team-a .score {
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(14, 165, 233, 0.15);
+    }
+
+    .team-card.team-b {
+      border-left: 4.5px solid #ec4899;
+      background: rgba(236, 72, 153, 0.02);
+    }
+    .team-card.team-b .score {
+      color: #f472b6;
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.15);
+    }
+
+    .team-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .score {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 1rem 0;
+      height: 30px;
+      align-items: center;
+    }
+
+    .dot {
+      width: var(--panel-dot-size, 24px);
+      height: var(--panel-dot-size, 24px);
+      border-radius: 50%;
+      background-color: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      opacity: 0.5;
+      transition: all 0.2s ease;
+    }
+
+    .dot.goal {
+      background-color: limegreen;
+      border-color: limegreen;
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(50, 205, 50, 0.6);
+    }
+
+    .dot.miss {
+      background-color: crimson;
+      border-color: crimson;
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(220, 20, 60, 0.6);
+    }
+
+    .team-controls {
+      display: flex;
+      width: 100%;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    button {
+      padding: var(--panel-btn-padding, 0.5rem 0.6rem);
+      font-size: var(--panel-btn-font-size, 0.85rem);
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    button:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+
+    .goal-btn {
+      flex: 2;
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .miss-btn {
+      flex: 2;
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .undo-btn {
+      flex: 1;
+      background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+      color: white;
+      min-width: 32px;
+    }
+
+    .reset-btn {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+
+    .reset-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
+      transform: none;
+    }
+
+    .bottom-actions {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .bottom-actions button {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    .reset-all {
+      background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+      color: white;
+    }
+
+    .action-btn {
+      background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
     
-    .bottom-actions { margin-top: 2.5rem; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;}
-    .reset { background: linear-gradient(180deg, #C62828 0%, #8E0000 100%); color: white; }
-    .action-btn { background: linear-gradient(180deg, #455A64 0%, #263238 100%); color: white; }
-    .create-source-btn { background: linear-gradient(180deg, #1976D2 0%, #0D47A1 100%); color: white; margin-top: 15px; width: 100%;}
+    .history-btn {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+    }
+    
+    .create-source-btn {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      margin-top: 8px;
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 0.85rem;
+    }
 
     /* Styles for Popup Modals */
     dialog {
-        background: #2c2c2c;
-        color: white;
-        border: 1px solid rgba(255,255,255,0.1);
+        background: #0f172a;
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-        max-width: 450px;
+        padding: 1.25rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+        max-width: 480px;
         width: 90%;
-        max-height: 90vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
     dialog::backdrop {
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(3px);
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
     }
-    dialog h2, dialog h3 {
-        color: #4facfe;
+    dialog h2 {
+        color: #3b82f6;
         margin-top: 0;
-        font-size: 1.4rem;
-        margin-bottom: 15px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        padding-bottom: 8px;
+        font-size: 1.25rem;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 6px;
+        text-align: left;
     }
-    dialog p { font-size: 0.95rem; color: #ccc; margin-bottom: 12px; line-height: 1.5;}
+    dialog p { font-size: 0.875rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.5; text-align: left;}
     dialog code {
-        background-color: #1a1a1a;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-family: 'Courier New', Courier, monospace;
-        color: #4facfe;
-        font-weight: bold;
+        background-color: #020617;
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #38bdf8;
+        font-weight: 600;
         display: inline-block;
         word-break: break-all;
-        border: 1px solid #333;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.8rem;
+    }
+
+    .setting-panel { text-align: left; }
+    .setting-section {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .setting-section h3 {
+      font-size: 0.95rem;
+      margin: 0 0 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 4px;
+      text-align: left;
+      font-weight: bold;
+    }
+    .section-general h3 { color: #60a5fa; border-color: rgba(96, 165, 250, 0.2); }
+    .section-sizing h3 { color: #34d399; border-color: rgba(52, 211, 153, 0.2); }
+    .section-shape h3 { color: #fb923c; border-color: rgba(251, 146, 60, 0.2); }
+    .section-panel-style h3 { color: #c084fc; border-color: rgba(192, 132, 252, 0.2); }
+    .section-datasource h3 { color: #f472b6; border-color: rgba(244, 114, 182, 0.2); }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+    .radio-group {
+      display: flex;
+      gap: 10px;
+    }
+    .radio-group label {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 0 !important;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .setting-panel label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+    .setting-panel label:last-child { margin-bottom: 0; }
+    .val-input {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #94a3b8;
     }
     .setting-panel input[type="number"],
     .setting-panel select {
-      width: 70px; padding: 0.4rem; text-align: center;
-      background: #1a1a1a; color: white; border: 1px solid #4facfe; border-radius: 6px; font-weight: bold;
+      width: 55px;
+      padding: 0.25rem;
+      text-align: center;
+      background: #020617;
+      color: #f8fafc;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      font-weight: bold;
     }
-    .setting-panel label { display: block; margin-bottom: 12px; font-size: 1rem; color: #ddd;}
-    .setting-panel fieldset { border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 15px; margin-top: 15px; }
-    .setting-panel legend { color: #4facfe; font-size: 1rem; padding: 0 8px; font-weight: bold;}
-    .setting-panel input[type="radio"] { margin-right: 8px; transform: scale(1.2); }
-    .dialog-buttons { margin-top: 1.5rem; text-align: right; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;}
-    .dialog-buttons button { margin-left: 10px; background: #444; color: white;}
-    .dialog-buttons button.primary { background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%); color: #000; }
+    .setting-panel select { width: 85px; text-align: left; }
+    .setting-panel input[type="radio"] { margin-right: 5px; transform: scale(1.1); }
+    .setting-panel input[type="text"], .setting-panel input[type="url"] {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      background: #020617;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+    }
+    .dialog-buttons {
+      margin-top: 1.25rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+    .dialog-buttons button {
+      background: #334155;
+      color: white;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
+    .dialog-buttons button.primary {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
 
-    .item-list { margin-top: 15px; padding-top: 10px; }
-    .item-list h4 { margin: 0 0 10px 0; font-size: 1.05rem; color: #fff; font-weight: bold;}
+    .help-section {
+      background: rgba(255, 255, 255, 0.01);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .help-section h3 {
+      font-size: 0.95rem;
+      margin: 0 0 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 4px;
+      text-align: left;
+      font-weight: bold;
+    }
+    .help-section-sources h3 { color: #60a5fa; }
+    .help-section-explain h3 { color: #fb923c; }
+
+    .item-list { text-align: left; }
     .item-list ul { list-style: none; padding-left: 0; margin-top: 0; }
-    .item-list li { margin-bottom: 12px; font-size: 0.95rem; color: #bbb; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;}
-    .item-list li strong { color: #4facfe; font-size: 1.1rem; display: block; margin-bottom: 4px;}
-    .item-list li ul { list-style: disc; padding-left: 20px; margin-top: 8px; background: none;}
-    .item-list li ul li { margin-bottom: 5px; font-size: 0.9rem; padding: 0; background: none;}
     
-    .changelog-list { list-style: none; padding-left: 0; }
-    .changelog-list li { margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;}
-    .changelog-list h5 { margin: 0 0 10px 0; font-size: 1.1rem; color: #4facfe; }
-    .changelog-list ul { list-style-type: disc; padding-left: 20px; margin: 0; }
-    .changelog-list ul li { margin-bottom: 5px; font-size: 0.95rem; color: #ccc; padding: 0; background: none;}
+    .obs-source-item {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .source-set1 { border-left: 4px solid #3b82f6; }
+    .source-set2 { border-left: 4px solid #8b5cf6; }
+    .source-set-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .set1-badge { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .set2-badge { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
+    .source-sub-item { padding: 6px 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; }
+    .source-sub-item:last-child { margin-bottom: 0; }
+    .source-text { background: rgba(59, 130, 246, 0.03); border: 1px solid rgba(59, 130, 246, 0.08); display: flex; justify-content: space-between; align-items: center; }
+    .source-text strong { color: #60a5fa; }
+    .source-text span { color: #cbd5e1; font-size: 0.8rem; }
+    .source-browser { background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.08); }
+    .source-browser strong { color: #34d399; }
+    .source-browser .browser-title { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .source-browser .browser-title span { color: #cbd5e1; font-size: 0.8rem; }
+    .url-label { font-size: 0.75rem; color: #64748b; font-weight: bold; }
 
-    .app-footer { text-align: center; color: #777; font-size: 0.85rem; padding: 20px 10px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05);}
-    .app-footer a { color: #4facfe; text-decoration: none; cursor: pointer; font-weight: bold;}
+    .changelog-list { list-style: none; padding-left: 0; text-align: left;}
+    .changelog-list li { margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);}
+    .changelog-list h5 { margin: 0 0 6px 0; font-size: 0.95rem; color: #3b82f6; }
+    .changelog-list ul { list-style-type: disc; padding-left: 16px; margin: 0; }
+    .changelog-list ul li { margin-bottom: 4px; font-size: 0.85rem; color: #cbd5e1; padding: 0; background: none; border: none;}
+
+    .app-footer { text-align: center; color: #64748b; font-size: 0.75rem; padding: 15px 10px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.04); width: 100%; max-width: 500px;}
+    .app-footer a { color: #38bdf8; text-decoration: none; cursor: pointer; font-weight: bold;}
     .app-footer a:hover { text-decoration: underline; }
     
     select#languageSelector {
-      padding: 0.6rem 1rem; border-radius: 8px; background-color: #333; color: white; border: 1px solid #555; font-size: 1rem; outline: none; cursor: pointer;
+      padding: 0.4rem 0.8rem; border-radius: 6px; background-color: #1e293b; color: white; border: 1px solid #475569; font-size: 0.85rem; outline: none; cursor: pointer;
     }
-    select#languageSelector:hover { border-color: #4facfe; }
+
+    /* Match ID Popup */
+    .match-popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .match-popup-overlay.active { display: flex; }
+    .match-popup {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 20px;
+      width: 280px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    .match-popup h3 { color: #60a5fa; margin: 0 0 15px 0; font-size: 1rem; }
+    .match-id-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .match-id-nav button {
+      background: #334155;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .match-id-display {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #f8fafc;
+      min-width: 60px;
+      cursor: pointer;
+      user-select: none;
+      line-height: 1;
+    }
+    .match-id-display input {
+      width: 60px;
+      font-size: 2rem;
+      font-weight: 900;
+      text-align: center;
+      background: #020617;
+      color: #f8fafc;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      padding: 4px;
+    }
+    .match-preview {
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 14px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      min-height: 40px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .match-preview .team-vs { color: #e2e8f0; font-weight: 700; font-size: 0.9rem; }
+    .match-preview .match-labels { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+    .match-popup-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .match-popup-buttons button {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .match-popup-buttons .confirm-btn {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+    .match-popup-buttons .cancel-btn {
+      background: #334155;
+      color: #94a3b8;
+    }
+
+    /* History Dialog */
+    .history-item {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .history-item .hi-teams {
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 3px;
+      font-size: 0.9rem;
+    }
+    .history-item .hi-teams .hi-score { color: #f59e0b; }
+    .history-item .hi-labels { color: #64748b; font-size: 0.75rem; }
+    .history-item .hi-time { color: #475569; font-size: 0.7rem; float: right; }
+    .fetch-btn {
+      background: linear-gradient(180deg, #f472b6 0%, #db2777 100%);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      width: 100%;
+    }
+    #fetchStatus {
+      font-size: 0.75rem;
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
-  <div class="row">
-    <div class="team">
-      <h3><span data-lang="teamA">Team A</span></h3>
-      <div class="dots" id="dotsA"></div>
-      <div class="score"><span id="scoreA">0</span></div>
+  
+  <div id="shootoutsContainer">
+    <div id="shootout_0" class="shootout-block">
+      <div class="shootout-header">
+        <span data-lang="shootout1Title">Shootout 1</span>
+        <button class="match-id-btn" onclick="openMatchPopup(0)">🎯 Match: -</button>
+        <button class="reset-btn" onclick="reset(0)"><span data-lang="resetBtn">Reset</span></button>
+      </div>
+      <div class="team-container">
+        <div class="team-card team-a">
+          <div class="team-info">
+            <span class="team-name" id="teamNameA_0" data-lang="teamA">Team A</span>
+            <span class="score" id="scoreA_0">0</span>
+          </div>
+          <div class="dots" id="dotsA_0"></div>
+          <div class="team-controls">
+            <button class="goal-btn" onclick="shoot(0, 'A', true)">⚽ <span data-lang="goalBtn">Goal</span></button>
+            <button class="miss-btn" onclick="shoot(0, 'A', false)">❌ <span data-lang="missBtn">Miss</span></button>
+            <button class="undo-btn" onclick="undo(0, 'A')">↶</button>
+          </div>
+        </div>
+        <div class="team-card team-b">
+          <div class="team-info">
+            <span class="team-name" id="teamNameB_0" data-lang="teamB">Team B</span>
+            <span class="score" id="scoreB_0">0</span>
+          </div>
+          <div class="dots" id="dotsB_0"></div>
+          <div class="team-controls">
+            <button class="goal-btn" onclick="shoot(0, 'B', true)">⚽ <span data-lang="goalBtn">Goal</span></button>
+            <button class="miss-btn" onclick="shoot(0, 'B', false)">❌ <span data-lang="missBtn">Miss</span></button>
+            <button class="undo-btn" onclick="undo(0, 'B')">↶</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="team">
-      <h3><span data-lang="teamB">Team B</span></h3>
-      <div class="dots" id="dotsB"></div>
-      <div class="score"><span id="scoreB">0</span></div>
-    </div>
-  </div>
 
-  <div id="controlPanel" class="controls vertical">
-    <div class="side">
-      <button class="goal-btn" onclick="shoot('A', true)"><span data-lang="goalBtnA">Goal A</span></button>
-      <button class="miss-btn" onclick="shoot('A', false)"><span data-lang="missBtnA">Miss A</span></button>
-      <button class="undo-btn" onclick="undo('A')"><span data-lang="undoBtnA">Undo A</span></button>
-    </div>
-    <div class="side">
-      <button class="goal-btn" onclick="shoot('B', true)"><span data-lang="goalBtnB">Goal B</span></button>
-      <button class="miss-btn" onclick="shoot('B', false)"><span data-lang="missBtnB">Miss B</span></button>
-      <button class="undo-btn" onclick="undo('B')"><span data-lang="undoBtnB">Undo B</span></button>
+    <div id="shootout_1" class="shootout-block" style="display: none;">
+      <div class="shootout-header">
+        <span data-lang="shootout2Title">Shootout 2</span>
+        <button class="match-id-btn" onclick="openMatchPopup(1)">🎯 Match: -</button>
+        <button class="reset-btn" onclick="reset(1)"><span data-lang="resetBtn">Reset</span></button>
+      </div>
+      <div class="team-container">
+        <div class="team-card team-a">
+          <div class="team-info">
+            <span class="team-name" id="teamNameA_1" data-lang="teamA">Team A</span>
+            <span class="score" id="scoreA_1">0</span>
+          </div>
+          <div class="dots" id="dotsA_1"></div>
+          <div class="team-controls">
+            <button class="goal-btn" onclick="shoot(1, 'A', true)">⚽ <span data-lang="goalBtn">Goal</span></button>
+            <button class="miss-btn" onclick="shoot(1, 'A', false)">❌ <span data-lang="missBtn">Miss</span></button>
+            <button class="undo-btn" onclick="undo(1, 'A')">↶</button>
+          </div>
+        </div>
+        <div class="team-card team-b">
+          <div class="team-info">
+            <span class="team-name" id="teamNameB_1" data-lang="teamB">Team B</span>
+            <span class="score" id="scoreB_1">0</span>
+          </div>
+          <div class="dots" id="dotsB_1"></div>
+          <div class="team-controls">
+            <button class="goal-btn" onclick="shoot(1, 'B', true)">⚽ <span data-lang="goalBtn">Goal</span></button>
+            <button class="miss-btn" onclick="shoot(1, 'B', false)">❌ <span data-lang="missBtn">Miss</span></button>
+            <button class="undo-btn" onclick="undo(1, 'B')">↶</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="bottom-actions">
-    <button class="reset" onclick="reset()"><span data-lang="resetAllBtn">Reset All</span></button>
+    <button class="reset-all" onclick="reset()"><span data-lang="resetAllBtn">Reset All</span></button>
     <button class="action-btn" onclick="document.getElementById('settingDialog').showModal()">⚙️ <span data-lang="settingsBtn">Settings</span></button>
-    <button class="action-btn" onclick="document.getElementById('helpDialog').showModal()">❓ <span data-lang="helpBtn">Help</span></button>
+    <button class="action-btn" onclick="renderHelpSources(); document.getElementById('helpDialog').showModal()">❓ <span data-lang="helpBtn">Help</span></button>
+    <button class="history-btn" onclick="renderHistory(); document.getElementById('historyDialog').showModal()">📋 <span data-lang="historyBtn">History</span></button>
   </div>
 
-  <div style="margin-top: 1.5rem;">
+  <div style="margin-top: 1rem;">
     <select id="languageSelector">
       <option value="th">ภาษาไทย</option>
       <option value="en">English</option>
     </select>
   </div>
 
+  <!-- Match ID Popup Overlay (not a dialog, inline popup) -->
+  <div class="match-popup-overlay" id="matchPopupOverlay">
+    <div class="match-popup">
+      <h3 id="matchPopupTitle">🎯 Select Match ID</h3>
+      <div class="match-id-nav">
+        <button onclick="changeMatchIdNav(-1)">◀</button>
+        <div class="match-id-display" id="matchIdDisplay" ondblclick="enableMatchIdInput()">1</div>
+        <button onclick="changeMatchIdNav(1)">▶</button>
+      </div>
+      <div class="match-preview" id="matchPreview">
+        <span style="color: #475569;">No data loaded</span>
+      </div>
+      <div class="match-popup-buttons">
+        <button class="cancel-btn" onclick="closeMatchPopup()"><span data-lang="cancelBtn">Cancel</span></button>
+        <button class="confirm-btn" onclick="confirmMatchId()">✅ <span data-lang="confirmBtn">Confirm</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Dialog -->
   <dialog id="settingDialog">
     <form method="dialog">
       <h2><span data-lang="settingsTitle">Settings</span></h2>
       <div class="setting-panel">
-        <label><span data-lang="dotSizeLabel">Dot Size</span>: <input type="number" id="dotSize" min="10" max="100"> px</label>
-        <label><span data-lang="dotGapLabel">Dot Gap</span>: <input type="number" id="dotGap" min="0" max="100"> px</label>
-        <label><span data-lang="teamGapLabel">Team Gap</span>: <input type="number" id="teamGap" min="0" max="200"> px</label>
+        
+        <div class="setting-section section-general">
+          <h3>⚙️ <span data-lang="settingsGeneralTitle">General Settings</span></h3>
+          <div class="setting-row">
+            <span data-lang="shootoutCountLabel">Shootout Count</span>:
+            <select id="shootoutCount" style="width: 85px; padding: 0.2rem;">
+              <option value="1" data-lang="shootoutCount1">1 Set</option>
+              <option value="2" data-lang="shootoutCount2">2 Sets</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <span data-lang="graphicLayoutLabel">Graphic Layout</span>:
+            <div class="radio-group">
+              <label><input type="radio" name="layout" value="side-by-side" id="layoutSideBySide"> <span data-lang="layoutSideBySide">Side-by-Side</span></label>
+              <label><input type="radio" name="layout" value="top-bottom" id="layoutTopBottom"> <span data-lang="layoutTopBottom">Top-Bottom</span></label>
+            </div>
+          </div>
+        </div>
 
-        <fieldset>
-          <legend><span data-lang="dotShapeLabel">Dot Shape</span></legend>
-          <label><input type="radio" name="dotShape" value="circle" id="shapeCircle"> <span data-lang="shapeCircle">Circle (วงกลม)</span></label><br>
-          <label><input type="radio" name="dotShape" value="square" id="shapeSquare"> <span data-lang="shapeSquare">Square (สี่เหลี่ยม)</span></label>
-        </fieldset>
+        <div class="setting-section section-sizing">
+          <h3>📐 <span data-lang="settingsSizingTitle">Sizing & Spacing</span></h3>
+          <label><span data-lang="dotSizeLabel">Dot Size</span>: <span class="val-input"><input type="number" id="dotSize" min="5" max="100"> px</span></label>
+          <label><span data-lang="dotGapLabel">Dot Gap</span>: <span class="val-input"><input type="number" id="dotGap" min="0" max="100"> px</span></label>
+          <label><span data-lang="teamGapLabel">Team Gap</span>: <span class="val-input"><input type="number" id="teamGap" min="0" max="200"> px</span></label>
+        </div>
 
-        <fieldset>
-          <legend><span data-lang="graphicLayoutLabel">Graphic Layout</span></legend>
-          <label><input type="radio" name="layout" value="side-by-side" id="layoutSideBySide"> <span data-lang="layoutSideBySide">Side-by-Side (ซ้าย-ขวา)</span></label><br>
-          <label><input type="radio" name="layout" value="top-bottom" id="layoutTopBottom"> <span data-lang="layoutTopBottom">Top-Bottom (บน-ล่าง)</span></label>
-        </fieldset>
+        <div class="setting-section section-shape">
+          <h3>🎨 <span data-lang="settingsShapeTitle">Dot Appearance & Borders</span></h3>
+          <label><span data-lang="dotBorderRadiusLabel">Border Radius</span>: <span class="val-input" style="width: 135px;"><input type="range" id="dotBorderRadius" min="0" max="50" style="width: 80px;"> <span id="borderRadiusVal">50</span>%</span></label>
+          <label><span data-lang="dotBorderLabel">Show Border</span>: <input type="checkbox" id="dotBorder" style="transform: scale(1.2); margin-right: 4px;"></label>
+          <label id="borderWidthRow"><span data-lang="dotBorderWidthLabel">Border Width</span>: <span class="val-input"><input type="number" id="dotBorderWidth" min="1" max="10"> px</span></label>
+          <label id="borderColorRow"><span data-lang="dotBorderColorLabel">Border Color</span>: <input type="color" id="dotBorderColor" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;"></label>
+          <label style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; margin-top: 10px;">
+            <span data-lang="showUnshotDotsLabel">Show Unshot Dots</span>: <input type="checkbox" id="showUnshotDots" style="transform: scale(1.2); margin-right: 4px;">
+          </label>
+          <label id="unshotColorRow"><span data-lang="unshotColorLabel">Unshot Dot Color</span>: <input type="color" id="unshotColor" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;"></label>
+        </div>
+
+        <div class="setting-section section-panel-style">
+          <h3>🖥️ <span data-lang="settingsPanelStyleTitle">Control Panel Appearance</span></h3>
+          <label><span data-lang="panelBgLabel">Panel Background</span>: <input type="color" id="panelBg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;"></label>
+          <label><span data-lang="shootout1BgLabel">Shootout 1 BG</span>: <input type="color" id="shootout1Bg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;"></label>
+          <label><span data-lang="shootout2BgLabel">Shootout 2 BG</span>: <input type="color" id="shootout2Bg" style="width: 40px; height: 26px; border: none; padding: 0; background: none; cursor: pointer;"></label>
+          <label><span data-lang="panelDotSizeLabel">Panel Dot Size</span>: <span class="val-input"><input type="number" id="panelDotSize" min="10" max="50"> px</span></label>
+          <label><span data-lang="panelHeightLabel">Panel Height</span>: <span class="val-input"><input type="number" id="panelHeight" min="0" max="1000" placeholder="auto"> px</span></label>
+          <label><span data-lang="panelBtnSizeLabel">Button Size</span>: 
+            <select id="panelBtnSize" style="width: 85px; padding: 0.25rem;">
+              <option value="small" data-lang="btnSizeSmall">Small</option>
+              <option value="medium" data-lang="btnSizeMedium">Medium</option>
+              <option value="large" data-lang="btnSizeLarge">Large</option>
+            </select>
+          </label>
+          <div class="setting-row">
+            <span data-lang="panelLayoutLabel">Panel Layout</span>:
+            <div class="radio-group">
+              <label><input type="radio" name="panelLayout" value="column" id="panelLayoutColumn"> <span data-lang="panelLayoutTopBottom">Top-Bottom</span></label>
+              <label><input type="radio" name="panelLayout" value="row" id="panelLayoutRow"> <span data-lang="panelLayoutSideBySide">Side-by-Side</span></label>
+            </div>
+          </div>
+          <div style="text-align: right; margin-top: 10px;">
+            <button type="button" class="reset-btn" onclick="resetDefaultColors()" style="display: inline-flex;"><span data-lang="resetColorsBtn">Reset Colors</span></button>
+          </div>
+        </div>
+
+        <div class="setting-section section-datasource">
+          <h3>📡 <span data-lang="settingsDataSourceTitle">Data Source (Google Sheets)</span></h3>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; color: #cbd5e1;" data-lang="sheetUrlLabel">Google Sheets URL:</span>
+            <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-top: 4px;">
+          </div>
+          <button type="button" class="fetch-btn" onclick="fetchGoogleSheet()">📡 <span data-lang="fetchDataBtn">Fetch Data</span></button>
+          <div id="fetchStatus" style="color: #64748b;"></div>
+        </div>
 
         <div class="dialog-buttons">
           <button type="button" class="primary" onclick="updateSettings()"><span data-lang="applyBtn">Apply</span></button>
@@ -197,375 +823,439 @@
     </form>
   </dialog>
 
+  <!-- Help Dialog -->
   <dialog id="helpDialog">
     <form method="dialog">
       <h2><span data-lang="helpTitle">Help / How to Use with OBS</span></h2>
-      <p><span data-lang="helpIntro">This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.</span></p>
-
-      <button type="button" class="create-source-btn" onclick="autoCreateSources()"><span data-lang="createSourcesBtn">Auto-Create OBS Sources</span></button>
-
-      <div class="item-list">
-        <h4><span data-lang="obsSourcesTitle">OBS Sources Needed</span></h4>
-        <ul>
-          <li><strong><span data-lang="scoreASource">Score_A</span></strong><br><span data-lang="scoreATextSourceDesc"> (Text (GDI+) สำหรับคะแนนทีม A)</span></li>
-          <li><strong><span data-lang="scoreBSource">Score_B</span></strong><br><span data-lang="scoreBTextSourceDesc"> (Text (GDI+) สำหรับคะแนนทีม B)</span></li>
-          <li><strong><span data-lang="penaltyDotsSource">Penalty_Dots_AB</span></strong><br><span data-lang="browserSourceDesc"> (Browser source สำหรับกราฟิกจุดยิงจุดโทษ)</span><br>
-            <span data-lang="browserSourceUrlLabel">URL:</span> <code id="browserSourceUrlText">...</code><br>
-            <span data-lang="browserSourceNote"><em>(In OBS, you can move it to any desired position or Crop เพียงกด Alt + ลากขอบกรอบ Source เข้ามาให้ชิดกราฟิกที่แสดง)</em></span>
-          </li>
-        </ul>
+      <p><span data-lang="helpIntro">This control panel sends data to OBS.</span></p>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="create-source-btn" onclick="autoCreateSources(1)" style="flex: 1;"><span data-lang="createSourcesBtn1">Create Shootout 1</span></button>
+        <button type="button" class="create-source-btn" onclick="autoCreateSources(2)" style="flex: 1; background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);"><span data-lang="createSourcesBtn2">Create Shootout 2</span></button>
       </div>
-
-      <div class="item-list">
-        <h4><span data-lang="settingsExplanationTitle">Settings Explained</span></h4>
-        <ul>
-          <li><strong><span data-lang="dotSizeLabel">Dot Size (px)</span>:</strong> <span data-lang="dotSizeDesc">ขนาดเส้นผ่านศูนย์กลางของจุดแสดงผล (พิกเซล).</span></li>
-          <li><strong><span data-lang="dotGapLabel">Dot Gap (px)</span>:</strong> <span data-lang="dotGapDesc">ระยะห่างระหว่างจุดแต่ละจุดในทีม (พิกเซล).</span></li>
-          <li><strong><span data-lang="teamGapLabel">Team Gap (px)</span>:</strong> <span data-lang="teamGapDesc">ระยะห่างระหว่างกลุ่มจุดของทีม A และ B (พิกเซล). ค่านี้ใช้ได้ทั้งแนวตั้งและแนวนอน.</span></li>
-          <li><strong><span data-lang="dotShapeLabel">Dot Shape</span>:</strong> <span data-lang="dotShapeDesc">เลือกรูปร่างของจุด (วงกลม หรือ สี่เหลี่ยม).</span></li>
-          <li><strong><span data-lang="graphicLayoutLabel">Graphic Layout</span>:</strong> <span data-lang="layoutDesc">เลือกรูปแบบการจัดเรียงกราฟิกจุด.</span>
-            <ul>
-              <li><strong><span data-lang="layoutSideBySide">Side-by-Side (ซ้าย-ขวา)</span>:</strong> <span data-lang="layoutSideBySideDesc">จุดทีม A และ B แสดงเคียงข้างกัน.</span></li>
-              <li><strong><span data-lang="layoutTopBottom">Top-Bottom (บน-ล่าง)</span>:</strong> <span data-lang="layoutTopBottomDesc">จุดทีม A แสดงด้านบน จุดทีม B แสดงด้านล่าง.</span></li>
-            </ul>
-          </li>
-        </ul>
+      <div class="help-section help-section-sources" style="margin-top: 12px;">
+        <h3>📋 <span data-lang="obsSourcesTitle">OBS Sources Needed</span></h3>
+        <div class="item-list"><ul id="helpObsSourcesList"></ul></div>
       </div>
-      <div class="dialog-buttons">
+      <div class="dialog-buttons"><button type="submit"><span data-lang="closeBtn">Close</span></button></div>
+    </form>
+  </dialog>
+
+  <!-- History Dialog -->
+  <dialog id="historyDialog">
+    <form method="dialog">
+      <h2>📋 <span data-lang="historyTitle">Match History</span></h2>
+      <div id="historyList" style="max-height: 50vh; overflow-y: auto;"></div>
+      <div class="dialog-buttons" style="justify-content: space-between;">
+        <button type="button" class="reset-btn" onclick="clearHistory()" style="display: inline-flex;"><span data-lang="clearHistoryBtn">Clear History</span></button>
         <button type="submit"><span data-lang="closeBtn">Close</span></button>
       </div>
     </form>
   </dialog>
 
+  <!-- Version History Dialog -->
   <dialog id="versionHistoryDialog">
     <form method="dialog">
       <h2><span data-lang="versionHistoryTitle">Version History</span></h2>
-      <div class="changelog-list">
-        <ul>
-          <li>
-            <h5><span data-lang="version1_2">Version 1.2</span></h5>
-            <ul>
-              <li><span data-lang="v1_2_feature1">Redesigned UI for a modern, premium look.</span></li>
-              <li><span data-lang="v1_2_feature2">Added "Auto-Create OBS Sources" button to automatically setup Text and Browser sources in current scene.</span></li>
-              <li><span data-lang="v1_2_feature3">Added "Dot Shape" setting (Circle/Square).</span></li>
-              <li><span data-lang="v1_2_feature4">Fixed Team B buttons translation in Thai language.</span></li>
-            </ul>
-          </li>
-          <li>
-            <h5><span data-lang="version1_1">Version 1.1</span></h5>
-            <ul>
-              <li><span data-lang="v1_1_feature1">Enhanced shot history: now remembers all shots.</span></li>
-              <li><span data-lang="v1_1_feature2">Added "Help" button with OBS source setup guide.</span></li>
-              <li><span data-lang="v1_1_feature3">Introduced graphic layout options in Settings.</span></li>
-              <li><span data-lang="v1_1_feature4">Team Gap now correctly applies to both layouts.</span></li>
-              <li><span data-lang="v1_1_feature5">Graphics reset visually to empty dots when a team starts a new set.</span></li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-      <div class="dialog-buttons">
-        <button type="submit"><span data-lang="closeBtn">Close</span></button>
-      </div>
+      <div class="changelog-list"><ul>
+        <li><h5>Version 1.3</h5><ul>
+          <li>Google Sheets integration & Match ID selector</li>
+          <li>Match History system with save/clear</li>
+          <li>Team Name OBS Text sources</li>
+          <li>Dual shootout with custom panel styling</li>
+          <li>Unshot placeholder dots</li>
+          <li>Advanced border controls</li>
+        </ul></li>
+      </ul></div>
+      <div class="dialog-buttons"><button type="submit"><span data-lang="closeBtn">Close</span></button></div>
     </form>
   </dialog>
   
   <div class="app-footer">
     OBS Dock UI - Penalty by JAMORNzMedia <br>
-    <a href="#" onclick="document.getElementById('versionHistoryDialog').showModal()"><span data-lang="versionText">Version 1.2</span></a>
+    <a href="#" onclick="document.getElementById('versionHistoryDialog').showModal()"><span data-lang="versionText">Version 1.3</span></a>
   </div>
 
   <script>
     const MAX_SHOTS_DISPLAY = 5;
-    let shots = { A: [[]], B: [[]] };
-    let scores = { A: 0, B: 0 };
-    let currentPage = 0;
+    
+    let shootoutData = [
+      { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0, matchId: null, teamA: 'Team A', teamB: 'Team B' },
+      { shots: { A: [[]], B: [[]] }, scores: { A: 0, B: 0 }, currentPage: 0, matchId: null, teamA: 'Team A', teamB: 'Team B' }
+    ];
 
-    const channel = new BroadcastChannel("penalty_channel");
+    let matchData = []; // fetched from Google Sheets
+    let currentPopupShootout = 0;
+    let popupMatchId = 1;
+    let popupInputMode = false;
+
+    const channel1 = new BroadcastChannel("penalty_channel");
+    const channel2 = new BroadcastChannel("penalty_channel_2");
     let obs;
-
     const OBS_URL = "ws://localhost:4455";
     const OBS_PASSWORD = "supersecret";
 
-    // Listen for state requests from dots_AB.html
-    channel.onmessage = (e) => {
-      if (e.data && e.data.type === 'request_state') {
-        renderAll(); // Broadcast current state again
-      }
-    };
-
-    // --- Localization Data ---
+    // --- Translations ---
     const translations = {
       th: {
-        appTitle: "Penalty Shootout UI", 
-        versionText: "เวอร์ชั่น 1.2",
-        teamA: "ทีม A",
-        teamB: "ทีม B",
-        scoreLabel: "คะแนน",
-        goalBtnA: "เข้า A",
-        missBtnA: "ไม่เข้า A",
-        undoBtnA: "ย้อนกลับ A",
-        goalBtnB: "เข้า B",
-        missBtnB: "ไม่เข้า B",
-        undoBtnB: "ย้อนกลับ B",
-        resetAllBtn: "รีเซ็ตทั้งหมด",
-        settingsBtn: "ตั้งค่า",
-        helpBtn: "ช่วยเหลือ",
-        closeBtn: "ปิด",
-        applyBtn: "ปรับใช้",
+        appTitle: "Penalty Shootout UI", versionText: "เวอร์ชั่น 1.3",
+        teamA: "ทีม A", teamB: "ทีม B",
+        goalBtn: "เข้า", missBtn: "ไม่เข้า", resetBtn: "รีเซ็ต", resetAllBtn: "รีเซ็ตทั้งหมด",
+        settingsBtn: "ตั้งค่า", helpBtn: "ช่วยเหลือ", closeBtn: "ปิด", applyBtn: "ปรับใช้",
+        cancelBtn: "ยกเลิก", confirmBtn: "ยืนยัน",
+        historyBtn: "ประวัติ", historyTitle: "ประวัติการแข่งขัน", clearHistoryBtn: "ล้างประวัติ",
+        noHistoryMsg: "ยังไม่มีประวัติการแข่งขัน",
         settingsTitle: "ตั้งค่า",
-        dotSizeLabel: "ขนาดจุด",
-        dotGapLabel: "ช่องว่างจุด",
-        teamGapLabel: "ช่องว่างทีม",
-        dotShapeLabel: "รูปร่างจุด",
-        shapeCircle: "วงกลม",
-        shapeSquare: "สี่เหลี่ยม",
-        graphicLayoutLabel: "รูปแบบกราฟิก",
-        layoutSideBySide: "ซ้าย-ขวา",
-        layoutTopBottom: "บน-ล่าง",
+        settingsGeneralTitle: "ตั้งค่าการใช้งานหลัก",
+        settingsSizingTitle: "ขนาดและระยะห่าง",
+        settingsShapeTitle: "รูปทรงจุดและเส้นขอบ",
+        settingsPanelStyleTitle: "รูปลักษณ์แผงควบคุม",
+        settingsDataSourceTitle: "แหล่งข้อมูล (Google Sheets)",
+        sheetUrlLabel: "Google Sheets URL:",
+        fetchDataBtn: "ดึงข้อมูล",
+        dotSizeLabel: "ขนาดจุด", dotGapLabel: "ช่องว่างจุด", teamGapLabel: "ช่องว่างทีม",
+        dotBorderRadiusLabel: "ความโค้งมน", dotBorderLabel: "แสดงเส้นขอบ",
+        dotBorderWidthLabel: "ความหนาขอบ", dotBorderColorLabel: "สีขอบ",
+        showUnshotDotsLabel: "แสดงจุดรอ", unshotColorLabel: "สีจุดรอ",
+        panelBgLabel: "สีพื้นหลัง", shootout1BgLabel: "สีพื้นหลังชุด 1", shootout2BgLabel: "สีพื้นหลังชุด 2",
+        panelDotSizeLabel: "ขนาดจุดแผง", panelHeightLabel: "ความสูงแผง (0=อัตโนมัติ)",
+        panelBtnSizeLabel: "ขนาดปุ่ม", btnSizeSmall: "เล็ก", btnSizeMedium: "กลาง", btnSizeLarge: "ใหญ่",
+        panelLayoutLabel: "จัดวางแผง", panelLayoutTopBottom: "บน-ล่าง", panelLayoutSideBySide: "ซ้าย-ขวา",
+        resetColorsBtn: "รีเซ็ตสี",
+        graphicLayoutLabel: "รูปแบบกราฟิก", layoutSideBySide: "ซ้าย-ขวา", layoutTopBottom: "บน-ล่าง",
+        shootoutCountLabel: "จำนวนชุด", shootoutCount1: "1 ชุดจุดโทษ", shootoutCount2: "2 ชุดจุดโทษ",
+        shootout1Title: "ชุดจุดโทษที่ 1", shootout2Title: "ชุดจุดโทษที่ 2",
         helpTitle: "ช่วยเหลือ / วิธีใช้งานกับ OBS",
-        helpIntro: "แผงควบคุมนี้จะส่งข้อมูลคะแนนและจุดยิงจุดโทษไปยัง OBS หากต้องการแสดงผล โปรดตั้งค่า Source ดังต่อไปนี้ใน OBS.",
-        createSourcesBtn: "คลิกเพื่อสร้าง Source ทั้งหมดอัตโนมัติใน Scene ปัจจุบัน",
+        helpIntro: "แผงควบคุมนี้จะส่งข้อมูลคะแนนไปยัง OBS",
+        createSourcesBtn1: "สร้าง Source ชุดที่ 1", createSourcesBtn2: "สร้าง Source ชุดที่ 2",
         obsSourcesTitle: "OBS Sources ที่จำเป็น",
-        scoreASource: "Score_A",
-        scoreBSource: "Score_B",
-        scoreATextSourceDesc: "(Text (GDI+) สำหรับคะแนนทีม A)",
-        scoreBTextSourceDesc: "(Text (GDI+) สำหรับคะแนนทีม B)",
-        penaltyDotsSource: "Penalty_Dots_AB",
-        browserSourceDesc: "(Browser source สำหรับกราฟิกจุดยิงจุดโทษ)",
-        browserSourceUrlLabel: "URL:",
-        browserSourceNote: "<em>(ใน OBS สามารถ ขยับไปตามตำแหน่งที่ต้องการ หรือ Crop เพียงกด Alt + ลากขอบกรอบ Source เข้ามาให้ชิดกราฟิกที่แสดง)</em>",
-        settingsExplanationTitle: "คำอธิบายการตั้งค่า",
-        dotSizeDesc: "ขนาดของจุดแสดงผล (พิกเซล).",
-        dotGapDesc: "ระยะห่างระหว่างจุดแต่ละจุดในทีม (พิกเซล).",
-        teamGapDesc: "ระยะห่างระหว่างกลุ่มจุดของทีม A และ B (พิกเซล).",
-        dotShapeDesc: "เลือกรูปร่างของจุด (วงกลม หรือ สี่เหลี่ยม).",
-        layoutDesc: "เลือกรูปแบบการจัดเรียงกราฟิกจุด.",
-        layoutSideBySideDesc: "จุดทีม A และ B แสดงเคียงข้างกัน.",
-        layoutTopBottomDesc: "จุดทีม A แสดงด้านบน จุดทีม B แสดงด้านล่าง.",
         versionHistoryTitle: "ประวัติเวอร์ชั่น",
-        version1_2: "เวอร์ชั่น 1.2",
-        v1_2_feature1: "ปรับโฉมหน้าตา UI ใหม่ให้สวยงามและทันสมัย",
-        v1_2_feature2: "เพิ่มปุ่มสร้าง OBS Source อัตโนมัติ (Text และ Browser) ในหน้าช่วยเหลือ",
-        v1_2_feature3: "เพิ่มการตั้งค่ารูปทรงจุด (วงกลม / สี่เหลี่ยม)",
-        v1_2_feature4: "แก้ไขข้อความปุ่มทีม B ในภาษาไทยให้ถูกต้อง",
-        version1_1: "เวอร์ชั่น 1.1",
-        v1_1_feature1: "เพิ่มระบบจดจำประวัติการยิงทุกลูก.",
-        v1_1_feature2: "เพิ่มปุ่ม \"Help\" พร้อมคำอธิบายการตั้งค่า OBS.",
-        v1_1_feature3: "เพิ่มตัวเลือกการจัดเรียงกราฟิกจุด (ซ้าย-ขวา / บน-ล่าง).",
-        v1_1_feature4: "ช่องว่างทีม (Team Gap) ใช้งานได้ถูกต้องทุกรูปแบบ.",
-        v1_1_feature5: "กราฟิกจะถูกรีเซ็ตเมื่อเริ่ม 5 ลูกชุดใหม่.",
+        selectMatchTitle: "เลือกแมตช์",
+        saveHistoryPrompt: "มีคะแนนการแข่งขันอยู่ ต้องการบันทึกลงประวัติก่อนไหม?",
       },
       en: {
-        appTitle: "Penalty Shootout UI",
-        versionText: "Version 1.2",
-        teamA: "Team A",
-        teamB: "Team B",
-        scoreLabel: "Score",
-        goalBtnA: "Goal A",
-        missBtnA: "Miss A",
-        undoBtnA: "Undo A",
-        goalBtnB: "Goal B",
-        missBtnB: "Miss B",
-        undoBtnB: "Undo B",
-        resetAllBtn: "Reset All",
-        settingsBtn: "Settings",
-        helpBtn: "Help",
-        closeBtn: "Close",
-        applyBtn: "Apply",
+        appTitle: "Penalty Shootout UI", versionText: "Version 1.3",
+        teamA: "Team A", teamB: "Team B",
+        goalBtn: "Goal", missBtn: "Miss", resetBtn: "Reset", resetAllBtn: "Reset All",
+        settingsBtn: "Settings", helpBtn: "Help", closeBtn: "Close", applyBtn: "Apply",
+        cancelBtn: "Cancel", confirmBtn: "Confirm",
+        historyBtn: "History", historyTitle: "Match History", clearHistoryBtn: "Clear History",
+        noHistoryMsg: "No match history yet",
         settingsTitle: "Settings",
-        dotSizeLabel: "Dot Size",
-        dotGapLabel: "Dot Gap",
-        teamGapLabel: "Team Gap",
-        dotShapeLabel: "Dot Shape",
-        shapeCircle: "Circle",
-        shapeSquare: "Square",
-        graphicLayoutLabel: "Graphic Layout",
-        layoutSideBySide: "Side-by-Side (Left-Right)",
-        layoutTopBottom: "Top-Bottom (Up-Down)",
+        settingsGeneralTitle: "General Configuration",
+        settingsSizingTitle: "Sizing & Spacing",
+        settingsShapeTitle: "Dot Appearance & Borders",
+        settingsPanelStyleTitle: "Control Panel Appearance",
+        settingsDataSourceTitle: "Data Source (Google Sheets)",
+        sheetUrlLabel: "Google Sheets URL:",
+        fetchDataBtn: "Fetch Data",
+        dotSizeLabel: "Dot Size", dotGapLabel: "Dot Gap", teamGapLabel: "Team Gap",
+        dotBorderRadiusLabel: "Border Radius", dotBorderLabel: "Show Border",
+        dotBorderWidthLabel: "Border Width", dotBorderColorLabel: "Border Color",
+        showUnshotDotsLabel: "Show Unshot Dots", unshotColorLabel: "Unshot Dot Color",
+        panelBgLabel: "Panel Background", shootout1BgLabel: "Shootout 1 BG", shootout2BgLabel: "Shootout 2 BG",
+        panelDotSizeLabel: "Panel Dot Size", panelHeightLabel: "Panel Height (0=auto)",
+        panelBtnSizeLabel: "Button Size", btnSizeSmall: "Small", btnSizeMedium: "Medium", btnSizeLarge: "Large",
+        panelLayoutLabel: "Panel Layout", panelLayoutTopBottom: "Top-Bottom", panelLayoutSideBySide: "Side-by-Side",
+        resetColorsBtn: "Reset Colors",
+        graphicLayoutLabel: "Graphic Layout", layoutSideBySide: "Side-by-Side", layoutTopBottom: "Top-Bottom",
+        shootoutCountLabel: "Shootout Count", shootoutCount1: "1 Set", shootoutCount2: "2 Sets",
+        shootout1Title: "Shootout 1", shootout2Title: "Shootout 2",
         helpTitle: "Help / How to Use with OBS",
-        helpIntro: "This control panel sends score and penalty shot data to OBS. To display them, you need to set up the following sources in OBS.",
-        createSourcesBtn: "Click to Auto-Create Sources in Current Scene",
+        helpIntro: "This control panel sends score data to OBS.",
+        createSourcesBtn1: "Create Shootout 1", createSourcesBtn2: "Create Shootout 2",
         obsSourcesTitle: "OBS Sources Needed",
-        scoreASource: "Score_A",
-        scoreBSource: "Score_B",
-        scoreATextSourceDesc: "(Text (GDI+) for Team A's score)",
-        scoreBTextSourceDesc: "(Text (GDI+) for Team B's score)",
-        penaltyDotsSource: "Penalty_Dots_AB",
-        browserSourceDesc: "(Browser source for penalty dots graphic)",
-        browserSourceUrlLabel: "URL:",
-        browserSourceNote: "<em>(In OBS, you can move it to any desired position or Crop it by holding Alt + dragging the source's border.)</em>",
-        settingsExplanationTitle: "Settings Explained",
-        dotSizeDesc: "Size of the penalty dot display (pixels).",
-        dotGapDesc: "Spacing between each penalty dot within a team (pixels).",
-        teamGapDesc: "Spacing between Team A's and Team B's dot groups (pixels).",
-        dotShapeDesc: "Choose the shape of the dots (Circle or Square).",
-        layoutDesc: "Choose the arrangement of the penalty dot graphic.",
-        layoutSideBySideDesc: "Team A and B dots are displayed next to each other.",
-        layoutTopBottomDesc: "Team A dots are displayed above Team B dots.",
         versionHistoryTitle: "Version History",
-        version1_2: "Version 1.2",
-        v1_2_feature1: "Redesigned UI for a modern, premium look.",
-        v1_2_feature2: "Added Auto-Create OBS Sources button.",
-        v1_2_feature3: "Added Dot Shape setting (Circle/Square).",
-        v1_2_feature4: "Fixed Team B buttons translation in Thai language.",
-        version1_1: "Version 1.1",
-        v1_1_feature1: "Enhanced shot history: now remembers all shots.",
-        v1_1_feature2: "Added Help button with OBS source setup guide.",
-        v1_1_feature3: "Introduced graphic layout options in Settings.",
-        v1_1_feature4: "Team Gap now correctly applies to both layouts.",
-        v1_1_feature5: "Graphics visually reset when starting a new set.",
+        selectMatchTitle: "Select Match",
+        saveHistoryPrompt: "There are scores in progress. Save to history before switching?",
       }
     };
 
     function applyTranslations(lang) {
       document.title = translations[lang].appTitle;
-      const elements = document.querySelectorAll('[data-lang]');
-      elements.forEach(el => {
+      document.querySelectorAll('[data-lang]').forEach(el => {
         const key = el.getAttribute('data-lang');
-        if (translations[lang] && translations[lang][key]) {
-          el.textContent = translations[lang][key];
-        }
+        if (translations[lang]?.[key]) el.textContent = translations[lang][key];
       });
-      const htmlElements = document.querySelectorAll('[data-lang-html]');
-      htmlElements.forEach(el => {
-          const key = el.getAttribute('data-lang-html');
-          if (translations[lang] && translations[lang][key]) {
-              el.innerHTML = translations[lang][key];
-          }
-      });
+      renderHelpSources();
     }
 
     const languageSelector = document.getElementById('languageSelector');
-    languageSelector.addEventListener('change', (event) => {
-      const selectedLang = event.target.value;
-      localStorage.setItem('penalty_language', selectedLang);
-      applyTranslations(selectedLang);
+    languageSelector.addEventListener('change', (e) => {
+      localStorage.setItem('penalty_language', e.target.value);
+      applyTranslations(e.target.value);
     });
 
-    // --- OBS WebSocket Connection & Promise wrapper ---
+    // --- OBS WebSocket ---
     let pendingRequests = {};
-    
     function connectOBS() {
       obs = new WebSocket(OBS_URL);
-
-      obs.onopen = () => { console.log("🟡 Connecting to OBS..."); };
-
+      obs.onopen = () => console.log("🟡 Connecting to OBS...");
       obs.onmessage = async (event) => {
-        const message = JSON.parse(event.data);
-        if (message.op === 0) {
-          const authRequest = {
-            op: 1,
-            d: {
-              rpcVersion: 1,
-              authentication: OBS_PASSWORD ? { secret: OBS_PASSWORD } : undefined
-            }
-          };
-          obs.send(JSON.stringify(authRequest));
-        } else if (message.op === 2) {
+        const msg = JSON.parse(event.data);
+        if (msg.op === 0) {
+          obs.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, authentication: OBS_PASSWORD ? { secret: OBS_PASSWORD } : undefined } }));
+        } else if (msg.op === 2) {
           console.log("✅ Connected to OBS WebSocket!");
-        } else if (message.op === 7) {
-          // Handle request responses
-          const req = pendingRequests[message.d.requestId];
+        } else if (msg.op === 7) {
+          const req = pendingRequests[msg.d.requestId];
           if (req) {
-            if (message.d.requestStatus.result) {
-              req.resolve(message.d.responseData);
-            } else {
-              req.reject(message.d.requestStatus.code);
-            }
-            delete pendingRequests[message.d.requestId];
+            msg.d.requestStatus.result ? req.resolve(msg.d.responseData) : req.reject(msg.d.requestStatus.code);
+            delete pendingRequests[msg.d.requestId];
           }
         }
       };
-
-      obs.onerror = (err) => { console.error("❌ OBS WebSocket error:", err); };
-      obs.onclose = () => {
-        console.log("❌ OBS WebSocket disconnected. Attempting to reconnect in 5 seconds...");
-        setTimeout(connectOBS, 5000);
-      };
+      obs.onerror = () => {};
+      obs.onclose = () => setTimeout(connectOBS, 5000);
     }
 
     function sendOBSRequest(requestType, requestData) {
       return new Promise((resolve, reject) => {
-        if (!obs || obs.readyState !== 1) return reject("OBS is not connected.");
+        if (!obs || obs.readyState !== 1) return reject("OBS not connected");
         const id = Date.now().toString() + Math.random().toString();
         pendingRequests[id] = { resolve, reject };
-        obs.send(JSON.stringify({
-          op: 6,
-          d: {
-            requestType,
-            requestId: id,
-            requestData
-          }
-        }));
+        obs.send(JSON.stringify({ op: 6, d: { requestType, requestId: id, requestData } }));
       });
     }
 
-    async function autoCreateSources() {
+    function getCurrentBaseUrl() {
+      const loc = window.location;
+      const parts = loc.pathname.split('/');
+      parts.pop();
+      return loc.origin + parts.join('/');
+    }
+
+    async function autoCreateSources(setIndex) {
       try {
         const sceneRes = await sendOBSRequest("GetCurrentProgramScene");
         const sceneName = sceneRes.currentProgramSceneName;
-
-        let createdCount = 0;
-
-        // Create Score_A
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Score_A",
-            inputKind: "text_gdiplus_v2",
-            inputSettings: { text: scores.A.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
-          });
-          createdCount++;
-        } catch (e) { console.log("Score_A might already exist", e); }
-
-        // Create Score_B
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Score_B",
-            inputKind: "text_gdiplus_v2",
-            inputSettings: { text: scores.B.toString(), font: { face: "Arial", size: 72, style: "Bold" } }
-          });
-          createdCount++;
-        } catch (e) { console.log("Score_B might already exist", e); }
-
-        // Create Browser Source
-        const browserUrl = new URL('dots_AB.html', window.location.href).href;
-        try {
-          await sendOBSRequest("CreateInput", {
-            sceneName: sceneName,
-            inputName: "Penalty_Dots_AB",
-            inputKind: "browser_source",
-            inputSettings: { 
-                url: browserUrl, 
-                width: 800, 
-                height: 150 
-            }
-          });
-          createdCount++;
-        } catch (e) { console.log("Penalty_Dots_AB might already exist", e); }
+        const baseUrl = getCurrentBaseUrl();
+        let created = 0;
+        const idx = setIndex - 1;
+        const suffix = setIndex === 2 ? '2' : '';
+        const suffixUnderscore = setIndex === 2 ? '_2' : '';
+        
+        // Score_A / Score_A2
+        try { await sendOBSRequest("CreateInput", { sceneName, inputName: `Score_A${suffix}`, inputKind: "text_gdiplus_v2", inputSettings: { text: "0", font: { face: "Arial", size: 72, style: "Bold" } } }); created++; } catch(e){}
+        // Score_B / Score_B2
+        try { await sendOBSRequest("CreateInput", { sceneName, inputName: `Score_B${suffix}`, inputKind: "text_gdiplus_v2", inputSettings: { text: "0", font: { face: "Arial", size: 72, style: "Bold" } } }); created++; } catch(e){}
+        // TeamName_A / TeamName_A2
+        try { await sendOBSRequest("CreateInput", { sceneName, inputName: `TeamName_A${suffix}`, inputKind: "text_gdiplus_v2", inputSettings: { text: shootoutData[idx].teamA, font: { face: "Arial", size: 36, style: "Bold" } } }); created++; } catch(e){}
+        // TeamName_B / TeamName_B2
+        try { await sendOBSRequest("CreateInput", { sceneName, inputName: `TeamName_B${suffix}`, inputKind: "text_gdiplus_v2", inputSettings: { text: shootoutData[idx].teamB, font: { face: "Arial", size: 36, style: "Bold" } } }); created++; } catch(e){}
+        // Browser dots
+        const dotsFile = setIndex === 2 ? '/dots_AB_2.html' : '/dots_AB.html';
+        const dotsName = setIndex === 2 ? 'Penalty_Dots_AB2' : 'Penalty_Dots_AB';
+        try { await sendOBSRequest("CreateInput", { sceneName, inputName: dotsName, inputKind: "browser_source", inputSettings: { url: baseUrl + dotsFile, width: 800, height: 150 } }); created++; } catch(e){}
 
         const lang = languageSelector.value;
-        const successMsg = lang === 'th' ? `สร้าง Source แล้ว ${createdCount}/3 รายการ ใน Scene: ${sceneName}` : `Created ${createdCount}/3 sources in Scene: ${sceneName}`;
-        alert(successMsg);
-
+        alert(lang === 'th' ? `สร้าง Source แล้ว ${created}/5 ใน Scene: ${sceneName}\nURL: ${baseUrl}` : `Created ${created}/5 sources in Scene: ${sceneName}\nURL: ${baseUrl}`);
       } catch (err) {
-        const lang = languageSelector.value;
-        const errMsg = lang === 'th' ? "เกิดข้อผิดพลาดในการสร้าง Source กรุณาตรวจสอบการเชื่อมต่อ OBS WebSocket" : "Error creating sources. Check OBS WebSocket connection.";
-        alert(errMsg + "\n" + err);
+        alert("Error: " + err);
       }
     }
 
-    function updateOBSScore(team, value) {
+    function updateOBSScore(si, team, value) {
       if (!obs || obs.readyState !== 1) return;
-      const sourceName = team === 'A' ? "Score_A" : "Score_B";
-      sendOBSRequest("SetInputSettings", {
-        inputName: sourceName,
-        inputSettings: { text: value.toString() },
-        overlay: true
-      }).catch(err => {
-        // Silently fail if source doesn't exist
+      const suffix = si === 0 ? '' : '2';
+      const scoreName = team === 'A' ? `Score_A${suffix}` : `Score_B${suffix}`;
+      sendOBSRequest("SetInputSettings", { inputName: scoreName, inputSettings: { text: value.toString() }, overlay: true }).catch(()=>{});
+    }
+
+    function updateOBSTeamName(si, team, name) {
+      if (!obs || obs.readyState !== 1) return;
+      const suffix = si === 0 ? '' : '2';
+      const srcName = team === 'A' ? `TeamName_A${suffix}` : `TeamName_B${suffix}`;
+      sendOBSRequest("SetInputSettings", { inputName: srcName, inputSettings: { text: name }, overlay: true }).catch(()=>{});
+    }
+
+    // --- Google Sheets Fetch ---
+    function extractSheetId(url) {
+      const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    async function fetchGoogleSheet() {
+      const url = document.getElementById('sheetUrl').value.trim();
+      const status = document.getElementById('fetchStatus');
+      if (!url) { status.textContent = '❌ Please enter a URL'; status.style.color = '#ef4444'; return; }
+      const sheetId = extractSheetId(url);
+      if (!sheetId) { status.textContent = '❌ Invalid Google Sheets URL'; status.style.color = '#ef4444'; return; }
+      
+      status.textContent = '⏳ Fetching...'; status.style.color = '#f59e0b';
+      try {
+        const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+        const res = await fetch(apiUrl);
+        const text = await res.text();
+        // Strip JSONP wrapper: google.visualization.Query.setResponse({...});
+        const jsonStr = text.replace(/^[^(]*\(/, '').replace(/\);?\s*$/, '');
+        const json = JSON.parse(jsonStr);
+        
+        matchData = [];
+        const rows = json.table.rows;
+        for (const row of rows) {
+          const c = row.c;
+          if (!c || !c[0]) continue;
+          matchData.push({
+            matchId: c[0]?.v?.toString() || '',
+            logoA: c[1]?.v || '',
+            teamA: c[2]?.v || '',
+            logoB: c[3]?.v || '',
+            teamB: c[4]?.v || '',
+            label1: c[5]?.v || '',
+            label2: c[6]?.v || '',
+            label3: c[7]?.v || '',
+            label4: c[8]?.v || '',
+            label5: c[9]?.v || '',
+            score: c[10]?.v || ''
+          });
+        }
+        
+        localStorage.setItem('penalty_matchData', JSON.stringify(matchData));
+        localStorage.setItem('penalty_sheetUrl', url);
+        status.textContent = `✅ Loaded ${matchData.length} matches`; status.style.color = '#10b981';
+      } catch (err) {
+        status.textContent = '❌ Fetch failed: ' + err.message; status.style.color = '#ef4444';
+      }
+    }
+
+    // --- Match ID Popup ---
+    function openMatchPopup(shootoutIndex) {
+      currentPopupShootout = shootoutIndex;
+      const currentId = shootoutData[shootoutIndex].matchId;
+      popupMatchId = currentId ? parseInt(currentId) : 1;
+      popupInputMode = false;
+      
+      const lang = languageSelector.value;
+      document.getElementById('matchPopupTitle').textContent = '🎯 ' + (translations[lang]?.selectMatchTitle || 'Select Match');
+      updateMatchPopupDisplay();
+      document.getElementById('matchPopupOverlay').classList.add('active');
+    }
+
+    function closeMatchPopup() {
+      document.getElementById('matchPopupOverlay').classList.remove('active');
+    }
+
+    function changeMatchIdNav(delta) {
+      if (popupInputMode) return;
+      const maxId = matchData.length > 0 ? Math.max(...matchData.map(m => parseInt(m.matchId) || 0)) : 99;
+      popupMatchId = Math.max(1, Math.min(maxId, popupMatchId + delta));
+      updateMatchPopupDisplay();
+    }
+
+    function enableMatchIdInput() {
+      popupInputMode = true;
+      const el = document.getElementById('matchIdDisplay');
+      el.innerHTML = `<input type="number" value="${popupMatchId}" min="1" onblur="commitMatchIdInput(this)" onkeydown="if(event.key==='Enter')this.blur()">`;
+      el.querySelector('input').focus();
+    }
+
+    function commitMatchIdInput(input) {
+      popupMatchId = Math.max(1, parseInt(input.value) || 1);
+      popupInputMode = false;
+      updateMatchPopupDisplay();
+    }
+
+    function updateMatchPopupDisplay() {
+      const el = document.getElementById('matchIdDisplay');
+      if (!popupInputMode) el.textContent = popupMatchId;
+      
+      const preview = document.getElementById('matchPreview');
+      const match = matchData.find(m => parseInt(m.matchId) === popupMatchId);
+      if (match) {
+        preview.innerHTML = `
+          <div class="team-vs">${match.teamA} <span style="color:#f59e0b;"> VS </span> ${match.teamB}</div>
+          <div class="match-labels">${[match.label1, match.label2, match.label3, match.label4].filter(Boolean).join(' | ')}</div>
+        `;
+      } else {
+        preview.innerHTML = `<span style="color: #475569;">Match ID ${popupMatchId} not found</span>`;
+      }
+    }
+
+    function confirmMatchId() {
+      const si = currentPopupShootout;
+      const data = shootoutData[si];
+      const lang = languageSelector.value;
+      
+      // Check if there are scores, prompt to save history
+      if (data.scores.A > 0 || data.scores.B > 0) {
+        const msg = translations[lang]?.saveHistoryPrompt || 'Save current scores to history?';
+        if (confirm(msg)) {
+          saveToHistory(si);
+        }
+      }
+      
+      const match = matchData.find(m => parseInt(m.matchId) === popupMatchId);
+      if (match) {
+        data.matchId = match.matchId;
+        data.teamA = match.teamA;
+        data.teamB = match.teamB;
+        // Reset scores
+        data.shots = { A: [[]], B: [[]] };
+        data.scores = { A: 0, B: 0 };
+        data.currentPage = 0;
+        // Update team name labels
+        document.getElementById(`teamNameA_${si}`).textContent = match.teamA;
+        document.getElementById(`teamNameB_${si}`).textContent = match.teamB;
+        // Update match button text
+        const btns = document.querySelectorAll(`#shootout_${si} .match-id-btn`);
+        btns.forEach(b => b.textContent = `🎯 Match: ${match.matchId}`);
+        // Update OBS
+        updateOBSTeamName(si, 'A', match.teamA);
+        updateOBSTeamName(si, 'B', match.teamB);
+        renderAll();
+      }
+      closeMatchPopup();
+    }
+
+    // --- History System ---
+    function getHistory() {
+      return JSON.parse(localStorage.getItem('penalty_history') || '[]');
+    }
+
+    function saveToHistory(si) {
+      const data = shootoutData[si];
+      const history = getHistory();
+      const match = matchData.find(m => m.matchId === data.matchId);
+      history.push({
+        matchId: data.matchId || '-',
+        teamA: data.teamA,
+        teamB: data.teamB,
+        scoreA: data.scores.A,
+        scoreB: data.scores.B,
+        label1: match?.label1 || '',
+        label2: match?.label2 || '',
+        label3: match?.label3 || '',
+        label4: match?.label4 || '',
+        timestamp: new Date().toLocaleString('th-TH')
       });
+      localStorage.setItem('penalty_history', JSON.stringify(history));
+    }
+
+    function renderHistory() {
+      const history = getHistory();
+      const el = document.getElementById('historyList');
+      const lang = languageSelector.value;
+      
+      if (history.length === 0) {
+        el.innerHTML = `<p style="text-align:center; color:#475569;">${translations[lang]?.noHistoryMsg || 'No history'}</p>`;
+        return;
+      }
+      
+      el.innerHTML = history.slice().reverse().map(h => `
+        <div class="history-item">
+          <span class="hi-time">${h.timestamp}</span>
+          <div class="hi-teams">${h.teamA} <span class="hi-score">${h.scoreA} - ${h.scoreB}</span> ${h.teamB}</div>
+          <div class="hi-labels">Match #${h.matchId} | ${[h.label1, h.label2, h.label3, h.label4].filter(Boolean).join(' | ')}</div>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      const lang = languageSelector.value;
+      const msg = lang === 'th' ? 'ต้องการล้างประวัติทั้งหมดหรือไม่?' : 'Clear all history?';
+      if (!confirm(msg)) return;
+      localStorage.removeItem('penalty_history');
+      renderHistory();
     }
 
     // --- UI Rendering ---
@@ -574,9 +1264,7 @@
       for (let i = 0; i < MAX_SHOTS_DISPLAY; i++) {
         const dot = document.createElement("div");
         dot.className = "dot";
-        if (shape === 'square') {
-            dot.style.borderRadius = "4px";
-        }
+        if (shape === 'square') dot.style.borderRadius = "4px";
         const shot = shotsToRender[i];
         if (shot === true) dot.classList.add("goal");
         else if (shot === false) dot.classList.add("miss");
@@ -584,133 +1272,264 @@
       }
     }
 
-    function getShotsForCurrentPage(team) {
-        if (!shots[team][currentPage]) {
-            return Array(MAX_SHOTS_DISPLAY).fill(null);
-        }
-        const pageShots = shots[team][currentPage];
-        const displayArray = Array(MAX_SHOTS_DISPLAY).fill(null);
-        for (let i = 0; i < pageShots.length; i++) {
-            displayArray[i] = pageShots[i];
-        }
-        return displayArray;
+    function getShotsForCurrentPage(index, team) {
+      const data = shootoutData[index];
+      if (!data.shots[team][data.currentPage]) return Array(MAX_SHOTS_DISPLAY).fill(null);
+      const pageShots = data.shots[team][data.currentPage];
+      const arr = Array(MAX_SHOTS_DISPLAY).fill(null);
+      for (let i = 0; i < pageShots.length; i++) arr[i] = pageShots[i];
+      return arr;
     }
 
     function renderAll() {
       const settings = getSettings();
-      const currentShotsA = getShotsForCurrentPage('A');
-      const currentShotsB = getShotsForCurrentPage('B');
+      const shootoutCount = parseInt(settings.shootoutCount) || 1;
+      document.getElementById('shootout_1').style.display = shootoutCount === 2 ? 'block' : 'none';
 
-      const containerA = document.getElementById("dotsA");
-      const scoreDisplayA = document.getElementById("scoreA");
-      renderDotsUI(containerA, currentShotsA, settings.dotShape);
-      scoreDisplayA.textContent = scores.A;
-      updateOBSScore('A', scores.A);
+      for (let i = 0; i < 2; i++) {
+        const data = shootoutData[i];
+        renderDotsUI(document.getElementById(`dotsA_${i}`), getShotsForCurrentPage(i, 'A'), settings.dotShape);
+        document.getElementById(`scoreA_${i}`).textContent = data.scores.A;
+        updateOBSScore(i, 'A', data.scores.A);
+        renderDotsUI(document.getElementById(`dotsB_${i}`), getShotsForCurrentPage(i, 'B'), settings.dotShape);
+        document.getElementById(`scoreB_${i}`).textContent = data.scores.B;
+        updateOBSScore(i, 'B', data.scores.B);
+        // Update team name display
+        document.getElementById(`teamNameA_${i}`).textContent = data.teamA;
+        document.getElementById(`teamNameB_${i}`).textContent = data.teamB;
+      }
 
-      const containerB = document.getElementById("dotsB");
-      const scoreDisplayB = document.getElementById("scoreB");
-      renderDotsUI(containerB, currentShotsB, settings.dotShape);
-      scoreDisplayB.textContent = scores.B;
-      updateOBSScore('B', scores.B);
+      // Panel styles
+      document.documentElement.style.setProperty('--panel-bg', settings.panelBg || '#0f172a');
+      document.documentElement.style.setProperty('--panel-dot-size', (settings.panelDotSize || 24) + 'px');
+      document.documentElement.style.setProperty('--shootout1-bg', settings.shootout1Bg || '#0a1628');
+      document.documentElement.style.setProperty('--shootout2-bg', settings.shootout2Bg || '#140a28');
+      const panelH = parseInt(settings.panelHeight) || 0;
+      document.documentElement.style.setProperty('--panel-height', panelH > 0 ? panelH + 'px' : 'auto');
+      document.documentElement.style.setProperty('--panel-layout', settings.panelLayout || 'column');
       
-      channel.postMessage({
-        type: "update",
-        data: {
-          shotsA: currentShotsA,
-          shotsB: currentShotsB,
-          settings: settings
-        }
-      });
+      let btnPadding = '0.5rem 0.6rem', btnFontSize = '0.85rem';
+      if (settings.panelBtnSize === 'small') { btnPadding = '0.35rem 0.5rem'; btnFontSize = '0.75rem'; }
+      else if (settings.panelBtnSize === 'large') { btnPadding = '0.65rem 0.8rem'; btnFontSize = '0.95rem'; }
+      document.documentElement.style.setProperty('--panel-btn-padding', btnPadding);
+      document.documentElement.style.setProperty('--panel-btn-font-size', btnFontSize);
+
+      // Broadcast
+      channel1.postMessage({ type: "update", data: { shotsA: getShotsForCurrentPage(0, 'A'), shotsB: getShotsForCurrentPage(0, 'B'), settings } });
+      channel2.postMessage({ type: "update", data: { shotsA: getShotsForCurrentPage(1, 'A'), shotsB: getShotsForCurrentPage(1, 'B'), settings } });
+    }
+
+    function renderHelpSources() {
+      const settings = getSettings();
+      const count = parseInt(settings.shootoutCount) || 1;
+      const lang = languageSelector.value;
+      const el = document.getElementById('helpObsSourcesList');
+      const baseUrl = getCurrentBaseUrl();
+      const th = lang === 'th';
+      
+      let html = `<li class="obs-source-item source-set1">
+        <div class="source-set-badge set1-badge">${th ? 'ชุดที่ 1' : 'Set 1'}</div><ul>
+        <li class="source-sub-item source-text"><strong>Score_A</strong><span>${th ? 'คะแนนทีม A' : 'Team A Score'}</span></li>
+        <li class="source-sub-item source-text"><strong>Score_B</strong><span>${th ? 'คะแนนทีม B' : 'Team B Score'}</span></li>
+        <li class="source-sub-item source-text"><strong>TeamName_A</strong><span>${th ? 'ชื่อทีม A' : 'Team A Name'}</span></li>
+        <li class="source-sub-item source-text"><strong>TeamName_B</strong><span>${th ? 'ชื่อทีม B' : 'Team B Name'}</span></li>
+        <li class="source-sub-item source-browser"><div class="browser-title"><strong>Penalty_Dots_AB</strong><span>Browser</span></div><span class="url-label">URL:</span> <code>${baseUrl}/dots_AB.html</code></li>
+        </ul></li>`;
+      
+      if (count === 2) {
+        html += `<li class="obs-source-item source-set2" style="margin-top:12px;">
+          <div class="source-set-badge set2-badge">${th ? 'ชุดที่ 2' : 'Set 2'}</div><ul>
+          <li class="source-sub-item source-text"><strong>Score_A2</strong><span>${th ? 'คะแนนทีม A ชุด 2' : 'Team A Score Set 2'}</span></li>
+          <li class="source-sub-item source-text"><strong>Score_B2</strong><span>${th ? 'คะแนนทีม B ชุด 2' : 'Team B Score Set 2'}</span></li>
+          <li class="source-sub-item source-text"><strong>TeamName_A2</strong><span>${th ? 'ชื่อทีม A ชุด 2' : 'Team A Name Set 2'}</span></li>
+          <li class="source-sub-item source-text"><strong>TeamName_B2</strong><span>${th ? 'ชื่อทีม B ชุด 2' : 'Team B Name Set 2'}</span></li>
+          <li class="source-sub-item source-browser"><div class="browser-title"><strong>Penalty_Dots_AB2</strong><span>Browser</span></div><span class="url-label">URL:</span> <code>${baseUrl}/dots_AB_2.html</code></li>
+          </ul></li>`;
+      }
+      el.innerHTML = html;
     }
 
     // --- Game Logic ---
-    function shoot(team, isGoal) {
-      const isStartingNewPage = (shots[team][currentPage].length === MAX_SHOTS_DISPLAY);
-      if (isStartingNewPage) {
-        currentPage++;
-        if (!shots['A'][currentPage]) shots['A'].push([]);
-        if (!shots['B'][currentPage]) shots['B'].push([]);
+    function shoot(index, team, isGoal) {
+      const data = shootoutData[index];
+      if (data.shots[team][data.currentPage].length === MAX_SHOTS_DISPLAY) {
+        data.currentPage++;
+        if (!data.shots['A'][data.currentPage]) data.shots['A'].push([]);
+        if (!data.shots['B'][data.currentPage]) data.shots['B'].push([]);
       }
-      shots[team][currentPage].push(isGoal);
-      if (isGoal) scores[team]++;
+      data.shots[team][data.currentPage].push(isGoal);
+      if (isGoal) data.scores[team]++;
       renderAll();
     }
 
-    function undo(team) {
-      if (shots[team][currentPage].length === 0) {
-        if (currentPage > 0) {
-          currentPage--;
-        } else {
-            return; 
-        }
+    function undo(index, team) {
+      const data = shootoutData[index];
+      if (data.shots[team][data.currentPage].length === 0) {
+        if (data.currentPage > 0) data.currentPage--;
+        else return;
       }
-      const last = shots[team][currentPage].pop();
-      if (last === true) scores[team]--;
-      renderAll(); 
+      const last = data.shots[team][data.currentPage].pop();
+      if (last === true) data.scores[team]--;
+      renderAll();
     }
 
-    function reset() {
-      shots = { A: [[]], B: [[]] };
-      scores = { A: 0, B: 0 };
-      currentPage = 0;
+    function reset(index) {
+      const lang = languageSelector.value;
+      let msg = "";
+      if (index === undefined) msg = lang === 'th' ? "รีเซ็ตข้อมูลทั้งหมด?" : "Reset all?";
+      else msg = lang === 'th' ? `รีเซ็ตชุดที่ ${index+1}?` : `Reset Shootout ${index+1}?`;
+      if (!confirm(msg)) return;
+
+      if (index === undefined) {
+        for (let i = 0; i < 2; i++) {
+          shootoutData[i].shots = { A: [[]], B: [[]] };
+          shootoutData[i].scores = { A: 0, B: 0 };
+          shootoutData[i].currentPage = 0;
+        }
+      } else {
+        shootoutData[index].shots = { A: [[]], B: [[]] };
+        shootoutData[index].scores = { A: 0, B: 0 };
+        shootoutData[index].currentPage = 0;
+      }
       renderAll();
     }
 
     // --- Settings Management ---
     function getSettings() {
-      const shapeRadio = document.querySelector('input[name="dotShape"]:checked');
+      const layoutRadio = document.querySelector('input[name="layout"]:checked');
+      const brv = parseInt(document.getElementById('dotBorderRadius').value);
       return {
         dotSize: document.getElementById('dotSize').value,
         dotGap: document.getElementById('dotGap').value,
         teamGap: document.getElementById('teamGap').value,
-        layout: document.querySelector('input[name="layout"]:checked').value,
-        dotShape: shapeRadio ? shapeRadio.value : 'circle'
+        layout: layoutRadio ? layoutRadio.value : 'side-by-side',
+        shootoutCount: parseInt(document.getElementById('shootoutCount').value),
+        dotBorderRadius: brv,
+        dotShape: brv === 0 ? 'square' : 'circle',
+        dotBorder: document.getElementById('dotBorder').checked,
+        dotBorderWidth: parseInt(document.getElementById('dotBorderWidth').value),
+        dotBorderColor: document.getElementById('dotBorderColor').value,
+        showUnshotDots: document.getElementById('showUnshotDots').checked,
+        unshotColor: document.getElementById('unshotColor').value,
+        panelBg: document.getElementById('panelBg').value,
+        shootout1Bg: document.getElementById('shootout1Bg').value,
+        shootout2Bg: document.getElementById('shootout2Bg').value,
+        panelDotSize: parseInt(document.getElementById('panelDotSize').value),
+        panelHeight: parseInt(document.getElementById('panelHeight').value) || 0,
+        panelBtnSize: document.getElementById('panelBtnSize').value,
+        panelLayout: document.querySelector('input[name="panelLayout"]:checked')?.value || 'column'
       };
     }
 
     function updateSettings() {
       const settings = getSettings();
       localStorage.setItem("penalty_settings", JSON.stringify(settings));
+      // Also save sheet url separately
+      localStorage.setItem("penalty_sheetUrl", document.getElementById('sheetUrl').value);
       renderAll();
     }
 
+    function resetDefaultColors() {
+      document.getElementById('panelBg').value = '#0f172a';
+      document.getElementById('shootout1Bg').value = '#0a1628';
+      document.getElementById('shootout2Bg').value = '#140a28';
+      document.getElementById('dotBorderColor').value = '#bbbbbb';
+      document.getElementById('unshotColor').value = '#bbbbbb';
+      alert(languageSelector.value === 'th' ? 'รีเซ็ตสีเรียบร้อย กดApplyเพื่อบันทึก' : 'Colors reset. Click Apply to save.');
+    }
+
     function loadSettings() {
+      const radiusSlider = document.getElementById('dotBorderRadius');
+      const radiusVal = document.getElementById('borderRadiusVal');
+      radiusSlider?.addEventListener('input', e => radiusVal.textContent = e.target.value);
+
+      const borderCb = document.getElementById('dotBorder');
+      const bwRow = document.getElementById('borderWidthRow');
+      const bcRow = document.getElementById('borderColorRow');
+      borderCb?.addEventListener('change', e => {
+        bwRow.style.display = e.target.checked ? 'flex' : 'none';
+        bcRow.style.display = e.target.checked ? 'flex' : 'none';
+      });
+
+      const unshotCb = document.getElementById('showUnshotDots');
+      const ucRow = document.getElementById('unshotColorRow');
+      unshotCb?.addEventListener('change', e => ucRow.style.display = e.target.checked ? 'flex' : 'none');
+
+      // Load sheet URL
+      const savedUrl = localStorage.getItem('penalty_sheetUrl') || 'https://docs.google.com/spreadsheets/d/1ptowrrFuAS-Ztt1Uj6SIVtc-EHJqQ3lcKbcTNUoTmzM/edit?usp=sharing';
+      document.getElementById('sheetUrl').value = savedUrl;
+
+      // Load cached match data
+      const cachedData = localStorage.getItem('penalty_matchData');
+      if (cachedData) {
+        try { matchData = JSON.parse(cachedData); } catch(e) { matchData = []; }
+      }
+
       const saved = JSON.parse(localStorage.getItem("penalty_settings"));
       if (saved) {
-        document.getElementById('dotSize').value = saved.dotSize;
-        document.getElementById('dotGap').value = saved.dotGap;
-        document.getElementById('teamGap').value = saved.teamGap;
-        document.getElementById('layoutSideBySide').checked = (saved.layout === 'side-by-side');
-        document.getElementById('layoutTopBottom').checked = (saved.layout === 'top-bottom');
+        document.getElementById('dotSize').value = saved.dotSize || 24;
+        document.getElementById('dotGap').value = saved.dotGap || 8;
+        document.getElementById('teamGap').value = saved.teamGap || 80;
+        (saved.layout === 'top-bottom' ? document.getElementById('layoutTopBottom') : document.getElementById('layoutSideBySide')).checked = true;
+        document.getElementById('shootoutCount').value = saved.shootoutCount || 1;
+
+        let br = saved.dotBorderRadius !== undefined ? saved.dotBorderRadius : (saved.dotShape === 'square' ? 0 : 50);
+        document.getElementById('dotBorderRadius').value = br;
+        radiusVal.textContent = br;
         
-        if (saved.dotShape === 'square') {
-            document.getElementById('shapeSquare').checked = true;
-        } else {
-            document.getElementById('shapeCircle').checked = true;
-        }
+        const isBorder = saved.dotBorder !== false;
+        document.getElementById('dotBorder').checked = isBorder;
+        document.getElementById('dotBorderWidth').value = saved.dotBorderWidth || 2;
+        document.getElementById('dotBorderColor').value = saved.dotBorderColor || '#bbbbbb';
+        bwRow.style.display = isBorder ? 'flex' : 'none';
+        bcRow.style.display = isBorder ? 'flex' : 'none';
+
+        const isUnshot = saved.showUnshotDots !== false;
+        document.getElementById('showUnshotDots').checked = isUnshot;
+        document.getElementById('unshotColor').value = saved.unshotColor || '#bbbbbb';
+        ucRow.style.display = isUnshot ? 'flex' : 'none';
+
+        document.getElementById('panelBg').value = saved.panelBg || '#0f172a';
+        document.getElementById('shootout1Bg').value = saved.shootout1Bg || '#0a1628';
+        document.getElementById('shootout2Bg').value = saved.shootout2Bg || '#140a28';
+        document.getElementById('panelDotSize').value = saved.panelDotSize || 24;
+        document.getElementById('panelHeight').value = saved.panelHeight || 0;
+        document.getElementById('panelBtnSize').value = saved.panelBtnSize || 'medium';
+        (saved.panelLayout === 'row' ? document.getElementById('panelLayoutRow') : document.getElementById('panelLayoutColumn')).checked = true;
       } else {
+        // Defaults
         document.getElementById('dotSize').value = 24;
         document.getElementById('dotGap').value = 8;
         document.getElementById('teamGap').value = 80;
         document.getElementById('layoutSideBySide').checked = true;
-        document.getElementById('shapeCircle').checked = true;
+        document.getElementById('shootoutCount').value = 1;
+        document.getElementById('dotBorderRadius').value = 50;
+        radiusVal.textContent = 50;
+        document.getElementById('dotBorder').checked = true;
+        document.getElementById('dotBorderWidth').value = 2;
+        document.getElementById('dotBorderColor').value = '#bbbbbb';
+        bwRow.style.display = 'flex'; bcRow.style.display = 'flex';
+        document.getElementById('showUnshotDots').checked = true;
+        document.getElementById('unshotColor').value = '#bbbbbb';
+        ucRow.style.display = 'flex';
+        document.getElementById('panelBg').value = '#0f172a';
+        document.getElementById('shootout1Bg').value = '#0a1628';
+        document.getElementById('shootout2Bg').value = '#140a28';
+        document.getElementById('panelDotSize').value = 24;
+        document.getElementById('panelHeight').value = 0;
+        document.getElementById('panelBtnSize').value = 'medium';
+        document.getElementById('panelLayoutColumn').checked = true;
       }
-      renderAll(); 
+      renderAll();
     }
 
-    // --- Initial Setup ---
+    // --- Init ---
     document.addEventListener('DOMContentLoaded', () => {
-      const savedLang = localStorage.getItem('penalty_language') || 'th';
-      languageSelector.value = savedLang;
-      applyTranslations(savedLang);
-
-      // Set dynamic URL in Help menu
-      const browserUrl = new URL('dots_AB.html', window.location.href).href;
-      document.getElementById('browserSourceUrlText').textContent = browserUrl;
-
+      const lang = localStorage.getItem('penalty_language') || 'th';
+      languageSelector.value = lang;
+      applyTranslations(lang);
       connectOBS();
       loadSettings();
-      reset();
     });
   </script>
 </body>
