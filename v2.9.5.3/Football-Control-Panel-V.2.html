@@ -3152,6 +3152,64 @@
                     <input type="text" id="customHalfFormatInput" placeholder="e.g. 1st, 2nd, OT"
                         style="width: 100%; max-width: 200px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
                 </label>
+                <div style="width: 100%; display: flex; flex-direction: column; margin-top: 5px; margin-bottom: 5px;">
+                    <button type="button" id="toggleIndicatorSettingsBtn" class="btn-secondary" style="font-size: 0.85rem; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-radius: 6px;">
+                        <span><i class="fas fa-sliders-h" style="margin-right: 6px;"></i> <span data-lang="halfIndicatorSettingsTitle">Half Indicator Overlay Settings</span></span>
+                        <i class="fas fa-chevron-down" id="toggleIndicatorChevron"></i>
+                    </button>
+                    <div id="halfIndicatorSettingsContainer" style="display: none; margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+                        <!-- Type: Dot/Dash -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorTypeLabel">Style:</span>
+                            <select id="indicatorTypeSelect" style="width: 100px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                                <option value="dot" data-lang="indicatorTypeDot">Dots (จุด)</option>
+                                <option value="dash" data-lang="indicatorTypeDash">Dashes (ขีด)</option>
+                            </select>
+                        </div>
+                        <!-- Direction: Horiz/Vert -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorDirectionLabel">Orientation:</span>
+                            <select id="indicatorDirectionSelect" style="width: 100px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                                <option value="horizontal" data-lang="indicatorDirectionHoriz">Horizontal (แนวนอน)</option>
+                                <option value="vertical" data-lang="indicatorDirectionVert">Vertical (แนวตั้ง)</option>
+                            </select>
+                        </div>
+                        <!-- Size / Width -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorWidthLabel">Width/Size (px):</span>
+                            <input type="number" id="indicatorWidthInput" value="20" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Height -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorHeightLabel">Height (px):</span>
+                            <input type="number" id="indicatorHeightInput" value="20" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Gap -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorGapLabel">Gap (px):</span>
+                            <input type="number" id="indicatorGapInput" value="8" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Radius -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorRadiusLabel">Border Radius (px):</span>
+                            <input type="number" id="indicatorRadiusInput" value="10" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Colors -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorActiveColorLabel">Active Color:</span>
+                            <input type="color" id="indicatorActiveColorInput" value="#3b82f6" style="width: 50px; height: 26px; border: none; padding: 0; background: transparent; cursor: pointer;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorInactiveColorLabel">Inactive Color:</span>
+                            <input type="color" id="indicatorInactiveColorInput" value="#4b5563" style="width: 50px; height: 26px; border: none; padding: 0; background: transparent; cursor: pointer;">
+                        </div>
+                        <div class="popup-divider" style="margin: 5px 0;"></div>
+                        <!-- Create OBS Source Button -->
+                        <button type="button" id="createHalfIndicatorObsBtn" class="btn-primary" style="width: 100%; font-size: 0.85rem; padding: 8px 0; border-radius: 6px;">
+                            <i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">Create OBS Source</span>
+                        </button>
+                    </div>
+                </div>
                 <!-- Color count selector -->
                 <label class="countdown-toggle">
                     <span data-lang="colorCount" style="margin-right: 10px;">Team Colors:</span>

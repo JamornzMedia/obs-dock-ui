@@ -1444,6 +1444,105 @@ const saveAndUpdateTime = () => {
     showToast(translations[currentLang].toastTimeSet, 'success');
 }
 
+const loadIndicatorSettings = () => {
+    const type = localStorage.getItem('indicator_type') || 'dot';
+    const direction = localStorage.getItem('indicator_direction') || 'horizontal';
+    const width = localStorage.getItem('indicator_width') || '20';
+    const height = localStorage.getItem('indicator_height') || '20';
+    const gap = localStorage.getItem('indicator_gap') || '8';
+    const radius = localStorage.getItem('indicator_radius') || '10';
+    const colorActive = localStorage.getItem('indicator_color_active') || '#3b82f6';
+    const colorInactive = localStorage.getItem('indicator_color_inactive') || '#4b5563';
+
+    const typeSelect = document.getElementById('indicatorTypeSelect');
+    const directionSelect = document.getElementById('indicatorDirectionSelect');
+    const widthInput = document.getElementById('indicatorWidthInput');
+    const heightInput = document.getElementById('indicatorHeightInput');
+    const gapInput = document.getElementById('indicatorGapInput');
+    const radiusInput = document.getElementById('indicatorRadiusInput');
+    const colorActiveInput = document.getElementById('indicatorActiveColorInput');
+    const colorInactiveInput = document.getElementById('indicatorInactiveColorInput');
+
+    if (typeSelect) typeSelect.value = type;
+    if (directionSelect) directionSelect.value = direction;
+    if (widthInput) widthInput.value = width;
+    if (heightInput) heightInput.value = height;
+    if (gapInput) gapInput.value = gap;
+    if (radiusInput) radiusInput.value = radius;
+    if (colorActiveInput) colorActiveInput.value = colorActive;
+    if (colorInactiveInput) colorInactiveInput.value = colorInactive;
+};
+
+const toggleIndicatorSettings = () => {
+    const container = document.getElementById('halfIndicatorSettingsContainer');
+    const chevron = document.getElementById('toggleIndicatorChevron');
+    if (container && chevron) {
+        const isHidden = container.style.display === 'none';
+        container.style.display = isHidden ? 'flex' : 'none';
+        chevron.className = isHidden ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    }
+};
+
+const createHalfIndicatorObsSource = async (btn) => {
+    if (typeof obs === 'undefined' || !obs.socket || !obs.socket.isConnected) {
+        showToast(translations[currentLang].toastObsError || 'OBS not connected', 'error');
+        return;
+    }
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        }
+
+        const scene = await obs.call('GetCurrentProgramScene');
+        const sceneName = scene.currentProgramSceneName;
+        // Dynamic absolute path of half_indicator.html
+        const absPath = window.location.href.replace(/\/[^/]*$/, '') + '/half_indicator.html';
+
+        await obs.call('CreateInput', {
+            sceneName,
+            inputName: 'Half_Indicator_Overlay',
+            inputKind: 'browser_source',
+            inputSettings: {
+                url: absPath,
+                width: 500,
+                height: 150,
+                css: 'body { background: transparent !important; }',
+                shutdown: false,
+                reroute_audio: false,
+            },
+            sceneItemEnabled: true,
+        });
+
+        showToast('✅ Half_Indicator_Overlay created in OBS!', 'success');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Created!';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+            }, 2000);
+        }
+    } catch (err) {
+        const msg = err?.message || err?.error || String(err);
+        if (msg.includes('already exists') || err?.code === 601) {
+            showToast('⚠️ Half_Indicator_Overlay already exists.', 'warning');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Already exists';
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+                }, 2000);
+            }
+        } else {
+            showToast('❌ OBS Error: ' + msg, 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+            }
+        }
+    }
+};
+
 const getHalvesArray = () => {
     const format = localStorage.getItem('halfStyle') || 'ordinal';
     const limit = maxHalves || 2;
@@ -1484,6 +1583,7 @@ const resetHalfToDefault = () => {
     const html = `<span class="half-ordinal">${half}</span>`;
     if (elements.halfText) elements.halfText.innerHTML = html;
     setText('half_text', half);
+    localStorage.setItem('half', half);
 };
 
 const setHalfStyle = (newStyle) => {
@@ -1502,6 +1602,7 @@ const setHalfStyle = (newStyle) => {
     const html = `<span class="half-ordinal">${half}</span>`;
     if (elements.halfText) elements.halfText.innerHTML = html;
     setText('half_text', half);
+    localStorage.setItem('half', half);
 };
 
 const toggleHalf = async () => {
@@ -1601,6 +1702,7 @@ const toggleHalf = async () => {
     const html = `<span class="half-ordinal">${half}</span>`;
     if (elements.halfText) elements.halfText.innerHTML = html;
     setText('half_text', half);
+    localStorage.setItem('half', half);
 };
 
 const undoHalf = async () => {
@@ -1656,6 +1758,7 @@ const undoHalf = async () => {
     const html = `<span class="half-ordinal">${half}</span>`;
     if (elements.halfText) elements.halfText.innerHTML = html;
     setText('half_text', half);
+    localStorage.setItem('half', half);
 };
 
 const updateInjuryTimeDisplay = () => {
@@ -2108,6 +2211,7 @@ const setupEventListeners = () => {
         populateKeybindsTable(currentLang);
         applyVisibilitySettings();
         applyColorCount();
+        loadIndicatorSettings();
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
@@ -2257,6 +2361,35 @@ const setupEventListeners = () => {
             }
         }, 500));
     }
+
+    // Half Indicator Overlay Settings listeners
+    const typeSelect = document.getElementById('indicatorTypeSelect');
+    const directionSelect = document.getElementById('indicatorDirectionSelect');
+    const widthInput = document.getElementById('indicatorWidthInput');
+    const heightInput = document.getElementById('indicatorHeightInput');
+    const gapInput = document.getElementById('indicatorGapInput');
+    const radiusInput = document.getElementById('indicatorRadiusInput');
+    const colorActiveInput = document.getElementById('indicatorActiveColorInput');
+    const colorInactiveInput = document.getElementById('indicatorInactiveColorInput');
+    const toggleBtn = document.getElementById('toggleIndicatorSettingsBtn');
+    const createObsBtn = document.getElementById('createHalfIndicatorObsBtn');
+
+    if (toggleBtn) toggleBtn.addEventListener('click', toggleIndicatorSettings);
+    if (createObsBtn) createObsBtn.addEventListener('click', () => createHalfIndicatorObsSource(createObsBtn));
+
+    const saveVal = (key, val) => {
+        localStorage.setItem(key, val);
+        window.dispatchEvent(new StorageEvent('storage', { key }));
+    };
+
+    if (typeSelect) typeSelect.addEventListener('change', (e) => saveVal('indicator_type', e.target.value));
+    if (directionSelect) directionSelect.addEventListener('change', (e) => saveVal('indicator_direction', e.target.value));
+    if (widthInput) widthInput.addEventListener('input', (e) => saveVal('indicator_width', e.target.value));
+    if (heightInput) heightInput.addEventListener('input', (e) => saveVal('indicator_height', e.target.value));
+    if (gapInput) gapInput.addEventListener('input', (e) => saveVal('indicator_gap', e.target.value));
+    if (radiusInput) radiusInput.addEventListener('input', (e) => saveVal('indicator_radius', e.target.value));
+    if (colorActiveInput) colorActiveInput.addEventListener('input', (e) => saveVal('indicator_color_active', e.target.value));
+    if (colorInactiveInput) colorInactiveInput.addEventListener('input', (e) => saveVal('indicator_color_inactive', e.target.value));
 };
 
 // NEW HELPER LOOP FOR FILES
@@ -2329,6 +2462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActionButtons();
     resetToZero();
     resetHalfToDefault();
+    loadIndicatorSettings();
 
     window.copyTag = copyTag;
 
