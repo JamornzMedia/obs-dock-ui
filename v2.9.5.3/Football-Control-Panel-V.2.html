@@ -2865,14 +2865,14 @@
 
     <div class="card">
         <div class="row timer-area-container">
-            <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch;">
+            <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content;">
                 <button id="halfBtn" class="btn-secondary"
-                    style="width: 70px; height: 100%; display: flex; flex-direction: column; padding: 8px 0; justify-content: center; align-items: center;">
+                    style="width: 70px; min-width: 70px; flex-shrink: 0; height: 100%; display: flex; flex-direction: column; padding: 4px 0; justify-content: center; align-items: center;">
                     <span style="font-size:0.8rem" data-lang="half"></span>
                     <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
                 </button>
                 <button id="undoHalfBtn" class="btn-secondary" title="Undo Half" data-lang-title="undoHalfHint"
-                    style="width: 40px; height: 100%; display: inline-flex; justify-content: center; align-items: center; padding: 0;">
+                    style="width: 40px; min-width: 40px; flex-shrink: 0; height: 100%; display: inline-flex; justify-content: center; align-items: center; padding: 0;">
                     <i class="fas fa-undo"></i>
                 </button>
             </div>
