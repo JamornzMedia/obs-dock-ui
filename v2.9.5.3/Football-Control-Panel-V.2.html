@@ -3205,9 +3205,14 @@
                         </div>
                         <div class="popup-divider" style="margin: 5px 0;"></div>
                         <!-- Create OBS Source Button -->
-                        <button type="button" id="createHalfIndicatorObsBtn" class="btn-primary" style="width: 100%; font-size: 0.85rem; padding: 8px 0; border-radius: 6px;">
-                            <i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">Create OBS Source</span>
-                        </button>
+                        <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
+                            <button type="button" id="createHalfIndicatorObsBtn" class="btn-primary" style="flex: 1; font-size: 0.85rem; padding: 8px 0; border-radius: 6px;">
+                                <i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">Create OBS Source</span>
+                            </button>
+                            <button type="button" id="copyHalfIndicatorLinkBtn" class="btn-secondary" style="width: 105px; font-size: 0.85rem; padding: 8px 0; border-radius: 6px; display: inline-flex; justify-content: center; align-items: center; gap: 4px;">
+                                <i class="fas fa-copy"></i> <span data-lang="copyLinkBtn">Copy Link</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- Color count selector -->

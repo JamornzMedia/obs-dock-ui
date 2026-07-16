@@ -1484,7 +1484,7 @@ const toggleIndicatorSettings = () => {
 };
 
 const createHalfIndicatorObsSource = async (btn) => {
-    if (typeof obs === 'undefined' || !obs.socket || !obs.socket.isConnected) {
+    if (typeof obs === 'undefined') {
         showToast(translations[currentLang].toastObsError || 'OBS not connected', 'error');
         return;
     }
@@ -2373,9 +2373,27 @@ const setupEventListeners = () => {
     const colorInactiveInput = document.getElementById('indicatorInactiveColorInput');
     const toggleBtn = document.getElementById('toggleIndicatorSettingsBtn');
     const createObsBtn = document.getElementById('createHalfIndicatorObsBtn');
+    const copyLinkBtn = document.getElementById('copyHalfIndicatorLinkBtn');
 
     if (toggleBtn) toggleBtn.addEventListener('click', toggleIndicatorSettings);
     if (createObsBtn) createObsBtn.addEventListener('click', () => createHalfIndicatorObsSource(createObsBtn));
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', () => {
+            const absPath = window.location.href.replace(/\/[^/]*$/, '') + '/half_indicator.html';
+            navigator.clipboard.writeText(absPath).then(() => {
+                showToast(translations[currentLang].toastCopied || "Copied to clipboard!", "success");
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = absPath;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast(translations[currentLang].toastCopied || "Copied to clipboard!", "success");
+            });
+        });
+    }
 
     const saveVal = (key, val) => {
         localStorage.setItem(key, val);
