@@ -222,6 +222,24 @@
                 align-items: center;
             }
 
+            #halfBtnContainer {
+                width: 100% !important;
+                min-width: 100% !important;
+                height: 54px !important;
+            }
+
+            #halfBtn {
+                flex: 1 1 auto !important;
+                width: auto !important;
+                height: 100% !important;
+            }
+
+            #undoHalfBtn {
+                flex: 0 0 60px !important;
+                width: 60px !important;
+                height: 100% !important;
+            }
+
             .timer-display-area {
                 border-left: none;
                 border-right: none;
@@ -2865,7 +2883,7 @@
 
     <div class="card">
         <div class="row timer-area-container">
-            <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content;">
+            <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
                 <button id="halfBtn" class="btn-secondary"
                     style="width: 70px; min-width: 70px; flex-shrink: 0; height: 100%; display: flex; flex-direction: column; padding: 4px 0; justify-content: center; align-items: center;">
                     <span style="font-size:0.8rem" data-lang="half"></span>
