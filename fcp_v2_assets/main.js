@@ -50,11 +50,13 @@ const elements = [
     "logoCacheCountLabel", "labelCountInput", "maxHalvesSelect", "colorCountSelect",
     "confirmOverlay", "confirmModal", "confirmYesBtn", "confirmNoBtn",
     // V2.8.1 NEW VISIBILITY INPUTS
-    "visibility_plus_minus", "visibility_reset_time", "visibility_reset_start", "visibility_edit_time", "visibility_countdown",
+    "visibility_plus_minus", "visibility_reset_time", "visibility_reset_start", "visibility_edit_time", "visibility_countdown", "visibility_undo_half",
     // Online Count
     "onlineCountVal", "onlineMaxVal",
     // Logic Elements
-    "injuryTimeContainer", "resetToZeroBtn", "resetToStartBtn", "editTimeBtn"
+    "injuryTimeContainer", "resetToZeroBtn", "resetToStartBtn", "editTimeBtn",
+    // Customizable halves & Undo half
+    "undoHalfBtn", "halfStyleSelect", "customHalfFormatInput", "customHalfFormatContainer"
 ].reduce((acc, id) => {
     // Safety check for optional elements
     const el = $(id);
@@ -760,7 +762,8 @@ const loadVisibilitySettings = () => {
         showResetTime: true,
         showResetStart: true,
         showEditTime: true,
-        showCountdown: true
+        showCountdown: true,
+        showUndoHalf: true
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -781,6 +784,7 @@ const applyVisibilitySettings = () => {
     if (elements.visibility_reset_start) elements.visibility_reset_start.checked = settings.showResetStart;
     if (elements.visibility_edit_time) elements.visibility_edit_time.checked = settings.showEditTime;
     if (elements.visibility_countdown) elements.visibility_countdown.checked = settings.showCountdown;
+    if (elements.visibility_undo_half) elements.visibility_undo_half.checked = settings.showUndoHalf;
 
     // Apply to UI Elements
     if (elements.injuryTimeContainer) elements.injuryTimeContainer.style.display = settings.showPlusMinus ? 'flex' : 'none';
@@ -792,6 +796,10 @@ const applyVisibilitySettings = () => {
     // Countdown checkbox container
     const countdownLabel = elements.countdownCheck ? elements.countdownCheck.closest('label') : null;
     if (countdownLabel) countdownLabel.style.display = settings.showCountdown ? 'flex' : 'none';
+
+    if (elements.undoHalfBtn) {
+        elements.undoHalfBtn.style.display = settings.showUndoHalf ? 'inline-flex' : 'none';
+    }
 
 
     // Label Visibility Control
@@ -1338,12 +1346,10 @@ const fullReset = () => {
     updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, 0);
     stopTimer();
     timer = 0;
-    half = '1st';
+    resetHalfToDefault();
     injuryTime = 0;
     updateTimerDisplay();
     updateInjuryTimeDisplay();
-    elements.halfText.textContent = half;
-    setText('half_text', half);
     showToast(translations[currentLang].toastFullReset, 'info');
 };
 
@@ -1438,12 +1444,169 @@ const saveAndUpdateTime = () => {
     showToast(translations[currentLang].toastTimeSet, 'success');
 }
 
-const toggleHalf = async () => {
-    const halves = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
-    // Limit halves array based on maxHalves
-    // V2.9.2: Fix slice logic if maxHalves is undefined or logic slightly off
+const loadIndicatorSettings = () => {
+    const type = localStorage.getItem('indicator_type') || 'dot';
+    const direction = localStorage.getItem('indicator_direction') || 'horizontal';
+    const width = localStorage.getItem('indicator_width') || '20';
+    const height = localStorage.getItem('indicator_height') || '20';
+    const gap = localStorage.getItem('indicator_gap') || '8';
+    const radius = localStorage.getItem('indicator_radius') || '10';
+    const colorActive = localStorage.getItem('indicator_color_active') || '#3b82f6';
+    const colorInactive = localStorage.getItem('indicator_color_inactive') || '#4b5563';
+
+    const typeSelect = document.getElementById('indicatorTypeSelect');
+    const directionSelect = document.getElementById('indicatorDirectionSelect');
+    const widthInput = document.getElementById('indicatorWidthInput');
+    const heightInput = document.getElementById('indicatorHeightInput');
+    const gapInput = document.getElementById('indicatorGapInput');
+    const radiusInput = document.getElementById('indicatorRadiusInput');
+    const colorActiveInput = document.getElementById('indicatorActiveColorInput');
+    const colorInactiveInput = document.getElementById('indicatorInactiveColorInput');
+
+    if (typeSelect) typeSelect.value = type;
+    if (directionSelect) directionSelect.value = direction;
+    if (widthInput) widthInput.value = width;
+    if (heightInput) heightInput.value = height;
+    if (gapInput) gapInput.value = gap;
+    if (radiusInput) radiusInput.value = radius;
+    if (colorActiveInput) colorActiveInput.value = colorActive;
+    if (colorInactiveInput) colorInactiveInput.value = colorInactive;
+};
+
+const toggleIndicatorSettings = () => {
+    const container = document.getElementById('halfIndicatorSettingsContainer');
+    const chevron = document.getElementById('toggleIndicatorChevron');
+    if (container && chevron) {
+        const isHidden = container.style.display === 'none';
+        container.style.display = isHidden ? 'flex' : 'none';
+        chevron.className = isHidden ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    }
+};
+
+const createHalfIndicatorObsSource = async (btn) => {
+    if (typeof obs === 'undefined') {
+        showToast(translations[currentLang].toastObsError || 'OBS not connected', 'error');
+        return;
+    }
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        }
+
+        const scene = await obs.call('GetCurrentProgramScene');
+        const sceneName = scene.currentProgramSceneName;
+        // Dynamic absolute path of half_indicator.html
+        const absPath = window.location.href.replace(/\/[^/]*$/, '') + '/half_indicator.html';
+
+        await obs.call('CreateInput', {
+            sceneName,
+            inputName: 'Half_Indicator_Overlay',
+            inputKind: 'browser_source',
+            inputSettings: {
+                url: absPath,
+                width: 500,
+                height: 150,
+                css: 'body { background: transparent !important; }',
+                shutdown: false,
+                reroute_audio: false,
+            },
+            sceneItemEnabled: true,
+        });
+
+        showToast('✅ Half_Indicator_Overlay created in OBS!', 'success');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Created!';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+            }, 2000);
+        }
+    } catch (err) {
+        const msg = err?.message || err?.error || String(err);
+        if (msg.includes('already exists') || err?.code === 601) {
+            showToast('⚠️ Half_Indicator_Overlay already exists.', 'warning');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Already exists';
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+                }, 2000);
+            }
+        } else {
+            showToast('❌ OBS Error: ' + msg, 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">${translations[currentLang].createIndicatorObsBtn || 'Create OBS Source'}</span>`;
+            }
+        }
+    }
+};
+
+const getHalvesArray = () => {
+    const format = localStorage.getItem('halfStyle') || 'ordinal';
     const limit = maxHalves || 2;
-    const activeHalves = halves.slice(0, limit);
+    let list = [];
+    if (format === 'ordinal') {
+        list = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+    } else if (format === 'quarter') {
+        list = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10', 'Q11', 'Q12'];
+    } else if (format === 'number') {
+        list = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    } else if (format === 'h') {
+        list = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12'];
+    } else if (format === 'half') {
+        list = ['1st Half', '2nd Half', '3rd Half', '4th Half', '5th Half', '6th Half', '7th Half', '8th Half', '9th Half', '10th Half', '11th Half', '12th Half'];
+    } else if (format === 'thai') {
+        list = ['ครึ่งแรก', 'ครึ่งหลัง', 'ครึ่งที่ 3', 'ครึ่งที่ 4', 'ครึ่งที่ 5', 'ครึ่งที่ 6', 'ครึ่งที่ 7', 'ครึ่งที่ 8', 'ครึ่งที่ 9', 'ครึ่งที่ 10', 'ครึ่งที่ 11', 'ครึ่งที่ 12'];
+    } else if (format === 'set') {
+        list = ['Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5', 'Set 6', 'Set 7', 'Set 8', 'Set 9', 'Set 10', 'Set 11', 'Set 12'];
+    } else if (format === 'game') {
+        list = ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6', 'Game 7', 'Game 8', 'Game 9', 'Game 10', 'Game 11', 'Game 12'];
+    } else if (format === 'custom') {
+        const customVal = localStorage.getItem('customHalfFormat') || '';
+        if (customVal.trim()) {
+            list = customVal.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (list.length === 0) {
+            list = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+        }
+    } else {
+        list = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+    }
+    return list.slice(0, limit);
+};
+
+const resetHalfToDefault = () => {
+    const activeHalves = getHalvesArray();
+    half = activeHalves[0] || '1st';
+    const html = `<span class="half-ordinal">${half}</span>`;
+    if (elements.halfText) elements.halfText.innerHTML = html;
+    setText('half_text', half);
+    localStorage.setItem('half', half);
+};
+
+const setHalfStyle = (newStyle) => {
+    const oldActiveHalves = getHalvesArray();
+    const oldIndex = oldActiveHalves.indexOf(half);
+    
+    localStorage.setItem('halfStyle', newStyle);
+    
+    const newActiveHalves = getHalvesArray();
+    let newIndex = oldIndex;
+    if (newIndex === -1 || newIndex >= newActiveHalves.length) {
+        newIndex = 0;
+    }
+    
+    half = newActiveHalves[newIndex] || '1st';
+    const html = `<span class="half-ordinal">${half}</span>`;
+    if (elements.halfText) elements.halfText.innerHTML = html;
+    setText('half_text', half);
+    localStorage.setItem('half', half);
+};
+
+const toggleHalf = async () => {
+    const activeHalves = getHalvesArray();
 
     let currentIndex = activeHalves.indexOf(half);
     if (currentIndex === -1) currentIndex = 0;
@@ -1455,8 +1618,8 @@ const toggleHalf = async () => {
     const bibOverrideB = document.getElementById('bibOverrideB');
     const hasBib = (bibOverrideA && bibOverrideA.checked) || (bibOverrideB && bibOverrideB.checked);
 
-    // Ask to swap bib color when transitioning from 1st to 2nd half
-    if (half === '1st' && nextHalf === '2nd' && hasBib) {
+    // Ask to swap bib color when transitioning from index 0 to index 1 (e.g., 1st to 2nd half)
+    if (currentIndex === 0 && nextIndex === 1 && hasBib) {
         const isThai = currentLang === 'th';
         const msg = isThai ? 
             'คุณต้องการสลับสีเสื้อเอี้ยม (ดึงสีเสื้อเอี้ยมไปอีกฝั่ง) หรือไม่?' : 
@@ -1488,8 +1651,8 @@ const toggleHalf = async () => {
             if (bibOverrideB) bibOverrideB.dispatchEvent(new Event('change'));
         }
     }
-    // Check if bib overrides are active before changing half/round back to 1st
-    else if (nextHalf === '1st' && hasBib) {
+    // Check if bib overrides are active before changing half/round back to index 0
+    else if (nextIndex === 0 && hasBib) {
         const isThai = currentLang === 'th';
         const msg = isThai ?
             'คุณต้องการสลับทีมที่ใส่เสื้อเอี้ยม สำหรับครึ่งแรกใหม่หรือไม่?\n(ตกลง = สลับทีมที่ใส่เสื้อเอี้ยม, ยกเลิก = ปิดการใช้งานเสื้อเอี้ยมทั้งหมด)' :
@@ -1537,8 +1700,65 @@ const toggleHalf = async () => {
 
     // V2.9.2: Styled Half Text
     const html = `<span class="half-ordinal">${half}</span>`;
-    elements.halfText.innerHTML = html;
+    if (elements.halfText) elements.halfText.innerHTML = html;
     setText('half_text', half);
+    localStorage.setItem('half', half);
+};
+
+const undoHalf = async () => {
+    const activeHalves = getHalvesArray();
+
+    let currentIndex = activeHalves.indexOf(half);
+    if (currentIndex === -1) currentIndex = 0;
+
+    let prevIndex = (currentIndex - 1 + activeHalves.length) % activeHalves.length;
+    const prevHalf = activeHalves[prevIndex];
+
+    const bibOverrideA = document.getElementById('bibOverrideA');
+    const bibOverrideB = document.getElementById('bibOverrideB');
+    const hasBib = (bibOverrideA && bibOverrideA.checked) || (bibOverrideB && bibOverrideB.checked);
+
+    // If going from index 1 back to index 0, offer to swap back
+    if (currentIndex === 1 && prevIndex === 0 && hasBib) {
+        const isThai = currentLang === 'th';
+        const msg = isThai ? 
+            'คุณต้องการสลับสีเสื้อเอี้ยมกลับคืน (ดึงสีเสื้อเอี้ยมไปอีกฝั่ง) หรือไม่?' : 
+            'Do you want to swap the bib colors back (pull the bib color to the other side)?';
+        const title = isThai ? 'สลับสีเสื้อเอี้ยมกลับ' : 'Swap Bib Color Back';
+        const yesText = isThai ? 'สลับ' : 'Swap';
+        
+        const confirmed = await window.customConfirm(msg, title, 'fa-exchange-alt', yesText, 'btn-warning');
+        if (confirmed) {
+            const aChecked = bibOverrideA ? bibOverrideA.checked : false;
+            const bChecked = bibOverrideB ? bibOverrideB.checked : false;
+            
+            // Swap active bib colors in localStorage
+            const colorA = localStorage.getItem('bib_active_color_a') || '#84cc16';
+            const colorB = localStorage.getItem('bib_active_color_b') || '#f97316';
+            localStorage.setItem('bib_active_color_a', colorB);
+            localStorage.setItem('bib_active_color_b', colorA);
+            
+            // Update the custom color inputs
+            const bibCustomColorA = document.getElementById('bibCustomColorA');
+            const bibCustomColorB = document.getElementById('bibCustomColorB');
+            if (bibCustomColorA) bibCustomColorA.value = colorB;
+            if (bibCustomColorB) bibCustomColorB.value = colorA;
+            
+            if (bibOverrideA) bibOverrideA.checked = bChecked;
+            if (bibOverrideB) bibOverrideB.checked = aChecked;
+            
+            if (bibOverrideA) bibOverrideA.dispatchEvent(new Event('change'));
+            if (bibOverrideB) bibOverrideB.dispatchEvent(new Event('change'));
+        }
+    }
+
+    half = prevHalf;
+
+    // V2.9.2: Styled Half Text
+    const html = `<span class="half-ordinal">${half}</span>`;
+    if (elements.halfText) elements.halfText.innerHTML = html;
+    setText('half_text', half);
+    localStorage.setItem('half', half);
 };
 
 const updateInjuryTimeDisplay = () => {
@@ -1912,6 +2132,7 @@ const setupEventListeners = () => {
     if (elements.visibility_reset_start) elements.visibility_reset_start.addEventListener('change', (e) => saveVisibilitySetting('showResetStart', e.target.checked));
     if (elements.visibility_edit_time) elements.visibility_edit_time.addEventListener('change', (e) => saveVisibilitySetting('showEditTime', e.target.checked));
     if (elements.visibility_countdown) elements.visibility_countdown.addEventListener('change', (e) => saveVisibilitySetting('showCountdown', e.target.checked));
+    if (elements.visibility_undo_half) elements.visibility_undo_half.addEventListener('change', (e) => saveVisibilitySetting('showUndoHalf', e.target.checked));
 
     if (elements.labelCountInput) {
         elements.labelCountInput.addEventListener('change', (e) => {
@@ -1926,6 +2147,7 @@ const setupEventListeners = () => {
     elements.resetColorsBtn.addEventListener('click', resetTeamColors);
 
     elements.halfBtn.addEventListener('click', toggleHalf);
+    if (elements.undoHalfBtn) elements.undoHalfBtn.addEventListener('click', undoHalf);
     elements.playBtn.addEventListener('click', startTimer);
     elements.pauseBtn.addEventListener('click', stopTimer);
     elements.resetToStartBtn.addEventListener('click', resetToStartTime);
@@ -1972,10 +2194,24 @@ const setupEventListeners = () => {
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
         if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
+        
+        // Load half format settings
+        if (elements.halfStyleSelect) {
+            const savedStyle = localStorage.getItem('halfStyle') || 'ordinal';
+            elements.halfStyleSelect.value = savedStyle;
+            if (elements.customHalfFormatContainer) {
+                elements.customHalfFormatContainer.style.display = savedStyle === 'custom' ? 'flex' : 'none';
+            }
+        }
+        if (elements.customHalfFormatInput) {
+            elements.customHalfFormatInput.value = localStorage.getItem('customHalfFormat') || '';
+        }
+
         populateActionSettingsTable(currentLang);
         populateKeybindsTable(currentLang);
         applyVisibilitySettings();
         applyColorCount();
+        loadIndicatorSettings();
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
@@ -2093,8 +2329,85 @@ const setupEventListeners = () => {
         elements.maxHalvesSelect.addEventListener('change', (e) => {
             maxHalves = parseInt(e.target.value);
             localStorage.setItem('maxHalves', maxHalves);
+            
+            // Adjust current half if it's out of bounds of the new limit
+            const activeHalves = getHalvesArray();
+            let currentIndex = activeHalves.indexOf(half);
+            if (currentIndex === -1 || currentIndex >= activeHalves.length) {
+                half = activeHalves[activeHalves.length - 1] || '1st';
+                const html = `<span class="half-ordinal">${half}</span>`;
+                if (elements.halfText) elements.halfText.innerHTML = html;
+                setText('half_text', half);
+            }
         });
     }
+
+    // Half Format Change Listeners
+    if (elements.halfStyleSelect) {
+        elements.halfStyleSelect.addEventListener('change', (e) => {
+            const newStyle = e.target.value;
+            setHalfStyle(newStyle);
+            if (elements.customHalfFormatContainer) {
+                elements.customHalfFormatContainer.style.display = newStyle === 'custom' ? 'flex' : 'none';
+            }
+        });
+    }
+
+    if (elements.customHalfFormatInput) {
+        elements.customHalfFormatInput.addEventListener('input', debounce((e) => {
+            localStorage.setItem('customHalfFormat', e.target.value);
+            if (localStorage.getItem('halfStyle') === 'custom') {
+                setHalfStyle('custom');
+            }
+        }, 500));
+    }
+
+    // Half Indicator Overlay Settings listeners
+    const typeSelect = document.getElementById('indicatorTypeSelect');
+    const directionSelect = document.getElementById('indicatorDirectionSelect');
+    const widthInput = document.getElementById('indicatorWidthInput');
+    const heightInput = document.getElementById('indicatorHeightInput');
+    const gapInput = document.getElementById('indicatorGapInput');
+    const radiusInput = document.getElementById('indicatorRadiusInput');
+    const colorActiveInput = document.getElementById('indicatorActiveColorInput');
+    const colorInactiveInput = document.getElementById('indicatorInactiveColorInput');
+    const toggleBtn = document.getElementById('toggleIndicatorSettingsBtn');
+    const createObsBtn = document.getElementById('createHalfIndicatorObsBtn');
+    const copyLinkBtn = document.getElementById('copyHalfIndicatorLinkBtn');
+
+    if (toggleBtn) toggleBtn.addEventListener('click', toggleIndicatorSettings);
+    if (createObsBtn) createObsBtn.addEventListener('click', () => createHalfIndicatorObsSource(createObsBtn));
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', () => {
+            const absPath = window.location.href.replace(/\/[^/]*$/, '') + '/half_indicator.html';
+            navigator.clipboard.writeText(absPath).then(() => {
+                showToast(translations[currentLang].toastCopied || "Copied to clipboard!", "success");
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = absPath;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast(translations[currentLang].toastCopied || "Copied to clipboard!", "success");
+            });
+        });
+    }
+
+    const saveVal = (key, val) => {
+        localStorage.setItem(key, val);
+        window.dispatchEvent(new StorageEvent('storage', { key }));
+    };
+
+    if (typeSelect) typeSelect.addEventListener('change', (e) => saveVal('indicator_type', e.target.value));
+    if (directionSelect) directionSelect.addEventListener('change', (e) => saveVal('indicator_direction', e.target.value));
+    if (widthInput) widthInput.addEventListener('input', (e) => saveVal('indicator_width', e.target.value));
+    if (heightInput) heightInput.addEventListener('input', (e) => saveVal('indicator_height', e.target.value));
+    if (gapInput) gapInput.addEventListener('input', (e) => saveVal('indicator_gap', e.target.value));
+    if (radiusInput) radiusInput.addEventListener('input', (e) => saveVal('indicator_radius', e.target.value));
+    if (colorActiveInput) colorActiveInput.addEventListener('input', (e) => saveVal('indicator_color_active', e.target.value));
+    if (colorInactiveInput) colorInactiveInput.addEventListener('input', (e) => saveVal('indicator_color_inactive', e.target.value));
 };
 
 // NEW HELPER LOOP FOR FILES
@@ -2166,6 +2479,8 @@ document.addEventListener('DOMContentLoaded', () => {
     applyColorCount();
     renderActionButtons();
     resetToZero();
+    resetHalfToDefault();
+    loadIndicatorSettings();
 
     window.copyTag = copyTag;
 

@@ -222,6 +222,24 @@
                 align-items: center;
             }
 
+            #halfBtnContainer {
+                width: 100% !important;
+                min-width: 100% !important;
+                height: 54px !important;
+            }
+
+            #halfBtn {
+                flex: 1 1 auto !important;
+                width: auto !important;
+                height: 100% !important;
+            }
+
+            #undoHalfBtn {
+                flex: 0 0 60px !important;
+                width: 60px !important;
+                height: 100% !important;
+            }
+
             .timer-display-area {
                 border-left: none;
                 border-right: none;
@@ -2166,7 +2184,7 @@
                 </p>
             </div>
         </div>
-        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.2 (อัพเดต: 20 มิถุนายน 2569)</div>
+        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.3 (อัพเดต: 16 กรกฎาคม 2569)</div>
     </div>
 
     <script>
@@ -2865,11 +2883,15 @@
 
     <div class="card">
         <div class="row timer-area-container">
-            <div style="flex: 0 0 70px; display: flex;">
+            <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
                 <button id="halfBtn" class="btn-secondary"
-                    style="width: 100%; height: 100%; flex-direction: column; padding: 8px 0;">
+                    style="width: 70px; min-width: 70px; flex-shrink: 0; height: 100%; display: flex; flex-direction: column; padding: 4px 0; justify-content: center; align-items: center;">
                     <span style="font-size:0.8rem" data-lang="half"></span>
                     <span id="halfText" style="font-size:1.1rem; font-weight:bold;">1st</span>
+                </button>
+                <button id="undoHalfBtn" class="btn-secondary" title="Undo Half" data-lang-title="undoHalfHint"
+                    style="width: 40px; min-width: 40px; flex-shrink: 0; height: 100%; display: inline-flex; justify-content: center; align-items: center; padding: 0;">
+                    <i class="fas fa-undo"></i>
                 </button>
             </div>
 
@@ -2946,7 +2968,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.2</span> (อัพเดต: <span id="fcp-update-date-text">20 มิถุนายน 2569</span>)
+            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.3</span> (อัพเดต: <span id="fcp-update-date-text">16 กรกฎาคม 2569</span>)
         </div>
     </div>
     </div>
@@ -3128,6 +3150,89 @@
                         <option value="12">12</option>
                     </select>
                 </label>
+                <label class="countdown-toggle">
+                    <span data-lang="halfStyleLabel" style="margin-right: 10px;">Half Format:</span>
+                    <select id="halfStyleSelect"
+                        style="width: 120px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        <option value="ordinal">1st, 2nd, 3rd...</option>
+                        <option value="quarter">Q1, Q2, Q3...</option>
+                        <option value="number">1, 2, 3...</option>
+                        <option value="h">H1, H2, H3...</option>
+                        <option value="half">1st Half, 2nd Half...</option>
+                        <option value="thai">ครึ่งแรก, ครึ่งหลัง...</option>
+                        <option value="set">Set 1, Set 2...</option>
+                        <option value="game">Game 1, Game 2...</option>
+                        <option value="custom" data-lang="halfStyleCustom">Custom (ระบุเอง)</option>
+                    </select>
+                </label>
+                <label class="countdown-toggle" id="customHalfFormatContainer" style="display: none; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%;">
+                    <span data-lang="customHalfFormatLabel" style="margin-right: 10px;">Custom Values (comma-separated):</span>
+                    <input type="text" id="customHalfFormatInput" placeholder="e.g. 1st, 2nd, OT"
+                        style="width: 100%; max-width: 200px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                </label>
+                <div style="width: 100%; display: flex; flex-direction: column; margin-top: 5px; margin-bottom: 5px;">
+                    <button type="button" id="toggleIndicatorSettingsBtn" class="btn-secondary" style="font-size: 0.85rem; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-radius: 6px;">
+                        <span><i class="fas fa-sliders-h" style="margin-right: 6px;"></i> <span data-lang="halfIndicatorSettingsTitle">Half Indicator Overlay Settings</span></span>
+                        <i class="fas fa-chevron-down" id="toggleIndicatorChevron"></i>
+                    </button>
+                    <div id="halfIndicatorSettingsContainer" style="display: none; margin-top: 8px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+                        <!-- Type: Dot/Dash -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorTypeLabel">Style:</span>
+                            <select id="indicatorTypeSelect" style="width: 100px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                                <option value="dot" data-lang="indicatorTypeDot">Dots (จุด)</option>
+                                <option value="dash" data-lang="indicatorTypeDash">Dashes (ขีด)</option>
+                            </select>
+                        </div>
+                        <!-- Direction: Horiz/Vert -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorDirectionLabel">Orientation:</span>
+                            <select id="indicatorDirectionSelect" style="width: 100px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                                <option value="horizontal" data-lang="indicatorDirectionHoriz">Horizontal (แนวนอน)</option>
+                                <option value="vertical" data-lang="indicatorDirectionVert">Vertical (แนวตั้ง)</option>
+                            </select>
+                        </div>
+                        <!-- Size / Width -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorWidthLabel">Width/Size (px):</span>
+                            <input type="number" id="indicatorWidthInput" value="20" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Height -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorHeightLabel">Height (px):</span>
+                            <input type="number" id="indicatorHeightInput" value="20" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Gap -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorGapLabel">Gap (px):</span>
+                            <input type="number" id="indicatorGapInput" value="8" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Radius -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorRadiusLabel">Border Radius (px):</span>
+                            <input type="number" id="indicatorRadiusInput" value="10" style="width: 80px; padding: 4px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        </div>
+                        <!-- Colors -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorActiveColorLabel">Active Color:</span>
+                            <input type="color" id="indicatorActiveColorInput" value="#3b82f6" style="width: 50px; height: 26px; border: none; padding: 0; background: transparent; cursor: pointer;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-lang="indicatorInactiveColorLabel">Inactive Color:</span>
+                            <input type="color" id="indicatorInactiveColorInput" value="#4b5563" style="width: 50px; height: 26px; border: none; padding: 0; background: transparent; cursor: pointer;">
+                        </div>
+                        <div class="popup-divider" style="margin: 5px 0;"></div>
+                        <!-- Create OBS Source Button -->
+                        <div style="display: flex; gap: 8px; margin-top: 8px; width: 100%;">
+                            <button type="button" id="createHalfIndicatorObsBtn" class="btn-primary" style="flex: 1; font-size: 0.85rem; padding: 8px 0; border-radius: 6px;">
+                                <i class="fas fa-plus-circle"></i> <span data-lang="createIndicatorObsBtn">Create OBS Source</span>
+                            </button>
+                            <button type="button" id="copyHalfIndicatorLinkBtn" class="btn-secondary" style="width: 105px; font-size: 0.85rem; padding: 8px 0; border-radius: 6px; display: inline-flex; justify-content: center; align-items: center; gap: 4px;">
+                                <i class="fas fa-copy"></i> <span data-lang="copyLinkBtn">Copy Link</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <!-- Color count selector -->
                 <label class="countdown-toggle">
                     <span data-lang="colorCount" style="margin-right: 10px;">Team Colors:</span>
@@ -3217,6 +3322,13 @@
                             <span class="slider"></span>
                         </div>
                         <span data-lang="visCountdown">Countdown</span>
+                    </label>
+                    <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="visibility_undo_half" checked>
+                            <span class="slider"></span>
+                        </div>
+                        <span data-lang="visUndoHalf">Undo Half Btn</span>
                     </label>
                 </div>
             </div>

@@ -43,7 +43,7 @@ export const translations = {
         help: "Help",
         donate: "Donate",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "Update Version 2.9.5.2",
+        changelog: "Update Version 2.9.5.3",
         detailsTitle: "Settings & Announcement",
         detailsDesc: "Customize general settings and announcement text below.",
         tagsTitle: "Available Tags for Announcement",
@@ -131,6 +131,25 @@ export const translations = {
         visCountdown: "Countdown",
         visControlTitle: "Timer Controls Visibility",
         maxHalvesLabel: "Max Halves:",
+        halfStyleLabel: "Half Format:",
+        halfStyleCustom: "Custom (Manual)",
+        customHalfFormatLabel: "Custom Values (comma-separated):",
+        visUndoHalf: "Undo Half Btn",
+        halfIndicatorSettingsTitle: "Half Indicator Overlay Settings",
+        indicatorTypeLabel: "Style:",
+        indicatorTypeDot: "Dots",
+        indicatorTypeDash: "Dashes",
+        indicatorDirectionLabel: "Orientation:",
+        indicatorDirectionHoriz: "Horizontal",
+        indicatorDirectionVert: "Vertical",
+        indicatorWidthLabel: "Width (px):",
+        indicatorHeightLabel: "Height (px):",
+        indicatorGapLabel: "Gap (px):",
+        indicatorRadiusLabel: "Border Radius (px):",
+        indicatorActiveColorLabel: "Active Color:",
+        indicatorInactiveColorLabel: "Inactive Color:",
+        createIndicatorObsBtn: "Create OBS Source",
+        copyLinkBtn: "Copy Link",
         close: "Close",
         saveAndUpdate: "Save & Update",
         helpTitle: "How to Use",
@@ -183,6 +202,14 @@ export const translations = {
         changelogTitle: "Update History",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>Version 2.9.5.3</h5>
+                    <ul>
+                        <li>**Custom Half Formats:** Added presets (Q1-Q4, 1-4, H1-H2, Set 1-Set 4, Game 1-Game 2) and custom input support for half/period/quarter settings.</li>
+                        <li>**Undo Half Action:** Added an Undo Half button on the control panel to revert/cycle backwards through halves/rounds.</li>
+                        <li>**Undo Half Visibility Toggle:** Added a settings checkbox to show or hide the Undo Half button.</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>Version 2.9.5.2</h5>
                     <ul>
@@ -323,7 +350,7 @@ export const translations = {
         help: "วิธีใช้",
         donate: "สนับสนุน",
         footerAppName: "OBS Dock UI Scoreboard",
-        changelog: "อัปเดตเวอร์ชัน 2.9.5.2",
+        changelog: "อัปเดตเวอร์ชัน 2.9.5.3",
         detailsTitle: "ตั้งค่า & ข้อความประกาศ",
         detailsDesc: "ตั้งค่าทั่วไปและข้อความประกาศด้านล่าง",
         tagsTitle: "Tags ที่ใช้งานได้สำหรับข้อความประกาศ",
@@ -411,6 +438,25 @@ export const translations = {
         visCountdown: "นับถอยหลัง",
         visControlTitle: "แสดง/ซ่อนปุ่มเวลา",
         maxHalvesLabel: "จำนวนครึ่งเวลาสูงสุด:",
+        halfStyleLabel: "รูปแบบครึ่งเวลา:",
+        halfStyleCustom: "ระบุรูปแบบเอง",
+        customHalfFormatLabel: "รูปแบบกำหนดเอง (คั่นด้วยจุลภาค ,):",
+        visUndoHalf: "ปุ่มย้อนครึ่งเวลา",
+        halfIndicatorSettingsTitle: "ตั้งค่าครึ่งเวลาแอนิเมชัน (Overlay)",
+        indicatorTypeLabel: "รูปแบบ:",
+        indicatorTypeDot: "จุด (Dots)",
+        indicatorTypeDash: "ขีด (Dashes)",
+        indicatorDirectionLabel: "แนวการแสดงผล:",
+        indicatorDirectionHoriz: "แนวนอน (Horizontal)",
+        indicatorDirectionVert: "แนวตั้ง (Vertical)",
+        indicatorWidthLabel: "ความยาว/ความกว้าง (px):",
+        indicatorHeightLabel: "ความสูง (px):",
+        indicatorGapLabel: "ความห่าง (px):",
+        indicatorRadiusLabel: "ความโค้งมน (px):",
+        indicatorActiveColorLabel: "สีจุดทำงานอยู่:",
+        indicatorInactiveColorLabel: "สีจุดที่ยังไม่ทำงาน:",
+        createIndicatorObsBtn: "สร้าง Source ใน OBS",
+        copyLinkBtn: "คัดลอกลิงก์",
         close: "ปิด",
         saveAndUpdate: "บันทึกและอัปเดต",
         helpTitle: "วิธีการใช้งาน",
@@ -466,6 +512,14 @@ export const translations = {
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>เวอร์ชัน 2.9.5.3</h5>
+                    <ul>
+                        <li>**ปรับรูปแบบชื่อครึ่งเวลา:** เพิ่มรูปแบบครึ่งเวลาสำเร็จรูป (Q1-Q4, 1-4, H1-H2, ครึ่งแรก-ครึ่งหลัง, Set 1-Set 4, Game 1-Game 2) และกำหนดชื่อเองได้ในส่วนตั้งค่า</li>
+                        <li>**ปุ่มย้อนครึ่งเวลา (Undo Half):** เพิ่มปุ่มสำหรับย้อนกลับหรือสลับครึ่งเวลากลับหลังที่แถวปุ่มควบคุมหลัก</li>
+                        <li>**ตัวเลือกแสดงปุ่มย้อนครึ่งเวลา:** เพิ่มเช็คบ็อกซ์ในตั้งค่าเพื่อเปิด/ปิดการแสดงผลปุ่มย้อนครึ่งเวลา</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>เวอร์ชัน 2.9.5.2</h5>
                     <ul>
