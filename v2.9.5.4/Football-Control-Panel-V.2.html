@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.2</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1177,39 +1177,31 @@
         .popup-modal {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
+            top: 0;
+            left: 0;
             background: rgb(30, 41, 59);
-            padding: 30px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 600px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            width: 100%;
+            height: 100%;
             z-index: 100;
-            max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes modalSlideIn {
-            to {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
+            box-shadow: none;
+            border: none;
+            border-radius: 0;
+            max-width: 100%;
+            max-height: 100%;
         }
 
         .popup-modal h3 {
             margin-top: 0;
-            font-size: 1.5rem;
+            font-size: 1.1rem;
             color: #fff;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
+            padding-bottom: 6px;
         }
 
         .popup-modal p {
@@ -1736,47 +1728,23 @@
             align-items: center;
             gap: 8px;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             width: 100%;
         }
         .settings-tabs {
             display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            flex-wrap: wrap;
             gap: 6px;
             background: rgba(15, 23, 42, 0.6);
             padding: 6px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            justify-content: flex-start;
-            scrollbar-width: none; /* Firefox */
+            justify-content: center;
             flex-grow: 1;
-            scroll-behavior: smooth;
-        }
-
-        .settings-tabs::-webkit-scrollbar {
-            display: none; /* Safari and Chrome */
         }
 
         .settings-tabs-arrow {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            z-index: 2;
-            flex-shrink: 0;
-        }
-
-        .settings-tabs-arrow:hover {
-            background: var(--accent-color);
-            color: #fff;
+            display: none !important;
         }
 
         .settings-tab-btn {
@@ -2167,9 +2135,15 @@
             <div id="welcomeLoadingStatus"
                 style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8; text-align: center; min-height: 20px; transition: all 0.3s;">
             </div>
-            <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center;">
+            <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center; margin-bottom: 12px;">
                 * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
             </p>
+
+            <!-- Quick login & reset actions -->
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 280px; margin-left: auto; margin-right: auto;">
+                <button onclick="window.enterAsGuest()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">เข้าแบบผู้ใช้ชั่วคราว (Guest)</button>
+                <button onclick="window.resetStoredIdentity()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">ล้างข้อมูลเดิม / สมัครใหม่ (Reset ID)</button>
+            </div>
                         <div style="margin-top: 15px; text-align: center;">
                 <a href="https://ezdn.app/Jamornz" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-hand-holding-heart"></i> สนับสนุนการพัฒนาโปรแกรม (Donate)</a>
             </div>
@@ -2184,7 +2158,7 @@
                 </p>
             </div>
         </div>
-        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.3 (อัพเดต: 16 กรกฎาคม 2569)</div>
+        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.4 (อัพเดต: 20 กรกฎาคม 2569)</div>
     </div>
 
     <script>
@@ -2968,7 +2942,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.3</span> (อัพเดต: <span id="fcp-update-date-text">16 กรกฎาคม 2569</span>)
+            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.4</span> (อัพเดต: <span id="fcp-update-date-text">20 กรกฎาคม 2569</span>)
         </div>
     </div>
     </div>
@@ -2976,6 +2950,8 @@
     <!-- Duplicate Mobile Popup Removed -->
 
     <div id="detailsPopup" class="popup-modal">
+        <!-- Top Right Close Button -->
+        <button onclick="closeAllPopups()" class="close-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.08); border: none; width: 32px; height: 32px; border-radius: 50%; color: white; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 101;">&times;</button>
         <h3><i class="fas fa-cog"></i> <span data-lang="detailsTitle"></span></h3>
 
         <!-- Settings Tabs -->
@@ -3690,7 +3666,7 @@
     </script>
 
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.2"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.4"></script>
 
     <!-- Duplicate Mobile Control Popup Removed (using the one at line ~2160) -->
 

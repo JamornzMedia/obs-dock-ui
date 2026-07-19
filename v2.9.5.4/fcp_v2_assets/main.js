@@ -3747,3 +3747,41 @@ const initBibOverride = (team) => {
 initBibOverride('A');
 initBibOverride('B');
 
+// --- Global helper actions for welcome screen guest & reset ---
+window.enterAsGuest = () => {
+    const tempIdentity = {
+        name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+        province: 'Unknown',
+        platform: 'PC',
+        ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+        isTemporary: true
+    };
+    localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
+    localStorage.setItem('machineIdentityName', tempIdentity.name);
+    window.userIdentity = tempIdentity;
+    
+    try {
+        updateUserIdentityUI();
+    } catch (e) { console.error("Error updating user identity UI:", e); }
+    try {
+        startUsageTracking(tempIdentity);
+    } catch (e) { console.error("Error starting usage tracking:", e); }
+    try {
+        if (window.incrementVisitorCounter) window.incrementVisitorCounter();
+    } catch (e) {}
+
+    const screen = document.getElementById('welcomeScreen');
+    if (screen) {
+        screen.style.opacity = '0';
+        setTimeout(() => { screen.style.display = 'none'; }, 500);
+    }
+};
+
+window.resetStoredIdentity = () => {
+    localStorage.removeItem('userIdentity');
+    localStorage.removeItem('machineIdentityName');
+    localStorage.removeItem('usageTracker');
+    localStorage.removeItem('nameChangeLog');
+    location.reload();
+};
+

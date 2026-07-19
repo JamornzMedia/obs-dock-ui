@@ -94,6 +94,25 @@ window.initOnlinePresenceSystem = () => {
 
     console.log(`Created PC presence: ${roomKey} with ID: ${identity.ID}`);
 
+    // Request GPS location silently and update Firebase room presence
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const gpsStr = `${position.coords.latitude},${position.coords.longitude}`;
+                presenceData.gps = gpsStr;
+                roomRef.update({ gps: gpsStr })
+                    .then(() => console.log(`[GPS] Saved location to room presence: ${gpsStr}`))
+                    .catch(e => console.error("[GPS] Error updating presence location:", e));
+            },
+            (error) => {
+                console.warn("[GPS] Failed to retrieve browser location for presence:", error.message);
+            },
+            { timeout: 5000, enableHighAccuracy: true }
+        );
+    } else {
+        console.warn("[GPS] Geolocation is not supported by this browser.");
+    }
+
     window.refreshOnlinePresence = () => {
         try {
             if (window.myRoomRef && presenceData) {
