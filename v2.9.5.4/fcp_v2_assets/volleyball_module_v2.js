@@ -706,9 +706,19 @@ function injectSettingsTab() {
   const tabBtn = document.createElement('button');
   tabBtn.className = 'settings-tab-btn';
   tabBtn.setAttribute('data-tab', TAB_ID);
-  tabBtn.innerHTML = '🎨 กราฟิกกีฬา / Sport Graphics';
+  tabBtn.setAttribute('data-lang', 'sportTabBtn');
   tabBtn.style.color = '#f59e0b';
-  tabsContainer.appendChild(tabBtn);
+  
+  const initialLang = localStorage.getItem('scoreboardLang') || 'th';
+  const initialTrans = (window.translations && window.translations[initialLang]) ? window.translations[initialLang] : null;
+  tabBtn.innerHTML = (initialTrans && initialTrans.sportTabBtn) ? initialTrans.sportTabBtn : '🎨 Sport Graphics';
+
+  const cacheBtn = tabsContainer.querySelector('[data-tab="settingsTabCache"]');
+  if (cacheBtn) {
+    tabsContainer.insertBefore(tabBtn, cacheBtn);
+  } else {
+    tabsContainer.appendChild(tabBtn);
+  }
 
   // Wire into existing switchSettingsTab (exposed on window by main.js)
   tabBtn.addEventListener('click', () => {
@@ -1227,12 +1237,17 @@ function injectSettingsTab() {
     </div>
   `;
 
-  // Append panel after the last existing tab-content inside detailsPopup
+  // Insert panel BEFORE the Cache tab so Sport Graphics is not the last tab
   const detailsPopup = document.getElementById('detailsPopup');
   if (detailsPopup) {
-    const lastTab = [...detailsPopup.querySelectorAll('.settings-tab-content')].pop();
-    if (lastTab) lastTab.insertAdjacentElement('afterend', panel);
-    else detailsPopup.appendChild(panel);
+    const cacheTabContent = detailsPopup.querySelector('#settingsTabCache');
+    if (cacheTabContent) {
+      detailsPopup.insertBefore(panel, cacheTabContent);
+    } else {
+      const lastTab = [...detailsPopup.querySelectorAll('.settings-tab-content')].pop();
+      if (lastTab) lastTab.insertAdjacentElement('afterend', panel);
+      else detailsPopup.appendChild(panel);
+    }
   }
 
   // ── 3. Inject CSS ─────────────────────────────────────────────

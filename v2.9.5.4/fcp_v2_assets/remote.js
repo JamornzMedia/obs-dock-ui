@@ -94,23 +94,45 @@ window.initOnlinePresenceSystem = () => {
 
     console.log(`Created PC presence: ${roomKey} with ID: ${identity.ID}`);
 
-    // Request GPS location silently and update Firebase room presence
+    // Request GPS location silently — with OBS Dock fallback via IP Geolocation
+    const updateRoomGps = (gpsStr) => {
+        presenceData.gps = gpsStr;
+        roomRef.update({ gps: gpsStr })
+            .then(() => console.log(`[GPS] Saved location: ${gpsStr}`))
+            .catch(e => console.error('[GPS] Error updating presence location:', e));
+    };
+
+    const fallbackIpGps = () => {
+        fetch('https://ipwho.is/')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.latitude && data.longitude) {
+                    const gpsStr = `${data.latitude},${data.longitude}`;
+                    console.log(`[GPS] IP fallback location: ${gpsStr} (city: ${data.city || '?'})`);
+                    updateRoomGps(gpsStr);
+                } else {
+                    console.warn('[GPS] IP fallback returned incomplete data:', data);
+                }
+            })
+            .catch(e => console.warn('[GPS] IP fallback also failed:', e.message));
+    };
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const gpsStr = `${position.coords.latitude},${position.coords.longitude}`;
-                presenceData.gps = gpsStr;
-                roomRef.update({ gps: gpsStr })
-                    .then(() => console.log(`[GPS] Saved location to room presence: ${gpsStr}`))
-                    .catch(e => console.error("[GPS] Error updating presence location:", e));
+                console.log(`[GPS] Browser location acquired: ${gpsStr}`);
+                updateRoomGps(gpsStr);
             },
             (error) => {
-                console.warn("[GPS] Failed to retrieve browser location for presence:", error.message);
+                console.warn(`[GPS] Browser location blocked (${error.message}), trying IP fallback…`);
+                fallbackIpGps();
             },
-            { timeout: 5000, enableHighAccuracy: true }
+            { timeout: 5000, enableHighAccuracy: false }
         );
     } else {
-        console.warn("[GPS] Geolocation is not supported by this browser.");
+        console.warn('[GPS] Geolocation API unavailable, trying IP fallback…');
+        fallbackIpGps();
     }
 
     window.refreshOnlinePresence = () => {

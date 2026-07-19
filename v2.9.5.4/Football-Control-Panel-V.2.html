@@ -2641,8 +2641,8 @@
             }
         });
     </script>
-    <div class="container">
-        <div class="card"
+    <div class="container" id="mainPanelContainer">
+        <div class="card" data-panel-id="panelTopBar"
             style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px;">
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -2673,7 +2673,7 @@
     <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
     </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelExcelLoad">
         <div class="row space-between">
             <div class="row" style="margin-bottom:0;">
                 <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span
@@ -2697,7 +2697,7 @@
             </div>
         </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelTeamEditor">
         <div class="team-editor">
             <div class="team-row">
                 <!-- Row 1: Header (Colors + Logo) -->
@@ -2777,18 +2777,18 @@
             <div id="label5" data-lang="label5"></div>
         </div>
     </div>
-    <div class="card" id="swapCard" style="padding: 8px;">
+    <div class="card" data-panel-id="panelSwap" id="swapCard" style="padding: 8px;">
         <div class="row center">
             <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span
                     data-lang="swap"></span></button>
         </div>
     </div>
 
-    <div class="card" id="actionButtonsCard">
+    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
         <div class="action-buttons-grid" id="actionButtonsGrid">
         </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelScore">
         <div class="score-panel-clean">
             <!-- Team A -->
             <div class="score-col-team">
@@ -2855,7 +2855,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel-id="panelTimer">
         <div class="row timer-area-container">
             <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
                 <button id="halfBtn" class="btn-secondary"
@@ -2904,7 +2904,7 @@
     </div>
 
     <!-- Display Table Control Panel on Main Page -->
-    <div id="dt-main-control-card" class="card" style="display: none; border: 1.5px solid #22c55e;">
+    <div id="dt-main-control-card" class="card" data-panel-id="panelDtControl" style="display: none; border: 1.5px solid #22c55e;">
         <div style="font-size: 0.75rem; font-weight: 700; color: #22c55e; text-transform: uppercase; margin-bottom: 8px; text-align: center;">📊 ควบคุมตาราง / Display Table Row Filter</div>
         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 12px; color: #cbd5e1;">MatchID Range:</span>
@@ -2920,6 +2920,11 @@
             <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
                     class="fas fa-cog"></i></button>
 
+            <!-- V2.9.5.4: Layout Editor Button -->
+            <button id="layoutEditorBtn" class="btn-secondary" title="ปรับ Layout / Customize Layout" onclick="openLayoutEditor()" style="color: #a78bfa;">
+                <i class="fas fa-th-large"></i>
+            </button>
+
             <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"
                 onclick="openMobileControlPopup()"><i class="fas fa-mobile-alt"></i></button>
 
@@ -2931,6 +2936,33 @@
                 <option value="th">ภาษาไทย</option>
                 <option value="en">English</option>
             </select>
+        </div>
+    </div>
+
+    <!-- V2.9.5.4: Layout Editor Overlay -->
+    <div id="layoutEditorOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,15,28,0.97); z-index:9999; overflow-y:auto; padding:16px; box-sizing:border-box; font-family:Inter,sans-serif;">
+        <div style="max-width:480px; margin:0 auto;">
+            <!-- Header -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:1.15rem; color:#a78bfa; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-th-large"></i> ปรับ Layout / Customize Layout
+                </h2>
+                <button onclick="closeLayoutEditor()" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+            </div>
+            <p style="color:#64748b; font-size:0.78rem; margin-top:-12px; margin-bottom:16px;">กดตา 👁 เพื่อซ่อน/แสดง &bull; ลูกศร ▲▼ เพื่อเลื่อน &bull; แล้วกด Confirm เพื่อบันทึก</p>
+
+            <!-- Panel list -->
+            <div id="layoutEditorList" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+            <!-- Action buttons -->
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="confirmLayout()" style="flex:1; padding:12px; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer;">
+                    <i class="fas fa-check"></i> Confirm &amp; Save
+                </button>
+                <button onclick="resetLayout()" style="padding:12px 20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#fca5a5; font-size:0.9rem; font-weight:600; cursor:pointer;">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
         </div>
     </div>
     <div class="footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
@@ -3665,6 +3697,175 @@
         }
     </script>
 
+    <!-- V2.9.5.4: Layout Editor Script -->
+    <script>
+        // --- Layout Editor ---
+        const LAYOUT_KEY = 'panelLayout_v2954';
+
+        const PANEL_DEFS = [
+            { id: 'panelTopBar',        label: '📡 แถบข้อมูล / Info Bar',        defaultHidden: false },
+            { id: 'panelExcelLoad',     label: '📂 โหลดข้อมูล / Excel Load',     defaultHidden: false },
+            { id: 'panelTeamEditor',    label: '🎽 แก้ไขทีม / Team Editor',       defaultHidden: false },
+            { id: 'panelSwap',          label: '🔄 สลับทีม / Swap Teams',         defaultHidden: false },
+            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
+            { id: 'panelScore',         label: '🏆 คะแนน / Score Panel',           defaultHidden: false },
+            { id: 'panelTimer',         label: '⏱️ เวลา / Timer Panel',            defaultHidden: false },
+            { id: 'panelDtControl',     label: '📊 ตาราง / Display Table Control', defaultHidden: true  },
+        ];
+
+        function getDefaultLayout() {
+            return {
+                order: PANEL_DEFS.map(p => p.id),
+                hidden: PANEL_DEFS.filter(p => p.defaultHidden).map(p => p.id)
+            };
+        }
+
+        function loadLayout() {
+            try {
+                const saved = localStorage.getItem(LAYOUT_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
+            return getDefaultLayout();
+        }
+
+        function saveLayout(layout) {
+            localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+        }
+
+        function applyLayout(layout) {
+            const container = document.getElementById('mainPanelContainer');
+            if (!container) return;
+
+            // Reorder panels
+            layout.order.forEach(panelId => {
+                const el = container.querySelector(`[data-panel-id="${panelId}"]`);
+                if (el) container.appendChild(el);
+            });
+
+            // Show/hide panels
+            PANEL_DEFS.forEach(({ id }) => {
+                const el = container.querySelector(`[data-panel-id="${id}"]`);
+                if (!el) return;
+
+                // Special case: panelDtControl is managed by its own display table toggle
+                if (id === 'panelDtControl') return;
+
+                const isHidden = layout.hidden.includes(id);
+                el.style.display = isHidden ? 'none' : '';
+            });
+        }
+
+        // --- Editor state (editable copy while overlay is open) ---
+        let editorState = null;
+
+        function renderEditorList() {
+            const list = document.getElementById('layoutEditorList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            editorState.order.forEach((panelId, idx) => {
+                const def = PANEL_DEFS.find(p => p.id === panelId);
+                if (!def) return;
+                const isHidden = editorState.hidden.includes(panelId);
+                const isFirst = idx === 0;
+                const isLast  = idx === editorState.order.length - 1;
+
+                const row = document.createElement('div');
+                row.style.cssText = `
+                    display:flex; align-items:center; gap:10px;
+                    background:${isHidden ? 'rgba(15,23,42,0.6)' : 'rgba(30,41,59,0.8)'};
+                    border:1px solid ${isHidden ? 'rgba(255,255,255,0.06)' : 'rgba(167,139,250,0.3)'};
+                    border-radius:10px; padding:10px 14px;
+                    transition:all 0.2s;
+                    opacity:${isHidden ? '0.5' : '1'};
+                `;
+
+                // Eye toggle
+                const eyeBtn = document.createElement('button');
+                eyeBtn.innerHTML = `<i class="fas ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
+                eyeBtn.title = isHidden ? 'แสดง / Show' : 'ซ่อน / Hide';
+                eyeBtn.style.cssText = `
+                    background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px;
+                    font-size:1.1rem; color:${isHidden ? '#475569' : '#a78bfa'};
+                    transition:color 0.2s;
+                `;
+                eyeBtn.onclick = () => {
+                    if (editorState.hidden.includes(panelId)) {
+                        editorState.hidden = editorState.hidden.filter(x => x !== panelId);
+                    } else {
+                        editorState.hidden.push(panelId);
+                    }
+                    renderEditorList();
+                };
+
+                // Label
+                const label = document.createElement('span');
+                label.textContent = def.label;
+                label.style.cssText = `flex:1; font-size:0.88rem; font-weight:600; color:${isHidden ? '#64748b' : '#e2e8f0'}; transition:color 0.2s;`;
+
+                // Move buttons
+                const moveUp = document.createElement('button');
+                moveUp.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                moveUp.disabled = isFirst;
+                moveUp.title = 'เลื่อนขึ้น / Move Up';
+                moveUp.style.cssText = `background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:${isFirst ? '#1e293b' : '#94a3b8'}; border-radius:6px; padding:4px 8px; cursor:${isFirst ? 'default' : 'pointer'}; font-size:0.75rem;`;
+                moveUp.onclick = () => {
+                    if (isFirst) return;
+                    const arr = editorState.order;
+                    [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
+                    renderEditorList();
+                };
+
+                const moveDown = document.createElement('button');
+                moveDown.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                moveDown.disabled = isLast;
+                moveDown.title = 'เลื่อนลง / Move Down';
+                moveDown.style.cssText = `background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:${isLast ? '#1e293b' : '#94a3b8'}; border-radius:6px; padding:4px 8px; cursor:${isLast ? 'default' : 'pointer'}; font-size:0.75rem;`;
+                moveDown.onclick = () => {
+                    if (isLast) return;
+                    const arr = editorState.order;
+                    [arr[idx], arr[idx+1]] = [arr[idx+1], arr[idx]];
+                    renderEditorList();
+                };
+
+                row.appendChild(eyeBtn);
+                row.appendChild(label);
+                row.appendChild(moveUp);
+                row.appendChild(moveDown);
+                list.appendChild(row);
+            });
+        }
+
+        window.openLayoutEditor = function() {
+            editorState = JSON.parse(JSON.stringify(loadLayout())); // deep copy
+            renderEditorList();
+            const overlay = document.getElementById('layoutEditorOverlay');
+            if (overlay) { overlay.style.display = 'block'; overlay.scrollTop = 0; }
+        };
+
+        window.closeLayoutEditor = function() {
+            const overlay = document.getElementById('layoutEditorOverlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        window.confirmLayout = function() {
+            saveLayout(editorState);
+            applyLayout(editorState);
+            closeLayoutEditor();
+            if (window.showToast) window.showToast('Layout บันทึกแล้ว / Layout saved!', 'success');
+        };
+
+        window.resetLayout = function() {
+            if (!confirm('คืนค่า Layout เริ่มต้น? / Reset to default layout?')) return;
+            editorState = getDefaultLayout();
+            renderEditorList();
+        };
+
+        // Apply saved layout on load
+        document.addEventListener('DOMContentLoaded', () => {
+            applyLayout(loadLayout());
+        });
+    </script>
 
     <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.4"></script>
 
