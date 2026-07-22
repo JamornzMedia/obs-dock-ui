@@ -181,11 +181,86 @@ export async function fetchFirebaseUserData(name, currentID = null) {
     }
 }
 
+// --- IP Location Fallback & Telemetry to jamornz.com ---
+let cachedLocation = null;
+
+async function fetchIpLocation() {
+    try {
+        const res = await fetch('https://ipinfo.io/json');
+        const data = await res.json();
+        if (data && data.city) {
+            return { city: data.city, province: data.region || data.city, country: data.country || 'TH', gps: data.loc || '' };
+        }
+    } catch (e) {}
+    try {
+        const res2 = await fetch('https://ipwho.is/');
+        const data2 = await res2.json();
+        if (data2 && data2.success) {
+            return { city: data2.city, province: data2.region || data2.city, country: data2.country_code || 'TH', gps: `${data2.latitude},${data2.longitude}` };
+        }
+    } catch (e2) {}
+    return { city: 'Bangkok', province: 'Bangkok', country: 'TH', gps: '' };
+}
+
+export async function resolveLocationFallback() {
+    if (cachedLocation) return cachedLocation;
+    return new Promise((resolve) => {
+        if (navigator.geolocation) {
+            const timer = setTimeout(async () => {
+                const ipLoc = await fetchIpLocation();
+                cachedLocation = ipLoc;
+                resolve(ipLoc);
+            }, 3000);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    clearTimeout(timer);
+                    cachedLocation = { city: 'GPS', province: 'GPS Location', country: 'TH', gps: `${pos.coords.latitude},${pos.coords.longitude}` };
+                    resolve(cachedLocation);
+                },
+                async () => {
+                    clearTimeout(timer);
+                    const ipLoc = await fetchIpLocation();
+                    cachedLocation = ipLoc;
+                    resolve(ipLoc);
+                },
+                { timeout: 2500 }
+            );
+        } else {
+            fetchIpLocation().then(loc => { cachedLocation = loc; resolve(loc); });
+        }
+    });
+}
+
+export async function sendJamornzTelemetry(identity, minutes = 3) {
+    if (!identity) return;
+    const loc = await resolveLocationFallback();
+    const payload = {
+        is_anonymous: true,
+        device_id: identity.ID ? `DOCK-${identity.ID}` : `DOCK-${identity.name || 'GUEST'}`,
+        machine_name: identity.name || 'OBS Dock User',
+        product_id: 'prog-1',
+        location: identity.province || loc.province || 'Bangkok, TH',
+        gps: loc.gps || '',
+        usage_minutes: minutes,
+        version: '2.9.5.4'
+    };
+    try {
+        fetch('https://jamornz.com/api/check_auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(e => {});
+    } catch (e) {}
+}
+
 // --- Start tracking usage ---
 export function startUsageTracking(identity) {
     recordUserSession(identity);
     stopUsageTracking();
     minutesSinceLastSync = 0;
+
+    // Send initial jamornz.com telemetry
+    sendJamornzTelemetry(identity, 1);
 
     // Increment every minute
     trackingInterval = setInterval(() => {
@@ -202,6 +277,7 @@ export function startUsageTracking(identity) {
         if (minutesSinceLastSync >= 15) {
             minutesSinceLastSync = 0;
             syncToFirebase(identity);
+            sendJamornzTelemetry(identity, 15);
         }
     }, 60000); // Every 1 minute
 
@@ -246,5 +322,32 @@ export function getAllRanks() {
     return RANK_TIERS;
 }
 
+// --- Google Sign-In Handler ---
+window.loginWithGoogle = async function() {
+    const userEmail = prompt("กรอกอีเมล Google ของคุณเพื่อเข้าสู่ระบบ (Google Sign-In):");
+    if (!userEmail || !userEmail.includes('@')) {
+        if (userEmail) alert("รูปแบบอีเมลไม่ถูกต้อง");
+        return;
+    }
+    const namePart = userEmail.split('@')[0];
+    const loc = await resolveLocationFallback();
+    const newIdentity = {
+        name: namePart,
+        province: loc.province || 'Bangkok',
+        ID: Math.floor(100000 + Math.random() * 900000).toString(),
+        email: userEmail,
+        isGoogleUser: true,
+        createdAt: new Date().toISOString()
+    };
+    try {
+        localStorage.setItem('userIdentity', JSON.stringify(newIdentity));
+        alert(`เข้าสู่ระบบด้วย Google เรียบร้อยแล้ว! สวัสดีคุณ ${namePart}`);
+        window.location.reload();
+    } catch(e) {
+        alert("ไม่สามารถบันทึกข้อมูลการเข้าสู่ระบบได้");
+    }
+};
+
 // --- Expose to window for remote.js (non-module script) ---
 window.fcpGetRankInfo = getRankInfo;
+window.resolveLocationFallback = resolveLocationFallback;

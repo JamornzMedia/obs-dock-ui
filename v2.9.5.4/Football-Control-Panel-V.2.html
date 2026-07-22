@@ -2141,6 +2141,9 @@
 
             <!-- Quick login & reset actions -->
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 280px; margin-left: auto; margin-right: auto;">
+                <button onclick="window.loginWithGoogle()" style="background: linear-gradient(135deg, #4285F4, #34A853); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fab fa-google"></i> ล็อกอินด้วย Google (Login with Google)
+                </button>
                 <button onclick="window.enterAsGuest()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">เข้าแบบผู้ใช้ชั่วคราว (Guest)</button>
                 <button onclick="window.resetStoredIdentity()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">ล้างข้อมูลเดิม / สมัครใหม่ (Reset ID)</button>
             </div>
