@@ -1,20 +1,22 @@
 /**
  * Daily Loan & Interest Calculator App Logic
+ * Default Interest Rate: 9% per year
+ * Light Mode Theme Only
  * Mode 1: Enter Desired Net Cash -> Calculate Required Loan Principal
  * Mode 2: Enter Principal -> Calculate Net Cash Received (Auto Due Date: March 31 Next Year)
  * Toggle: Deduct Interest Upfront vs Deferred Interest Payment at Due Date
- * Mobile & Print Optimized
+ * Features: Color Coded Input Groups, Enlarged Net Total (64px), Scroll To Top Button
  */
 
 (function () {
     // --- State Variables ---
     let currentMode = 'mode_calc_principal'; // 'mode_calc_principal' or 'mode_calc_netcash'
-    let selectedRate = 7; // percentage per year (default 7%)
+    let selectedRate = 9; // percentage per year (default 9%)
     let isShareDeducted = true; // 3% share deduction toggle
     let isInterestDeductedUpfront = true; // Interest deduction upfront toggle
     
     // --- DOM Elements ---
-    let themeToggleBtn, modeTabs, amountInput, amountInputLabel, presetBtns, rateBtns, customRateInput;
+    let modeTabs, amountInput, amountInputLabel, presetBtns, rateBtns, customRateInput;
     let startDateInput, endDateInput, autoDateBadge, shareToggle, interestDeductToggle, interestToggleDesc;
     let heroBadgeText, heroMainAmount, heroSubtext;
     let displaySelectedRate, displayTotalDays, displayDateRange, displayTotalInterest, displayDailyInterest, displayShareAmount, displayShareStatus, displayShareRateText;
@@ -22,10 +24,9 @@
     let inputDaysBadge, inputDateRangeText;
     let bannerText, tableRowNetCashInput, tableReqNetCash, tablePrincipal, tableRate, tableRateSub, tableStartDate, tableEndDate, tablePeriod;
     let tableDailyInterest, tableDaysSub, tableTotalInterest, tableInterestDeductRow, tableInterestDeductStatus, tableShareRow, tableShareAmount, gtTitle, gtSub, gtAmount, tableDueAmount;
-    let formulaRateText, formulaMainText, formulaDaysText, copySummaryBtn, printBtn, toast, toastMsg;
+    let formulaRateText, formulaMainText, formulaDaysText, copySummaryBtn, printBtn, toast, toastMsg, scrollToTopBtn;
 
     function initElements() {
-        themeToggleBtn = document.getElementById('themeToggleBtn');
         modeTabs = document.querySelectorAll('.mode-tab');
         amountInput = document.getElementById('amountInput');
         amountInputLabel = document.getElementById('amountInputLabel');
@@ -90,6 +91,7 @@
         printBtn = document.getElementById('printBtn');
         toast = document.getElementById('toast');
         toastMsg = document.getElementById('toastMsg');
+        scrollToTopBtn = document.getElementById('scrollToTopBtn');
     }
 
     function initApp() {
@@ -346,16 +348,6 @@
     }
 
     function attachEventListeners() {
-        // Theme Switcher
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', () => {
-                document.body.classList.toggle('light-theme');
-                document.body.classList.toggle('dark-theme');
-                const isLight = document.body.classList.contains('light-theme');
-                themeToggleBtn.querySelector('i').className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-            });
-        }
-
         // Mode Selector Tabs
         modeTabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -493,6 +485,25 @@ ${currentMode === 'mode_calc_principal' ? '💵 เงินสดสุทธ�
                     printNotice.textContent = `วันที่พิมพ์เอกสาร: ${formatThaiDate(today)}`;
                 }
                 window.print();
+            });
+        }
+
+        // Scroll To Top Floating Button Listener
+        window.addEventListener('scroll', () => {
+            if (!scrollToTopBtn) return;
+            if (window.scrollY > 220) {
+                scrollToTopBtn.classList.remove('hidden');
+            } else {
+                scrollToTopBtn.classList.add('hidden');
+            }
+        });
+
+        if (scrollToTopBtn) {
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             });
         }
     }
