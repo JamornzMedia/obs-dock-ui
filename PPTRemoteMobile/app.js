@@ -189,7 +189,76 @@ function joinRoom(roomId) {
   }
 
   subscribeCustomKeys();
+  initMobileWebRTC();
   closeRoomModal();
+}
+
+// WebRTC Direct P2P Connection (Mobile <-> Desktop)
+let rtcPeer = null;
+let dataChannel = null;
+let webrtcConnected = false;
+
+function initMobileWebRTC() {
+  if (!db || !activeRoomId) return;
+
+  try {
+    if (rtcPeer) {
+      try { rtcPeer.close(); } catch(e) {}
+    }
+
+    rtcPeer = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+
+    dataChannel = rtcPeer.createDataChannel("laserChannel");
+    setupDataChannel();
+
+    rtcPeer.onicecandidate = (event) => {
+      if (event.candidate) {
+        db.ref(`rooms/${activeRoomId}/rtc/mobileCandidates`).push(event.candidate.toJSON());
+      }
+    };
+
+    // Create Offer to send to Desktop via Firebase
+    rtcPeer.createOffer()
+      .then(offer => rtcPeer.setLocalDescription(offer))
+      .then(() => {
+        db.ref(`rooms/${activeRoomId}/rtc/offer`).set(rtcPeer.localDescription.toJSON());
+      })
+      .catch(err => console.warn("WebRTC Offer error:", err));
+
+    // Listen for Answer from Desktop
+    db.ref(`rooms/${activeRoomId}/rtc/answer`).on("value", (snap) => {
+      const answer = snap.val();
+      if (answer && rtcPeer.signalingState === "have-local-offer") {
+        rtcPeer.setRemoteDescription(new RTCSessionDescription(answer)).catch(err => console.warn(err));
+      }
+    });
+
+    // Listen for ICE Candidates from Desktop
+    db.ref(`rooms/${activeRoomId}/rtc/desktopCandidates`).on("child_added", (snap) => {
+      const candidate = snap.val();
+      if (candidate) {
+        rtcPeer.addIceCandidate(new RTCIceCandidate(candidate)).catch(err => console.warn(err));
+      }
+    });
+
+  } catch (err) {
+    console.error("Mobile WebRTC init error:", err);
+  }
+}
+
+function setupDataChannel() {
+  if (!dataChannel) return;
+
+  dataChannel.onopen = () => {
+    webrtcConnected = true;
+    console.log("⚡ WebRTC Direct DataChannel Connected!");
+  };
+
+  dataChannel.onclose = () => {
+    webrtcConnected = false;
+  };
 }
 
 // Clean up Room ID from Firebase when closing mobile browser tab
@@ -199,7 +268,7 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-// Send Remote Key Command to Firebase
+// Send Remote Key Command
 function sendRemoteKey(keyCombo) {
   if (!activeRoomId) {
     openRoomModal();
@@ -211,7 +280,14 @@ function sendRemoteKey(keyCombo) {
     try { navigator.vibrate(30); } catch (e) {}
   }
 
-  if (db) {
+  // Direct WebRTC P2P DataChannel if open
+  if (dataChannel && dataChannel.readyState === "open") {
+    dataChannel.send(JSON.stringify({
+      type: "command",
+      key: keyCombo,
+      timestamp: Date.now()
+    }));
+  } else if (db) {
     db.ref(`rooms/${activeRoomId}/command`).set({
       key: keyCombo,
       timestamp: Date.now()
@@ -519,9 +595,10 @@ function setLaserColor(hex, el) {
 }
 
 function sendLaserFirebase() {
-  if (!db || !activeRoomId) return;
+  if (!activeRoomId) return;
 
-  db.ref(`rooms/${activeRoomId}/laser`).set({
+  const payload = {
+    type: "laser",
     active: laserState.active,
     x: laserState.x,
     y: laserState.y,
@@ -530,7 +607,14 @@ function sendLaserFirebase() {
     color: laserState.color,
     showPulseRing: laserState.showPulseRing,
     timestamp: Date.now()
-  });
+  };
+
+  // Direct WebRTC P2P (0ms Latency, 0 Firebase overhead!)
+  if (dataChannel && dataChannel.readyState === "open") {
+    dataChannel.send(JSON.stringify(payload));
+  } else if (db) {
+    db.ref(`rooms/${activeRoomId}/laser`).set(payload);
+  }
 }
 
 // Sync Custom Keys from Desktop Firebase Node
