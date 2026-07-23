@@ -14,13 +14,14 @@ const firebaseConfig = {
 let db = null;
 let activeRoomId = "";
 let laserState = {
-  mode: 'joystick', // 'joystick' or 'absolute'
+  mode: 'joystick', // 'joystick', 'absolute', or 'gyro'
   size: 24,
   trailLength: 12,
   color: '#ef4444',
+  gyroSensitivity: 1.5,
   x: 0.5,
   y: 0.5,
-  active: false
+  active: true
 };
 
 // Initialize Mobile App
@@ -31,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMobileTabs();
   initSwipeTouchpad();
   initLaserTouchpad();
+  initGyroAirMouse();
   renderMobileCustomKeys();
 });
 
@@ -76,16 +78,38 @@ function initMobileTabs() {
   const tabs = document.querySelectorAll(".mobile-tab-btn");
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".mobile-tab-btn").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-pane-mobile").forEach(p => p.classList.remove("active"));
-
-      tab.classList.add("active");
-      const targetPane = document.getElementById(tab.dataset.tab);
-      if (targetPane) {
-        targetPane.classList.add("active");
-      }
+      switchMobileTab(tab.dataset.tab);
     });
   });
+}
+
+function switchMobileTab(tabId) {
+  document.querySelectorAll(".mobile-tab-btn").forEach(t => {
+    t.classList.toggle("active", t.dataset.tab === tabId);
+  });
+  document.querySelectorAll(".tab-pane-mobile").forEach(p => {
+    p.classList.toggle("active", p.id === tabId);
+  });
+}
+
+function toggleLaserActive() {
+  laserState.active = !laserState.active;
+  const btn = document.getElementById("laserActiveToggleBtn");
+  if (btn) {
+    btn.classList.toggle("active", laserState.active);
+    btn.classList.toggle("off", !laserState.active);
+    btn.innerHTML = laserState.active
+      ? `<i class="fa-solid fa-power-off"></i> 🔴 จุด Laser: ON`
+      : `<i class="fa-solid fa-power-off"></i> ⚪ จุด Laser: OFF`;
+  }
+  sendLaserFirebase();
+}
+
+function toggleLaserSettings() {
+  const bar = document.getElementById("laserSettingsBar");
+  if (bar) {
+    bar.classList.toggle("hidden");
+  }
 }
 
 // URL Params & Room Joining
@@ -109,12 +133,12 @@ function initRoomModal() {
   });
 
   document.getElementById("joinRoomBtn").addEventListener("click", () => {
-    const input = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+    const input = document.getElementById("roomCodeInput").value.trim();
     if (input) {
       joinRoom(input);
       closeRoomModal();
     } else {
-      alert("กรุณากรอก Room Code");
+      alert("กรุณากรอก Room Code 6 หลัก");
     }
   });
 }
@@ -131,23 +155,43 @@ function closeRoomModal() {
 }
 
 function joinRoom(roomId) {
-  let formatted = roomId.trim().toUpperCase();
-  if (!formatted.startsWith("PPT-")) {
-    formatted = `PPT-${formatted}`;
+  let formatted = roomId.toString().trim().replace(/\D/g, "");
+  if (formatted.length > 6) {
+    formatted = formatted.substring(0, 6);
+  }
+
+  if (!formatted) {
+    openRoomModal();
+    return;
   }
 
   activeRoomId = formatted;
   localStorage.setItem("mobileActiveRoom", activeRoomId);
   document.getElementById("activeRoomCode").innerText = activeRoomId;
 
+  // Auto-remove Room ID from Firebase when Mobile disconnects/closes
+  if (db && activeRoomId) {
+    const roomRoot = db.ref(`rooms/${activeRoomId}`);
+    roomRoot.onDisconnect().remove().catch(err => console.warn(err));
+  }
+
   // Update Status
   const statusContainer = document.getElementById("mobileStatus");
-  statusContainer.querySelector(".dot").className = "dot connected";
-  statusContainer.querySelector(".status-label").innerText = "Connected";
+  if (statusContainer) {
+    statusContainer.querySelector(".dot").className = "dot connected";
+    statusContainer.querySelector(".status-label").innerText = "Connected";
+  }
 
   subscribeCustomKeys();
   closeRoomModal();
 }
+
+// Clean up Room ID from Firebase when closing mobile browser tab
+window.addEventListener("beforeunload", () => {
+  if (db && activeRoomId) {
+    db.ref(`rooms/${activeRoomId}`).remove();
+  }
+});
 
 // Send Remote Key Command to Firebase
 function sendRemoteKey(keyCombo) {
@@ -281,12 +325,37 @@ function setLaserMode(mode) {
   laserState.mode = mode;
   document.getElementById("modeJoystickBtn").classList.toggle("active", mode === "joystick");
   document.getElementById("modeAbsoluteBtn").classList.toggle("active", mode === "absolute");
+  document.getElementById("modeGyroBtn").classList.toggle("active", mode === "gyro");
+
+  const touchWrapper = document.getElementById("touchSurfaceWrapper");
+  const gyroWrapper = document.getElementById("gyroControlArea");
+  const gyroSetting = document.getElementById("gyroSettingItem");
+
+  if (mode === "gyro") {
+    if (touchWrapper) touchWrapper.style.display = "none";
+    if (gyroWrapper) gyroWrapper.style.display = "flex";
+    if (gyroSetting) gyroSetting.style.display = "flex";
+    
+    // Check iOS permission button requirement
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const permBtn = document.getElementById("gyroPermissionBtn");
+      if (permBtn) permBtn.style.display = "block";
+    }
+  } else {
+    if (touchWrapper) touchWrapper.style.display = "flex";
+    if (gyroWrapper) gyroWrapper.style.display = "none";
+    if (gyroSetting) gyroSetting.style.display = "none";
+  }
 
   const hint = document.getElementById("laserModeHint");
   if (hint) {
-    hint.innerText = mode === "joystick"
-      ? "🕹️ โหมด Joystick: ลากนิ้วโยกตำแหน่งเพื่อเลื่อนจุดแดงบนจออย่างนุ่มนวล"
-      : "🎯 โหมด Absolute: แตะตำแหน่งไหน จุดเลเซอร์จะไปปรากฏตรงพิกัดนั้นเป๊ะๆ";
+    if (mode === "joystick") {
+      hint.innerText = "🕹️ โหมด Joystick: ลากนิ้วโยกตำแหน่งเพื่อเลื่อนจุดแดงบนจออย่างนุ่มนวล";
+    } else if (mode === "absolute") {
+      hint.innerText = "🎯 โหมด Absolute: แตะตำแหน่งไหน จุดเลเซอร์จะไปปรากฏตรงพิกัดนั้นเป๊ะๆ";
+    } else {
+      hint.innerText = "📱 โหมด Gyro: กดปุ่มด้านล่างค้างไว้ แล้วเอียงมือถือในอากาศเพื่อขยับจุดเลเซอร์";
+    }
   }
 }
 
@@ -294,10 +363,102 @@ function updateLaserSettings() {
   laserState.size = parseInt(document.getElementById("dotSizeSlider").value) || 24;
   laserState.trailLength = parseInt(document.getElementById("trailLenSlider").value) || 12;
 
+  const gyroSensInput = document.getElementById("gyroSensSlider");
+  if (gyroSensInput) {
+    laserState.gyroSensitivity = parseFloat(gyroSensInput.value) || 1.5;
+    const gyroSensVal = document.getElementById("gyroSensVal");
+    if (gyroSensVal) gyroSensVal.innerText = laserState.gyroSensitivity.toFixed(1);
+  }
+
   document.getElementById("dotSizeVal").innerText = laserState.size;
   document.getElementById("trailLenVal").innerText = laserState.trailLength;
 
   sendLaserFirebase();
+}
+
+// Gyro Air-Mouse Sensor Controller
+let isGyroHolding = false;
+let lastGamma = null;
+let lastBeta = null;
+
+function initGyroAirMouse() {
+  const btn = document.getElementById("gyroHoldBtn");
+  if (!btn) return;
+
+  function startGyroHold(e) {
+    isGyroHolding = true;
+    btn.classList.add("holding");
+    if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
+    lastGamma = null;
+    lastBeta = null;
+    laserState.active = true;
+    sendLaserFirebase();
+  }
+
+  function stopGyroHold(e) {
+    isGyroHolding = false;
+    btn.classList.remove("holding");
+    // Keep position frozen when released
+    lastGamma = null;
+    lastBeta = null;
+  }
+
+  btn.addEventListener("pointerdown", startGyroHold);
+  btn.addEventListener("pointerup", stopGyroHold);
+  btn.addEventListener("pointercancel", stopGyroHold);
+
+  btn.addEventListener("touchstart", (e) => { e.preventDefault(); startGyroHold(e); }, { passive: false });
+  btn.addEventListener("touchend", stopGyroHold, { passive: true });
+
+  window.addEventListener("deviceorientation", handleGyroOrientation, true);
+}
+
+function handleGyroOrientation(e) {
+  if (!isGyroHolding || laserState.mode !== "gyro") return;
+
+  const gamma = e.gamma; // Roll (-90 to 90 degrees left-right)
+  const beta = e.beta;   // Pitch (-180 to 180 degrees front-back)
+
+  if (gamma === null || beta === null) return;
+
+  if (lastGamma !== null && lastBeta !== null) {
+    let diffGamma = gamma - lastGamma;
+    let diffBeta = beta - lastBeta;
+
+    // Handle wrap-around near 180/-180
+    if (Math.abs(diffGamma) > 100) diffGamma = 0;
+    if (Math.abs(diffBeta) > 100) diffBeta = 0;
+
+    const sens = laserState.gyroSensitivity || 1.5;
+    
+    // Scale movement according to sensitivity slider
+    const deltaX = diffGamma * sens * 0.006;
+    const deltaY = diffBeta * sens * 0.006;
+
+    laserState.x = Math.max(0, Math.min(1, laserState.x + deltaX));
+    laserState.y = Math.max(0, Math.min(1, laserState.y + deltaY));
+
+    sendLaserFirebase();
+  }
+
+  lastGamma = gamma;
+  lastBeta = beta;
+}
+
+function requestGyroPermission() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          alert("🔑 ปลดล็อก Gyroscope Sensor เรียบร้อยแล้ว! สามารถกดปุ่มค้างเพื่อยิงเลเซอร์ได้เลย");
+          const permBtn = document.getElementById("gyroPermissionBtn");
+          if (permBtn) permBtn.style.display = "none";
+        } else {
+          alert("การเปิดใช้งาน Gyro Sensor โดนปฏิเสธ");
+        }
+      })
+      .catch(console.error);
+  }
 }
 
 function setLaserColor(hex, el) {

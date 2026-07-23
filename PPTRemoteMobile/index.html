@@ -133,19 +133,34 @@
 
       <!-- PANE 2: 16:9 Laser Pointer Control Surface -->
       <section id="paneLaser" class="tab-pane-mobile">
+        
+        <!-- Laser Action Bar: Power Toggle & Slide Nav -->
+        <div class="laser-action-bar">
+          <button id="laserActiveToggleBtn" class="laser-power-btn active" onclick="toggleLaserActive()">
+            <i class="fa-solid fa-power-off"></i> 🔴 จุด Laser: ON
+          </button>
+
+          <button class="settings-toggle-btn" onclick="toggleLaserSettings()">
+            <i class="fa-solid fa-sliders"></i> ตั้งค่าจุด/หาง
+          </button>
+        </div>
+
         <div class="laser-control-header">
-          <!-- Laser Mode Switcher -->
+          <!-- Laser Mode Switcher (Joystick, Absolute 16:9, Gyro Sensor) -->
           <div class="laser-mode-toggle">
             <button id="modeJoystickBtn" class="laser-mode-btn active" onclick="setLaserMode('joystick')">
-              <i class="fa-solid fa-gamepad"></i> 🕹️ โยกคันโยก (Joystick)
+              <i class="fa-solid fa-gamepad"></i> 🕹️ คันโยก
             </button>
             <button id="modeAbsoluteBtn" class="laser-mode-btn" onclick="setLaserMode('absolute')">
-              <i class="fa-solid fa-bullseye"></i> 🎯 จิ้มพิกัดตรง (16:9 Absolute)
+              <i class="fa-solid fa-bullseye"></i> 🎯 16:9 ตรง
+            </button>
+            <button id="modeGyroBtn" class="laser-mode-btn" onclick="setLaserMode('gyro')">
+              <i class="fa-solid fa-mobile-screen-button"></i> 📱 Gyro เอียงมือถือ
             </button>
           </div>
 
-          <!-- Laser Adjustments Bar -->
-          <div class="laser-settings-bar">
+          <!-- Collapsible Laser Adjustments Bar -->
+          <div id="laserSettingsBar" class="laser-settings-bar">
             <div class="setting-item">
               <label>ขนาดจุด (<span id="dotSizeVal">24</span>px):</label>
               <input type="range" id="dotSizeSlider" min="10" max="60" value="24" oninput="updateLaserSettings()">
@@ -153,6 +168,10 @@
             <div class="setting-item">
               <label>ความยาวหาง (<span id="trailLenVal">12</span>):</label>
               <input type="range" id="trailLenSlider" min="0" max="30" value="12" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item" id="gyroSettingItem" style="display:none;">
+              <label>ความไว Gyro Sensor (<span id="gyroSensVal">1.5</span>x):</label>
+              <input type="range" id="gyroSensSlider" min="0.2" max="5.0" step="0.1" value="1.5" oninput="updateLaserSettings()">
             </div>
             <div class="setting-item">
               <label>สีจุดเลเซอร์:</label>
@@ -166,8 +185,8 @@
           </div>
         </div>
 
-        <!-- Interactive 16:9 Touch Surface Box -->
-        <div class="laser-touch-wrapper">
+        <!-- Interactive Touch Area Option A: 16:9 Touch Surface Box -->
+        <div class="laser-touch-wrapper" id="touchSurfaceWrapper">
           <div class="laser-ratio-box" id="laserTouchBox">
             <div class="ratio-grid-overlay"></div>
             <div class="touch-target-indicator" id="touchIndicator">
@@ -179,6 +198,34 @@
             </div>
           </div>
         </div>
+
+        <!-- Interactive Touch Area Option B: Gyro Air-Mouse Hold Button -->
+        <div class="gyro-touch-wrapper" id="gyroControlArea" style="display:none;">
+          <button id="gyroHoldBtn" class="gyro-hold-btn">
+            <i class="fa-solid fa-mobile-screen-button gyro-icon"></i>
+            <span class="gyro-btn-title">🔴 กดค้างไว้ แล้วเอียงมือถือเพื่อยิงเลเซอร์</span>
+            <small class="gyro-btn-sub">ปล่อยนิ้วเมื่อต้องการหยุดขยับจุดเลเซอร์</small>
+          </button>
+          <button id="gyroPermissionBtn" class="gyro-perm-btn" onclick="requestGyroPermission()" style="display:none;">
+            🔑 ปลดล็อก Gyro Sensor (สำหรับ iPhone/iOS)
+          </button>
+        </div>
+
+        <!-- Quick Slide Navigation Bar inside Laser Tab -->
+        <div class="laser-nav-bar">
+          <button class="laser-nav-btn prev" onclick="sendRemoteKey('prev')">
+            <i class="fa-solid fa-chevron-left"></i> ⏮️ ย้อนกลับ
+          </button>
+          
+          <button class="laser-nav-btn switch-tab" onclick="switchMobileTab('paneControls')">
+            <i class="fa-solid fa-gamepad"></i> หน้าควบคุม PPT
+          </button>
+
+          <button class="laser-nav-btn next" onclick="sendRemoteKey('next')">
+            ⏭️ สไลด์ถัดไป <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
       </section>
 
     </main>
@@ -189,10 +236,10 @@
         <div class="modal-title">
           <i class="fa-solid fa-qrcode"></i> เชื่อมต่อกับคอมพิวเตอร์
         </div>
-        <p class="modal-desc">กรอก Room Code 6 หลักที่แสดงบนหน้าจอคอมพิวเตอร์ (เช่น PPT-849201)</p>
+        <p class="modal-desc">กรอก Room Code ตัวเลข 6 หลักที่แสดงบนหน้าจอคอมพิวเตอร์ (เช่น 849201)</p>
 
         <div class="input-group">
-          <input type="text" id="roomCodeInput" placeholder="PPT-XXXXXX" autocomplete="off" style="text-transform: uppercase;">
+          <input type="text" id="roomCodeInput" placeholder="849201" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
           <button id="joinRoomBtn" class="join-btn">เชื่อมต่อ</button>
         </div>
       </div>

@@ -496,6 +496,11 @@ body {
   gap: 8px;
   font-size: 11px;
   color: var(--text-muted);
+  transition: all 0.25s ease-in-out;
+}
+
+.laser-settings-bar.hidden {
+  display: none;
 }
 
 .setting-item {
@@ -534,7 +539,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .laser-ratio-box {
@@ -601,4 +606,78 @@ body {
   font-size: 11px;
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* Laser Action Bar & Power Toggle */
+.laser-action-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.laser-power-btn {
+  flex: 1.2;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border: 1px solid #f87171;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+}
+
+.laser-power-btn.off {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: var(--border-color);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.settings-toggle-btn {
+  flex: 1;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Laser Quick Nav Bar */
+.laser-nav-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.laser-nav-btn {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 12px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.laser-nav-btn.prev {
+  background: linear-gradient(135deg, #334155, #1e293b);
+}
+
+.laser-nav-btn.next {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.laser-nav-btn.switch-tab {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
 }
