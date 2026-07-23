@@ -18,8 +18,13 @@ let laserState = {
   size: 24,
   trailLength: 12,
   color: '#ef4444',
-  gyroSensitivity: 1.5,
+  gyroSensitivity: 5.0,
   gyroStabilizer: 0.3,
+  gyroAxisX: 'alpha',
+  gyroInvertX: false,
+  gyroAxisY: 'beta',
+  gyroInvertY: false,
+  showPulseRing: true,
   x: 0.5,
   y: 0.5,
   active: true
@@ -366,7 +371,7 @@ function updateLaserSettings() {
 
   const gyroSensInput = document.getElementById("gyroSensSlider");
   if (gyroSensInput) {
-    laserState.gyroSensitivity = parseFloat(gyroSensInput.value) || 1.5;
+    laserState.gyroSensitivity = parseFloat(gyroSensInput.value) || 5.0;
     const gyroSensVal = document.getElementById("gyroSensVal");
     if (gyroSensVal) gyroSensVal.innerText = laserState.gyroSensitivity.toFixed(1);
   }
@@ -378,6 +383,25 @@ function updateLaserSettings() {
     if (gyroStabVal) gyroStabVal.innerText = laserState.gyroStabilizer.toFixed(2);
   }
 
+  const axisXSelect = document.getElementById("gyroAxisXSelect");
+  if (axisXSelect) laserState.gyroAxisX = axisXSelect.value;
+
+  const invertXCheck = document.getElementById("gyroInvertXCheck");
+  if (invertXCheck) laserState.gyroInvertX = invertXCheck.checked;
+
+  const axisYSelect = document.getElementById("gyroAxisYSelect");
+  if (axisYSelect) laserState.gyroAxisY = axisYSelect.value;
+
+  const invertYCheck = document.getElementById("gyroInvertYCheck");
+  if (invertYCheck) laserState.gyroInvertY = invertYCheck.checked;
+
+  const pulseCheck = document.getElementById("pulseRingCheck");
+  if (pulseCheck) {
+    laserState.showPulseRing = pulseCheck.checked;
+    const touchPulse = document.getElementById("touchRingPulse");
+    if (touchPulse) touchPulse.style.display = laserState.showPulseRing ? "block" : "none";
+  }
+
   document.getElementById("dotSizeVal").innerText = laserState.size;
   document.getElementById("trailLenVal").innerText = laserState.trailLength;
 
@@ -386,8 +410,8 @@ function updateLaserSettings() {
 
 // Gyro Air-Mouse Sensor Controller
 let isGyroHolding = false;
-let lastAlpha = null; // Yaw (Horizontal pointing direction)
-let lastGamma = null; // Roll (Vertical tilt direction)
+let lastRawX = null;
+let lastRawY = null;
 
 function initGyroAirMouse() {
   const btn = document.getElementById("gyroHoldBtn");
@@ -397,8 +421,8 @@ function initGyroAirMouse() {
     isGyroHolding = true;
     btn.classList.add("holding");
     if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
-    lastAlpha = null;
-    lastGamma = null;
+    lastRawX = null;
+    lastRawY = null;
     laserState.active = true;
     sendLaserFirebase();
   }
@@ -406,9 +430,8 @@ function initGyroAirMouse() {
   function stopGyroHold(e) {
     isGyroHolding = false;
     btn.classList.remove("holding");
-    // Keep position frozen when released
-    lastAlpha = null;
-    lastGamma = null;
+    lastRawX = null;
+    lastRawY = null;
   }
 
   btn.addEventListener("pointerdown", startGyroHold);
@@ -424,29 +447,36 @@ function initGyroAirMouse() {
 function handleGyroOrientation(e) {
   if (!isGyroHolding || laserState.mode !== "gyro") return;
 
-  const alpha = e.alpha; // Yaw (Compass pointing 0 to 360) -> Controls X-axis (Left/Right)
-  const gamma = e.gamma; // Roll (-90 to 90) -> Controls Y-axis (Up/Down)
+  const angles = {
+    alpha: e.alpha !== null ? e.alpha : 0,
+    beta: e.beta !== null ? e.beta : 0,
+    gamma: e.gamma !== null ? e.gamma : 0
+  };
 
-  if (alpha === null || gamma === null) return;
+  const rawX = angles[laserState.gyroAxisX] || 0;
+  const rawY = angles[laserState.gyroAxisY] || 0;
 
-  if (lastAlpha !== null && lastGamma !== null) {
-    let diffAlpha = alpha - lastAlpha;
-    let diffGamma = gamma - lastGamma;
+  if (lastRawX !== null && lastRawY !== null) {
+    let diffX = rawX - lastRawX;
+    let diffY = rawY - lastRawY;
 
-    // Handle compass wrap-around near 0/360
-    if (diffAlpha > 180) diffAlpha -= 360;
-    if (diffAlpha < -180) diffAlpha += 360;
-    if (Math.abs(diffGamma) > 100) diffGamma = 0;
+    if (laserState.gyroAxisX === 'alpha') {
+      if (diffX > 180) diffX -= 360;
+      if (diffX < -180) diffX += 360;
+    } else if (Math.abs(diffX) > 90) diffX = 0;
 
-    const sens = laserState.gyroSensitivity || 1.5;
-    
-    // Corrected Axis Mapping:
-    // Pointing phone to the right (alpha decreasing) -> Move X right (+)
-    // Tilting phone down (gamma increasing) -> Move Y down (+)
-    const deltaX = -diffAlpha * sens * 0.005;
-    const deltaY = diffGamma * sens * 0.005;
+    if (laserState.gyroAxisY === 'alpha') {
+      if (diffY > 180) diffY -= 360;
+      if (diffY < -180) diffY += 360;
+    } else if (Math.abs(diffY) > 90) diffY = 0;
 
-    // Stabilizer (Exponential Moving Average Filter)
+    if (laserState.gyroInvertX) diffX = -diffX;
+    if (laserState.gyroInvertY) diffY = -diffY;
+
+    const sens = laserState.gyroSensitivity || 5.0;
+    const deltaX = diffX * sens * 0.003;
+    const deltaY = diffY * sens * 0.003;
+
     const stabFactor = laserState.gyroStabilizer || 0.3;
     const targetX = Math.max(0, Math.min(1, laserState.x + deltaX));
     const targetY = Math.max(0, Math.min(1, laserState.y + deltaY));
@@ -457,8 +487,8 @@ function handleGyroOrientation(e) {
     sendLaserFirebase();
   }
 
-  lastAlpha = alpha;
-  lastGamma = gamma;
+  lastRawX = rawX;
+  lastRawY = rawY;
 }
 
 function requestGyroPermission() {
@@ -498,6 +528,7 @@ function sendLaserFirebase() {
     size: laserState.size,
     trailLength: laserState.trailLength,
     color: laserState.color,
+    showPulseRing: laserState.showPulseRing,
     timestamp: Date.now()
   });
 }
