@@ -76,6 +76,11 @@
           </div>
         </div>
 
+        <!-- Prominent Switch PPT Window Button -->
+        <button class="action-btn btn-alt-tab-hero" onclick="sendRemoteKey('alt+tab')" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight:700; width:100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fa-solid fa-desktop"></i> 🖥️ สลับหน้าจอไป PowerPoint (Alt+Tab)
+        </button>
+
         <!-- Slide Show Fullscreen & Quick Actions -->
         <div class="actions-grid-4col main-hero-grid">
           <button class="action-btn btn-f5-hero" onclick="sendRemoteKey('start')">
@@ -141,7 +146,7 @@
           </button>
 
           <button class="settings-toggle-btn" onclick="toggleLaserSettings()">
-            <i class="fa-solid fa-sliders"></i> ตั้งค่าจุด/หาง
+            <i class="fa-solid fa-sliders"></i> ⚙️ ตั้งค่า / ซ่อนตั้งค่า
           </button>
         </div>
 
@@ -187,18 +192,18 @@
                 </select>
               </div>
               <div class="setting-item">
-                <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertXCheck" onchange="updateLaserSettings()"> 🔄 กลับทิศ X (Invert X)</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertXCheck" checked onchange="updateLaserSettings()"> 🔄 กลับทิศ X (Invert X)</label>
               </div>
               <div class="setting-item">
                 <label>แกนแนวตั้ง Y:</label>
                 <select id="gyroAxisYSelect" onchange="updateLaserSettings()" style="padding:4px; font-size:11px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px;">
-                  <option value="gamma" selected>Gamma (เอียงซ้าย-ขวา)</option>
-                  <option value="beta">Beta (ก้ม-เงย)</option>
+                  <option value="beta" selected>Beta (ก้ม-เงย)</option>
+                  <option value="gamma">Gamma (เอียงซ้าย-ขวา)</option>
                   <option value="alpha">Alpha (หมุนหัวมือถือ)</option>
                 </select>
               </div>
               <div class="setting-item">
-                <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertYCheck" onchange="updateLaserSettings()"> 🔄 กลับทิศ Y (Invert Y)</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertYCheck" checked onchange="updateLaserSettings()"> 🔄 กลับทิศ Y (Invert Y)</label>
               </div>
               <div class="setting-item">
                 <label style="cursor:pointer;"><input type="checkbox" id="pulseRingCheck" checked onchange="updateLaserSettings()"> ⭕ วงแหวนกระจายรอบจุด (Pulse Ring)</label>
