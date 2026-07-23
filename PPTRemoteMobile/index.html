@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>PPT Remote Controller - Mobile</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,13 +18,18 @@
         <i class="fa-solid fa-file-powerpoint brand-icon"></i>
         <span>PPT Remote</span>
       </div>
-      <div class="connection-status" id="mobileStatus">
-        <span class="dot disconnected"></span>
-        <span class="status-label">Offline</span>
+      <div class="header-actions-mobile">
+        <button id="toggleFullscreenBrowserBtn" class="fullscreen-btn" onclick="toggleMobileBrowserFullscreen()" title="เปิด/ปิด เต็มจอบราวเซอร์">
+          <i class="fa-solid fa-expand"></i> เต็มจอ
+        </button>
+        <div class="connection-status" id="mobileStatus">
+          <span class="dot disconnected"></span>
+          <span class="status-label">Offline</span>
+        </div>
       </div>
     </header>
 
-    <!-- Room ID Bar / Connection Modal Trigger -->
+    <!-- Room ID Bar -->
     <div class="room-selector-card">
       <div class="room-display">
         <span class="text-muted">ROOM:</span>
@@ -35,77 +40,147 @@
       </button>
     </div>
 
-    <!-- Main Navigation Remote Controls -->
+    <!-- Mode Selector Tabs -->
+    <nav class="mobile-nav-tabs">
+      <button class="mobile-tab-btn active" data-tab="paneControls">
+        <i class="fa-solid fa-gamepad"></i> ควบคุม PPT
+      </button>
+      <button class="mobile-tab-btn" data-tab="paneLaser">
+        <i class="fa-solid fa-crosshairs"></i> ตัวชี้ Laser 16:9
+      </button>
+    </nav>
+
+    <!-- Main Navigation Content Area -->
     <main class="remote-main">
-      <!-- Big Touch Area for Next / Prev -->
-      <div class="big-nav-container">
-        <button class="touch-nav-btn prev-btn" onclick="sendRemoteKey('prev')">
-          <i class="fa-solid fa-chevron-left"></i>
-          <span>ย้อนกลับ</span>
-        </button>
+      
+      <!-- PANE 1: PPT Slide Controls -->
+      <section id="paneControls" class="tab-pane-mobile active">
+        <!-- Big Touch Area for Next / Prev -->
+        <div class="big-nav-container">
+          <button class="touch-nav-btn prev-btn" onclick="sendRemoteKey('prev')">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span>ย้อนกลับ</span>
+          </button>
 
-        <button class="touch-nav-btn next-btn" onclick="sendRemoteKey('next')">
-          <i class="fa-solid fa-chevron-right"></i>
-          <span>สไลด์ถัดไป</span>
-        </button>
-      </div>
-
-      <!-- Touchpad Swipe Zone -->
-      <div id="swipeArea" class="swipe-touchpad">
-        <div class="swipe-content">
-          <i class="fa-solid fa-hand-pointer"></i>
-          <span>แตะหรือปัดซ้าย-ขวาที่นี่เพื่อเลื่อนสไลด์</span>
+          <button class="touch-nav-btn next-btn" onclick="sendRemoteKey('next')">
+            <i class="fa-solid fa-chevron-right"></i>
+            <span>สไลด์ถัดไป</span>
+          </button>
         </div>
-      </div>
 
-      <!-- Slide Show Quick Actions -->
-      <div class="actions-grid-3col">
-        <button class="action-btn btn-f5" onclick="sendRemoteKey('start')">
-          <i class="fa-solid fa-play"></i>
-          <span>เริ่มโชว์</span>
-        </button>
-        
-        <button class="action-btn btn-current" onclick="sendRemoteKey('startCurrent')">
-          <i class="fa-solid fa-arrow-right-to-city"></i>
-          <span>หน้าปัจจุบัน</span>
-        </button>
-
-        <button class="action-btn btn-esc" onclick="sendRemoteKey('exit')">
-          <i class="fa-solid fa-stop"></i>
-          <span>จบการโชว์</span>
-        </button>
-      </div>
-
-      <!-- Slide Helpers Bar -->
-      <div class="actions-grid-4col">
-        <button class="tool-btn" onclick="sendRemoteKey('black')">
-          <i class="fa-solid fa-square"></i>
-          <span>จอดำ</span>
-        </button>
-
-        <button class="tool-btn" onclick="sendRemoteKey('white')">
-          <i class="fa-regular fa-square"></i>
-          <span>จอขาว</span>
-        </button>
-
-        <button class="tool-btn" onclick="sendRemoteKey('pen')">
-          <i class="fa-solid fa-pen"></i>
-          <span>ปากกา</span>
-        </button>
-
-        <button class="tool-btn" onclick="sendRemoteKey('eraser')">
-          <i class="fa-solid fa-eraser"></i>
-          <span>ยางลบ</span>
-        </button>
-      </div>
-
-      <!-- Custom Quick Bar -->
-      <div class="custom-bar-section">
-        <div class="section-label">คีย์ลัดด่วน (Custom Keys)</div>
-        <div id="mobileCustomGrid" class="mobile-custom-grid">
-          <!-- Rendered dynamically -->
+        <!-- Touchpad Swipe Zone -->
+        <div id="swipeArea" class="swipe-touchpad">
+          <div class="swipe-content">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <span>แตะหรือปัดซ้าย-ขวาที่นี่เพื่อเลื่อนสไลด์</span>
+          </div>
         </div>
-      </div>
+
+        <!-- Slide Show Fullscreen & Quick Actions -->
+        <div class="actions-grid-4col main-hero-grid">
+          <button class="action-btn btn-f5-hero" onclick="sendRemoteKey('start')">
+            <i class="fa-solid fa-expand"></i>
+            <span>📺 เต็มจอ F5</span>
+          </button>
+          
+          <button class="action-btn btn-current" onclick="sendRemoteKey('startCurrent')">
+            <i class="fa-solid fa-play"></i>
+            <span>หน้าปัจจุบัน</span>
+          </button>
+
+          <button class="action-btn btn-esc" onclick="sendRemoteKey('exit')">
+            <i class="fa-solid fa-stop"></i>
+            <span>จบการโชว์</span>
+          </button>
+
+          <button class="action-btn btn-dark-hero" onclick="sendRemoteKey('b')">
+            <i class="fa-solid fa-desktop"></i>
+            <span>จอดำ B</span>
+          </button>
+        </div>
+
+        <!-- Slide Helpers Bar -->
+        <div class="actions-grid-4col">
+          <button class="tool-btn" onclick="sendRemoteKey('white')">
+            <i class="fa-regular fa-square"></i>
+            <span>จอขาว W</span>
+          </button>
+
+          <button class="tool-btn" onclick="sendRemoteKey('pen')">
+            <i class="fa-solid fa-pen"></i>
+            <span>ปากกา</span>
+          </button>
+
+          <button class="tool-btn" onclick="sendRemoteKey('eraser')">
+            <i class="fa-solid fa-eraser"></i>
+            <span>ยางลบ</span>
+          </button>
+
+          <button class="tool-btn" onclick="sendRemoteKey('f11')">
+            <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+            <span>F11 จอเต็ม</span>
+          </button>
+        </div>
+
+        <!-- Custom Quick Bar -->
+        <div class="custom-bar-section">
+          <div class="section-label">คีย์ลัดด่วน (Custom Keys)</div>
+          <div id="mobileCustomGrid" class="mobile-custom-grid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- PANE 2: 16:9 Laser Pointer Control Surface -->
+      <section id="paneLaser" class="tab-pane-mobile">
+        <div class="laser-control-header">
+          <!-- Laser Mode Switcher -->
+          <div class="laser-mode-toggle">
+            <button id="modeJoystickBtn" class="laser-mode-btn active" onclick="setLaserMode('joystick')">
+              <i class="fa-solid fa-gamepad"></i> 🕹️ โยกคันโยก (Joystick)
+            </button>
+            <button id="modeAbsoluteBtn" class="laser-mode-btn" onclick="setLaserMode('absolute')">
+              <i class="fa-solid fa-bullseye"></i> 🎯 จิ้มพิกัดตรง (16:9 Absolute)
+            </button>
+          </div>
+
+          <!-- Laser Adjustments Bar -->
+          <div class="laser-settings-bar">
+            <div class="setting-item">
+              <label>ขนาดจุด (<span id="dotSizeVal">24</span>px):</label>
+              <input type="range" id="dotSizeSlider" min="10" max="60" value="24" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>ความยาวหาง (<span id="trailLenVal">12</span>):</label>
+              <input type="range" id="trailLenSlider" min="0" max="30" value="12" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>สีจุดเลเซอร์:</label>
+              <div class="color-picker-group">
+                <span class="color-dot active" style="background:#ef4444;" onclick="setLaserColor('#ef4444', this)"></span>
+                <span class="color-dot" style="background:#10b981;" onclick="setLaserColor('#10b981', this)"></span>
+                <span class="color-dot" style="background:#3b82f6;" onclick="setLaserColor('#3b82f6', this)"></span>
+                <span class="color-dot" style="background:#f59e0b;" onclick="setLaserColor('#f59e0b', this)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive 16:9 Touch Surface Box -->
+        <div class="laser-touch-wrapper">
+          <div class="laser-ratio-box" id="laserTouchBox">
+            <div class="ratio-grid-overlay"></div>
+            <div class="touch-target-indicator" id="touchIndicator">
+              <div class="core-dot"></div>
+              <div class="ring-pulse"></div>
+            </div>
+            <div class="touch-instructions">
+              <span id="laserModeHint">แตะและลากนิ้วบนจอนี้ จุดเลเซอร์จะปรากฏบนจอ PowerPoint ทันที</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Room Entry Modal -->
