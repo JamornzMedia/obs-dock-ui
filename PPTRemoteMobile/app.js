@@ -1,197 +1,199 @@
-// Firebase Config
+// Firebase Configuration
 const firebaseConfig = {
-  databaseURL: "https://useridjamornz-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: "AIzaSyCnHuf1jYqKfjSx11jKfuzz-1g_hhg94EU",
+  authDomain: "useridjamornz.firebaseapp.com",
+  databaseURL: "https://useridjamornz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "useridjamornz",
+  storageBucket: "useridjamornz.firebasestorage.app",
+  messagingSenderId: "508161736494",
+  appId: "1:508161736494:web:5246fa4bd66f43cffa84bf",
+  measurementId: "G-2MNHEGDYZ3"
 };
 
-let app, db;
-let roomId = getUrlParam('room') || localStorage.getItem('ppt_mobile_room') || 'PPT-8821';
+// Global Mobile State
+let db = null;
+let activeRoomId = "";
 
-// DOM Elements
-const roomDisplay = document.getElementById('roomDisplay');
-const firebaseDot = document.getElementById('firebaseDot');
-const roomInput = document.getElementById('roomInput');
-const roomModal = document.getElementById('roomModal');
-const toastEl = document.getElementById('toast');
-const mobileCustomKeysEl = document.getElementById('mobileCustomKeys');
-
-// Initialize App
-document.addEventListener('DOMContentLoaded', () => {
-  setupFirebase();
-  setupTabs();
-  setupTouchpad();
-  updateRoomUI();
+// Initialize Mobile App
+document.addEventListener("DOMContentLoaded", () => {
+  initFirebase();
+  checkUrlParams();
+  initRoomModal();
+  initSwipeTouchpad();
+  renderMobileCustomKeys();
 });
 
-function getUrlParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
-}
-
-function setupFirebase() {
+// Firebase Init
+function initFirebase() {
   try {
-    app = firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     db = firebase.database();
-    firebaseDot.classList.add('connected');
-    listenCustomKeys();
-  } catch (e) {
-    console.error("Firebase Mobile Init Error:", e);
-    firebaseDot.classList.remove('connected');
-  }
-}
 
-function updateRoomUI() {
-  roomDisplay.textContent = `ROOM: ${roomId}`;
-  localStorage.setItem('ppt_mobile_room', roomId);
-  listenCustomKeys();
-}
+    // Connection monitor
+    const connectedRef = db.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+      const statusContainer = document.getElementById("mobileStatus");
+      const dot = statusContainer.querySelector(".dot");
+      const label = statusContainer.querySelector(".status-label");
 
-function toggleRoomModal() {
-  roomInput.value = roomId;
-  roomModal.classList.toggle('active');
-}
-
-function saveRoomCode() {
-  const inputVal = roomInput.value.trim().toUpperCase();
-  if (inputVal) {
-    roomId = inputVal;
-    updateRoomUI();
-    toggleRoomModal();
-    showToast(`เชื่อมต่อห้อง ${roomId} แล้ว`);
-  }
-}
-
-// Mode Tab Switching
-function setupTabs() {
-  const tabs = document.querySelectorAll('.mode-tab');
-  tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.mode-pane').forEach(p => p.classList.remove('active'));
-      
-      btn.classList.add('active');
-      const targetId = btn.getAttribute('data-mode');
-      document.getElementById(targetId).classList.add('active');
-    });
-  });
-}
-
-// Trigger Key Command via Firebase
-function triggerKey(keyCombo) {
-  hapticFeedback();
-  showToast(`Sent: ${keyCombo.toUpperCase()}`);
-
-  if (!db || !roomId) {
-    console.error("Firebase DB not initialized or missing Room ID");
-    return;
-  }
-
-  const payload = {
-    action: 'press_key',
-    keyCombo: keyCombo,
-    timestamp: Date.now()
-  };
-
-  db.ref(`rooms/${roomId}/command`).set(payload)
-    .then(() => console.log('Command sent to Firebase:', payload))
-    .catch(err => console.error('Firebase send error:', err));
-}
-
-// Haptic Feedback (Vibration)
-function hapticFeedback() {
-  if (navigator.vibrate) {
-    navigator.vibrate(35);
-  }
-}
-
-// Toast Alert
-let toastTimer = null;
-function showToast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toastEl.classList.remove('show');
-  }, 1200);
-}
-
-// Touchpad Swipe Gesture Implementation
-function setupTouchpad() {
-  const touchpad = document.getElementById('touchpadArea');
-  const feedback = document.getElementById('swipeFeedback');
-  if (!touchpad) return;
-
-  let startX = 0;
-  let startY = 0;
-  let startTime = 0;
-
-  touchpad.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startTime = Date.now();
-    }
-  }, { passive: true });
-
-  touchpad.addEventListener('touchend', (e) => {
-    if (e.changedTouches.length === 1) {
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - startX;
-      const deltaY = endY - startY;
-      const duration = Date.now() - startTime;
-
-      // Check for swipe vs tap
-      if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) && duration < 600) {
-        if (deltaX > 0) {
-          // Swipe Right -> Previous Slide
-          triggerSwipeFeedback('⏮️');
-          triggerKey('left');
-        } else {
-          // Swipe Left -> Next Slide
-          triggerSwipeFeedback('⏭️');
-          triggerKey('right');
-        }
-      } else if (Math.abs(deltaX) < 15 && Math.abs(deltaY) < 15) {
-        // Tap -> Next Slide
-        triggerSwipeFeedback('⏭️');
-        triggerKey('right');
+      if (snap.val() === true && activeRoomId) {
+        dot.className = "dot connected";
+        label.innerText = "Connected";
+      } else {
+        dot.className = "dot disconnected";
+        label.innerText = "Offline";
       }
-    }
-  }, { passive: true });
-
-  function triggerSwipeFeedback(icon) {
-    feedback.textContent = icon;
-    feedback.classList.add('show');
-    setTimeout(() => {
-      feedback.classList.remove('show');
-    }, 400);
+    });
+  } catch (err) {
+    console.error("Firebase init failed:", err);
   }
 }
 
-// Sync Custom Keys from Desktop Firebase Node
-function listenCustomKeys() {
-  if (!db || !roomId) return;
+// URL Params & Room Joining
+function checkUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomParam = urlParams.get("room");
+  const savedRoom = localStorage.getItem("mobileActiveRoom");
 
-  db.ref(`rooms/${roomId}/customKeys`).on('value', (snapshot) => {
-    const keys = snapshot.val();
-    renderMobileCustomKeys(keys);
+  if (roomParam) {
+    joinRoom(roomParam);
+  } else if (savedRoom) {
+    joinRoom(savedRoom);
+  } else {
+    openRoomModal();
+  }
+}
+
+function initRoomModal() {
+  document.getElementById("changeRoomBtn").addEventListener("click", () => {
+    openRoomModal();
+  });
+
+  document.getElementById("joinRoomBtn").addEventListener("click", () => {
+    const input = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+    if (input) {
+      joinRoom(input);
+      closeRoomModal();
+    } else {
+      alert("กรุณากรอก Room Code");
+    }
   });
 }
 
-function renderMobileCustomKeys(keys) {
-  if (!keys || !Array.isArray(keys) || keys.length === 0) {
-    mobileCustomKeysEl.innerHTML = `<p class="empty-hint">ยังไม่มี Custom Hotkeys (เพิ่มที่โปรแกรม Desktop)</p>`;
+function openRoomModal() {
+  document.getElementById("roomModal").classList.add("active");
+  if (activeRoomId) {
+    document.getElementById("roomCodeInput").value = activeRoomId;
+  }
+}
+
+function closeRoomModal() {
+  document.getElementById("roomModal").classList.remove("active");
+}
+
+function joinRoom(roomId) {
+  let formatted = roomId.trim().toUpperCase();
+  if (!formatted.startsWith("PPT-")) {
+    formatted = `PPT-${formatted}`;
+  }
+
+  activeRoomId = formatted;
+  localStorage.setItem("mobileActiveRoom", activeRoomId);
+  document.getElementById("activeRoomCode").innerText = activeRoomId;
+
+  // Update Status
+  const statusContainer = document.getElementById("mobileStatus");
+  statusContainer.querySelector(".dot").className = "dot connected";
+  statusContainer.querySelector(".status-label").innerText = "Connected";
+
+  closeRoomModal();
+}
+
+// Send Remote Key to Firebase Realtime Database
+function sendRemoteKey(keyCombo) {
+  if (!activeRoomId) {
+    openRoomModal();
     return;
   }
 
-  mobileCustomKeysEl.innerHTML = keys.map(k => `
-    <button class="btn-custom-mobile" onclick="triggerKey('${escapeHtml(k.combo)}')">
-      <span>${escapeHtml(k.name)}</span>
-      <small>${escapeHtml(k.combo)}</small>
-    </button>
-  `).join('');
+  // Haptic feedback (Vibration)
+  if (navigator.vibrate) {
+    try {
+      navigator.vibrate(30);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (db) {
+    const commandRef = db.ref(`rooms/${activeRoomId}/command`);
+    commandRef.set({
+      key: keyCombo,
+      timestamp: Date.now(),
+      source: "mobile"
+    }).then(() => {
+      console.log(`Sent command [${keyCombo}] to room [${activeRoomId}]`);
+    }).catch((err) => {
+      console.error("Failed to send command to Firebase:", err);
+    });
+  }
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+// Touchpad Swipe Detection
+function initSwipeTouchpad() {
+  const swipeArea = document.getElementById("swipeArea");
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+
+  swipeArea.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+
+  swipeArea.addEventListener("touchend", (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    const duration = Date.now() - touchStartTime;
+
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+
+    if (Math.abs(diffY) > Math.abs(diffX)) return;
+
+    if (Math.abs(diffX) > 40 && duration < 500) {
+      if (diffX < 0) {
+        sendRemoteKey("next");
+      } else {
+        sendRemoteKey("prev");
+      }
+    } else if (Math.abs(diffX) < 10 && duration < 300) {
+      sendRemoteKey("next");
+    }
+  }, { passive: true });
+}
+
+// Render Custom Hotkeys Bar on Mobile
+function renderMobileCustomKeys() {
+  const container = document.getElementById("mobileCustomGrid");
+  container.innerHTML = "";
+
+  const defaultKeys = [
+    { label: "ซูมเข้า", combo: "ctrl+plus", icon: "fa-magnifying-glass" },
+    { label: "สลับหน้าต่าง", combo: "alt+tab", icon: "fa-desktop" }
+  ];
+
+  defaultKeys.forEach(item => {
+    const btn = document.createElement("button");
+    btn.className = "mobile-custom-btn";
+    btn.onclick = () => sendRemoteKey(item.combo);
+    btn.innerHTML = `
+      <i class="fa-solid ${item.icon}"></i>
+      <span>${item.label}</span>
+    `;
+    container.appendChild(btn);
+  });
 }

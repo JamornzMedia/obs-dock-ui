@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPT Remote & Hotkey Controller</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-file-powerpoint"></i>
+        </div>
+        <div class="brand-text">
+          <h1>PPT Remote</h1>
+          <span class="subtitle">Always-On-Top Overlay</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="toggleAutoFocusBtn" class="icon-btn active" title="สลับโหมด Auto Focus PowerPoint">
+          <i class="fa-solid fa-crosshairs"></i>
+        </button>
+        <button id="toggleOntopBtn" class="icon-btn active" title="สลับโหมด Always On Top">
+          <i class="fa-solid fa-thumbtack"></i>
+        </button>
+        <div class="status-badge" id="firebaseStatus" title="สถานะการเชื่อมต่อ Firebase">
+          <span class="status-dot disconnected"></span>
+          <span class="status-text">Offline</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Prominent Action Notification Toast Banner -->
+    <div id="actionToastBanner" class="action-toast-banner">
+      <div class="toast-content">
+        <i class="fa-solid fa-bolt toast-icon"></i>
+        <div class="toast-details">
+          <span id="toastActionLabel" class="toast-title">พร้อมรับคำสั่ง</span>
+          <small id="toastActionSub" class="toast-sub">รอมือถือแสกนสลับสไลด์...</small>
+        </div>
+      </div>
+      <span id="toastSourceBadge" class="source-badge">SYSTEM</span>
+    </div>
+
+    <!-- Room Code Bar -->
+    <div class="room-bar">
+      <div class="room-info">
+        <span class="label">ROOM CODE:</span>
+        <span id="roomCodeDisplay" class="room-code">PPT-XXXXXX</span>
+      </div>
+      <div class="room-actions">
+        <button id="copyRoomBtn" class="small-btn" title="คัดลอก Room Code">
+          <i class="fa-regular fa-copy"></i>
+        </button>
+        <button id="newRoomBtn" class="small-btn" title="สร้าง Room Code ใหม่">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="controlTab">
+        <i class="fa-solid fa-gamepad"></i> ควบคุม PPT
+      </button>
+      <button class="tab-btn" data-tab="customTab">
+        <i class="fa-solid fa-keyboard"></i> คีย์ลัด Custom
+      </button>
+      <button class="tab-btn" data-tab="qrTab">
+        <i class="fa-solid fa-qrcode"></i> QR มือถือ
+      </button>
+      <button class="tab-btn" data-tab="logTab">
+        <i class="fa-solid fa-list-check"></i> ประวัติคำสั่ง
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="main-content">
+      <!-- Tab 1: PPT Presets -->
+      <section id="controlTab" class="tab-panel active">
+        <div class="section-title-row">
+          <div class="section-title">
+            <i class="fa-solid fa-sliders"></i> PowerPoint Main Controls
+          </div>
+          <button class="small-btn btn-edit-presets" onclick="openEditPresetsModal()">
+            <i class="fa-solid fa-pen-to-square"></i> แก้ไขปุ่มหลัก
+          </button>
+        </div>
+        
+        <!-- Big Action Navigation Buttons -->
+        <div class="grid-2col mb-3">
+          <button class="remote-btn btn-primary btn-large" onclick="triggerPreset('prev')">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span id="label_prev">ย้อนกลับ</span>
+            <small class="key-hint" id="hint_prev">LEFT</small>
+          </button>
+          
+          <button class="remote-btn btn-primary btn-large" onclick="triggerPreset('next')">
+            <i class="fa-solid fa-chevron-right"></i>
+            <span id="label_next">สไลด์ถัดไป</span>
+            <small class="key-hint" id="hint_next">RIGHT</small>
+          </button>
+        </div>
+
+        <!-- Secondary Controls Grid -->
+        <div class="grid-3col mb-3">
+          <button class="remote-btn btn-accent" onclick="triggerPreset('start')">
+            <i class="fa-solid fa-play"></i>
+            <span>เริ่มโชว์</span>
+            <small class="key-hint" id="hint_start">F5</small>
+          </button>
+          
+          <button class="remote-btn btn-accent" onclick="triggerPreset('startCurrent')">
+            <i class="fa-solid fa-arrow-right-to-city"></i>
+            <span>หน้าปัจจุบัน</span>
+            <small class="key-hint" id="hint_startCurrent">Shift+F5</small>
+          </button>
+
+          <button class="remote-btn btn-danger" onclick="triggerPreset('exit')">
+            <i class="fa-solid fa-square-xmark"></i>
+            <span>จบโชว์</span>
+            <small class="key-hint" id="hint_exit">Esc</small>
+          </button>
+        </div>
+
+        <!-- Presentation Helpers -->
+        <div class="section-subtitle">โหมดสไลด์และเครื่องมือ</div>
+        <div class="grid-4col">
+          <button class="remote-btn btn-dark" onclick="triggerPreset('black')" title="สลับหน้าจอสีดำ">
+            <i class="fa-solid fa-square"></i>
+            <span>จอดำ</span>
+            <small class="key-hint" id="hint_black">B</small>
+          </button>
+
+          <button class="remote-btn btn-dark" onclick="triggerPreset('white')" title="สลับหน้าจอสีขาว">
+            <i class="fa-regular fa-square"></i>
+            <span>จอขาว</span>
+            <small class="key-hint" id="hint_white">W</small>
+          </button>
+
+          <button class="remote-btn btn-dark" onclick="triggerPreset('pen')" title="โหมดปากกา">
+            <i class="fa-solid fa-pen"></i>
+            <span>ปากกา</span>
+            <small class="key-hint" id="hint_pen">Ctrl+P</small>
+          </button>
+
+          <button class="remote-btn btn-dark" onclick="triggerPreset('eraser')" title="โหมดยางลบ">
+            <i class="fa-solid fa-eraser"></i>
+            <span>ยางลบ</span>
+            <small class="key-hint" id="hint_eraser">Ctrl+E</small>
+          </button>
+        </div>
+      </section>
+
+      <!-- Tab 2: Custom Hotkeys -->
+      <section id="customTab" class="tab-panel">
+        <div class="custom-header">
+          <div class="section-title">
+            <i class="fa-solid fa-keyboard"></i> ปุ่มคีย์ลัดที่กำหนดเอง (Custom)
+          </div>
+          <button class="small-btn btn-add" onclick="openAddHotkeyModal()">
+            <i class="fa-solid fa-plus"></i> เพิ่มปุ่มใหม่
+          </button>
+        </div>
+
+        <div id="customHotkeysList" class="custom-hotkeys-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Tab 3: QR Code & Mobile Connection -->
+      <section id="qrTab" class="tab-panel">
+        <div class="qr-container">
+          <div class="section-title">
+            <i class="fa-solid fa-mobile-screen-button"></i> สแกนด้วยมือถือเพื่อรีโมท
+          </div>
+
+          <div class="qr-card">
+            <div id="qrcode" class="qr-wrapper"></div>
+            <p class="qr-instructions">สแกน QR Code ด้วยกล้องมือถือ เพื่อเปิดหน้าควบคุม</p>
+          </div>
+
+          <div class="url-config-box">
+            <label for="mobileUrlInput">URL ของเว็บฝั่งมือถือ (GitHub Pages):</label>
+            <div class="url-input-group">
+              <input type="text" id="mobileUrlInput" placeholder="https://jamornzmedia.github.io/obs-dock-ui/PPTRemoteMobile/index.html">
+              <button id="saveUrlBtn" class="small-btn">บันทึก</button>
+            </div>
+            <small class="help-text">ลิงก์ฝั่งมือถือสำหรับ Render สแกนเข้า Room อัตโนมัติ</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Command Activity History Log -->
+      <section id="logTab" class="tab-panel">
+        <div class="section-title">
+          <i class="fa-solid fa-list-check"></i> ประวัติการส่งคำสั่ง (Activity Log)
+        </div>
+        <div class="history-list-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>เวลา</th>
+                <th>ที่มา</th>
+                <th>คำสั่ง / คีย์</th>
+                <th>สถานะ PPT</th>
+              </tr>
+            </thead>
+            <tbody id="historyLogBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Activity Log Footer -->
+    <footer class="app-footer">
+      <div class="log-info">
+        <i class="fa-solid fa-bolt"></i>
+        <span id="lastActionText">พร้อมรับคำสั่ง</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal: Edit Main Presets -->
+  <div id="editPresetsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-sliders"></i> แก้ไขคีย์ลัดปุ่มหลัก (Presets)</h3>
+        <button class="close-btn" onclick="closeEditPresetsModal()">&times;</button>
+      </div>
+      <div class="modal-body scrollable-body">
+        <div class="form-group">
+          <label>สไลด์ถัดไป (Next Slide):</label>
+          <input type="text" id="editKey_next" placeholder="เช่น right, pagedown, space, down">
+        </div>
+        <div class="form-group">
+          <label>สไลด์ย้อนกลับ (Prev Slide):</label>
+          <input type="text" id="editKey_prev" placeholder="เช่น left, pageup, up">
+        </div>
+        <div class="form-group">
+          <label>เริ่มนำเสนอ (Start Show):</label>
+          <input type="text" id="editKey_start" placeholder="เช่น f5">
+        </div>
+        <div class="form-group">
+          <label>เริ่มจากหน้าปัจจุบัน (Start Current):</label>
+          <input type="text" id="editKey_startCurrent" placeholder="เช่น shift+f5">
+        </div>
+        <div class="form-group">
+          <label>จบการนำเสนอ (Exit Show):</label>
+          <input type="text" id="editKey_exit" placeholder="เช่น escape">
+        </div>
+        <div class="form-group">
+          <label>หน้าจอสีดำ (Black Screen):</label>
+          <input type="text" id="editKey_black" placeholder="เช่น b">
+        </div>
+        <div class="form-group">
+          <label>หน้าจอสีขาว (White Screen):</label>
+          <input type="text" id="editKey_white" placeholder="เช่น w">
+        </div>
+        <div class="form-group">
+          <label>โหมดปากกา (Pen):</label>
+          <input type="text" id="editKey_pen" placeholder="เช่น ctrl+p">
+        </div>
+        <div class="form-group">
+          <label>โหมดยางลบ (Eraser):</label>
+          <input type="text" id="editKey_eraser" placeholder="เช่น ctrl+e">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeEditPresetsModal()">ยกเลิก</button>
+        <button class="btn-save" onclick="savePresetKeyMappings()">บันทึกการตั้งค่า</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Custom Hotkey -->
+  <div id="addHotkeyModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-plus-circle"></i> เพิ่มคีย์ลัด Custom</h3>
+        <button class="close-btn" onclick="closeAddHotkeyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>ชื่อปุ่ม (Label):</label>
+          <input type="text" id="hotkeyLabel" placeholder="เช่น ซูมสไลด์, สลับหน้าต่าง">
+        </div>
+        <div class="form-group">
+          <label>คีย์ลัด (เช่น ctrl+p, alt+tab, f11, space):</label>
+          <input type="text" id="hotkeyCombo" placeholder="เช่น ctrl+shift+s หรือ right">
+          <small class="help-text">ใช้เครื่องหมาย + เชื่อมคีย์ เช่น <code>ctrl+z</code>, <code>alt+f4</code>, <code>pagedown</code></small>
+        </div>
+        <div class="form-group">
+          <label>ไอคอน:</label>
+          <select id="hotkeyIcon">
+            <option value="fa-bolt">⚡ สายฟ้า</option>
+            <option value="fa-star">⭐ ดาว</option>
+            <option value="fa-pen-to-square">✏️ เขียน</option>
+            <option value="fa-magnifying-glass">🔍 ซูม</option>
+            <option value="fa-eye">👁️ ดู</option>
+            <option value="fa-desktop">🖥️ จอภาพ</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeAddHotkeyModal()">ยกเลิก</button>
+        <button class="btn-save" onclick="saveCustomHotkey()">บันทึกปุ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -2,159 +2,133 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PPT Mobile Remote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PPT Remote Controller - Mobile</title>
   <link rel="stylesheet" href="style.css">
-  
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Firebase SDK Compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="mobile-app">
-    
-    <!-- Top Header -->
+  <div class="mobile-container">
+    <!-- Header -->
     <header class="mobile-header">
       <div class="brand">
-        <span class="icon">📱</span>
-        <h1>PPT Remote</h1>
+        <i class="fa-solid fa-file-powerpoint brand-icon"></i>
+        <span>PPT Remote</span>
       </div>
-      
-      <div class="room-chip" onclick="toggleRoomModal()">
-        <span class="dot" id="firebaseDot"></span>
-        <span class="room-text" id="roomDisplay">ROOM: ???</span>
-        <span class="edit-icon">⚙️</span>
+      <div class="connection-status" id="mobileStatus">
+        <span class="dot disconnected"></span>
+        <span class="status-label">Offline</span>
       </div>
     </header>
 
-    <!-- Main Navigation Mode Switcher -->
-    <nav class="mode-tabs">
-      <button class="mode-tab active" data-mode="mode-slide">
-        <span>🎮</span> Main Controls
+    <!-- Room ID Bar / Connection Modal Trigger -->
+    <div class="room-selector-card">
+      <div class="room-display">
+        <span class="text-muted">ROOM:</span>
+        <strong id="activeRoomCode">NOT CONNECTED</strong>
+      </div>
+      <button id="changeRoomBtn" class="change-room-btn">
+        <i class="fa-solid fa-key"></i> เปลี่ยนห้อง
       </button>
-      <button class="mode-tab" data-mode="mode-touchpad">
-        <span>👈</span> Touchpad Swipe
-      </button>
-      <button class="mode-tab" data-mode="mode-tools">
-        <span>🛠️</span> Tools & Custom
-      </button>
-    </nav>
+    </div>
 
-    <!-- Tab Content Panes -->
-    <main class="content-area">
-      
-      <!-- MODE 1: MAIN SLIDE CONTROLS (Ergonomic Thumb Buttons) -->
-      <section id="mode-slide" class="mode-pane active">
-        <!-- Huge Thumb Control Area -->
-        <div class="thumb-deck">
-          <button class="btn-hero prev" onclick="triggerKey('left')">
-            <span class="hero-icon">⏮️</span>
-            <span class="hero-label">PREV SLIDE</span>
-          </button>
+    <!-- Main Navigation Remote Controls -->
+    <main class="remote-main">
+      <!-- Big Touch Area for Next / Prev -->
+      <div class="big-nav-container">
+        <button class="touch-nav-btn prev-btn" onclick="sendRemoteKey('prev')">
+          <i class="fa-solid fa-chevron-left"></i>
+          <span>ย้อนกลับ</span>
+        </button>
 
-          <button class="btn-hero next" onclick="triggerKey('right')">
-            <span class="hero-icon">⏭️</span>
-            <span class="hero-label">NEXT SLIDE</span>
-          </button>
+        <button class="touch-nav-btn next-btn" onclick="sendRemoteKey('next')">
+          <i class="fa-solid fa-chevron-right"></i>
+          <span>สไลด์ถัดไป</span>
+        </button>
+      </div>
+
+      <!-- Touchpad Swipe Zone -->
+      <div id="swipeArea" class="swipe-touchpad">
+        <div class="swipe-content">
+          <i class="fa-solid fa-hand-pointer"></i>
+          <span>แตะหรือปัดซ้าย-ขวาที่นี่เพื่อเลื่อนสไลด์</span>
         </div>
+      </div>
 
-        <!-- Quick Actions Grid -->
-        <div class="quick-grid">
-          <button class="btn-quick green" onclick="triggerKey('f5')">
-            <span class="icon">▶️</span>
-            <span>Start F5</span>
-          </button>
-          
-          <button class="btn-quick amber" onclick="triggerKey('shift+f5')">
-            <span class="icon">📍</span>
-            <span>From Current</span>
-          </button>
+      <!-- Slide Show Quick Actions -->
+      <div class="actions-grid-3col">
+        <button class="action-btn btn-f5" onclick="sendRemoteKey('start')">
+          <i class="fa-solid fa-play"></i>
+          <span>เริ่มโชว์</span>
+        </button>
+        
+        <button class="action-btn btn-current" onclick="sendRemoteKey('startCurrent')">
+          <i class="fa-solid fa-arrow-right-to-city"></i>
+          <span>หน้าปัจจุบัน</span>
+        </button>
 
-          <button class="btn-quick red" onclick="triggerKey('escape')">
-            <span class="icon">⏹️</span>
-            <span>End Show</span>
-          </button>
+        <button class="action-btn btn-esc" onclick="sendRemoteKey('exit')">
+          <i class="fa-solid fa-stop"></i>
+          <span>จบการโชว์</span>
+        </button>
+      </div>
+
+      <!-- Slide Helpers Bar -->
+      <div class="actions-grid-4col">
+        <button class="tool-btn" onclick="sendRemoteKey('black')">
+          <i class="fa-solid fa-square"></i>
+          <span>จอดำ</span>
+        </button>
+
+        <button class="tool-btn" onclick="sendRemoteKey('white')">
+          <i class="fa-regular fa-square"></i>
+          <span>จอขาว</span>
+        </button>
+
+        <button class="tool-btn" onclick="sendRemoteKey('pen')">
+          <i class="fa-solid fa-pen"></i>
+          <span>ปากกา</span>
+        </button>
+
+        <button class="tool-btn" onclick="sendRemoteKey('eraser')">
+          <i class="fa-solid fa-eraser"></i>
+          <span>ยางลบ</span>
+        </button>
+      </div>
+
+      <!-- Custom Quick Bar -->
+      <div class="custom-bar-section">
+        <div class="section-label">คีย์ลัดด่วน (Custom Keys)</div>
+        <div id="mobileCustomGrid" class="mobile-custom-grid">
+          <!-- Rendered dynamically -->
         </div>
-      </section>
-
-      <!-- MODE 2: TOUCHPAD SWIPE AREA -->
-      <section id="mode-touchpad" class="mode-pane">
-        <div class="touchpad-area" id="touchpadArea">
-          <div class="touchpad-hint">
-            <span class="gesture-icon">👈 👆 👉</span>
-            <p class="main-hint">ปัดซ้าย = สไลด์ถัดไป (Next)</p>
-            <p class="main-hint">ปัดขวา = สไลด์ก่อนหน้า (Prev)</p>
-            <span class="sub-hint">แตะ 1 ครั้งเพื่อส่ง Next Slide</span>
-          </div>
-          <div class="swipe-feedback" id="swipeFeedback"></div>
-        </div>
-      </section>
-
-      <!-- MODE 3: TOOLS & CUSTOM HOTKEYS -->
-      <section id="mode-tools" class="mode-pane">
-        <div class="section-label">Screen & Annotation Tools</div>
-        <div class="tools-grid">
-          <button class="btn-tool dark" onclick="triggerKey('b')">
-            <span class="icon">⬛</span>
-            <span>Black (B)</span>
-          </button>
-          
-          <button class="btn-tool light" onclick="triggerKey('w')">
-            <span class="icon">⬜</span>
-            <span>White (W)</span>
-          </button>
-
-          <button class="btn-tool cyan" onclick="triggerKey('ctrl+p')">
-            <span class="icon">✏️</span>
-            <span>Pen</span>
-          </button>
-
-          <button class="btn-tool rose" onclick="triggerKey('ctrl+e')">
-            <span class="icon">🧹</span>
-            <span>Eraser</span>
-          </button>
-
-          <button class="btn-tool indigo" onclick="triggerKey('ctrl+a')">
-            <span class="icon">🎯</span>
-            <span>Pointer</span>
-          </button>
-        </div>
-
-        <div class="section-label margin-top">Synced Custom Hotkeys</div>
-        <div class="custom-keys-container" id="mobileCustomKeys">
-          <p class="empty-hint">ยังไม่มี Custom Hotkeys (เพิ่มที่โปรแกรม Desktop)</p>
-        </div>
-      </section>
-
+      </div>
     </main>
 
-    <!-- Room ID Modal -->
-    <div class="modal-overlay" id="roomModal">
+    <!-- Room Entry Modal -->
+    <div id="roomModal" class="mobile-modal active">
       <div class="modal-card">
-        <h3>เชื่อมต่อกับ Desktop App</h3>
-        <p>กรอก Room Code 6 หลักที่แสดงบนหน้าจอคอมพิวเตอร์</p>
-        
-        <div class="input-field">
-          <label>ROOM CODE:</label>
-          <input type="text" id="roomInput" placeholder="PPT-8821" autocomplete="off" autocapitalize="characters">
+        <div class="modal-title">
+          <i class="fa-solid fa-qrcode"></i> เชื่อมต่อกับคอมพิวเตอร์
         </div>
+        <p class="modal-desc">กรอก Room Code 6 หลักที่แสดงบนหน้าจอคอมพิวเตอร์ (เช่น PPT-849201)</p>
 
-        <div class="modal-actions">
-          <button class="btn-cancel" onclick="toggleRoomModal()">ยกเลิก</button>
-          <button class="btn-save" onclick="saveRoomCode()">เชื่อมต่อ</button>
+        <div class="input-group">
+          <input type="text" id="roomCodeInput" placeholder="PPT-XXXXXX" autocomplete="off" style="text-transform: uppercase;">
+          <button id="joinRoomBtn" class="join-btn">เชื่อมต่อ</button>
         </div>
       </div>
     </div>
-
-    <!-- Status Toast Notification -->
-    <div class="toast" id="toast">Command Sent</div>
   </div>
 
+  <!-- Firebase Compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- App Script -->
   <script src="app.js"></script>
 </body>
 </html>
