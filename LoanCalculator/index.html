@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>โปรแกรมคำนวณดอกเบี้ยรายวัน & หักค่าหุ้น</title>
+    <!-- Google Fonts: Prompt & Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <div class="background-decor">
+        <div class="glow-circle sphere-1"></div>
+        <div class="glow-circle sphere-2"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <div>
+                    <h1>ระบบคำนวณดอกเบี้ยรายวัน & หักค่าหุ้น</h1>
+                    <p class="subtitle">คำนวณยอดสัญญากู้ เงินสดรับสุทธิ และการหักค่าหุ้นตามเงื่อนไข</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggleBtn" class="btn-icon" title="เปลี่ยนธีม (Dark/Light)">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- TOP HIGHLIGHT RESULTS (ขอเลข ที่คำนวณได้ ชัดๆ เด่นๆ ใหญ่ ด้านบน) -->
+        <section class="hero-results-section" id="heroResults">
+            <div class="main-hero-card">
+                <div class="hero-badge" id="heroBadge">
+                    <i class="fa-solid fa-wallet"></i> <span id="heroBadgeText">ยอดเงินต้นที่ต้องทำสัญญา</span>
+                </div>
+                <div class="hero-amount-container">
+                    <span class="currency-symbol">฿</span>
+                    <span class="hero-amount" id="heroMainAmount">0.00</span>
+                </div>
+                <div class="hero-subtext" id="heroSubtext">
+                    คำนวณจาก อัตราดอกเบี้ย 7% ต่อปี + หักค่าหุ้น 3%
+                </div>
+            </div>
+
+            <!-- HERO STATS GRID -->
+            <div class="hero-stats-grid">
+                <div class="stat-card rate-highlight-card">
+                    <div class="stat-icon rate-icon">
+                        <i class="fa-solid fa-percent"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">อัตราดอกเบี้ยที่เลือก</span>
+                        <span class="stat-value rate-val" id="displaySelectedRate">7.00%</span>
+                        <span class="stat-sub">ต่อปี (365 วัน)</span>
+                    </div>
+                </div>
+
+                <div class="stat-card period-card">
+                    <div class="stat-icon period">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">ระยะเวลาคิดดอกเบี้ย</span>
+                        <span class="stat-value period-val" id="displayTotalDays">0 วัน</span>
+                        <span class="stat-sub" id="displayDateRange">-</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon interest">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">ดอกเบี้ยรวมทั้งหมด</span>
+                        <span class="stat-value interest-val" id="displayTotalInterest">฿0.00</span>
+                        <span class="stat-sub" id="displayDailyInterest">เฉลี่ยวันละ ฿0.00</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon share">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">ค่าหุ้น (<span id="statShareRateText">3%</span>)</span>
+                        <span class="stat-value share-val" id="displayShareAmount">฿0.00</span>
+                        <span class="stat-sub" id="displayShareStatus">คำนวณจากยอดกู้</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon principal">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label" id="statSecondaryTitle">เงินสดสุทธิที่ต้องการ</span>
+                        <span class="stat-value" id="displaySecondaryAmount">฿0.00</span>
+                        <span class="stat-sub" id="displayDeductStatus">หักดอกเบี้ยล่วงหน้า</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon due">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">กำหนดชำระ</span>
+                        <span class="stat-value due-val" id="displayDueDate">-</span>
+                        <span class="stat-sub" id="displayDaysRem">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN CONTENT (CONTROLS & BREAKDOWN) -->
+        <main class="content-grid">
+            <!-- LEFT COLUMN: INPUT CONTROLS -->
+            <section class="card input-card">
+                <div class="card-header">
+                    <h2><i class="fa-sliders fa-solid"></i> กำหนดเงื่อนไขการคำนวณ</h2>
+                </div>
+
+                <!-- MODE SELECTOR (เงื่อนไขหลัก) -->
+                <div class="form-group">
+                    <label class="form-label">เลือกเงื่อนไขการคำนวณ</label>
+                    <div class="mode-selector-tabs">
+                        <button type="button" class="mode-tab active" data-mode="mode_calc_principal">
+                            <div class="tab-radio"></div>
+                            <div class="tab-text">
+                                <strong>1. ระบุเงินสดคงเหลือที่ต้องการได้รับ</strong>
+                                <span>(คำนวณหายอดเงินต้นที่ต้องทำสัญญากู้)</span>
+                            </div>
+                        </button>
+                        <button type="button" class="mode-tab" data-mode="mode_calc_netcash">
+                            <div class="tab-radio"></div>
+                            <div class="tab-text">
+                                <strong>2. ระบุยอดเงินต้นตามสัญญา</strong>
+                                <span>(สรุปยอดเงินสดคงเหลือที่จะได้รับ)</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC AMOUNT INPUT -->
+                <div class="form-group">
+                    <label for="amountInput" class="form-label">
+                        <span id="amountInputLabel">จำนวนเงินสดคงเหลือที่ต้องการได้รับ (บาท)</span>
+                        <span class="req-star">*</span>
+                    </label>
+                    <div class="input-with-symbol">
+                        <span class="symbol">฿</span>
+                        <input type="text" id="amountInput" placeholder="กรอกจำนวนเงิน เช่น 100,000" value="100,000" inputmode="numeric">
+                    </div>
+                    <div class="preset-buttons">
+                        <button type="button" class="btn-preset" data-amount="10000">10,000</button>
+                        <button type="button" class="btn-preset" data-amount="50000">50,000</button>
+                        <button type="button" class="btn-preset active" data-amount="100000">100,000</button>
+                        <button type="button" class="btn-preset" data-amount="300000">300,000</button>
+                        <button type="button" class="btn-preset" data-amount="500000">500,000</button>
+                    </div>
+                </div>
+
+                <!-- INTEREST RATE SELECTOR (5%, 7%, 8%, 9% + custom) -->
+                <div class="form-group">
+                    <label class="form-label">เลือกอัตราดอกเบี้ยต่อปี (% ต่อปี)</label>
+                    <div class="rate-buttons">
+                        <button type="button" class="btn-rate" data-rate="5">
+                            <span class="rate-num">5%</span>
+                            <span class="rate-lbl">ต่อปี</span>
+                        </button>
+                        <button type="button" class="btn-rate active" data-rate="7">
+                            <span class="rate-num">7%</span>
+                            <span class="rate-lbl">ต่อปี</span>
+                        </button>
+                        <button type="button" class="btn-rate" data-rate="8">
+                            <span class="rate-num">8%</span>
+                            <span class="rate-lbl">ต่อปี</span>
+                        </button>
+                        <button type="button" class="btn-rate" data-rate="9">
+                            <span class="rate-num">9%</span>
+                            <span class="rate-lbl">ต่อปี</span>
+                        </button>
+                        <div class="custom-rate-wrap">
+                            <input type="number" id="customRateInput" placeholder="กำหนดเอง" step="0.1" min="0" max="100" inputmode="decimal">
+                            <span class="percent-symbol">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATES SECTION -->
+                <div class="form-row dates-row">
+                    <div class="form-group col">
+                        <label for="startDateInput" class="form-label">
+                            <i class="fa-regular fa-calendar"></i> วันที่เริ่มคิดดอกเบี้ย
+                        </label>
+                        <input type="date" id="startDateInput" class="date-picker">
+                    </div>
+                    <div class="form-group col">
+                        <label for="endDateInput" class="form-label">
+                            <i class="fa-solid fa-calendar-day"></i> กำหนดวันที่ชำระ
+                            <span class="auto-badge" id="autoDateBadge" style="display:none;">31 มี.ค. ปีถัดไป</span>
+                        </label>
+                        <input type="date" id="endDateInput" class="date-picker">
+                    </div>
+                </div>
+
+                <!-- LIVE PERIOD DISPLAY BADGE UNDER DATES -->
+                <div class="period-info-banner" id="periodInfoBanner">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <span>ระยะเวลาคิดดอกเบี้ย: <strong id="inputDaysBadge">0 วัน</strong> (<span id="inputDateRangeText">-</span>)</span>
+                </div>
+
+                <!-- INTEREST DEDUCTION OPTION (เพิ่มตัวเลือกไม่หักดอกเบี้ยล่วงหน้า) -->
+                <div class="form-group toggle-box">
+                    <div class="toggle-info">
+                        <div class="toggle-title">
+                            <i class="fa-solid fa-receipt"></i> หักดอกเบี้ยล่วงหน้า ณ วันกู้
+                        </div>
+                        <div class="toggle-desc" id="interestToggleDesc">หักดอกเบี้ยออกจากเงินสดรับสุทธิทันที</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="interestDeductToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- SHARE DEDUCTION TOGGLE (หักหุ้น 3%) -->
+                <div class="form-group toggle-box mt-10">
+                    <div class="toggle-info">
+                        <div class="toggle-title">
+                            <i class="fa-solid fa-shield-halved"></i> หักค่าหุ้น 3% จากยอดกู้
+                        </div>
+                        <div class="toggle-desc">หักเงินค่าหุ้น 3% จากยอดเงินต้นตามสัญญา</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="shareToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: DETAILED BREAKDOWN & RECEIPT -->
+            <section class="card breakdown-card">
+                <div class="card-header">
+                    <h2><i class="fa-receipt fa-solid"></i> สรุปรายละเอียดการคำนวณ</h2>
+                    <div class="header-tools">
+                        <button id="copySummaryBtn" class="btn-secondary btn-sm">
+                            <i class="fa-regular fa-copy"></i> คัดลอกสรุป
+                        </button>
+                        <button id="printBtn" class="btn-secondary btn-sm">
+                            <i class="fa-solid fa-print"></i> พิมพ์ / PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="breakdown-body" id="printableArea">
+                    <!-- Print Header (Visible only when printing) -->
+                    <div class="print-only-header">
+                        <h2><i class="fa-solid fa-calculator"></i> สรุปรายงานการคำนวณดอกเบี้ยรายวัน</h2>
+                        <p id="printDateNotice">วันที่พิมพ์เอกสาร: -</p>
+                    </div>
+
+                    <div class="summary-banner" id="summaryModeBanner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span id="bannerText">เงื่อนไข: ระบุเงินสดคงเหลือที่ต้องการได้รับ | อัตราดอกเบี้ย 7.00% ต่อปี</span>
+                    </div>
+
+                    <table class="summary-table">
+                        <tbody>
+                            <tr id="tableRowNetCashInput">
+                                <td><i class="fa-solid fa-wallet text-cyan"></i> เงินสดคงเหลือที่ต้องการได้รับ</td>
+                                <td class="text-right font-mono text-cyan text-bold" id="tableReqNetCash">฿0.00</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-money-bill"></i> ยอดเงินต้นที่ต้องทำสัญญา (Principal)</td>
+                                <td class="text-right font-mono text-bold" id="tablePrincipal">฿0.00</td>
+                            </tr>
+                            <tr class="highlight-rate-row">
+                                <td><i class="fa-solid fa-percent text-gold"></i> อัตราดอกเบี้ยที่ใช้คำนวณ</td>
+                                <td class="text-right font-mono text-gold text-bold" id="tableRate">7.00% ต่อปี</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-regular fa-calendar"></i> วันที่เริ่มคิดดอกเบี้ย</td>
+                                <td class="text-right font-mono text-bold" id="tableStartDate">-</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-calendar-check"></i> กำหนดวันที่ชำระ</td>
+                                <td class="text-right font-mono text-bold" id="tableEndDate">-</td>
+                            </tr>
+                            <tr class="highlight-period-row">
+                                <td><i class="fa-solid fa-clock text-cyan"></i> ระยะเวลาคิดดอกเบี้ย (จำนวนวัน)</td>
+                                <td class="text-right font-mono text-cyan text-bold" id="tablePeriod">0 วัน</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-calculator"></i> ดอกเบี้ยคิดเป็นต่อวัน (<span id="tableRateSub">7.00%</span>)</td>
+                                <td class="text-right font-mono" id="tableDailyInterest">฿0.00 / วัน</td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td><i class="fa-solid fa-coins text-warning"></i> รวมดอกเบี้ยทั้งหมด (<span id="tableDaysSub">0 วัน</span>)</td>
+                                <td class="text-right font-mono text-warning text-bold" id="tableTotalInterest">฿0.00</td>
+                            </tr>
+                            <tr id="tableInterestDeductRow">
+                                <td><i class="fa-solid fa-minus text-danger"></i> การหักดอกเบี้ยล่วงหน้า</td>
+                                <td class="text-right font-mono text-danger" id="tableInterestDeductStatus">หักล่วงหน้า -฿0.00</td>
+                            </tr>
+                            <tr id="tableShareRow">
+                                <td><i class="fa-solid fa-minus text-danger"></i> หักค่าหุ้น (3%)</td>
+                                <td class="text-right font-mono text-danger" id="tableShareAmount">-฿0.00</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="grand-total-row">
+                                <td>
+                                    <div class="gt-title" id="gtTitle">ยอดเงินต้นที่ต้องทำสัญญา (Principal)</div>
+                                    <div class="gt-sub" id="gtSub">ยอดกู้สัญญาคำนวณจากดอกเบี้ย 7.00% + ค่าหุ้น 3%</div>
+                                </td>
+                                <td class="text-right">
+                                    <div class="gt-amount" id="gtAmount">฿0.00</div>
+                                </td>
+                            </tr>
+                            <tr class="due-obligation-row" id="tableDueObligationRow">
+                                <td>ยอดเงินที่ต้องชำระคืน ณ วันครบกำหนด</td>
+                                <td class="text-right font-mono" id="tableDueAmount">฿0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="calculation-formula-box">
+                        <h4><i class="fa-solid fa-lightbulb"></i> สูตรและวิธีคิด:</h4>
+                        <ul id="formulaList">
+                            <li id="formulaRateText"><strong>อัตราดอกเบี้ย:</strong> 7.00% ต่อปี (คำนวณแบบรายวัน ÷ 365 วัน)</li>
+                            <li id="formulaMainText"><strong>สูตรการคิด:</strong> เงินต้น = เงินสดที่ต้องการ ÷ (1 - %ค่าหุ้น - %ดอกเบี้ย)</li>
+                            <li id="formulaDaysText"><strong>ระยะเวลาคิดดอกเบี้ย:</strong> คำนวณตามจำนวนวันจริง</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>โปรแกรมคำนวณดอกเบี้ยรายวัน &copy; 2026 | ดีไซน์ทันสมัย ตอบโจทย์ทุกเงื่อนไขการกู้ยืม</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">คัดลอกข้อมูลเรียบร้อยแล้ว</span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
