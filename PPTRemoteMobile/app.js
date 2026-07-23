@@ -19,6 +19,7 @@ let laserState = {
   trailLength: 12,
   color: '#ef4444',
   gyroSensitivity: 1.5,
+  gyroStabilizer: 0.3,
   x: 0.5,
   y: 0.5,
   active: true
@@ -370,6 +371,13 @@ function updateLaserSettings() {
     if (gyroSensVal) gyroSensVal.innerText = laserState.gyroSensitivity.toFixed(1);
   }
 
+  const gyroStabInput = document.getElementById("gyroStabSlider");
+  if (gyroStabInput) {
+    laserState.gyroStabilizer = parseFloat(gyroStabInput.value) || 0.3;
+    const gyroStabVal = document.getElementById("gyroStabVal");
+    if (gyroStabVal) gyroStabVal.innerText = laserState.gyroStabilizer.toFixed(2);
+  }
+
   document.getElementById("dotSizeVal").innerText = laserState.size;
   document.getElementById("trailLenVal").innerText = laserState.trailLength;
 
@@ -378,8 +386,8 @@ function updateLaserSettings() {
 
 // Gyro Air-Mouse Sensor Controller
 let isGyroHolding = false;
-let lastGamma = null;
-let lastBeta = null;
+let lastAlpha = null; // Yaw (Horizontal pointing direction)
+let lastGamma = null; // Roll (Vertical tilt direction)
 
 function initGyroAirMouse() {
   const btn = document.getElementById("gyroHoldBtn");
@@ -389,8 +397,8 @@ function initGyroAirMouse() {
     isGyroHolding = true;
     btn.classList.add("holding");
     if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
+    lastAlpha = null;
     lastGamma = null;
-    lastBeta = null;
     laserState.active = true;
     sendLaserFirebase();
   }
@@ -399,8 +407,8 @@ function initGyroAirMouse() {
     isGyroHolding = false;
     btn.classList.remove("holding");
     // Keep position frozen when released
+    lastAlpha = null;
     lastGamma = null;
-    lastBeta = null;
   }
 
   btn.addEventListener("pointerdown", startGyroHold);
@@ -416,33 +424,41 @@ function initGyroAirMouse() {
 function handleGyroOrientation(e) {
   if (!isGyroHolding || laserState.mode !== "gyro") return;
 
-  const gamma = e.gamma; // Roll (-90 to 90 degrees left-right)
-  const beta = e.beta;   // Pitch (-180 to 180 degrees front-back)
+  const alpha = e.alpha; // Yaw (Compass pointing 0 to 360) -> Controls X-axis (Left/Right)
+  const gamma = e.gamma; // Roll (-90 to 90) -> Controls Y-axis (Up/Down)
 
-  if (gamma === null || beta === null) return;
+  if (alpha === null || gamma === null) return;
 
-  if (lastGamma !== null && lastBeta !== null) {
+  if (lastAlpha !== null && lastGamma !== null) {
+    let diffAlpha = alpha - lastAlpha;
     let diffGamma = gamma - lastGamma;
-    let diffBeta = beta - lastBeta;
 
-    // Handle wrap-around near 180/-180
+    // Handle compass wrap-around near 0/360
+    if (diffAlpha > 180) diffAlpha -= 360;
+    if (diffAlpha < -180) diffAlpha += 360;
     if (Math.abs(diffGamma) > 100) diffGamma = 0;
-    if (Math.abs(diffBeta) > 100) diffBeta = 0;
 
     const sens = laserState.gyroSensitivity || 1.5;
     
-    // Scale movement according to sensitivity slider
-    const deltaX = diffGamma * sens * 0.006;
-    const deltaY = diffBeta * sens * 0.006;
+    // Corrected Axis Mapping:
+    // Pointing phone to the right (alpha decreasing) -> Move X right (+)
+    // Tilting phone down (gamma increasing) -> Move Y down (+)
+    const deltaX = -diffAlpha * sens * 0.005;
+    const deltaY = diffGamma * sens * 0.005;
 
-    laserState.x = Math.max(0, Math.min(1, laserState.x + deltaX));
-    laserState.y = Math.max(0, Math.min(1, laserState.y + deltaY));
+    // Stabilizer (Exponential Moving Average Filter)
+    const stabFactor = laserState.gyroStabilizer || 0.3;
+    const targetX = Math.max(0, Math.min(1, laserState.x + deltaX));
+    const targetY = Math.max(0, Math.min(1, laserState.y + deltaY));
+
+    laserState.x = laserState.x + (targetX - laserState.x) * stabFactor;
+    laserState.y = laserState.y + (targetY - laserState.y) * stabFactor;
 
     sendLaserFirebase();
   }
 
+  lastAlpha = alpha;
   lastGamma = gamma;
-  lastBeta = beta;
 }
 
 function requestGyroPermission() {
