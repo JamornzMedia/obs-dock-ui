@@ -165,19 +165,33 @@
           </div>
 
           <!-- Collapsible Laser Adjustments Bar -->
-          <div id="laserSettingsBar" class="laser-settings-bar">
+          <div id="laserSettingsBar" class="laser-settings-bar" style="display:none;">
             <div class="setting-item">
-              <label>ขนาดจุด (<span id="dotSizeVal">24</span>px):</label>
+              <label>ขนาดจุดเลเซอร์ (<span id="dotSizeVal">24</span>px):</label>
               <input type="range" id="dotSizeSlider" min="10" max="60" value="24" oninput="updateLaserSettings()">
             </div>
             <div class="setting-item">
-              <label>ความยาวหาง (<span id="trailLenVal">12</span>):</label>
+              <label>ความยาวหางเลเซอร์ (<span id="trailLenVal">12</span>):</label>
               <input type="range" id="trailLenSlider" min="0" max="30" value="12" oninput="updateLaserSettings()">
             </div>
+            
+            <!-- Joystick Settings -->
+            <div id="joystickSettingItem" style="display:flex; flex-direction:column; gap:8px;">
+              <div class="setting-item">
+                <label>📈 Curve ความโค้งคันโยก (<span id="joystickCurveVal">2.0</span>):</label>
+                <input type="range" id="joystickCurveSlider" min="1.0" max="4.0" step="0.1" value="2.0" oninput="updateLaserSettings()">
+              </div>
+            </div>
+
+            <!-- Gyro Settings -->
             <div id="gyroSettingItem" style="display:none; flex-direction:column; gap:8px;">
               <div class="setting-item">
-                <label>ความไว Gyro (<span id="gyroSensVal">5.0</span>x):</label>
-                <input type="range" id="gyroSensSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
+                <label>↔️ ความไวแกนแนวนอน X (<span id="gyroSensXVal">5.0</span>x):</label>
+                <input type="range" id="gyroSensXSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
+              </div>
+              <div class="setting-item">
+                <label>↕️ ความไวแกนแนวตั้ง Y (<span id="gyroSensYVal">5.0</span>x):</label>
+                <input type="range" id="gyroSensYSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
               </div>
               <div class="setting-item">
                 <label>⚖️ ความนิ่ง / Stabilizer (<span id="gyroStabVal">0.3</span>):</label>
@@ -209,8 +223,10 @@
                 <label style="cursor:pointer;"><input type="checkbox" id="pulseRingCheck" checked onchange="updateLaserSettings()"> ⭕ วงแหวนกระจายรอบจุด (Pulse Ring)</label>
               </div>
             </div>
+
+            <!-- Color Selection (Shared between Laser and Drawing Pen) -->
             <div class="setting-item">
-              <label>สีจุดเลเซอร์:</label>
+              <label>สีเลเซอร์ / ปากกา:</label>
               <div class="color-picker-group">
                 <span class="color-dot active" style="background:#ef4444;" onclick="setLaserColor('#ef4444', this)"></span>
                 <span class="color-dot" style="background:#10b981;" onclick="setLaserColor('#10b981', this)"></span>
@@ -218,11 +234,39 @@
                 <span class="color-dot" style="background:#f59e0b;" onclick="setLaserColor('#f59e0b', this)"></span>
               </div>
             </div>
+
+            <!-- Whiteboard Drawing Settings -->
+            <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px; margin-top:10px;">
+              <label style="cursor:pointer; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="drawingModeCheck" onchange="toggleDrawingMode()"> 🎨 เปิดโหมดวาดเขียน (Draw Mode)
+              </label>
+            </div>
+            <div id="drawingSettingsBlock" style="display:none; flex-direction:column; gap:8px;">
+              <div class="setting-item">
+                <label>✏️ เครื่องมือวาด:</label>
+                <select id="drawToolSelect" onchange="updateDrawSettings()" style="width:100%; padding:6px; font-size:12px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px;">
+                  <option value="freehand" selected>✍️ อิสระ (Freehand)</option>
+                  <option value="rect">⬛ สี่เหลี่ยม (Rectangle)</option>
+                  <option value="circle">⚪ วงกลม (Circle)</option>
+                </select>
+              </div>
+              <div class="setting-item">
+                <label>📏 ขนาดเส้นปากกา (<span id="drawSizeVal">5</span>px):</label>
+                <input type="range" id="drawSizeSlider" min="1" max="20" value="5" oninput="updateDrawSettings()">
+              </div>
+              <div class="setting-item">
+                <label>🕶️ ความโปร่งใส (<span id="drawOpacityVal">100</span>%):</label>
+                <input type="range" id="drawOpacitySlider" min="10" max="100" step="10" value="100" oninput="updateDrawSettings()">
+              </div>
+              <button id="clearDrawingsBtn" class="clear-draw-btn" onclick="clearDrawings()" style="background:#ef4444; color:#fff; padding:10px; border-radius:8px; border:none; width:100%; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:4px;">
+                <i class="fa-solid fa-trash"></i> ล้างเส้นวาดทั้งหมด
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Interactive Touch Area Option A: 16:9 Touch Surface Box -->
-        <div class="laser-touch-wrapper" id="touchSurfaceWrapper">
+        <!-- Interactive Touch Area Option A: 16:9 Touch Surface Box (For Absolute Mode) -->
+        <div class="laser-touch-wrapper" id="touchSurfaceWrapper" style="display:none;">
           <div class="laser-ratio-box" id="laserTouchBox">
             <div class="ratio-grid-overlay"></div>
             <div class="touch-target-indicator" id="touchIndicator">
@@ -230,12 +274,23 @@
               <div class="ring-pulse" id="touchRingPulse"></div>
             </div>
             <div class="touch-instructions">
-              <span id="laserModeHint">แตะและลากนิ้วบนจอนี้ จุดเลเซอร์จะปรากฏบนจอ PowerPoint ทันที</span>
+              <span id="laserModeHint">🎯 โหมด 16:9 ตรง: แตะและลากนิ้วบนจอนี้ จุดเลเซอร์จะย้ายตามทันที</span>
             </div>
           </div>
         </div>
 
-        <!-- Interactive Touch Area Option B: Gyro Air-Mouse Hold Button -->
+        <!-- Interactive Touch Area Option B: Circular Joystick (For Joystick Mode) -->
+        <div class="joystick-wrapper-container" id="joystickControlArea" style="display:flex;">
+          <div id="joystickPad" class="joystick-pad">
+            <div class="joystick-arrow arrow-up"><i class="fa-solid fa-caret-up"></i></div>
+            <div class="joystick-arrow arrow-down"><i class="fa-solid fa-caret-down"></i></div>
+            <div class="joystick-arrow arrow-left"><i class="fa-solid fa-caret-left"></i></div>
+            <div class="joystick-arrow arrow-right"><i class="fa-solid fa-caret-right"></i></div>
+            <div id="joystickKnob" class="joystick-knob"></div>
+          </div>
+        </div>
+
+        <!-- Interactive Touch Area Option C: Gyro Air-Mouse Hold Button (For Gyro Mode) -->
         <div class="gyro-touch-wrapper" id="gyroControlArea" style="display:none;">
           <button id="gyroHoldBtn" class="gyro-hold-btn">
             <i class="fa-solid fa-mobile-screen-button gyro-icon"></i>

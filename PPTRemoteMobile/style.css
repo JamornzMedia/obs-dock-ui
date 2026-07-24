@@ -767,3 +767,69 @@ body {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Joystick & Whiteboard Drawing Revamped UI Styles */
+.joystick-wrapper-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 250px;
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  margin: 15px 0;
+  position: relative;
+}
+
+.joystick-pad {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 4px solid rgba(14, 165, 233, 0.45);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.08);
+  touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.joystick-arrow {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 20px;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.joystick-pad:active .joystick-arrow {
+  color: rgba(14, 165, 233, 0.6);
+}
+
+.arrow-up { top: 12px; }
+.arrow-down { bottom: 12px; }
+.arrow-left { left: 12px; }
+.arrow-right { right: 12px; }
+
+.joystick-knob {
+  position: absolute;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
+  box-shadow: 0 6px 15px rgba(2, 132, 199, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.3);
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  transform: translate(0, 0);
+  will-change: transform;
+}
+
+.joystick-knob:active {
+  background: radial-gradient(circle, #0ea5e9 0%, #0369a1 100%);
+}
+
+.laser-settings-bar {
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+  overflow: hidden;
+}

@@ -18,7 +18,8 @@ let laserState = {
   size: 24,
   trailLength: 12,
   color: '#ef4444',
-  gyroSensitivity: 5.0,
+  gyroSensitivityX: 5.0,
+  gyroSensitivityY: 5.0,
   gyroStabilizer: 0.3,
   gyroAxisX: 'alpha',
   gyroInvertX: true,
@@ -27,7 +28,9 @@ let laserState = {
   showPulseRing: true,
   x: 0.5,
   y: 0.5,
-  active: true
+  active: false,
+  drawingMode: false,
+  joystickCurve: 2.0
 };
 
 // Initialize Mobile App
@@ -38,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMobileTabs();
   initSwipeTouchpad();
   initLaserTouchpad();
+  initCenteringJoystick();
   initGyroAirMouse();
   renderMobileCustomKeys();
 });
@@ -114,7 +118,11 @@ function toggleLaserActive() {
 function toggleLaserSettings() {
   const bar = document.getElementById("laserSettingsBar");
   if (bar) {
-    bar.classList.toggle("hidden");
+    if (bar.style.display === "none") {
+      bar.style.display = "flex";
+    } else {
+      bar.style.display = "none";
+    }
   }
 }
 
@@ -189,6 +197,7 @@ function joinRoom(roomId) {
   }
 
   subscribeCustomKeys();
+  subscribeFpsSetting();
   initMobileWebRTC();
   closeRoomModal();
 }
@@ -280,18 +289,23 @@ function sendRemoteKey(keyCombo) {
     try { navigator.vibrate(30); } catch (e) {}
   }
 
-  // Direct WebRTC P2P DataChannel if open
+  const timestamp = Date.now();
+
+  // 1. Direct WebRTC P2P DataChannel if open (for near 0ms execution)
   if (dataChannel && dataChannel.readyState === "open") {
     dataChannel.send(JSON.stringify({
       type: "command",
       key: keyCombo,
-      timestamp: Date.now()
+      timestamp: timestamp
     }));
-  } else if (db) {
+  }
+
+  // 2. ALWAYS write command to Firebase (ensures reliable logging and delivery fallback)
+  if (db) {
     db.ref(`rooms/${activeRoomId}/command`).set({
       key: keyCombo,
-      timestamp: Date.now()
-    });
+      timestamp: timestamp
+    }).catch(err => console.warn("Firebase command sync warning:", err));
   }
 }
 
@@ -327,15 +341,12 @@ function initSwipeTouchpad() {
   }, { passive: true });
 }
 
-// 16:9 Laser Touch Surface Logic (Joystick & Absolute Mode)
+// 16:9 Laser Touch Surface Logic (Absolute Mode)
 function initLaserTouchpad() {
   const touchBox = document.getElementById("laserTouchBox");
-  const indicator = document.getElementById("touchIndicator");
   if (!touchBox) return;
 
   let isTouching = false;
-  let joystickStartX = 0;
-  let joystickStartY = 0;
 
   function handleTouch(e) {
     if (!isTouching || !e.touches || e.touches.length === 0) return;
@@ -345,55 +356,65 @@ function initLaserTouchpad() {
     const touchX = touch.clientX - rect.left;
     const touchY = touch.clientY - rect.top;
 
-    if (laserState.mode === 'absolute') {
-      // Absolute Mode: Normalize 0.0 to 1.0 based on 16:9 box dimensions
-      laserState.x = Math.max(0, Math.min(1, touchX / rect.width));
-      laserState.y = Math.max(0, Math.min(1, touchY / rect.height));
-    } else {
-      // Joystick Mode: Relative offset from touch start
-      const deltaX = (touchX - joystickStartX) / rect.width;
-      const deltaY = (touchY - joystickStartY) / rect.height;
-
-      laserState.x = Math.max(0, Math.min(1, laserState.x + deltaX * 0.25));
-      laserState.y = Math.max(0, Math.min(1, laserState.y + deltaY * 0.25));
-
-      joystickStartX = touchX;
-      joystickStartY = touchY;
-    }
-
+    laserState.x = Math.max(0, Math.min(1, touchX / rect.width));
+    laserState.y = Math.max(0, Math.min(1, touchY / rect.height));
     laserState.active = true;
+
     updateTouchIndicatorPosition(rect);
-    sendLaserFirebase();
+
+    if (laserState.drawingMode) {
+      sendDrawEvent("draw");
+    } else {
+      sendLaserFirebase();
+    }
   }
 
   touchBox.addEventListener("touchstart", (e) => {
     isTouching = true;
     const rect = touchBox.getBoundingClientRect();
-    const touch = e.touches[0];
-    joystickStartX = touch.clientX - rect.left;
-    joystickStartY = touch.clientY - rect.top;
-
+    
     if (navigator.vibrate) try { navigator.vibrate(20); } catch(err) {}
-    handleTouch(e);
+    
+    const touch = e.touches[0];
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+    laserState.x = Math.max(0, Math.min(1, touchX / rect.width));
+    laserState.y = Math.max(0, Math.min(1, touchY / rect.height));
+    laserState.active = true;
+
+    updateTouchIndicatorPosition(rect);
+
+    if (laserState.drawingMode) {
+      sendDrawEvent("start");
+    } else {
+      sendLaserFirebase();
+    }
   }, { passive: true });
 
   touchBox.addEventListener("touchmove", handleTouch, { passive: true });
 
   touchBox.addEventListener("touchend", () => {
+    if (!isTouching) return;
     isTouching = false;
-    // Release active dot after 1.5s or keep position
+    
+    if (laserState.drawingMode) {
+      sendDrawEvent("end");
+    }
+
     setTimeout(() => {
-      if (!isTouching) {
+      if (!isTouching && !joystickActive && !isGyroHolding) {
         laserState.active = false;
         sendLaserFirebase();
       }
-    }, 1500);
+    }, 1000);
   }, { passive: true });
 }
 
 function updateTouchIndicatorPosition(rect) {
   const indicator = document.getElementById("touchIndicator");
-  if (!indicator || !rect) return;
+  if (!indicator) return;
+  if (!rect) rect = document.getElementById("laserTouchBox")?.getBoundingClientRect();
+  if (!rect) return;
 
   const posX = laserState.x * rect.width;
   const posY = laserState.y * rect.height;
@@ -410,12 +431,29 @@ function setLaserMode(mode) {
   document.getElementById("modeGyroBtn").classList.toggle("active", mode === "gyro");
 
   const touchWrapper = document.getElementById("touchSurfaceWrapper");
+  const joystickWrapper = document.getElementById("joystickControlArea");
   const gyroWrapper = document.getElementById("gyroControlArea");
+  
+  const joystickSetting = document.getElementById("joystickSettingItem");
   const gyroSetting = document.getElementById("gyroSettingItem");
 
-  if (mode === "gyro") {
+  if (mode === "joystick") {
     if (touchWrapper) touchWrapper.style.display = "none";
+    if (joystickWrapper) joystickWrapper.style.display = "flex";
+    if (gyroWrapper) gyroWrapper.style.display = "none";
+    if (joystickSetting) joystickSetting.style.display = "flex";
+    if (gyroSetting) gyroSetting.style.display = "none";
+  } else if (mode === "absolute") {
+    if (touchWrapper) touchWrapper.style.display = "flex";
+    if (joystickWrapper) joystickWrapper.style.display = "none";
+    if (gyroWrapper) gyroWrapper.style.display = "none";
+    if (joystickSetting) joystickSetting.style.display = "none";
+    if (gyroSetting) gyroSetting.style.display = "none";
+  } else if (mode === "gyro") {
+    if (touchWrapper) touchWrapper.style.display = "none";
+    if (joystickWrapper) joystickWrapper.style.display = "none";
     if (gyroWrapper) gyroWrapper.style.display = "flex";
+    if (joystickSetting) joystickSetting.style.display = "none";
     if (gyroSetting) gyroSetting.style.display = "flex";
     
     // Check iOS permission button requirement
@@ -423,20 +461,16 @@ function setLaserMode(mode) {
       const permBtn = document.getElementById("gyroPermissionBtn");
       if (permBtn) permBtn.style.display = "block";
     }
-  } else {
-    if (touchWrapper) touchWrapper.style.display = "flex";
-    if (gyroWrapper) gyroWrapper.style.display = "none";
-    if (gyroSetting) gyroSetting.style.display = "none";
   }
 
   const hint = document.getElementById("laserModeHint");
   if (hint) {
     if (mode === "joystick") {
-      hint.innerText = "🕹️ โหมด Joystick: ลากนิ้วโยกตำแหน่งเพื่อเลื่อนจุดแดงบนจออย่างนุ่มนวล";
+      hint.innerText = "🕹️ โหมด Joystick: โยกตำแหน่งคันโยกเพื่อเลื่อนจุดเลเซอร์และลากเส้นวาดเขียน";
     } else if (mode === "absolute") {
-      hint.innerText = "🎯 โหมด Absolute: แตะตำแหน่งไหน จุดเลเซอร์จะไปปรากฏตรงพิกัดนั้นเป๊ะๆ";
+      hint.innerText = "🎯 โหมด 16:9 ตรง: แตะและลากนิ้วบนจอนี้ จุดเลเซอร์จะย้ายตามและเขียนเส้นทันที";
     } else {
-      hint.innerText = "📱 โหมด Gyro: กดปุ่มด้านล่างค้างไว้ แล้วเอียงมือถือในอากาศเพื่อขยับจุดเลเซอร์";
+      hint.innerText = "📱 โหมด Gyro: กดปุ่มด้านล่างค้างไว้ แล้วเอียงมือถือในอากาศเพื่อควบคุมจุดเลเซอร์";
     }
   }
 }
@@ -445,11 +479,25 @@ function updateLaserSettings() {
   laserState.size = parseInt(document.getElementById("dotSizeSlider").value) || 24;
   laserState.trailLength = parseInt(document.getElementById("trailLenSlider").value) || 12;
 
-  const gyroSensInput = document.getElementById("gyroSensSlider");
-  if (gyroSensInput) {
-    laserState.gyroSensitivity = parseFloat(gyroSensInput.value) || 5.0;
-    const gyroSensVal = document.getElementById("gyroSensVal");
-    if (gyroSensVal) gyroSensVal.innerText = laserState.gyroSensitivity.toFixed(1);
+  const curveSlider = document.getElementById("joystickCurveSlider");
+  if (curveSlider) {
+    laserState.joystickCurve = parseFloat(curveSlider.value) || 2.0;
+    const curveVal = document.getElementById("joystickCurveVal");
+    if (curveVal) curveVal.innerText = laserState.joystickCurve.toFixed(1);
+  }
+
+  const gyroSensXSlider = document.getElementById("gyroSensXSlider");
+  if (gyroSensXSlider) {
+    laserState.gyroSensitivityX = parseFloat(gyroSensXSlider.value) || 5.0;
+    const gyroSensXVal = document.getElementById("gyroSensXVal");
+    if (gyroSensXVal) gyroSensXVal.innerText = laserState.gyroSensitivityX.toFixed(1);
+  }
+
+  const gyroSensYSlider = document.getElementById("gyroSensYSlider");
+  if (gyroSensYSlider) {
+    laserState.gyroSensitivityY = parseFloat(gyroSensYSlider.value) || 5.0;
+    const gyroSensYVal = document.getElementById("gyroSensYVal");
+    if (gyroSensYVal) gyroSensYVal.innerText = laserState.gyroSensitivityY.toFixed(1);
   }
 
   const gyroStabInput = document.getElementById("gyroStabSlider");
@@ -488,6 +536,8 @@ function updateLaserSettings() {
 let isGyroHolding = false;
 let lastRawX = null;
 let lastRawY = null;
+let smoothedDiffX = 0;
+let smoothedDiffY = 0;
 
 function initGyroAirMouse() {
   const btn = document.getElementById("gyroHoldBtn");
@@ -499,15 +549,34 @@ function initGyroAirMouse() {
     if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
     lastRawX = null;
     lastRawY = null;
+    smoothedDiffX = 0;
+    smoothedDiffY = 0;
     laserState.active = true;
-    sendLaserFirebase();
+    
+    if (laserState.drawingMode) {
+      sendDrawEvent("start");
+    } else {
+      sendLaserFirebase();
+    }
   }
 
   function stopGyroHold(e) {
+    if (!isGyroHolding) return;
     isGyroHolding = false;
     btn.classList.remove("holding");
     lastRawX = null;
     lastRawY = null;
+    
+    if (laserState.drawingMode) {
+      sendDrawEvent("end");
+    }
+
+    setTimeout(() => {
+      if (!isTouching && !joystickActive && !isGyroHolding) {
+        laserState.active = false;
+        sendLaserFirebase();
+      }
+    }, 1000);
   }
 
   btn.addEventListener("pointerdown", startGyroHold);
@@ -549,18 +618,26 @@ function handleGyroOrientation(e) {
     if (laserState.gyroInvertX) diffX = -diffX;
     if (laserState.gyroInvertY) diffY = -diffY;
 
-    const sens = laserState.gyroSensitivity || 5.0;
-    const deltaX = diffX * sens * 0.003;
-    const deltaY = diffY * sens * 0.003;
+    // Stabilize the rotation angles first to filter out hand tremors/shakes
+    const stabFactor = laserState.gyroStabilizer || 0.3; // 0.05 (heavy smooth) to 1.0 (raw)
+    smoothedDiffX = smoothedDiffX + (diffX - smoothedDiffX) * stabFactor;
+    smoothedDiffY = smoothedDiffY + (diffY - smoothedDiffY) * stabFactor;
 
-    const stabFactor = laserState.gyroStabilizer || 0.3;
-    const targetX = Math.max(0, Math.min(1, laserState.x + deltaX));
-    const targetY = Math.max(0, Math.min(1, laserState.y + deltaY));
+    // Apply sensitivity independently to the smoothed velocities
+    const sensX = laserState.gyroSensitivityX || 5.0;
+    const sensY = laserState.gyroSensitivityY || 5.0;
 
-    laserState.x = laserState.x + (targetX - laserState.x) * stabFactor;
-    laserState.y = laserState.y + (targetY - laserState.y) * stabFactor;
+    const deltaX = smoothedDiffX * sensX * 0.0018; // scaled for better control
+    const deltaY = smoothedDiffY * sensY * 0.0018;
 
-    sendLaserFirebase();
+    laserState.x = Math.max(0, Math.min(1, laserState.x + deltaX));
+    laserState.y = Math.max(0, Math.min(1, laserState.y + deltaY));
+
+    if (laserState.drawingMode) {
+      sendDrawEvent("draw");
+    } else {
+      sendLaserFirebase();
+    }
   }
 
   lastRawX = rawX;
@@ -594,8 +671,37 @@ function setLaserColor(hex, el) {
   sendLaserFirebase();
 }
 
-function sendLaserFirebase() {
+let lastLaserSendTime = 0;
+let lastActiveState = null;
+let fpsRef = null;
+
+function subscribeFpsSetting() {
+  if (!db || !activeRoomId) return;
+  if (fpsRef) {
+    fpsRef.off();
+  }
+  fpsRef = db.ref(`rooms/${activeRoomId}/config/fps`);
+  fpsRef.on("value", (snap) => {
+    const val = snap.val();
+    if (val) {
+      laserState.fps = parseInt(val) || 30;
+      console.log(`[Config] Sync FPS from desktop: ${laserState.fps}`);
+    }
+  });
+}
+
+function sendLaserFirebase(force = false) {
   if (!activeRoomId) return;
+
+  const now = Date.now();
+  const fps = laserState.fps || 30; // default to 30 FPS
+  const interval = 1000 / fps;
+
+  // Force sending if active status changed (so dot shows/hides immediately)
+  const activeChanged = laserState.active !== lastActiveState;
+  if (!force && !activeChanged && (now - lastLaserSendTime < interval)) {
+    return;
+  }
 
   const payload = {
     type: "laser",
@@ -606,14 +712,14 @@ function sendLaserFirebase() {
     trailLength: laserState.trailLength,
     color: laserState.color,
     showPulseRing: laserState.showPulseRing,
-    timestamp: Date.now()
+    timestamp: now
   };
 
-  // Direct WebRTC P2P (0ms Latency, 0 Firebase overhead!)
+  // Direct WebRTC P2P ONLY. Never write laser coordinates to Firebase!
   if (dataChannel && dataChannel.readyState === "open") {
     dataChannel.send(JSON.stringify(payload));
-  } else if (db) {
-    db.ref(`rooms/${activeRoomId}/laser`).set(payload);
+    lastLaserSendTime = now;
+    lastActiveState = laserState.active;
   }
 }
 
@@ -650,4 +756,177 @@ function renderMobileCustomKeys(keys = []) {
 
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+/* ==========================================
+   REVAMPED JOYSTICK & DRAWING STROKES LOGIC
+   ========================================== */
+
+let joystickActive = false;
+let joystickLoopId = null;
+let joystickX = 0; // -1.0 to 1.0
+let joystickY = 0; // -1.0 to 1.0
+
+function initCenteringJoystick() {
+  const pad = document.getElementById("joystickPad");
+  const knob = document.getElementById("joystickKnob");
+  if (!pad || !knob) return;
+
+  const R = 65; // Max travel radius in px
+
+  function updateKnobPosition(px, py) {
+    knob.style.transform = `translate(${px}px, ${py}px)`;
+  }
+
+  function handleJoystickTouch(e) {
+    if (!joystickActive) return;
+    const rect = pad.getBoundingClientRect();
+    const touch = e.touches[0];
+    
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    
+    let dx = touch.clientX - cx;
+    let dy = touch.clientY - cy;
+    
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > R) {
+      dx = (dx / dist) * R;
+      dy = (dy / dist) * R;
+      joystickX = dx / R;
+      joystickY = dy / R;
+    } else {
+      joystickX = dx / R;
+      joystickY = dy / R;
+    }
+    
+    updateKnobPosition(dx, dy);
+    laserState.active = true;
+  }
+
+  pad.addEventListener("touchstart", (e) => {
+    joystickActive = true;
+    handleJoystickTouch(e);
+    
+    if (laserState.drawingMode) {
+      sendDrawEvent("start");
+    }
+    
+    startJoystickLoop();
+    if (navigator.vibrate) try { navigator.vibrate(20); } catch(err) {}
+  }, { passive: true });
+
+  pad.addEventListener("touchmove", handleJoystickTouch, { passive: true });
+
+  function releaseJoystick() {
+    if (!joystickActive) return;
+    joystickActive = false;
+    joystickX = 0;
+    joystickY = 0;
+    updateKnobPosition(0, 0);
+    stopJoystickLoop();
+
+    if (laserState.drawingMode) {
+      sendDrawEvent("end");
+    }
+    
+    setTimeout(() => {
+      if (!joystickActive && !isGyroHolding) {
+        laserState.active = false;
+        sendLaserFirebase();
+      }
+    }, 1000);
+  }
+
+  pad.addEventListener("touchend", releaseJoystick, { passive: true });
+  pad.addEventListener("touchcancel", releaseJoystick, { passive: true });
+}
+
+function startJoystickLoop() {
+  if (joystickLoopId) return;
+  
+  function step() {
+    if (!joystickActive) return;
+    
+    const dist = Math.sqrt(joystickX * joystickX + joystickY * joystickY);
+    if (dist > 0.05) {
+      const exponent = parseFloat(document.getElementById("joystickCurveSlider")?.value || 2.0);
+      const curvedDist = Math.pow(dist, exponent);
+      
+      const nx = joystickX / dist;
+      const ny = joystickY / dist;
+      
+      const speed = 0.015;
+      
+      laserState.x = Math.max(0, Math.min(1, laserState.x + nx * curvedDist * speed));
+      laserState.y = Math.max(0, Math.min(1, laserState.y + ny * curvedDist * speed));
+      
+      if (laserState.drawingMode) {
+        sendDrawEvent("draw");
+      } else {
+        sendLaserFirebase(true);
+      }
+    }
+    
+    joystickLoopId = requestAnimationFrame(step);
+  }
+  
+  joystickLoopId = requestAnimationFrame(step);
+}
+
+function stopJoystickLoop() {
+  if (joystickLoopId) {
+    cancelAnimationFrame(joystickLoopId);
+    joystickLoopId = null;
+  }
+}
+
+function toggleDrawingMode() {
+  const isChecked = document.getElementById("drawingModeCheck")?.checked || false;
+  laserState.drawingMode = isChecked;
+
+  const block = document.getElementById("drawingSettingsBlock");
+  if (block) {
+    block.style.display = isChecked ? "flex" : "none";
+  }
+}
+
+function updateDrawSettings() {
+  const sizeVal = document.getElementById("drawSizeVal");
+  const sizeSlider = document.getElementById("drawSizeSlider");
+  if (sizeVal && sizeSlider) {
+    sizeVal.innerText = sizeSlider.value;
+  }
+
+  const opacityVal = document.getElementById("drawOpacityVal");
+  const opacitySlider = document.getElementById("drawOpacitySlider");
+  if (opacityVal && opacitySlider) {
+    opacityVal.innerText = opacitySlider.value;
+  }
+}
+
+function clearDrawings() {
+  sendDrawEvent("clear");
+  if (navigator.vibrate) try { navigator.vibrate(40); } catch(err) {}
+}
+
+function sendDrawEvent(action) {
+  if (!activeRoomId) return;
+  
+  const payload = {
+    type: "draw",
+    action: action,
+    tool: document.getElementById("drawToolSelect")?.value || "freehand",
+    x: laserState.x,
+    y: laserState.y,
+    color: laserState.color || "#ef4444",
+    size: parseInt(document.getElementById("drawSizeSlider")?.value || 5),
+    opacity: parseFloat((document.getElementById("drawOpacitySlider")?.value || 100) / 100),
+    timestamp: Date.now()
+  };
+  
+  if (dataChannel && dataChannel.readyState === "open") {
+    dataChannel.send(JSON.stringify(payload));
+  }
 }
