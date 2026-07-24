@@ -30,7 +30,15 @@ let laserState = {
   y: 0.5,
   active: false,
   drawingMode: false,
-  joystickCurve: 2.0
+  joystickCurve: 2.0,
+  joystickSpeed: 1.0,
+  lockDraw: false,
+  fillShape: false,
+  drawTool: 'freehand',
+  dlssEnabled: true,
+  dlssLevel: 5,
+  coreDotStyle: 'white',
+  fps: 30
 };
 
 // Initialize Mobile App
@@ -109,8 +117,8 @@ function toggleLaserActive() {
     btn.classList.toggle("active", laserState.active);
     btn.classList.toggle("off", !laserState.active);
     btn.innerHTML = laserState.active
-      ? `<i class="fa-solid fa-power-off"></i> 🔴 จุด Laser: ON`
-      : `<i class="fa-solid fa-power-off"></i> ⚪ จุด Laser: OFF`;
+      ? `<i class="fa-solid fa-power-off"></i> 🔴 เลเซอร์: ON`
+      : `<i class="fa-solid fa-power-off"></i> ⚪ เลเซอร์: OFF`;
   }
   sendLaserFirebase();
 }
@@ -486,6 +494,13 @@ function updateLaserSettings() {
     if (curveVal) curveVal.innerText = laserState.joystickCurve.toFixed(1);
   }
 
+  const speedSlider = document.getElementById("joystickSpeedSlider");
+  if (speedSlider) {
+    laserState.joystickSpeed = parseFloat(speedSlider.value) || 1.0;
+    const speedVal = document.getElementById("joystickSpeedVal");
+    if (speedVal) speedVal.innerText = laserState.joystickSpeed.toFixed(1);
+  }
+
   const gyroSensXSlider = document.getElementById("gyroSensXSlider");
   if (gyroSensXSlider) {
     laserState.gyroSensitivityX = parseFloat(gyroSensXSlider.value) || 5.0;
@@ -526,6 +541,19 @@ function updateLaserSettings() {
     if (touchPulse) touchPulse.style.display = laserState.showPulseRing ? "block" : "none";
   }
 
+  const dlssCheck = document.getElementById("dlssEnabledCheck");
+  if (dlssCheck) laserState.dlssEnabled = dlssCheck.checked;
+
+  const dlssLevelSlider = document.getElementById("dlssLevelSlider");
+  if (dlssLevelSlider) {
+    laserState.dlssLevel = parseInt(dlssLevelSlider.value) || 5;
+    const dlssLevelVal = document.getElementById("dlssLevelVal");
+    if (dlssLevelVal) dlssLevelVal.innerText = laserState.dlssLevel;
+  }
+
+  const coreSelect = document.getElementById("coreDotStyleSelect");
+  if (coreSelect) laserState.coreDotStyle = coreSelect.value;
+
   document.getElementById("dotSizeVal").innerText = laserState.size;
   document.getElementById("trailLenVal").innerText = laserState.trailLength;
 
@@ -543,7 +571,17 @@ function initGyroAirMouse() {
   const btn = document.getElementById("gyroHoldBtn");
   if (!btn) return;
 
+  let lastTap = 0;
+
   function startGyroHold(e) {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      toggleDrawingModeBtn();
+      lastTap = 0;
+      return;
+    }
+    lastTap = now;
+
     isGyroHolding = true;
     btn.classList.add("holding");
     if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
@@ -553,7 +591,7 @@ function initGyroAirMouse() {
     smoothedDiffY = 0;
     laserState.active = true;
     
-    if (laserState.drawingMode) {
+    if (laserState.drawingMode && !laserState.lockDraw) {
       sendDrawEvent("start");
     } else {
       sendLaserFirebase();
@@ -567,12 +605,12 @@ function initGyroAirMouse() {
     lastRawX = null;
     lastRawY = null;
     
-    if (laserState.drawingMode) {
+    if (laserState.drawingMode && !laserState.lockDraw) {
       sendDrawEvent("end");
     }
 
     setTimeout(() => {
-      if (!isTouching && !joystickActive && !isGyroHolding) {
+      if (!isTouching && !joystickActive && !isGyroHolding && !laserState.lockDraw) {
         laserState.active = false;
         sendLaserFirebase();
       }
@@ -582,6 +620,7 @@ function initGyroAirMouse() {
   btn.addEventListener("pointerdown", startGyroHold);
   btn.addEventListener("pointerup", stopGyroHold);
   btn.addEventListener("pointercancel", stopGyroHold);
+  btn.addEventListener("dblclick", (e) => { e.preventDefault(); toggleDrawingModeBtn(); });
 
   btn.addEventListener("touchstart", (e) => { e.preventDefault(); startGyroHold(e); }, { passive: false });
   btn.addEventListener("touchend", stopGyroHold, { passive: true });
@@ -698,20 +737,24 @@ function sendLaserFirebase(force = false) {
   const interval = 1000 / fps;
 
   // Force sending if active status changed (so dot shows/hides immediately)
-  const activeChanged = laserState.active !== lastActiveState;
+  const isCurrentlyActive = laserState.lockDraw ? true : laserState.active;
+  const activeChanged = isCurrentlyActive !== lastActiveState;
   if (!force && !activeChanged && (now - lastLaserSendTime < interval)) {
     return;
   }
 
   const payload = {
     type: "laser",
-    active: laserState.active,
+    active: isCurrentlyActive,
     x: laserState.x,
     y: laserState.y,
     size: laserState.size,
     trailLength: laserState.trailLength,
     color: laserState.color,
     showPulseRing: laserState.showPulseRing,
+    dlssEnabled: laserState.dlssEnabled,
+    dlssLevel: laserState.dlssLevel,
+    coreDotStyle: laserState.coreDotStyle,
     timestamp: now
   };
 
@@ -719,7 +762,7 @@ function sendLaserFirebase(force = false) {
   if (dataChannel && dataChannel.readyState === "open") {
     dataChannel.send(JSON.stringify(payload));
     lastLaserSendTime = now;
-    lastActiveState = laserState.active;
+    lastActiveState = isCurrentlyActive;
   }
 }
 
@@ -809,7 +852,7 @@ function initCenteringJoystick() {
     joystickActive = true;
     handleJoystickTouch(e);
     
-    if (laserState.drawingMode) {
+    if (laserState.drawingMode && !laserState.lockDraw) {
       sendDrawEvent("start");
     }
     
@@ -827,12 +870,12 @@ function initCenteringJoystick() {
     updateKnobPosition(0, 0);
     stopJoystickLoop();
 
-    if (laserState.drawingMode) {
+    if (laserState.drawingMode && !laserState.lockDraw) {
       sendDrawEvent("end");
     }
     
     setTimeout(() => {
-      if (!joystickActive && !isGyroHolding) {
+      if (!joystickActive && !isGyroHolding && !laserState.lockDraw) {
         laserState.active = false;
         sendLaserFirebase();
       }
@@ -857,7 +900,8 @@ function startJoystickLoop() {
       const nx = joystickX / dist;
       const ny = joystickY / dist;
       
-      const speed = 0.015;
+      const speedMultiplier = parseFloat(document.getElementById("joystickSpeedSlider")?.value || 1.0);
+      const speed = 0.015 * speedMultiplier;
       
       laserState.x = Math.max(0, Math.min(1, laserState.x + nx * curvedDist * speed));
       laserState.y = Math.max(0, Math.min(1, laserState.y + ny * curvedDist * speed));
@@ -882,13 +926,57 @@ function stopJoystickLoop() {
   }
 }
 
-function toggleDrawingMode() {
-  const isChecked = document.getElementById("drawingModeCheck")?.checked || false;
-  laserState.drawingMode = isChecked;
+function toggleDrawingModeBtn() {
+  laserState.drawingMode = !laserState.drawingMode;
+  const btn = document.getElementById("drawingModeToggleBtn");
+  if (btn) {
+    btn.classList.toggle("active", laserState.drawingMode);
+    btn.innerHTML = laserState.drawingMode
+      ? `<i class="fa-solid fa-pen-nib"></i> 🎨 วาดรูป: ON`
+      : `<i class="fa-solid fa-pen-nib"></i> 🎨 วาดรูป: OFF`;
+  }
+  
+  const toolbar = document.getElementById("drawingToolbar");
+  if (toolbar) {
+    toolbar.style.display = laserState.drawingMode ? "flex" : "none";
+  }
 
-  const block = document.getElementById("drawingSettingsBlock");
-  if (block) {
-    block.style.display = isChecked ? "flex" : "none";
+  // Force sending laser status
+  sendLaserFirebase(true);
+}
+
+function toggleLockDraw() {
+  laserState.lockDraw = !laserState.lockDraw;
+  const btn = document.getElementById("lockDrawBtn");
+  if (btn) {
+    btn.classList.toggle("active", laserState.lockDraw);
+    btn.innerHTML = laserState.lockDraw
+      ? `<i class="fa-solid fa-lock"></i> วาดค้าง: ON`
+      : `<i class="fa-solid fa-lock-open"></i> วาดค้าง: OFF`;
+  }
+  if (laserState.lockDraw) {
+    laserState.active = true;
+    sendDrawEvent("start");
+  } else {
+    sendDrawEvent("end");
+    // If not doing other inputs, release active
+    if (!joystickActive && !isGyroHolding && !isTouching) {
+      laserState.active = false;
+      sendLaserFirebase();
+    }
+  }
+}
+
+function setDrawTool(tool) {
+  laserState.drawTool = tool;
+  document.querySelectorAll(".draw-tool-btn").forEach(btn => btn.classList.remove("active"));
+  const activeBtn = document.getElementById(`tool${tool.charAt(0).toUpperCase() + tool.slice(1)}Btn`);
+  if (activeBtn) activeBtn.classList.add("active");
+  
+  // If Lock Draw is active, restart stroke
+  if (laserState.lockDraw) {
+    sendDrawEvent("end");
+    sendDrawEvent("start");
   }
 }
 
@@ -904,6 +992,11 @@ function updateDrawSettings() {
   if (opacityVal && opacitySlider) {
     opacityVal.innerText = opacitySlider.value;
   }
+
+  const fillCheck = document.getElementById("fillShapeCheck");
+  if (fillCheck) {
+    laserState.fillShape = fillCheck.checked;
+  }
 }
 
 function clearDrawings() {
@@ -917,12 +1010,13 @@ function sendDrawEvent(action) {
   const payload = {
     type: "draw",
     action: action,
-    tool: document.getElementById("drawToolSelect")?.value || "freehand",
+    tool: laserState.drawTool || "freehand",
     x: laserState.x,
     y: laserState.y,
     color: laserState.color || "#ef4444",
     size: parseInt(document.getElementById("drawSizeSlider")?.value || 5),
     opacity: parseFloat((document.getElementById("drawOpacitySlider")?.value || 100) / 100),
+    fill: !!laserState.fillShape,
     timestamp: Date.now()
   };
   
