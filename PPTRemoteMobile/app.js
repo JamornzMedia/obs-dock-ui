@@ -643,6 +643,7 @@ function initGyroAirMouse() {
       if (e.cancelable) e.preventDefault();
       pressStart = Date.now();
       isPressActive = true;
+      btn.classList.add("holding");
 
       // Normal Press Down
       laserState.active = true;
@@ -671,6 +672,7 @@ function initGyroAirMouse() {
     function handlePressEnd(e) {
       if (!isPressActive) return;
       isPressActive = false;
+      btn.classList.remove("holding");
       const duration = Date.now() - pressStart;
 
       // Bypassing Lock Hold for now to test if this is the issue
@@ -707,18 +709,18 @@ function initGyroAirMouse() {
       }, 500);
     }
 
-    // Use touch events on mobile, pointer events on desktop
-    const isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    // Touch events
+    btn.addEventListener("touchstart", handlePressStart, { passive: false });
+    btn.addEventListener("touchend", handlePressEnd, { passive: true });
+    btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
+    btn.addEventListener("touchmove", (e) => {
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
 
-    if (isTouchDevice) {
-      btn.addEventListener("touchstart", handlePressStart, { passive: false });
-      btn.addEventListener("touchend", handlePressEnd, { passive: true });
-      btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
-    } else {
-      btn.addEventListener("pointerdown", handlePressStart);
-      btn.addEventListener("pointerup", handlePressEnd);
-      btn.addEventListener("pointercancel", handlePressEnd);
-    }
+    // Pointer/Mouse events
+    btn.addEventListener("pointerdown", handlePressStart);
+    btn.addEventListener("pointerup", handlePressEnd);
+    btn.addEventListener("pointercancel", handlePressEnd);
   });
 
   // Track position drag movements

@@ -952,6 +952,13 @@ body {
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.6) !important;
 }
 
+.gyro-pad-btn {
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
 /* Fullscreen Mode filter overrides */
 .fullscreen-active .mobile-header,
 .fullscreen-active .room-selector-card,
