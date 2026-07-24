@@ -644,11 +644,6 @@ function initGyroAirMouse() {
       pressStart = Date.now();
       isPressActive = true;
 
-      // If already locked, we release lock when they press and hold, or tap again
-      if (laserState.lockedButtons[cfg.type]) {
-        return;
-      }
-
       // Normal Press Down
       laserState.active = true;
       laserState.drawingMode = cfg.draw;
@@ -678,34 +673,12 @@ function initGyroAirMouse() {
       isPressActive = false;
       const duration = Date.now() - pressStart;
 
-      if (duration < 250) {
-        // TAP detected: Toggle Lock Hold
-        const wasLocked = laserState.lockedButtons[cfg.type];
-        laserState.lockedButtons[cfg.type] = !wasLocked;
-        btn.classList.toggle("locked", laserState.lockedButtons[cfg.type]);
-
-        if (laserState.lockedButtons[cfg.type]) {
-          // Lock ON: Activate state
-          laserState.active = true;
-          laserState.drawingMode = cfg.draw;
-          if (cfg.draw) {
-            sendDrawEvent("start");
-          } else {
-            sendLaserFirebase(true);
-          }
-        } else {
-          // Lock OFF
-          releaseState();
-        }
-      } else {
-        // HOLD completed and released
-        if (laserState.lockedButtons[cfg.type]) {
-          // If it was locked, unlock it!
-          laserState.lockedButtons[cfg.type] = false;
-          btn.classList.remove("locked");
-        }
-        releaseState();
+      // Bypassing Lock Hold for now to test if this is the issue
+      if (laserState.lockedButtons[cfg.type]) {
+        laserState.lockedButtons[cfg.type] = false;
+        btn.classList.remove("locked");
       }
+      releaseState();
     }
 
     function releaseState() {
@@ -734,15 +707,18 @@ function initGyroAirMouse() {
       }, 500);
     }
 
-    // Touch events
-    btn.addEventListener("touchstart", handlePressStart, { passive: false });
-    btn.addEventListener("touchend", handlePressEnd, { passive: true });
-    btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
+    // Use touch events on mobile, pointer events on desktop
+    const isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-    // Pointer/Mouse events
-    btn.addEventListener("pointerdown", handlePressStart);
-    btn.addEventListener("pointerup", handlePressEnd);
-    btn.addEventListener("pointercancel", handlePressEnd);
+    if (isTouchDevice) {
+      btn.addEventListener("touchstart", handlePressStart, { passive: false });
+      btn.addEventListener("touchend", handlePressEnd, { passive: true });
+      btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
+    } else {
+      btn.addEventListener("pointerdown", handlePressStart);
+      btn.addEventListener("pointerup", handlePressEnd);
+      btn.addEventListener("pointercancel", handlePressEnd);
+    }
   });
 
   // Track position drag movements
