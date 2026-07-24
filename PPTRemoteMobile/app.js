@@ -202,26 +202,70 @@ function checkUrlParams() {
   }
 }
 
+function setGyroInputType(type) {
+  laserState.gyroPositionMode = (type === 'position');
+  
+  const btnGyro = document.getElementById("posModeGyroBtn");
+  const btnTouch = document.getElementById("posModeTouchBtn");
+  if (btnGyro && btnTouch) {
+    btnGyro.classList.toggle("active", type === 'gyro');
+    btnTouch.classList.toggle("active", type === 'position');
+  }
+
+  const check = document.getElementById("enableTouchPositionCheck");
+  if (check) {
+    check.checked = laserState.gyroPositionMode;
+  }
+
+  syncGyroControls();
+}
+
 function initRoomModal() {
   document.getElementById("changeRoomBtn").addEventListener("click", () => {
     openRoomModal();
   });
 
+  const otpBoxes = document.querySelectorAll(".otp-box");
+  otpBoxes.forEach((box, index) => {
+    box.addEventListener("input", (e) => {
+      const val = e.target.value.replace(/\D/g, "");
+      e.target.value = val;
+
+      if (val && index < otpBoxes.length - 1) {
+        otpBoxes[index + 1].focus();
+      }
+
+      const fullCode = Array.from(otpBoxes).map(b => b.value).join("");
+      if (fullCode.length === 6) {
+        joinRoom(fullCode);
+        closeRoomModal();
+      }
+    });
+
+    box.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !box.value && index > 0) {
+        otpBoxes[index - 1].focus();
+      }
+    });
+  });
+
   document.getElementById("joinRoomBtn").addEventListener("click", () => {
-    const input = document.getElementById("roomCodeInput").value.trim();
-    if (input) {
-      joinRoom(input);
+    const fullCode = Array.from(document.querySelectorAll(".otp-box")).map(b => b.value).join("");
+    if (fullCode.length === 6) {
+      joinRoom(fullCode);
       closeRoomModal();
     } else {
-      alert("กรุณากรอก Room Code 6 หลัก");
+      alert("กรุณากรอก Room Code ตัวเลข 6 หลักให้ครบถ้วน");
     }
   });
 }
 
 function openRoomModal() {
   document.getElementById("roomModal").classList.add("active");
-  if (activeRoomId) {
-    document.getElementById("roomCodeInput").value = activeRoomId;
+  const otpBoxes = document.querySelectorAll(".otp-box");
+  otpBoxes.forEach(b => b.value = "");
+  if (otpBoxes.length > 0) {
+    setTimeout(() => otpBoxes[0].focus(), 150);
   }
 }
 
@@ -833,15 +877,117 @@ function requestGyroPermission() {
   }
 }
 
+function updateLaserSettings() {
+  const sizeSlider = document.getElementById("dotSizeSlider");
+  const sizeVal = document.getElementById("dotSizeVal");
+  if (sizeSlider && sizeVal) {
+    laserState.size = parseInt(sizeSlider.value);
+    sizeVal.innerText = sizeSlider.value;
+  }
+
+  const trailSlider = document.getElementById("trailLenSlider");
+  const trailVal = document.getElementById("trailLenVal");
+  if (trailSlider && trailVal) {
+    laserState.trailLength = parseInt(trailSlider.value);
+    trailVal.innerText = trailSlider.value;
+  }
+
+  const joystickCurveSlider = document.getElementById("joystickCurveSlider");
+  const joystickCurveVal = document.getElementById("joystickCurveVal");
+  if (joystickCurveSlider && joystickCurveVal) {
+    laserState.joystickCurve = parseFloat(joystickCurveSlider.value);
+    joystickCurveVal.innerText = joystickCurveSlider.value;
+  }
+
+  const joystickSpeedSlider = document.getElementById("joystickSpeedSlider");
+  const joystickSpeedVal = document.getElementById("joystickSpeedVal");
+  if (joystickSpeedSlider && joystickSpeedVal) {
+    laserState.joystickSpeed = parseFloat(joystickSpeedSlider.value);
+    joystickSpeedVal.innerText = joystickSpeedSlider.value;
+  }
+
+  const gyroSensXSlider = document.getElementById("gyroSensXSlider");
+  const gyroSensXVal = document.getElementById("gyroSensXVal");
+  if (gyroSensXSlider && gyroSensXVal) {
+    laserState.gyroSensitivityX = parseFloat(gyroSensXSlider.value);
+    gyroSensXVal.innerText = gyroSensXSlider.value;
+  }
+
+  const gyroSensYSlider = document.getElementById("gyroSensYSlider");
+  const gyroSensYVal = document.getElementById("gyroSensYVal");
+  if (gyroSensYSlider && gyroSensYVal) {
+    laserState.gyroSensitivityY = parseFloat(gyroSensYSlider.value);
+    gyroSensYVal.innerText = gyroSensYSlider.value;
+  }
+
+  const gyroStabSlider = document.getElementById("gyroStabSlider");
+  const gyroStabVal = document.getElementById("gyroStabVal");
+  if (gyroStabSlider && gyroStabVal) {
+    laserState.gyroStabilizer = parseFloat(gyroStabSlider.value);
+    gyroStabVal.innerText = gyroStabSlider.value;
+  }
+
+  const gyroAxisXSelect = document.getElementById("gyroAxisXSelect");
+  if (gyroAxisXSelect) {
+    laserState.gyroAxisX = gyroAxisXSelect.value;
+  }
+
+  const gyroAxisYSelect = document.getElementById("gyroAxisYSelect");
+  if (gyroAxisYSelect) {
+    laserState.gyroAxisY = gyroAxisYSelect.value;
+  }
+
+  const gyroInvertXCheck = document.getElementById("gyroInvertXCheck");
+  if (gyroInvertXCheck) {
+    laserState.gyroInvertX = gyroInvertXCheck.checked;
+  }
+
+  const gyroInvertYCheck = document.getElementById("gyroInvertYCheck");
+  if (gyroInvertYCheck) {
+    laserState.gyroInvertY = gyroInvertYCheck.checked;
+  }
+
+  const pulseRingCheck = document.getElementById("pulseRingCheck");
+  if (pulseRingCheck) {
+    laserState.showPulseRing = pulseRingCheck.checked;
+  }
+
+  const dlssEnabledCheck = document.getElementById("dlssEnabledCheck");
+  if (dlssEnabledCheck) {
+    laserState.dlssEnabled = dlssEnabledCheck.checked;
+  }
+
+  const dlssLevelSlider = document.getElementById("dlssLevelSlider");
+  const dlssLevelVal = document.getElementById("dlssLevelVal");
+  if (dlssLevelSlider && dlssLevelVal) {
+    laserState.dlssLevel = parseInt(dlssLevelSlider.value);
+    dlssLevelVal.innerText = dlssLevelSlider.value;
+  }
+
+  const coreDotStyleSelect = document.getElementById("coreDotStyleSelect");
+  if (coreDotStyleSelect) {
+    laserState.coreDotStyle = coreDotStyleSelect.value;
+  }
+
+  sendLaserFirebase(true);
+}
+
 function setLaserColor(hex, el) {
   laserState.color = hex;
   document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("active"));
   if (el) el.classList.add("active");
 
+  // Sync color with all color dots
+  document.querySelectorAll(".color-dot").forEach(dot => {
+    if (dot.style.background === hex || dot.style.backgroundColor === hex) {
+      dot.classList.add("active");
+    }
+  });
+
   const coreDot = document.querySelector(".core-dot");
   if (coreDot) coreDot.style.background = hex;
 
-  sendLaserFirebase();
+  sendLaserFirebase(true);
 }
 
 let lastLaserSendTime = 0;

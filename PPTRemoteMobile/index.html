@@ -237,6 +237,16 @@
           <button id="gyroPermissionBtn" class="gyro-perm-btn" onclick="requestGyroPermission()" style="display:none; margin-top:8px;">
             🔑 ปลดล็อก Gyro Sensor (สำหรับ iPhone/iOS)
           </button>
+
+          <!-- External Segmented Position Mode Switcher -->
+          <div id="gyroPositionModeSwitcher" class="pos-mode-switcher-bar">
+            <button id="posModeGyroBtn" class="pos-switch-btn active" onclick="setGyroInputType('gyro')">
+              <i class="fa-solid fa-mobile-screen-button"></i> 📱 Gyro (เอียงมือถือ)
+            </button>
+            <button id="posModeTouchBtn" class="pos-switch-btn" onclick="setGyroInputType('position')">
+              <i class="fa-solid fa-hand-pointer"></i> 🖐️ Touch Position (ทัชลาก)
+            </button>
+          </div>
         </div>
 
         <!-- 2. Whiteboard Drawing Toolbar (Shows below control surface when drawing mode is ON) -->
@@ -275,17 +285,48 @@
 
         <!-- 3. Collapsible settings bar placed below controls -->
         <div id="laserSettingsBar" class="laser-settings-bar" style="display:none;">
-          <div class="setting-item">
-            <label>ขนาดจุดเลเซอร์ (<span id="dotSizeVal">24</span>px):</label>
-            <input type="range" id="dotSizeSlider" min="10" max="60" value="24" oninput="updateLaserSettings()">
-          </div>
-          <div class="setting-item">
-            <label>ความยาวหางเลเซอร์ (<span id="trailLenVal">12</span>):</label>
-            <input type="range" id="trailLenSlider" min="0" max="30" value="12" oninput="updateLaserSettings()">
-          </div>
           
-          <!-- Joystick Settings -->
-          <div id="joystickSettingItem" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Category 1: Dot & Pen Color -->
+          <div class="settings-category-card">
+            <div class="settings-category-title"><i class="fa-solid fa-circle-dot"></i> 🔴 ตั้งค่าจุดเลเซอร์ & ปากกา</div>
+            <div class="setting-item">
+              <label>ขนาดจุดเลเซอร์ (<span id="dotSizeVal">24</span>px):</label>
+              <input type="range" id="dotSizeSlider" min="10" max="60" value="24" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>ความยาวหางเลเซอร์ (<span id="trailLenVal">12</span>):</label>
+              <input type="range" id="trailLenSlider" min="0" max="30" value="12" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>📏 ขนาดเส้นปากกา (<span id="drawSizeVal">5</span>px):</label>
+              <input type="range" id="drawSizeSlider" min="1" max="20" value="5" oninput="updateDrawSettings()">
+            </div>
+            <div class="setting-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+              <label>🎨 สีจุดเลเซอร์และปากกา:</label>
+              <div class="color-picker-group inline" style="gap:10px;">
+                <span class="color-dot active" style="background:#ef4444;" onclick="setLaserColor('#ef4444', this)"></span>
+                <span class="color-dot" style="background:#10b981;" onclick="setLaserColor('#10b981', this)"></span>
+                <span class="color-dot" style="background:#3b82f6;" onclick="setLaserColor('#3b82f6', this)"></span>
+                <span class="color-dot" style="background:#f59e0b;" onclick="setLaserColor('#f59e0b', this)"></span>
+                <span class="color-dot" style="background:#ec4899;" onclick="setLaserColor('#ec4899', this)"></span>
+                <span class="color-dot" style="background:#8b5cf6;" onclick="setLaserColor('#8b5cf6', this)"></span>
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>🎯 สีแกนกลางจุด Dot:</label>
+              <select id="coreDotStyleSelect" onchange="updateLaserSettings()" style="padding:6px; font-size:12px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px;">
+                <option value="white" selected>Bright White (ขาวสว่าง)</option>
+                <option value="laser">Match Laser Color (สีเลเซอร์)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label style="cursor:pointer;"><input type="checkbox" id="pulseRingCheck" checked onchange="updateLaserSettings()"> ⭕ วงแหวนกระจายรอบจุด (Pulse Ring)</label>
+            </div>
+          </div>
+
+          <!-- Category 2: Joystick Settings -->
+          <div class="settings-category-card" id="joystickSettingItem">
+            <div class="settings-category-title"><i class="fa-solid fa-gamepad"></i> 🕹️ ตั้งค่าคันโยก Joystick</div>
             <div class="setting-item">
               <label>📈 Curve ความโค้งคันโยก (<span id="joystickCurveVal">2.0</span>):</label>
               <input type="range" id="joystickCurveSlider" min="0.1" max="2.0" step="0.1" value="2.0" oninput="updateLaserSettings()">
@@ -296,13 +337,9 @@
             </div>
           </div>
 
-          <!-- Gyro Settings -->
-          <div id="gyroSettingItem" style="display:none; flex-direction:column; gap:8px;">
-            <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
-              <label style="cursor:pointer; font-weight:700; color:#c084fc; display:flex; align-items:center; gap:6px;">
-                <input type="checkbox" id="enableTouchPositionCheck" onchange="updateLaserSettings()"> 🔀 เปิดโหมด Position (ทัชวาดแทน)
-              </label>
-            </div>
+          <!-- Category 3: Gyro Settings -->
+          <div class="settings-category-card" id="gyroSettingItem" style="display:none;">
+            <div class="settings-category-title"><i class="fa-solid fa-mobile-screen-button"></i> 📱 ตั้งค่า Gyro Sensor</div>
             <div class="setting-item">
               <label>↔️ ความไวแกนแนวนอน X (<span id="gyroSensXVal">5.0</span>x):</label>
               <input type="range" id="gyroSensXSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
@@ -337,36 +374,22 @@
             <div class="setting-item">
               <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertYCheck" checked onchange="updateLaserSettings()"> 🔄 กลับทิศ Y (Invert Y)</label>
             </div>
+          </div>
+
+          <!-- Category 4: DLSS Motion Smoothing -->
+          <div class="settings-category-card">
+            <div class="settings-category-title"><i class="fa-solid fa-bolt"></i> 🚀 การประมวลผล Motion Smoothing</div>
             <div class="setting-item">
-              <label style="cursor:pointer;"><input type="checkbox" id="pulseRingCheck" checked onchange="updateLaserSettings()"> ⭕ วงแหวนกระจายรอบจุด (Pulse Ring)</label>
+              <label style="cursor:pointer; font-weight:700; color:#10b981; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="dlssEnabledCheck" checked onchange="updateLaserSettings()"> เปิดใช้ DLSS Motion Smoothing
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>ระดับความสมูท DLSS (<span id="dlssLevelVal">5</span>):</label>
+              <input type="range" id="dlssLevelSlider" min="1" max="10" value="5" oninput="updateLaserSettings()">
             </div>
           </div>
 
-          <!-- DLSS Motion Smoothing -->
-          <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px; margin-top:10px;">
-            <label style="cursor:pointer; font-weight:700; color:#10b981; display:flex; align-items:center; gap:6px;">
-              <input type="checkbox" id="dlssEnabledCheck" checked onchange="updateLaserSettings()"> 🚀 เปิดใช้ DLSS Motion Smoothing
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>ระดับความสมูท DLSS (<span id="dlssLevelVal">5</span>):</label>
-            <input type="range" id="dlssLevelSlider" min="1" max="10" value="5" oninput="updateLaserSettings()">
-          </div>
-
-          <!-- Core Dot Styling -->
-          <div class="setting-item">
-            <label>🎯 สีแกนกลางจุด Dot:</label>
-            <select id="coreDotStyleSelect" onchange="updateLaserSettings()" style="width:100%; padding:6px; font-size:12px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px;">
-              <option value="white" selected>Bright White (ขาวสว่าง)</option>
-              <option value="laser">Match Laser Color (สีเดียวกับเลเซอร์)</option>
-            </select>
-          </div>
-
-          <!-- Whiteboard Settings inside Main settings bar -->
-          <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
-            <label>📏 ขนาดเส้นปากกาสำหรับวาด (<span id="drawSizeVal">5</span>px):</label>
-            <input type="range" id="drawSizeSlider" min="1" max="20" value="5" oninput="updateDrawSettings()">
-          </div>
         </div>
 
         <!-- Quick Slide Navigation Bar inside Laser Tab -->
@@ -388,18 +411,24 @@
 
     </main>
 
-    <!-- Room Entry Modal -->
+    <!-- Room Entry Modal with 6 OTP Boxes -->
     <div id="roomModal" class="mobile-modal active">
       <div class="modal-card">
         <div class="modal-title">
           <i class="fa-solid fa-qrcode"></i> เชื่อมต่อกับคอมพิวเตอร์
         </div>
-        <p class="modal-desc">กรอก Room Code ตัวเลข 6 หลักที่แสดงบนหน้าจอคอมพิวเตอร์ (เช่น 849201)</p>
+        <p class="modal-desc">กรอก Room Code ตัวเลข 6 หลักที่แสดงบนคอมพิวเตอร์</p>
 
-        <div class="input-group">
-          <input type="text" id="roomCodeInput" placeholder="849201" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
-          <button id="joinRoomBtn" class="join-btn">เชื่อมต่อ</button>
+        <div class="otp-input-wrapper">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
         </div>
+
+        <button id="joinRoomBtn" class="join-btn" style="margin-top: 10px;">เชื่อมต่อ</button>
       </div>
     </div>
   </div>

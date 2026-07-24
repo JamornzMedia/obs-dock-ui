@@ -970,3 +970,91 @@ body {
   padding: 6px !important;
   gap: 8px !important;
 }
+
+/* 6-Digit OTP Room Code Input */
+.otp-input-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.otp-box {
+  width: 44px;
+  height: 54px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  color: #38bdf8;
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.otp-box:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+  background: #020617;
+}
+
+/* Position Mode Switcher Bar */
+.pos-mode-switcher-bar {
+  display: flex;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.pos-switch-btn {
+  flex: 1;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pos-switch-btn.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* Categorized Settings Cards */
+.settings-category-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-category-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
