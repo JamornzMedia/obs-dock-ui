@@ -33,12 +33,19 @@ let laserState = {
   joystickCurve: 2.0,
   joystickSpeed: 1.0,
   lockDraw: false,
-  fillShape: false,
+  fillShape: true,
   drawTool: 'freehand',
   dlssEnabled: true,
   dlssLevel: 5,
   coreDotStyle: 'white',
-  fps: 30
+  fps: 30,
+  gyroPositionMode: false,
+  lockedButtons: {
+    moveGyro: false,
+    drawGyro: false,
+    movePos: false,
+    drawPos: false
+  }
 };
 
 // Initialize Mobile App
@@ -51,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initLaserTouchpad();
   initCenteringJoystick();
   initGyroAirMouse();
+  initUndoClearBtn();
   renderMobileCustomKeys();
 });
 
@@ -83,13 +91,58 @@ function initFirebase() {
 }
 
 // Fullscreen Browser Toggle
-function toggleMobileBrowserFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => console.log(err));
-  } else {
-    document.exitFullscreen().catch(err => console.log(err));
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log("Wake Lock active! Screen will not turn off.");
+    }
+  } catch (err) {
+    console.warn("Wake Lock acquisition failed:", err);
   }
 }
+
+async function releaseWakeLock() {
+  try {
+    if (wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+      console.log("Wake Lock released.");
+    }
+  } catch (err) {}
+}
+
+function toggleMobileBrowserFullscreen() {
+  const container = document.body;
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+      .then(() => {
+        container.classList.add("fullscreen-active");
+        requestWakeLock();
+      })
+      .catch(err => console.log(err));
+  } else {
+    document.exitFullscreen()
+      .then(() => {
+        container.classList.remove("fullscreen-active");
+        releaseWakeLock();
+      })
+      .catch(err => console.log(err));
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  const container = document.body;
+  if (!document.fullscreenElement) {
+    container.classList.remove("fullscreen-active");
+    releaseWakeLock();
+  } else {
+    container.classList.add("fullscreen-active");
+    requestWakeLock();
+  }
+});
 
 // Mobile Tab Switcher
 function initMobileTabs() {
@@ -567,69 +620,174 @@ let lastRawY = null;
 let smoothedDiffX = 0;
 let smoothedDiffY = 0;
 
+let gyroHoldingType = null; // 'draw' or 'move'
+let activePositionBtn = null; // button element currently being touched/dragged
+
 function initGyroAirMouse() {
-  const btn = document.getElementById("gyroHoldBtn");
-  if (!btn) return;
+  const buttonsConfig = [
+    { id: "gyroHoldBtn", type: "moveGyro", draw: false, position: false },
+    { id: "gyroDrawTop", type: "drawGyro", draw: true, position: false },
+    { id: "gyroMoveTop", type: "moveGyro", draw: false, position: false },
+    { id: "gyroDrawBottom", type: "drawPos", draw: true, position: true },
+    { id: "gyroMoveBottom", type: "movePos", draw: false, position: true }
+  ];
 
-  let lastTap = 0;
+  buttonsConfig.forEach(cfg => {
+    const btn = document.getElementById(cfg.id);
+    if (!btn) return;
 
-  function startGyroHold(e) {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      toggleDrawingModeBtn();
-      lastTap = 0;
-      return;
-    }
-    lastTap = now;
+    let pressStart = 0;
+    let isPressActive = false;
 
-    isGyroHolding = true;
-    btn.classList.add("holding");
-    if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
-    lastRawX = null;
-    lastRawY = null;
-    smoothedDiffX = 0;
-    smoothedDiffY = 0;
-    laserState.active = true;
-    
-    if (laserState.drawingMode && !laserState.lockDraw) {
-      sendDrawEvent("start");
-    } else {
-      sendLaserFirebase();
-    }
-  }
+    function handlePressStart(e) {
+      if (e.cancelable) e.preventDefault();
+      pressStart = Date.now();
+      isPressActive = true;
 
-  function stopGyroHold(e) {
-    if (!isGyroHolding) return;
-    isGyroHolding = false;
-    btn.classList.remove("holding");
-    lastRawX = null;
-    lastRawY = null;
-    
-    if (laserState.drawingMode && !laserState.lockDraw) {
-      sendDrawEvent("end");
-    }
-
-    setTimeout(() => {
-      if (!isTouching && !joystickActive && !isGyroHolding && !laserState.lockDraw) {
-        laserState.active = false;
-        sendLaserFirebase();
+      // If already locked, we release lock when they press and hold, or tap again
+      if (laserState.lockedButtons[cfg.type]) {
+        return;
       }
-    }, 1000);
-  }
 
-  btn.addEventListener("pointerdown", startGyroHold);
-  btn.addEventListener("pointerup", stopGyroHold);
-  btn.addEventListener("pointercancel", stopGyroHold);
-  btn.addEventListener("dblclick", (e) => { e.preventDefault(); toggleDrawingModeBtn(); });
+      // Normal Press Down
+      laserState.active = true;
+      laserState.drawingMode = cfg.draw;
 
-  btn.addEventListener("touchstart", (e) => { e.preventDefault(); startGyroHold(e); }, { passive: false });
-  btn.addEventListener("touchend", stopGyroHold, { passive: true });
+      if (cfg.draw) {
+        sendDrawEvent("start");
+      }
+
+      if (cfg.position) {
+        activePositionBtn = btn;
+        handlePositionTouch(e, btn, cfg.draw);
+      } else {
+        isGyroHolding = true;
+        gyroHoldingType = cfg.draw ? "draw" : "move";
+        lastRawX = null;
+        lastRawY = null;
+        smoothedDiffX = 0;
+        smoothedDiffY = 0;
+        sendLaserFirebase(true);
+      }
+
+      if (navigator.vibrate) try { navigator.vibrate(30); } catch(err) {}
+    }
+
+    function handlePressEnd(e) {
+      if (!isPressActive) return;
+      isPressActive = false;
+      const duration = Date.now() - pressStart;
+
+      if (duration < 250) {
+        // TAP detected: Toggle Lock Hold
+        const wasLocked = laserState.lockedButtons[cfg.type];
+        laserState.lockedButtons[cfg.type] = !wasLocked;
+        btn.classList.toggle("locked", laserState.lockedButtons[cfg.type]);
+
+        if (laserState.lockedButtons[cfg.type]) {
+          // Lock ON: Activate state
+          laserState.active = true;
+          laserState.drawingMode = cfg.draw;
+          if (cfg.draw) {
+            sendDrawEvent("start");
+          } else {
+            sendLaserFirebase(true);
+          }
+        } else {
+          // Lock OFF
+          releaseState();
+        }
+      } else {
+        // HOLD completed and released
+        if (laserState.lockedButtons[cfg.type]) {
+          // If it was locked, unlock it!
+          laserState.lockedButtons[cfg.type] = false;
+          btn.classList.remove("locked");
+        }
+        releaseState();
+      }
+    }
+
+    function releaseState() {
+      if (cfg.position) {
+        activePositionBtn = null;
+      } else {
+        isGyroHolding = false;
+        gyroHoldingType = null;
+      }
+
+      if (cfg.draw) {
+        sendDrawEvent("end");
+      }
+
+      setTimeout(() => {
+        // Verify if any other button is active or locked
+        const anyActive = isGyroHolding || activePositionBtn || 
+                          laserState.lockedButtons.moveGyro || 
+                          laserState.lockedButtons.drawGyro || 
+                          laserState.lockedButtons.movePos || 
+                          laserState.lockedButtons.drawPos;
+        if (!anyActive) {
+          laserState.active = false;
+          sendLaserFirebase();
+        }
+      }, 500);
+    }
+
+    // Touch events
+    btn.addEventListener("touchstart", handlePressStart, { passive: false });
+    btn.addEventListener("touchend", handlePressEnd, { passive: true });
+    btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
+
+    // Pointer/Mouse events
+    btn.addEventListener("pointerdown", handlePressStart);
+    btn.addEventListener("pointerup", handlePressEnd);
+    btn.addEventListener("pointercancel", handlePressEnd);
+  });
+
+  // Track position drag movements
+  window.addEventListener("touchmove", (e) => {
+    if (activePositionBtn) {
+      const cfg = buttonsConfig.find(c => c.id === activePositionBtn.id);
+      if (cfg) {
+        handlePositionTouch(e, activePositionBtn, cfg.draw);
+      }
+    }
+  }, { passive: false });
 
   window.addEventListener("deviceorientation", handleGyroOrientation, true);
 }
 
+function handlePositionTouch(e, btn, isDrawing) {
+  const rect = btn.getBoundingClientRect();
+  const touch = e.touches ? e.touches[0] : e;
+  if (!touch) return;
+
+  const tx = touch.clientX - rect.left;
+  const ty = touch.clientY - rect.top;
+
+  const nx = Math.max(0, Math.min(1, tx / rect.width));
+  const ny = Math.max(0, Math.min(1, ty / rect.height));
+
+  laserState.x = nx;
+  laserState.y = ny;
+  laserState.active = true;
+  laserState.drawingMode = isDrawing;
+
+  if (isDrawing) {
+    sendDrawEvent("draw");
+  } else {
+    sendLaserFirebase(true);
+  }
+}
+
 function handleGyroOrientation(e) {
-  if (!isGyroHolding || laserState.mode !== "gyro") return;
+  const anyGyroActive = isGyroHolding || laserState.lockedButtons.moveGyro || laserState.lockedButtons.drawGyro;
+  if (!anyGyroActive || laserState.mode !== "gyro") return;
+
+  const activeDraw = (isGyroHolding && gyroHoldingType === 'draw') || laserState.lockedButtons.drawGyro;
+  laserState.drawingMode = activeDraw;
+  laserState.active = true;
 
   const angles = {
     alpha: e.alpha !== null ? e.alpha : 0,
@@ -657,22 +815,20 @@ function handleGyroOrientation(e) {
     if (laserState.gyroInvertX) diffX = -diffX;
     if (laserState.gyroInvertY) diffY = -diffY;
 
-    // Stabilize the rotation angles first to filter out hand tremors/shakes
-    const stabFactor = laserState.gyroStabilizer || 0.3; // 0.05 (heavy smooth) to 1.0 (raw)
+    const stabFactor = laserState.gyroStabilizer || 0.3;
     smoothedDiffX = smoothedDiffX + (diffX - smoothedDiffX) * stabFactor;
     smoothedDiffY = smoothedDiffY + (diffY - smoothedDiffY) * stabFactor;
 
-    // Apply sensitivity independently to the smoothed velocities
     const sensX = laserState.gyroSensitivityX || 5.0;
     const sensY = laserState.gyroSensitivityY || 5.0;
 
-    const deltaX = smoothedDiffX * sensX * 0.0018; // scaled for better control
+    const deltaX = smoothedDiffX * sensX * 0.0018;
     const deltaY = smoothedDiffY * sensY * 0.0018;
 
     laserState.x = Math.max(0, Math.min(1, laserState.x + deltaX));
     laserState.y = Math.max(0, Math.min(1, laserState.y + deltaY));
 
-    if (laserState.drawingMode) {
+    if (activeDraw) {
       sendDrawEvent("draw");
     } else {
       sendLaserFirebase();
@@ -941,30 +1097,50 @@ function toggleDrawingModeBtn() {
     toolbar.style.display = laserState.drawingMode ? "flex" : "none";
   }
 
+  syncGyroControls();
+
   // Force sending laser status
   sendLaserFirebase(true);
 }
 
-function toggleLockDraw() {
-  laserState.lockDraw = !laserState.lockDraw;
-  const btn = document.getElementById("lockDrawBtn");
-  if (btn) {
-    btn.classList.toggle("active", laserState.lockDraw);
-    btn.innerHTML = laserState.lockDraw
-      ? `<i class="fa-solid fa-lock"></i> วาดค้าง: ON`
-      : `<i class="fa-solid fa-lock-open"></i> วาดค้าง: OFF`;
-  }
-  if (laserState.lockDraw) {
-    laserState.active = true;
-    sendDrawEvent("start");
-  } else {
-    sendDrawEvent("end");
-    // If not doing other inputs, release active
-    if (!joystickActive && !isGyroHolding && !isTouching) {
-      laserState.active = false;
-      sendLaserFirebase();
+function syncGyroControls() {
+  const gyroPositionMode = document.getElementById("enableTouchPositionCheck")?.checked || false;
+  laserState.gyroPositionMode = gyroPositionMode;
+  
+  const standardArea = document.getElementById("gyroStandardArea");
+  const splitArea = document.getElementById("gyroSplitArea");
+  
+  const drawBottom = document.getElementById("gyroDrawBottom");
+  const moveBottom = document.getElementById("gyroMoveBottom");
+  
+  if (laserState.drawingMode) {
+    if (standardArea) standardArea.style.display = "none";
+    if (splitArea) {
+      splitArea.style.display = "flex";
+      if (gyroPositionMode) {
+        if (drawBottom) drawBottom.style.display = "flex";
+        if (moveBottom) moveBottom.style.display = "flex";
+      } else {
+        if (drawBottom) drawBottom.style.display = "none";
+        if (moveBottom) moveBottom.style.display = "none";
+      }
     }
+  } else {
+    if (standardArea) standardArea.style.display = "block";
+    if (splitArea) splitArea.style.display = "none";
   }
+}
+
+function toggleFillShape() {
+  laserState.fillShape = !laserState.fillShape;
+  const btn = document.getElementById("fillShapeToggleBtn");
+  if (btn) {
+    btn.classList.toggle("active", laserState.fillShape);
+    btn.innerHTML = laserState.fillShape
+      ? `🎨 เติมสีพื้นหลัง: ON`
+      : `🎨 เติมสีพื้นหลัง: OFF`;
+  }
+  updateDrawSettings();
 }
 
 function setDrawTool(tool) {
@@ -972,12 +1148,6 @@ function setDrawTool(tool) {
   document.querySelectorAll(".draw-tool-btn").forEach(btn => btn.classList.remove("active"));
   const activeBtn = document.getElementById(`tool${tool.charAt(0).toUpperCase() + tool.slice(1)}Btn`);
   if (activeBtn) activeBtn.classList.add("active");
-  
-  // If Lock Draw is active, restart stroke
-  if (laserState.lockDraw) {
-    sendDrawEvent("end");
-    sendDrawEvent("start");
-  }
 }
 
 function updateDrawSettings() {
@@ -992,16 +1162,49 @@ function updateDrawSettings() {
   if (opacityVal && opacitySlider) {
     opacityVal.innerText = opacitySlider.value;
   }
-
-  const fillCheck = document.getElementById("fillShapeCheck");
-  if (fillCheck) {
-    laserState.fillShape = fillCheck.checked;
-  }
 }
 
 function clearDrawings() {
   sendDrawEvent("clear");
   if (navigator.vibrate) try { navigator.vibrate(40); } catch(err) {}
+}
+
+function initUndoClearBtn() {
+  const btn = document.getElementById("undoClearBtn");
+  if (!btn) return;
+  
+  let holdTimer = null;
+  let isLongPress = false;
+  
+  btn.addEventListener("touchstart", (e) => {
+    isLongPress = false;
+    holdTimer = setTimeout(() => {
+      isLongPress = true;
+      clearDrawings();
+    }, 800);
+  });
+  
+  btn.addEventListener("touchend", (e) => {
+    if (holdTimer) clearTimeout(holdTimer);
+    if (!isLongPress) {
+      sendDrawEvent("undo");
+    }
+  });
+  
+  btn.addEventListener("mousedown", (e) => {
+    isLongPress = false;
+    holdTimer = setTimeout(() => {
+      isLongPress = true;
+      clearDrawings();
+    }, 800);
+  });
+  
+  btn.addEventListener("mouseup", (e) => {
+    if (holdTimer) clearTimeout(holdTimer);
+    if (!isLongPress) {
+      sendDrawEvent("undo");
+    }
+  });
 }
 
 function sendDrawEvent(action) {

@@ -139,21 +139,6 @@
       <!-- PANE 2: 16:9 Laser Pointer Control Surface -->
       <section id="paneLaser" class="tab-pane-mobile">
         
-        <!-- Laser Action Bar: Power Toggle, Draw Toggle & Tweak Settings -->
-        <div class="laser-action-bar">
-          <button id="laserActiveToggleBtn" class="laser-power-btn active" onclick="toggleLaserActive()">
-            <i class="fa-solid fa-power-off"></i> 🔴 เลเซอร์: ON
-          </button>
-
-          <button id="drawingModeToggleBtn" class="laser-power-btn" onclick="toggleDrawingModeBtn()" style="background: rgba(139, 92, 246, 0.2); border-color: var(--accent);">
-            <i class="fa-solid fa-pen-nib"></i> 🎨 วาดรูป: OFF
-          </button>
-
-          <button class="settings-toggle-btn" onclick="toggleLaserSettings()">
-            <i class="fa-solid fa-sliders"></i> ⚙️ ตั้งค่า
-          </button>
-        </div>
-
         <div class="laser-control-header">
           <!-- Laser Mode Switcher (Joystick, Absolute 16:9, Gyro Sensor) -->
           <div class="laser-mode-toggle">
@@ -167,6 +152,21 @@
               <i class="fa-solid fa-mobile-screen-button"></i> 📱 Gyro
             </button>
           </div>
+        </div>
+
+        <!-- Laser Action Bar: Power Toggle, Draw Toggle & Tweak Settings -->
+        <div class="laser-action-bar">
+          <button id="laserActiveToggleBtn" class="laser-power-btn active" onclick="toggleLaserActive()">
+            <i class="fa-solid fa-power-off"></i> 🔴 เลเซอร์: ON
+          </button>
+
+          <button id="drawingModeToggleBtn" class="laser-power-btn" onclick="toggleDrawingModeBtn()" style="background: rgba(139, 92, 246, 0.2); border-color: var(--accent);">
+            <i class="fa-solid fa-pen-nib"></i> 🎨 วาดรูป: OFF
+          </button>
+
+          <button class="settings-toggle-btn" onclick="toggleLaserSettings()">
+            <i class="fa-solid fa-sliders"></i> ⚙️ ตั้งค่า
+          </button>
         </div>
 
         <!-- 1. Interactive Control Surfaces placed at the top (under mode selection) -->
@@ -198,12 +198,43 @@
 
         <!-- Interactive Touch Area Option C: Gyro Air-Mouse Hold Button (For Gyro Mode) -->
         <div class="gyro-touch-wrapper" id="gyroControlArea" style="display:none;">
-          <button id="gyroHoldBtn" class="gyro-hold-btn">
-            <i class="fa-solid fa-mobile-screen-button gyro-icon"></i>
-            <span class="gyro-btn-title">🔴 กดค้างไว้ แล้วเอียงมือถือเพื่อยิงเลเซอร์</span>
-            <small class="gyro-btn-sub">ปล่อยนิ้วเมื่อต้องการหยุดขยับจุดเลเซอร์ (ดับเบิ้ลคลิกเพื่อเปิดโหมดวาดรูป)</small>
-          </button>
-          <button id="gyroPermissionBtn" class="gyro-perm-btn" onclick="requestGyroPermission()" style="display:none;">
+          <!-- Standard Layout (Drawing Mode OFF): Single Full-Width Button -->
+          <div id="gyroStandardArea" style="width: 100%;">
+            <button id="gyroHoldBtn" class="gyro-hold-btn gyro-pad-btn" style="height: 280px;">
+              <i class="fa-solid fa-mobile-screen-button gyro-icon"></i>
+              <span class="gyro-btn-title">🔴 กดค้างไว้ แล้วเอียงมือถือเพื่อยิงเลเซอร์</span>
+              <small class="gyro-btn-sub">ปล่อยนิ้วเมื่อต้องการหยุดขยับจุดเลเซอร์</small>
+            </button>
+          </div>
+          
+          <!-- Split Layout (Drawing Mode ON): 2 Columns (Draw & Move) -->
+          <div id="gyroSplitArea" style="width: 100%; display: none; gap: 10px; height: 280px;">
+            <!-- Left Column: Draw -->
+            <div class="gyro-split-col draw-col" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+              <button id="gyroDrawTop" class="gyro-pad-btn gyro-top-btn" style="flex: 1; background: linear-gradient(135deg, #1e1b4b, #111827); border: 2px solid var(--accent); border-radius: var(--radius-md); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; touch-action: none;">
+                <i class="fa-solid fa-pen-nib" style="font-size: 24px; color: var(--accent);"></i>
+                <span style="font-size: 13px; font-weight: 700;">วาด (Gyro)</span>
+              </button>
+              <button id="gyroDrawBottom" class="gyro-pad-btn gyro-bottom-btn" style="flex: 1; display: none; background: linear-gradient(135deg, #0f172a, #111827); border: 2px solid #3b82f6; border-radius: var(--radius-md); color: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; touch-action: none;">
+                <i class="fa-solid fa-hand-pointer" style="font-size: 24px; color: #3b82f6;"></i>
+                <span style="font-size: 13px; font-weight: 700;">วาด (Touch)</span>
+              </button>
+            </div>
+            
+            <!-- Right Column: Move only -->
+            <div class="gyro-split-col move-col" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+              <button id="gyroMoveTop" class="gyro-pad-btn gyro-top-btn" style="flex: 1; background: linear-gradient(135deg, #1e1b4b, #111827); border: 2px solid #ef4444; border-radius: var(--radius-md); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; touch-action: none;">
+                <i class="fa-solid fa-arrows-to-dot" style="font-size: 24px; color: #ef4444;"></i>
+                <span style="font-size: 13px; font-weight: 700;">ชี้ (Gyro)</span>
+              </button>
+              <button id="gyroMoveBottom" class="gyro-pad-btn gyro-bottom-btn" style="flex: 1; display: none; background: linear-gradient(135deg, #0f172a, #111827); border: 2px solid #ef4444; border-radius: var(--radius-md); color: #fff; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; touch-action: none;">
+                <i class="fa-solid fa-arrows-up-down-left-right" style="font-size: 24px; color: #ef4444;"></i>
+                <span style="font-size: 13px; font-weight: 700;">ชี้ (Touch)</span>
+              </button>
+            </div>
+          </div>
+          
+          <button id="gyroPermissionBtn" class="gyro-perm-btn" onclick="requestGyroPermission()" style="display:none; margin-top:8px;">
             🔑 ปลดล็อก Gyro Sensor (สำหรับ iPhone/iOS)
           </button>
         </div>
@@ -211,10 +242,13 @@
         <!-- 2. Whiteboard Drawing Toolbar (Shows below control surface when drawing mode is ON) -->
         <div id="drawingToolbar" class="drawing-toolbar" style="display:none;">
           <div class="draw-row">
-            <button id="lockDrawBtn" class="draw-btn" onclick="toggleLockDraw()">
-              <i class="fa-solid fa-lock-open"></i> วาดค้าง: OFF
-            </button>
-            <div class="draw-segmented">
+            <div class="draw-opacity-container" style="flex:1;">
+              <span>ความเข้ม:</span>
+              <input type="range" id="drawOpacitySlider" min="10" max="100" step="10" value="100" oninput="updateDrawSettings()" style="width:70px; margin:0 5px;">
+              <span id="drawOpacityVal">100</span>%
+            </div>
+            
+            <div class="draw-segmented" style="flex:1.5;">
               <button id="toolFreehandBtn" class="draw-tool-btn active" onclick="setDrawTool('freehand')">✍️ อิสระ</button>
               <button id="toolRectBtn" class="draw-tool-btn" onclick="setDrawTool('rect')">⬛ เหลี่ยม</button>
               <button id="toolCircleBtn" class="draw-tool-btn" onclick="setDrawTool('circle')">⚪ กลม</button>
@@ -222,25 +256,19 @@
           </div>
           
           <div class="draw-row">
-            <label class="draw-checkbox-label" style="cursor:pointer;">
-              <input type="checkbox" id="fillShapeCheck" onchange="updateDrawSettings()"> ลงสีพื้นหลังรูปทรง
-            </label>
-            <div class="draw-opacity-container">
-              <span>ความเข้ม:</span>
-              <input type="range" id="drawOpacitySlider" min="10" max="100" step="10" value="100" oninput="updateDrawSettings()" style="width:70px; margin:0 5px;">
-              <span id="drawOpacityVal">100</span>%
-            </div>
-          </div>
-          
-          <div class="draw-row">
-            <div class="color-picker-group inline">
+            <button id="fillShapeToggleBtn" class="draw-btn active" onclick="toggleFillShape()" style="flex: 1.5; font-size:11px;">
+              🎨 เติมสีพื้นหลัง: ON
+            </button>
+            
+            <div class="color-picker-group inline" style="flex: 1.2; justify-content:center;">
               <span class="color-dot active" style="background:#ef4444;" onclick="setLaserColor('#ef4444', this)"></span>
               <span class="color-dot" style="background:#10b981;" onclick="setLaserColor('#10b981', this)"></span>
               <span class="color-dot" style="background:#3b82f6;" onclick="setLaserColor('#3b82f6', this)"></span>
               <span class="color-dot" style="background:#f59e0b;" onclick="setLaserColor('#f59e0b', this)"></span>
             </div>
-            <button id="clearDrawingsBtnInline" class="clear-draw-btn-inline" onclick="clearDrawings()">
-              <i class="fa-solid fa-trash"></i> ล้างหน้าจอ
+            
+            <button id="undoClearBtn" class="draw-btn" style="flex: 1; background:var(--danger); border:none; font-size:11px;">
+              <i class="fa-solid fa-undo"></i> ย้อนกลับ
             </button>
           </div>
         </div>
@@ -270,6 +298,11 @@
 
           <!-- Gyro Settings -->
           <div id="gyroSettingItem" style="display:none; flex-direction:column; gap:8px;">
+            <div class="setting-item" style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+              <label style="cursor:pointer; font-weight:700; color:#c084fc; display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="enableTouchPositionCheck" onchange="updateLaserSettings()"> 🔀 เปิดโหมด Position (ทัชวาดแทน)
+              </label>
+            </div>
             <div class="setting-item">
               <label>↔️ ความไวแกนแนวนอน X (<span id="gyroSensXVal">5.0</span>x):</label>
               <input type="range" id="gyroSensXSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
