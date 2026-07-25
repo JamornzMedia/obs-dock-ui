@@ -258,8 +258,10 @@
               <span id="drawOpacityVal">100</span>%
             </div>
             
-            <div class="draw-segmented" style="flex:1.5;">
+            <div class="draw-segmented" style="flex:2.2; flex-wrap:wrap; gap:2px;">
               <button id="toolFreehandBtn" class="draw-tool-btn active" onclick="setDrawTool('freehand')">✍️ อิสระ</button>
+              <button id="toolLineBtn" class="draw-tool-btn" onclick="setDrawTool('line')">📏 เส้นตรง</button>
+              <button id="toolArrowBtn" class="draw-tool-btn" onclick="setDrawTool('arrow')">🏹 ลูกศร</button>
               <button id="toolRectBtn" class="draw-tool-btn" onclick="setDrawTool('rect')">⬛ เหลี่ยม</button>
               <button id="toolCircleBtn" class="draw-tool-btn" onclick="setDrawTool('circle')">⚪ กลม</button>
             </div>
@@ -339,14 +341,19 @@
 
           <!-- Category 3: Gyro Settings -->
           <div class="settings-category-card" id="gyroSettingItem" style="display:none;">
-            <div class="settings-category-title"><i class="fa-solid fa-mobile-screen-button"></i> 📱 ตั้งค่า Gyro Sensor</div>
-            <div class="setting-item">
-              <label>↔️ ความไวแกนแนวนอน X (<span id="gyroSensXVal">5.0</span>x):</label>
-              <input type="range" id="gyroSensXSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
+            <div class="settings-category-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="fa-solid fa-mobile-screen-button"></i> 📱 ตั้งค่า Gyro Sensor</span>
+              <button type="button" onclick="resetGyroSettings()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; font-size: 11px; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+                🔄 คืนค่าปกติ (10x)
+              </button>
             </div>
             <div class="setting-item">
-              <label>↕️ ความไวแกนแนวตั้ง Y (<span id="gyroSensYVal">5.0</span>x):</label>
-              <input type="range" id="gyroSensYSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
+              <label>↔️ ความไวแกนแนวนอน X (<span id="gyroSensXVal">10.0</span>x):</label>
+              <input type="range" id="gyroSensXSlider" min="0.5" max="20.0" step="0.5" value="10.0" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>↕️ ความไวแกนแนวตั้ง Y (<span id="gyroSensYVal">10.0</span>x):</label>
+              <input type="range" id="gyroSensYSlider" min="0.5" max="20.0" step="0.5" value="10.0" oninput="updateLaserSettings()">
             </div>
             <div class="setting-item">
               <label>⚖️ ความนิ่ง / Stabilizer (<span id="gyroStabVal">0.3</span>):</label>
@@ -373,6 +380,24 @@
             </div>
             <div class="setting-item">
               <label style="cursor:pointer;"><input type="checkbox" id="gyroInvertYCheck" checked onchange="updateLaserSettings()"> 🔄 กลับทิศ Y (Invert Y)</label>
+            </div>
+          </div>
+
+          <!-- Category 3.5: Touch Position Settings -->
+          <div class="settings-category-card" id="posSettingItem">
+            <div class="settings-category-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="fa-solid fa-hand-pointer"></i> 🖐️ ตั้งค่า Touch Position (วัดระยะ ซม.)</span>
+              <button type="button" onclick="resetPositionSettings()" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; font-size: 11px; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+                🔄 คืนค่าปกติ (5.0x)
+              </button>
+            </div>
+            <div class="setting-item">
+              <label>↔️ ความไวระยะแนวนอน X (<span id="posSensXVal">5.0</span>x / ซม.):</label>
+              <input type="range" id="posSensXSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
+            </div>
+            <div class="setting-item">
+              <label>↕️ ความไวระยะแนวตั้ง Y (<span id="posSensYVal">5.0</span>x / ซม.):</label>
+              <input type="range" id="posSensYSlider" min="0.5" max="20.0" step="0.5" value="5.0" oninput="updateLaserSettings()">
             </div>
           </div>
 

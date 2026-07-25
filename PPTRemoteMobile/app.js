@@ -18,8 +18,10 @@ let laserState = {
   size: 24,
   trailLength: 12,
   color: '#ef4444',
-  gyroSensitivityX: 5.0,
-  gyroSensitivityY: 5.0,
+  gyroSensitivityX: 10.0,
+  gyroSensitivityY: 10.0,
+  positionSensitivityX: 5.0,
+  positionSensitivityY: 5.0,
   gyroStabilizer: 0.3,
   gyroAxisX: 'alpha',
   gyroInvertX: true,
@@ -600,16 +602,30 @@ function updateLaserSettings() {
 
   const gyroSensXSlider = document.getElementById("gyroSensXSlider");
   if (gyroSensXSlider) {
-    laserState.gyroSensitivityX = parseFloat(gyroSensXSlider.value) || 5.0;
+    laserState.gyroSensitivityX = parseFloat(gyroSensXSlider.value) || 10.0;
     const gyroSensXVal = document.getElementById("gyroSensXVal");
     if (gyroSensXVal) gyroSensXVal.innerText = laserState.gyroSensitivityX.toFixed(1);
   }
 
   const gyroSensYSlider = document.getElementById("gyroSensYSlider");
   if (gyroSensYSlider) {
-    laserState.gyroSensitivityY = parseFloat(gyroSensYSlider.value) || 5.0;
+    laserState.gyroSensitivityY = parseFloat(gyroSensYSlider.value) || 10.0;
     const gyroSensYVal = document.getElementById("gyroSensYVal");
     if (gyroSensYVal) gyroSensYVal.innerText = laserState.gyroSensitivityY.toFixed(1);
+  }
+
+  const posSensXSlider = document.getElementById("posSensXSlider");
+  if (posSensXSlider) {
+    laserState.positionSensitivityX = parseFloat(posSensXSlider.value) || 5.0;
+    const posSensXVal = document.getElementById("posSensXVal");
+    if (posSensXVal) posSensXVal.innerText = laserState.positionSensitivityX.toFixed(1);
+  }
+
+  const posSensYSlider = document.getElementById("posSensYSlider");
+  if (posSensYSlider) {
+    laserState.positionSensitivityY = parseFloat(posSensYSlider.value) || 5.0;
+    const posSensYVal = document.getElementById("posSensYVal");
+    if (posSensYVal) posSensYVal.innerText = laserState.positionSensitivityY.toFixed(1);
   }
 
   const gyroStabInput = document.getElementById("gyroStabSlider");
@@ -728,6 +744,8 @@ function initGyroAirMouse() {
     }
 
     function releaseState() {
+      lastPosTouchX = null;
+      lastPosTouchY = null;
       if (cfg.position) {
         activePositionBtn = null;
       } else {
@@ -780,27 +798,52 @@ function initGyroAirMouse() {
   window.addEventListener("deviceorientation", handleGyroOrientation, true);
 }
 
+let lastPosTouchX = null;
+let lastPosTouchY = null;
+
 function handlePositionTouch(e, btn, isDrawing) {
-  const rect = btn.getBoundingClientRect();
   const touch = e.touches ? e.touches[0] : e;
   if (!touch) return;
 
-  const tx = touch.clientX - rect.left;
-  const ty = touch.clientY - rect.top;
+  const curX = touch.clientX;
+  const curY = touch.clientY;
 
-  const nx = Math.max(0, Math.min(1, tx / rect.width));
-  const ny = Math.max(0, Math.min(1, ty / rect.height));
-
-  laserState.x = nx;
-  laserState.y = ny;
   laserState.active = true;
   laserState.drawingMode = isDrawing;
 
-  if (isDrawing) {
-    sendDrawEvent("draw");
+  if (lastPosTouchX !== null && lastPosTouchY !== null) {
+    const deltaPxX = curX - lastPosTouchX;
+    const deltaPxY = curY - lastPosTouchY;
+
+    // 37.8 CSS pixels ≈ 1 cm on mobile screens
+    const deltaCmX = deltaPxX / 37.8;
+    const deltaCmY = deltaPxY / 37.8;
+
+    const sensX = laserState.positionSensitivityX || 5.0;
+    const sensY = laserState.positionSensitivityY || 5.0;
+
+    // Convert cm displacement to normalized screen fraction delta (0.0 to 1.0)
+    const deltaLaserX = (deltaCmX * sensX) * 0.01;
+    const deltaLaserY = (deltaCmY * sensY) * 0.01;
+
+    laserState.x = Math.max(0, Math.min(1, laserState.x + deltaLaserX));
+    laserState.y = Math.max(0, Math.min(1, laserState.y + deltaLaserY));
+
+    if (isDrawing) {
+      sendDrawEvent("draw");
+    } else {
+      sendLaserFirebase(true);
+    }
   } else {
-    sendLaserFirebase(true);
+    if (isDrawing) {
+      sendDrawEvent("start");
+    } else {
+      sendLaserFirebase(true);
+    }
   }
+
+  lastPosTouchX = curX;
+  lastPosTouchY = curY;
 }
 
 function handleGyroOrientation(e) {
@@ -824,6 +867,14 @@ function handleGyroOrientation(e) {
     let diffX = rawX - lastRawX;
     let diffY = rawY - lastRawY;
 
+    // Gyro Vertical Tilt (Setup / Standing upright) Protection:
+    // Pitch near 90deg (or -90deg) causes alpha angle gimbal lock.
+    const absBeta = Math.abs(angles.beta);
+    if (absBeta > 75 && laserState.gyroAxisX === 'alpha') {
+      const dampFactor = Math.max(0.0, (90.0 - absBeta) / 15.0);
+      diffX *= dampFactor;
+    }
+
     if (laserState.gyroAxisX === 'alpha') {
       if (diffX > 180) diffX -= 360;
       if (diffX < -180) diffX += 360;
@@ -834,6 +885,10 @@ function handleGyroOrientation(e) {
       if (diffY < -180) diffY += 360;
     } else if (Math.abs(diffY) > 90) diffY = 0;
 
+    // Suppress sudden erratic jump spikes
+    if (Math.abs(diffX) > 25) diffX = 0;
+    if (Math.abs(diffY) > 25) diffY = 0;
+
     if (laserState.gyroInvertX) diffX = -diffX;
     if (laserState.gyroInvertY) diffY = -diffY;
 
@@ -841,8 +896,8 @@ function handleGyroOrientation(e) {
     smoothedDiffX = smoothedDiffX + (diffX - smoothedDiffX) * stabFactor;
     smoothedDiffY = smoothedDiffY + (diffY - smoothedDiffY) * stabFactor;
 
-    const sensX = laserState.gyroSensitivityX || 5.0;
-    const sensY = laserState.gyroSensitivityY || 5.0;
+    const sensX = laserState.gyroSensitivityX || 10.0;
+    const sensY = laserState.gyroSensitivityY || 10.0;
 
     const deltaX = smoothedDiffX * sensX * 0.0018;
     const deltaY = smoothedDiffY * sensY * 0.0018;
@@ -1331,8 +1386,74 @@ function initUndoClearBtn() {
   });
 }
 
+function resetGyroSettings() {
+  laserState.gyroSensitivityX = 10.0;
+  laserState.gyroSensitivityY = 10.0;
+  laserState.gyroStabilizer = 0.3;
+
+  const sensXSlider = document.getElementById("gyroSensXSlider");
+  const sensXVal = document.getElementById("gyroSensXVal");
+  if (sensXSlider && sensXVal) {
+    sensXSlider.value = 10.0;
+    sensXVal.innerText = "10.0";
+  }
+
+  const sensYSlider = document.getElementById("gyroSensYSlider");
+  const sensYVal = document.getElementById("gyroSensYVal");
+  if (sensYSlider && sensYVal) {
+    sensYSlider.value = 10.0;
+    sensYVal.innerText = "10.0";
+  }
+
+  const stabSlider = document.getElementById("gyroStabSlider");
+  const stabVal = document.getElementById("gyroStabVal");
+  if (stabSlider && stabVal) {
+    stabSlider.value = 0.3;
+    stabVal.innerText = "0.3";
+  }
+
+  sendLaserFirebase(true);
+}
+
+function resetPositionSettings() {
+  laserState.positionSensitivityX = 5.0;
+  laserState.positionSensitivityY = 5.0;
+
+  const posSensXSlider = document.getElementById("posSensXSlider");
+  const posSensXVal = document.getElementById("posSensXVal");
+  if (posSensXSlider && posSensXVal) {
+    posSensXSlider.value = 5.0;
+    posSensXVal.innerText = "5.0";
+  }
+
+  const posSensYSlider = document.getElementById("posSensYSlider");
+  const posSensYVal = document.getElementById("posSensYVal");
+  if (posSensYSlider && posSensYVal) {
+    posSensYSlider.value = 5.0;
+    posSensYVal.innerText = "5.0";
+  }
+
+  sendLaserFirebase(true);
+}
+
+let lastSentDrawX = null;
+let lastSentDrawY = null;
+
 function sendDrawEvent(action) {
   if (!activeRoomId) return;
+
+  if (action === "start") {
+    lastSentDrawX = laserState.x;
+    lastSentDrawY = laserState.y;
+  } else if (action === "draw" && laserState.drawTool === "freehand") {
+    if (lastSentDrawX !== null && lastSentDrawY !== null) {
+      const dx = laserState.x - lastSentDrawX;
+      const dy = laserState.y - lastSentDrawY;
+      if ((dx * dx + dy * dy) < 0.000004) return; // Skip redundant micro-points
+    }
+    lastSentDrawX = laserState.x;
+    lastSentDrawY = laserState.y;
+  }
   
   const payload = {
     type: "draw",
