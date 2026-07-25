@@ -561,7 +561,6 @@ function setLaserMode(mode) {
     if (joystickWrapper) joystickWrapper.style.display = "none";
     if (gyroWrapper) gyroWrapper.style.display = "flex";
     if (joystickSetting) joystickSetting.style.display = "none";
-    if (gyroSetting) gyroSetting.style.display = "flex";
     
     // Check iOS permission button requirement
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -580,6 +579,8 @@ function setLaserMode(mode) {
       hint.innerText = "📱 โหมด Gyro: กดปุ่มด้านล่างค้างไว้ แล้วเอียงมือถือในอากาศเพื่อควบคุมจุดเลเซอร์";
     }
   }
+
+  updateSettingsCardVisibility();
 }
 
 function updateLaserSettings() {
@@ -682,6 +683,56 @@ let smoothedDiffY = 0;
 
 let gyroHoldingType = null; // 'draw' or 'move'
 let activePositionBtn = null; // button element currently being touched/dragged
+let currentGyroInputType = 'gyro'; // 'gyro' or 'position'
+
+function setGyroInputType(type) {
+  currentGyroInputType = type;
+  laserState.gyroPositionMode = (type === 'position');
+
+  const gyroBtn = document.getElementById("posModeGyroBtn");
+  const touchBtn = document.getElementById("posModeTouchBtn");
+
+  if (gyroBtn) gyroBtn.classList.toggle("active", type === 'gyro');
+  if (touchBtn) touchBtn.classList.toggle("active", type === 'position');
+
+  const gyroHoldBtn = document.getElementById("gyroHoldBtn");
+  if (gyroHoldBtn) {
+    const titleEl = gyroHoldBtn.querySelector(".gyro-btn-title");
+    const subEl = gyroHoldBtn.querySelector(".gyro-btn-sub");
+    const iconEl = gyroHoldBtn.querySelector(".gyro-icon");
+
+    if (type === 'gyro') {
+      if (titleEl) titleEl.innerText = "🔴 กดค้างไว้ แล้วเอียงมือถือเพื่อยิงเลเซอร์";
+      if (subEl) subEl.innerText = "ปล่อยนิ้วเมื่อต้องการหยุดขยับจุดเลเซอร์";
+      if (iconEl) iconEl.className = "fa-solid fa-mobile-screen-button gyro-icon";
+    } else {
+      if (titleEl) titleEl.innerText = "🖐️ กดแล้วลากนิ้วบนจอนี้ เพื่อเลื่อนจุดเลเซอร์ (วัดระยะ ซม.)";
+      if (subEl) subEl.innerText = "ลากนิ้วขยับตามระยะ ซม. (ไม่ใช้ค่า Gyro)";
+      if (iconEl) iconEl.className = "fa-solid fa-hand-pointer gyro-icon";
+    }
+  }
+
+  updateSettingsCardVisibility();
+  syncGyroControls();
+}
+
+function updateSettingsCardVisibility() {
+  const gyroSettingCard = document.getElementById("gyroSettingItem");
+  const posSettingCard = document.getElementById("posSettingItem");
+
+  if (laserState.mode === "gyro") {
+    if (currentGyroInputType === "gyro") {
+      if (gyroSettingCard) gyroSettingCard.style.display = "block";
+      if (posSettingCard) posSettingCard.style.display = "none";
+    } else {
+      if (gyroSettingCard) gyroSettingCard.style.display = "none";
+      if (posSettingCard) posSettingCard.style.display = "block";
+    }
+  } else {
+    if (gyroSettingCard) gyroSettingCard.style.display = "none";
+    if (posSettingCard) posSettingCard.style.display = "none";
+  }
+}
 
 function initGyroAirMouse() {
   const buttonsConfig = [
@@ -713,8 +764,10 @@ function initGyroAirMouse() {
         sendDrawEvent("start");
       }
 
-      if (cfg.position) {
+      if (cfg.position || currentGyroInputType === "position") {
         activePositionBtn = btn;
+        lastPosTouchX = null;
+        lastPosTouchY = null;
         handlePositionTouch(e, btn, cfg.draw);
       } else {
         isGyroHolding = true;
@@ -787,10 +840,11 @@ function initGyroAirMouse() {
 
   // Track position drag movements
   window.addEventListener("touchmove", (e) => {
-    if (activePositionBtn) {
-      const cfg = buttonsConfig.find(c => c.id === activePositionBtn.id);
-      if (cfg) {
-        handlePositionTouch(e, activePositionBtn, cfg.draw);
+    if (activePositionBtn || (currentGyroInputType === "position" && isGyroHolding)) {
+      const targetBtn = activePositionBtn || document.getElementById("gyroHoldBtn");
+      if (targetBtn) {
+        const cfg = buttonsConfig.find(c => c.id === targetBtn.id) || { draw: laserState.drawingMode };
+        handlePositionTouch(e, targetBtn, cfg.draw);
       }
     }
   }, { passive: false });
@@ -847,6 +901,8 @@ function handlePositionTouch(e, btn, isDrawing) {
 }
 
 function handleGyroOrientation(e) {
+  // Strict isolation: Ignore Gyro orientation sensor when in Position mode!
+  if (currentGyroInputType === "position" || laserState.gyroPositionMode) return;
   const anyGyroActive = isGyroHolding || laserState.lockedButtons.moveGyro || laserState.lockedButtons.drawGyro;
   if (!anyGyroActive || laserState.mode !== "gyro") return;
 
