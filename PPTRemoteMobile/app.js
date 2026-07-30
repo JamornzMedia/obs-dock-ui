@@ -427,7 +427,11 @@ function initSwipeTouchpad() {
   area.addEventListener("touchstart", (e) => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-  }, { passive: true });
+  }, { passive: false });
+
+  area.addEventListener("touchmove", (e) => {
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
 
   area.addEventListener("touchend", (e) => {
     const endX = e.changedTouches[0].clientX;
@@ -824,30 +828,42 @@ function initGyroAirMouse() {
       }, 500);
     }
 
-    // Touch events
-    btn.addEventListener("touchstart", handlePressStart, { passive: false });
-    btn.addEventListener("touchend", handlePressEnd, { passive: true });
-    btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
-    btn.addEventListener("touchmove", (e) => {
-      if (e.cancelable) e.preventDefault();
-    }, { passive: false });
-
-    // Pointer/Mouse events
-    btn.addEventListener("pointerdown", handlePressStart);
-    btn.addEventListener("pointerup", handlePressEnd);
-    btn.addEventListener("pointercancel", handlePressEnd);
+    if (window.PointerEvent) {
+      btn.addEventListener("pointerdown", handlePressStart, { passive: false });
+      btn.addEventListener("pointerup", handlePressEnd, { passive: true });
+      btn.addEventListener("pointercancel", handlePressEnd, { passive: true });
+    } else {
+      btn.addEventListener("touchstart", handlePressStart, { passive: false });
+      btn.addEventListener("touchend", handlePressEnd, { passive: true });
+      btn.addEventListener("touchcancel", handlePressEnd, { passive: true });
+      btn.addEventListener("touchmove", (e) => {
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+    }
   });
 
   // Track position drag movements
-  window.addEventListener("touchmove", (e) => {
-    if (activePositionBtn || (currentGyroInputType === "position" && isGyroHolding)) {
-      const targetBtn = activePositionBtn || document.getElementById("gyroHoldBtn");
-      if (targetBtn) {
-        const cfg = buttonsConfig.find(c => c.id === targetBtn.id) || { draw: laserState.drawingMode };
-        handlePositionTouch(e, targetBtn, cfg.draw);
+  if (window.PointerEvent) {
+    window.addEventListener("pointermove", (e) => {
+      if (activePositionBtn || (currentGyroInputType === "position" && isGyroHolding)) {
+        const targetBtn = activePositionBtn || document.getElementById("gyroHoldBtn");
+        if (targetBtn) {
+          const cfg = buttonsConfig.find(c => c.id === targetBtn.id) || { draw: laserState.drawingMode };
+          handlePositionTouch(e, targetBtn, cfg.draw);
+        }
       }
-    }
-  }, { passive: false });
+    });
+  } else {
+    window.addEventListener("touchmove", (e) => {
+      if (activePositionBtn || (currentGyroInputType === "position" && isGyroHolding)) {
+        const targetBtn = activePositionBtn || document.getElementById("gyroHoldBtn");
+        if (targetBtn) {
+          const cfg = buttonsConfig.find(c => c.id === targetBtn.id) || { draw: laserState.drawingMode };
+          handlePositionTouch(e, targetBtn, cfg.draw);
+        }
+      }
+    }, { passive: false });
+  }
 
   window.addEventListener("deviceorientation", handleGyroOrientation, true);
 }

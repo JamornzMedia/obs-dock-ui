@@ -23,6 +23,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+button, a, .touch-nav-btn, .action-btn, .tool-btn, .laser-mode-btn, .laser-power-btn, .settings-toggle-btn {
+  touch-action: manipulation;
+}
+
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
@@ -64,6 +68,13 @@ body {
 .brand-icon {
   color: #ef4444;
   font-size: 20px;
+}
+
+.mobile-logo-img {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .connection-status {
@@ -194,7 +205,7 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .swipe-content {
