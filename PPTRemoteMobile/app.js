@@ -1,13 +1,11 @@
-// Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCnHuf1jYqKfjSx11jKfuzz-1g_hhg94EU",
-  authDomain: "useridjamornz.firebaseapp.com",
-  databaseURL: "https://useridjamornz-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "useridjamornz",
-  storageBucket: "useridjamornz.firebasestorage.app",
-  messagingSenderId: "508161736494",
-  appId: "1:508161736494:web:5246fa4bd66f43cffa84bf",
-  measurementId: "G-2MNHEGDYZ3"
+  apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+  authDomain: "obscam-p2p.firebaseapp.com",
+  databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "obscam-p2p",
+  storageBucket: "obscam-p2p.firebasestorage.app",
+  messagingSenderId: "531335072084",
+  appId: "1:531335072084:web:dc373db6b66581a63160c1"
 };
 
 // Global Mobile State
