@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volleyball Score Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ─── Reset & Base ────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0 0 24px 0;
+    overflow: hidden;
+  }
+
+  /* ─── Layout ────────────────────────────────────────────── */
+  #vb-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 600px;
+  }
+
+  /* ─── History Table ─────────────────────────────────────── */
+  #vb-history {
+    width: 100%;
+    background: rgba(5, 10, 22, 0.78);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 5px 18px 8px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.4s, transform 0.4s;
+    backdrop-filter: blur(12px);
+  }
+  #vb-history.show { opacity: 1; transform: translateY(0); }
+
+  #vb-history table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+  }
+  #vb-history thead th {
+    color: rgba(255,255,255,0.38);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 2px 6px 5px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  #vb-history tbody td {
+    text-align: center;
+    padding: 4px 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+  .h-label { text-align: left !important; color: rgba(255,255,255,0.35) !important; font-size: 12px !important; font-weight: 600 !important; }
+  .h-winner { color: #f59e0b !important; }
+
+  /* ─── Scoreboard ────────────────────────────────────────── */
+  #vb-board {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: 100px;
+    background: rgba(5, 10, 22, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06) inset;
+    backdrop-filter: blur(20px) saturate(1.5);
+  }
+
+  /* Top shimmer */
+  #vb-board::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 15%; right: 15%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    pointer-events: none;
+  }
+
+  /* ─── Team Panels ───────────────────────────────────────── */
+  .vb-team {
+    flex: 1 1 0px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    position: relative;
+  }
+  .vb-team-a {
+    background: linear-gradient(150deg, rgba(30,58,138,0.28) 0%, transparent 65%);
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .vb-team-b {
+    background: linear-gradient(210deg, rgba(127,29,29,0.28) 0%, transparent 65%);
+    border-left: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Color accent bar */
+  .vb-team-a::before {
+    content: ''; position: absolute; left: 0; top: 18%; bottom: 18%;
+    width: 3px; border-radius: 0 3px 3px 0;
+    background: var(--color-a, #1e3a8a); transition: background 0.5s;
+  }
+  .vb-team-b::after {
+    content: ''; position: absolute; right: 0; top: 18%; bottom: 18%;
+    width: 3px; border-radius: 3px 0 0 3px;
+    background: var(--color-b, #7f1d1d); transition: background 0.5s;
+  }
+
+  /* Dots */
+  .vb-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    min-height: 12px;
+  }
+  .vb-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.4s, transform 0.4s, box-shadow 0.4s;
+  }
+  .vb-dot.active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    box-shadow: 0 0 10px rgba(245,158,11,0.55);
+    transform: scale(1.25);
+  }
+
+  /* Score */
+  .vb-score {
+    font-size: 68px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.45), 0 0 30px rgba(255,255,255,0.1);
+    letter-spacing: -1px;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s;
+  }
+  .vb-score.bump { transform: scale(1.28); color: #f59e0b; }
+
+  /* ─── Center Column ─────────────────────────────────────── */
+  #vb-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 14px;
+    min-width: 68px;
+  }
+  #vb-set-badge {
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.3);
+    color: #f59e0b;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .vb-vs {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.25);
+  }
+  .vb-divider {
+    width: 1px; height: 28px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  #vb-limit-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.25);
+    position: absolute;
+    top: 6px; right: 10px;
+  }
+
+  /* ─── Progress bars ─────────────────────────────────────── */
+  #vb-progress {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+  .vb-prog-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+  }
+  .vb-prog-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: #f59e0b;
+    opacity: 0.65;
+    transition: width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ─── Flash ─────────────────────────────────────────────── */
+  @keyframes boardFlash {
+    0%   { box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+    25%  { box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 50px 8px rgba(245,158,11,0.35); }
+    100% { box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06) inset; }
+  }
+  #vb-board.flash { animation: boardFlash 0.9s ease-out; }
+</style>
+</head>
+<body>
+
+<div id="vb-root">
+
+  <!-- Set History -->
+  <div id="vb-history">
+    <table>
+      <thead>
+        <tr>
+          <th class="h-label" style="text-align:left;">Set</th>
+          <th style="color:#93c5fd">Team A</th>
+          <th style="color:#fca5a5">Team B</th>
+        </tr>
+      </thead>
+      <tbody id="vb-hist-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Main Scoreboard -->
+  <div id="vb-board">
+    <span id="vb-limit-badge">PT 25</span>
+
+    <div class="vb-team vb-team-a">
+      <div class="vb-dots" id="vb-dots-a"></div>
+      <div class="vb-score" id="vb-score-a">0</div>
+    </div>
+
+    <div id="vb-center">
+      <div class="vb-divider"></div>
+      <div class="vb-vs">VS</div>
+      <div id="vb-set-badge">SET 1</div>
+      <div class="vb-divider"></div>
+    </div>
+
+    <div class="vb-team vb-team-b">
+      <div class="vb-dots" id="vb-dots-b"></div>
+      <div class="vb-score" id="vb-score-b">0</div>
+    </div>
+  </div>
+
+  <!-- Progress bars -->
+  <div id="vb-progress">
+    <div class="vb-prog-bar"><div class="vb-prog-fill" id="vb-prog-a" style="width:0%"></div></div>
+    <div class="vb-prog-bar"><div class="vb-prog-fill" id="vb-prog-b" style="width:0%"></div></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  Volleyball Score Overlay — fcp_v2_assets/volleyball_score.html
+//  Syncs from localStorage key 'vb_state' via storage events
+//  and BroadcastChannel 'vb_score_channel'.
+// ═══════════════════════════════════════════════════════════
+
+const VB_STATE_KEY = 'vb_state';
+const VB_CHANNEL   = 'vb_score_channel';
+const WIN_SETS     = 3; // sets needed to win a match (for dot count)
+
+let prev = {};
+
+// ── Helpers ──────────────────────────────────────────────
+function buildDots(containerId, won) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i = 0; i < WIN_SETS; i++) {
+    const d = document.createElement('div');
+    d.className = 'vb-dot' + (i < won ? ' active' : '');
+    el.appendChild(d);
+  }
+}
+
+function buildHistory(history) {
+  const tbody = document.getElementById('vb-hist-body');
+  const wrap  = document.getElementById('vb-history');
+  tbody.innerHTML = '';
+  if (!history || !history.length) {
+    wrap.classList.remove('show');
+    return;
+  }
+  history.forEach((set, i) => {
+    const aWin = set[0] > set[1];
+    const bWin = set[1] > set[0];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="h-label">Set ${i + 1}</td>
+      <td class="${aWin ? 'h-winner' : ''}">${set[0]}</td>
+      <td class="${bWin ? 'h-winner' : ''}">${set[1]}</td>`;
+    tbody.appendChild(tr);
+  });
+  wrap.classList.add('show');
+}
+
+function bumpScore(elId) {
+  const el = document.getElementById(elId);
+  el.classList.remove('bump');
+  void el.offsetWidth; // reflow
+  el.classList.add('bump');
+  setTimeout(() => el.classList.remove('bump'), 450);
+}
+
+function flashBoard() {
+  const board = document.getElementById('vb-board');
+  board.classList.remove('flash');
+  void board.offsetWidth;
+  board.classList.add('flash');
+  setTimeout(() => board.classList.remove('flash'), 950);
+}
+
+// ── Main render ───────────────────────────────────────────
+function render(state) {
+  const {
+    scoreA = 0, scoreB = 0,
+    setsA  = 0, setsB  = 0,
+    setHistory = [],
+    setLimit = 25,
+    colorA = '#1e3a8a',
+    colorB = '#7f1d1d',
+  } = state;
+
+  // CSS color vars
+  document.documentElement.style.setProperty('--color-a', colorA);
+  document.documentElement.style.setProperty('--color-b', colorB);
+
+  // Bump animations
+  if (prev.scoreA !== undefined && scoreA !== prev.scoreA) { bumpScore('vb-score-a'); flashBoard(); }
+  if (prev.scoreB !== undefined && scoreB !== prev.scoreB) { bumpScore('vb-score-b'); flashBoard(); }
+
+  // Scores
+  document.getElementById('vb-score-a').textContent = scoreA;
+  document.getElementById('vb-score-b').textContent = scoreB;
+
+  // Dots
+  buildDots('vb-dots-a', setsA);
+  buildDots('vb-dots-b', setsB);
+
+  // Set badge
+  document.getElementById('vb-set-badge').textContent = `SET ${setHistory.length + 1}`;
+
+  // Point limit
+  document.getElementById('vb-limit-badge').textContent = `PT ${setLimit}`;
+
+  // Progress bars
+  const pA = Math.min(100, (scoreA / setLimit) * 100).toFixed(1);
+  const pB = Math.min(100, (scoreB / setLimit) * 100).toFixed(1);
+  document.getElementById('vb-prog-a').style.width = pA + '%';
+  document.getElementById('vb-prog-b').style.width = pB + '%';
+
+  // History
+  buildHistory(setHistory);
+
+  prev = { scoreA, scoreB, setsA, setsB };
+}
+
+// ── BroadcastChannel (same OBS browser context) ───────────
+try {
+  const ch = new BroadcastChannel(VB_CHANNEL);
+  ch.onmessage = e => {
+    if (e.data?.type === 'vb_update') render(e.data.payload);
+  };
+} catch (_) { /* not supported — use storage fallback only */ }
+
+// ── Storage event (cross-tab / cross-origin fallback) ─────
+window.addEventListener('storage', e => {
+  if (e.key === VB_STATE_KEY && e.newValue) {
+    try { render(JSON.parse(e.newValue)); } catch (_) {}
+  }
+});
+
+// ── Initial load ──────────────────────────────────────────
+(function init() {
+  try {
+    const saved = localStorage.getItem(VB_STATE_KEY);
+    render(saved ? JSON.parse(saved) : {});
+  } catch (_) { render({}); }
+})();
+</script>
+</body>
+</html>
