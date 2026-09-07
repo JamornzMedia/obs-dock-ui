@@ -1881,90 +1881,69 @@ function parseJamornzInput(input) {
     return null;
 }
 
-const buildSheetDataFromJamornz = (tournament, targetRound = 'group') => {
+const buildSheetDataFromJamornz = (tournament) => {
     const header = ['MatchID', 'TeamA', 'TeamB', 'ColorA', 'ColorB', 'ColorA2', 'ColorB2', 'LogoA', 'LogoB', 'label1', 'label2', 'label3', 'label4', 'label5'];
     const rows = [header];
+    let matchCounter = 1;
 
-    if (targetRound === 'group') {
-        const sessions = tournament.sessions || [];
-        sessions.forEach(s => {
-            (s.matches || []).forEach(m => {
-                rows.push([
-                    m.num,
-                    m.team1 || '',
-                    m.team2 || '',
-                    '#ffffff',
-                    '#ffffff',
-                    '#000000',
-                    '#000000',
-                    m.code1 || '',
-                    m.code2 || '',
-                    m.code ? `สาย ${m.code}` : (s.title || ''),
-                    m.time || '',
-                    m.status === 'done' ? `${m.score1}-${m.score2}` : '',
-                    '',
-                    ''
-                ]);
-            });
+    // 1. Group Stage matches
+    const sessions = tournament.sessions || [];
+    sessions.forEach(s => {
+        (s.matches || []).forEach(m => {
+            rows.push([
+                matchCounter++,
+                m.team1 || '',
+                m.team2 || '',
+                '#ffffff',
+                '#ffffff',
+                '#000000',
+                '#000000',
+                m.code1 || '',
+                m.code2 || '',
+                m.code ? `สาย ${m.code}` : (s.title || ''),
+                m.time || '',
+                m.status === 'done' ? `${m.score1}-${m.score2}` : '',
+                '',
+                ''
+            ]);
         });
-    } else {
-        const rounds = tournament.rounds || [];
-        const viewRound = rounds.find(r => r.id === targetRound) || rounds[0];
-        if (viewRound) {
-            (viewRound.matches || []).forEach((m, mi) => {
-                rows.push([
-                    mi + 1,
-                    m.name1 || '',
-                    m.name2 || '',
-                    '#ffffff',
-                    '#ffffff',
-                    '#000000',
-                    '#000000',
-                    m.code1 || '',
-                    m.code2 || '',
-                    viewRound.label || '',
-                    m.time || viewRound.timeStart || '',
-                    m.status === 'done' ? `${m.score1}-${m.score2}` : '',
-                    '',
-                    ''
-                ]);
-            });
-        }
-    }
+    });
+
+    // 2. Knockout Stage matches
+    const rounds = tournament.rounds || [];
+    rounds.forEach(r => {
+        (r.matches || []).forEach(m => {
+            rows.push([
+                matchCounter++,
+                m.name1 || '',
+                m.name2 || '',
+                '#ffffff',
+                '#ffffff',
+                '#000000',
+                '#000000',
+                m.code1 || '',
+                m.code2 || '',
+                r.label || '',
+                m.time || r.timeStart || '',
+                m.status === 'done' ? `${m.score1}-${m.score2}` : '',
+                '',
+                ''
+            ]);
+        });
+    });
+
     return rows;
 };
 
 const buildWorkbookFromJamornz = (tournament) => {
     const wb = XLSX.utils.book_new();
     
-    // Sheet 1: Group Stage
-    const groupData = buildSheetDataFromJamornz(tournament, 'group');
-    const groupWs = XLSX.utils.aoa_to_sheet(groupData);
-    XLSX.utils.book_append_sheet(wb, groupWs, 'รอบแบ่งกลุ่ม');
-
-    // Sheets for each knockout round
-    (tournament.rounds || []).forEach((r, idx) => {
-        const rData = buildSheetDataFromJamornz(tournament, r.id);
-        const rWs = XLSX.utils.aoa_to_sheet(rData);
-        const name = (r.label || `รอบที่ ${idx + 1}`).substring(0, 31);
-        XLSX.utils.book_append_sheet(wb, rWs, name);
-    });
+    // Sheet 1: All Matches in continuous sequence
+    const allData = buildSheetDataFromJamornz(tournament);
+    const allWs = XLSX.utils.aoa_to_sheet(allData);
+    XLSX.utils.book_append_sheet(wb, allWs, 'แมตช์ทั้งหมด');
 
     return wb;
-};
-
-const updateJamornzRoundDropdown = (tournament) => {
-    const select = document.getElementById('jamornzRoundSelect');
-    if (!select) return;
-    const currentVal = select.value || jamornzRound || 'group';
-    select.innerHTML = '<option value="group">รอบแบ่งกลุ่ม (Group Stage)</option>';
-    (tournament.rounds || []).forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.label || r.id;
-        select.appendChild(opt);
-    });
-    select.value = currentVal;
 };
 
 const fetchJamornzTournament = async () => {
@@ -2009,12 +1988,8 @@ const fetchJamornzTournament = async () => {
             });
         }
 
-        // Update Round Dropdown options
-        updateJamornzRoundDropdown(tournament);
-
-        // Build sheetData based on selected round
-        const activeRound = document.getElementById('jamornzRoundSelect')?.value || jamornzRound || 'group';
-        sheetData = buildSheetDataFromJamornz(tournament, activeRound);
+        // Build continuous sheetData for all matches
+        sheetData = buildSheetDataFromJamornz(tournament);
 
         // Build in-memory workbook for Display Table
         window.currentWorkbook = buildWorkbookFromJamornz(tournament);
@@ -2272,18 +2247,7 @@ const setupEventListeners = () => {
         });
     }
 
-    const roundSelect = document.getElementById('jamornzRoundSelect');
-    if (roundSelect) {
-        roundSelect.addEventListener('change', (e) => {
-            jamornzRound = e.target.value;
-            localStorage.setItem('jamornzRound', jamornzRound);
-            if (currentJamornzData) {
-                sheetData = buildSheetDataFromJamornz(currentJamornzData, jamornzRound);
-                const label = roundSelect.options[roundSelect.selectedIndex]?.text || jamornzRound;
-                showToast(`สลับข้อมูลเป็น: ${label}`, 'info');
-            }
-        });
-    }
+
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', showConfirmReset);
     // V2.9.2: Confirm dialog buttons
