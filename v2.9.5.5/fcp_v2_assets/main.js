@@ -1889,7 +1889,7 @@ const buildSheetDataFromJamornz = (tournament) => {
     // 1. Group Stage matches
     const sessions = tournament.sessions || [];
     sessions.forEach(s => {
-        (s.matches || []).forEach(m => {
+        (s.matches || []).forEach((m, mi) => {
             rows.push([
                 matchCounter++,
                 m.team1 || '',
@@ -1900,11 +1900,11 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#000000',
                 m.code1 || '',
                 m.code2 || '',
-                m.code ? `สาย ${m.code}` : (s.title || ''),
-                m.time || '',
-                m.status === 'done' ? `${m.score1}-${m.score2}` : '',
-                '',
-                ''
+                'รอบแรก',
+                `คู่ที่ ${m.num || (mi + 1)}`,
+                'สนามที่ 1',
+                'รุ่นประชาชน',
+                m.time || ''
             ]);
         });
     });
@@ -1912,7 +1912,7 @@ const buildSheetDataFromJamornz = (tournament) => {
     // 2. Knockout Stage matches
     const rounds = tournament.rounds || [];
     rounds.forEach(r => {
-        (r.matches || []).forEach(m => {
+        (r.matches || []).forEach((m, mi) => {
             rows.push([
                 matchCounter++,
                 m.name1 || '',
@@ -1923,11 +1923,11 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#000000',
                 m.code1 || '',
                 m.code2 || '',
-                r.label || '',
-                m.time || r.timeStart || '',
-                m.status === 'done' ? `${m.score1}-${m.score2}` : '',
-                '',
-                ''
+                r.label || 'รอบน็อคเอาท์',
+                `คู่ที่ ${mi + 1}`,
+                'สนามที่ 1',
+                'รุ่นประชาชน',
+                m.time || r.timeStart || ''
             ]);
         });
     });

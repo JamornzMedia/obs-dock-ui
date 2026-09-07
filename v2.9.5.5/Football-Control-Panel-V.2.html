@@ -2769,13 +2769,13 @@
             </div>
         </div>
         <div class="labels-row">
-            <div id="label1" data-lang="label1"></div>
-            <div id="label2" data-lang="label2"></div>
-            <div id="label3" data-lang="label3"></div>
+            <div id="label1" data-lang="label1" title="Label 1: รอบการแข่งขัน (เช่น รอบแรก / รอบ 16 ทีม)"></div>
+            <div id="label2" data-lang="label2" title="Label 2: คู่ที่ (ของแต่ละรอบ เช่น คู่ที่ 1)"></div>
+            <div id="label3" data-lang="label3" title="Label 3: สนามแข่งขัน (เช่น สนามที่ 1)"></div>
         </div>
         <div class="labels-row" style="margin-top: 8px;">
-            <div id="label4" data-lang="label4"></div>
-            <div id="label5" data-lang="label5"></div>
+            <div id="label4" data-lang="label4" title="Label 4: รุ่นการแข่งขัน (เช่น รุ่นประชาชน)"></div>
+            <div id="label5" data-lang="label5" title="Label 5: เวลาแข่งขัน (เช่น 14:00)"></div>
         </div>
     </div>
     <div class="card" data-panel-id="panelSwap" id="swapCard" style="padding: 8px;">
@@ -3022,15 +3022,15 @@
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
                         onclick="insertTag('<TeamB>')">+ Team B</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label1>')">+ Label 1</button>
+                        onclick="insertTag('<label1>')">+ Label 1 (รอบแข่ง)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label2>')">+ Label 2</button>
+                        onclick="insertTag('<label2>')">+ Label 2 (คู่ที่)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label3>')">+ Label 3</button>
+                        onclick="insertTag('<label3>')">+ Label 3 (สนาม)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label4>')">+ Label 4</button>
+                        onclick="insertTag('<label4>')">+ Label 4 (รุ่น)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label5>')">+ Label 5</button>
+                        onclick="insertTag('<label5>')">+ Label 5 (เวลา)</button>
                 </div>
             </div>
 
@@ -3419,6 +3419,16 @@
                         <button id="saveJamornzBtn" class="btn-success" style="width: 100%; padding: 6px; font-size: 0.85rem; background: #0284c7; border: none; border-radius: 4px; color: #fff; cursor: pointer;">
                             <i class="fas fa-sync-alt"></i> ยืนยัน / โหลดข้อมูลจาก Jamornz
                         </button>
+                    </div>
+
+                    <!-- Label guide -->
+                    <div style="margin-top: 10px; padding: 8px 10px; background: rgba(56, 189, 248, 0.08); border-radius: 6px; border: 1px dashed rgba(56, 189, 248, 0.35); font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">
+                        <div style="font-weight: 600; color: #38bdf8; margin-bottom: 4px;"><i class="fas fa-tags"></i> ความหมาย Labels ที่ส่งเข้าโปรแกรม:</div>
+                        <div>• <strong>Label 1:</strong> รอบการแข่งขัน (เช่น รอบแรก, รอบ 16 ทีม)</div>
+                        <div>• <strong>Label 2:</strong> คู่ที่ (ของแต่ละรอบ เช่น คู่ที่ 1, คู่ที่ 2)</div>
+                        <div>• <strong>Label 3:</strong> สนาม (เช่น สนามที่ 1)</div>
+                        <div>• <strong>Label 4:</strong> รุ่นการแข่งขัน (เช่น รุ่นประชาชน)</div>
+                        <div>• <strong>Label 5:</strong> เวลาแข่งขัน (เช่น 14:00)</div>
                     </div>
                 </div>
             </div>
