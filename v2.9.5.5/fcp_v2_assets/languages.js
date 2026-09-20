@@ -120,12 +120,12 @@ export const translations = {
         clear: "Clear",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "Action Button Settings (Source Visibility)",
-        actionSettingsDesc: "Set the Source/Group and an optional Target Scene. Leave Target Scene blank to keep the original Current Scene behavior.",
+        actionSettingsDesc: "Set the Source/Group and an optional Target Scene. Leave it blank for Current Scene, enter * for All Scenes, or enter one scene name.",
         actionSettingsName: "Name",
         actionSettingsColor: "Color",
         actionSettingsHeight: "Height (px)",
         actionSettingsSource: "Source/Group Name",
-        actionSettingsScene: "Target Scene (optional)",
+        actionSettingsScene: "Target Scene (blank / * / name)",
         actionSettingsAction: "Action",
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
@@ -496,12 +496,12 @@ export const translations = {
         clear: "ล้างค่า",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
-        actionSettingsDesc: "กำหนด Source/Group และ Target Scene ได้ หากเว้น Target Scene ว่าง จะทำงานกับ Scene ที่กำลัง Live แบบเดิม",
+        actionSettingsDesc: "กำหนด Source/Group และ Target Scene ได้: เว้นว่าง = Scene ที่กำลัง Live แบบเดิม, ใส่ * = ทุก Scene, หรือใส่ชื่อ Scene เดียว",
         actionSettingsName: "ชื่อปุ่ม",
         actionSettingsColor: "สี",
         actionSettingsHeight: "ความสูง (px)",
         actionSettingsSource: "ชื่อ Source/Group",
-        actionSettingsScene: "Target Scene (ไม่บังคับ)",
+        actionSettingsScene: "Target Scene (ว่าง / * / ชื่อ)",
         actionSettingsAction: "Action",
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL

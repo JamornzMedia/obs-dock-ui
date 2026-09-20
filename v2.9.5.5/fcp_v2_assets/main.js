@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6';
-import { translations } from './languages.js?v=2.9.5.6';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r2';
+import { translations } from './languages.js?v=2.9.5.5-r2';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -26,7 +26,7 @@ const elements = [
     "swapCard",
     "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
     "actionButtonsCard", "actionButtonsGrid",
-    "timerText", "halfText", "announcement-text", "matchID",
+    "timerText", "halfText", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
     "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "swapScoreBtn", "scoreAPlusBtn", "scoreAMinusBtn",
@@ -163,30 +163,54 @@ const setSourceColor = (sourceName, hexColor) => {
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => { });
 };
 
-const setSourceVisibility = (sourceName, visible, targetScene = '') => {
-    const scenePromise = targetScene
-        ? Promise.resolve({ currentProgramSceneName: targetScene })
-        : obs.call('GetCurrentProgramScene');
+const isAllScenesTarget = targetScene => ['*', 'all', 'all scenes'].includes((targetScene || '').trim().toLowerCase());
 
-    return scenePromise
-        .then(data => {
-            const activeSceneName = targetScene || data.currentProgramSceneName;
-            return obs.call('GetSceneItemId', {
-                sceneName: activeSceneName,
-                sourceName: sourceName
-            })
-                .then(itemData => {
-                    return obs.call('SetSceneItemEnabled', {
-                        sceneName: activeSceneName,
-                        sceneItemId: itemData.sceneItemId,
-                        sceneItemEnabled: visible
-                    });
-                });
-        })
-        .catch(err => {
-            showToast(`${translations[currentLang].toastActionControlFailed} ${sourceName} (${err.code || err.error})`, 'error');
-            throw new Error(err.code || err.error);
-        });
+const findSourceSceneItems = async (sourceName, targetScene = '') => {
+    let sceneNames;
+    if (isAllScenesTarget(targetScene)) {
+        const { scenes } = await obs.call('GetSceneList');
+        sceneNames = scenes.map(scene => scene.sceneName);
+    } else if ((targetScene || '').trim()) {
+        sceneNames = [targetScene.trim()];
+    } else {
+        const current = await obs.call('GetCurrentProgramScene');
+        sceneNames = [current.currentProgramSceneName];
+    }
+
+    const items = await Promise.all(sceneNames.map(async sceneName => {
+        try {
+            const item = await obs.call('GetSceneItemId', { sceneName, sourceName });
+            return { sceneName, sceneItemId: item.sceneItemId };
+        } catch (_) {
+            return null;
+        }
+    }));
+    return items.filter(Boolean);
+};
+
+const getSourceVisibility = async (sourceName, targetScene = '') => {
+    const items = await findSourceSceneItems(sourceName, targetScene);
+    if (!items.length) throw new Error(`Source '${sourceName}' was not found in the target scene(s).`);
+    const first = items[0];
+    const state = await obs.call('GetSceneItemEnabled', first);
+    return state.sceneItemEnabled;
+};
+
+const setSourceVisibility = async (sourceName, visible, targetScene = '') => {
+    try {
+        const items = await findSourceSceneItems(sourceName, targetScene);
+        if (!items.length) throw new Error(`Source '${sourceName}' was not found in the target scene(s).`);
+        // Send every request together so matching Groups begin their own child
+        // Show/Hide transitions at effectively the same time in every scene.
+        await Promise.all(items.map(item => obs.call('SetSceneItemEnabled', {
+            ...item,
+            sceneItemEnabled: visible
+        })));
+        return items;
+    } catch (err) {
+        showToast(`${translations[currentLang].toastActionControlFailed} ${sourceName} (${err.code || err.error || err.message})`, 'error');
+        throw err;
+    }
 };
 
 
@@ -684,7 +708,7 @@ const renderActionButtons = () => {
         const targetScene = setting.targetScene || '';
         const actionType = setting.actionType;
 
-        button.onclick = () => {
+        button.onclick = async () => {
             if (!targetSource) {
                 return showToast('Source Name is missing.', 'error');
             }
@@ -694,8 +718,12 @@ const renderActionButtons = () => {
             } else if (actionType === 'Hide') {
                 newState = false;
             } else if (actionType === 'Toggle') {
-                const currentState = settings[i].internalState;
-                newState = !currentState;
+                try {
+                    newState = !(await getSourceVisibility(targetSource, targetScene));
+                } catch (err) {
+                    showToast(`${translations[currentLang].toastActionControlFailed} ${targetSource} (${err.message})`, 'error');
+                    return;
+                }
             }
 
             if (newState !== null) {
@@ -728,7 +756,7 @@ const populateActionSettingsTable = (lang) => {
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
             <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td><input type="text" id="action-source-input-${index}" value="${setting.targetSource}" disabled></td>
-            <td><input type="text" id="action-scene-input-${index}" value="${setting.targetScene || ''}" placeholder="Current Scene" disabled></td>
+            <td><input type="text" id="action-scene-input-${index}" value="${setting.targetScene || ''}" placeholder="Current Scene / * = All" disabled></td>
             <td>
                 <select id="action-type-${index}" disabled>
                     <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
@@ -914,22 +942,6 @@ const resetTeamColors = () => {
     localStorage.removeItem(TEAM_COLORS_KEY);
     showToast(translations[currentLang].toastColorsCleared, 'info');
 }
-
-const fetchAnnouncement = async () => {
-    const filePath = 'fcp_v2_assets/announcement.txt';
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            elements.announcementText.textContent = `Error loading announcement file: ${response.status}`;
-            return;
-        }
-        const text = await response.text();
-        elements.announcementText.textContent = text.trim();
-    } catch (error) {
-        console.error("Announcement fetch failed:", error);
-        elements.announcementText.textContent = "Load Failed (Check fcp_v2_assets/announcement.txt)";
-    }
-};
 
 const saveTeamColors = (teamName, color1, color2) => {
     const defaultNameA = translations[currentLang].teamA;
@@ -2720,11 +2732,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Fetch Announcement
-        fetchAnnouncement();
-        setInterval(fetchAnnouncement, 3600000);
-
-        // 3. Enable Start Button & Fix Logic
+        // 2. Enable Start Button & Fix Logic
         if (startBtn) {
             // Remove old listeners (like closeWelcomePopup) to ensure "Start" behavior
             const newBtn = startBtn.cloneNode(true);
@@ -3845,36 +3853,18 @@ window.triggerAction = async (index) => {
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
-            // Backward compatible: an empty targetScene keeps the original
-            // behavior and controls the current Program Scene.
-            let sceneName = (btn.targetScene || '').trim();
-            if (!sceneName) {
-                const currentScene = await obs.call('GetCurrentProgramScene');
-                sceneName = currentScene.currentProgramSceneName;
-            }
-
-            // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
             try {
-                const itemIdResp = await obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
-                const sceneItemId = itemIdResp.sceneItemId;
-
                 let enabled = true;
                 if (actionType === 'show') enabled = true;
                 else if (actionType === 'hide') enabled = false;
                 else if (actionType === 'toggle') {
-                    const itemState = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
-                    enabled = !itemState.sceneItemEnabled;
+                    enabled = !(await getSourceVisibility(btn.targetSource, btn.targetScene || ''));
                 }
-
-                await obs.call('SetSceneItemEnabled', {
-                    sceneName,
-                    sceneItemId,
-                    sceneItemEnabled: enabled
-                });
+                await setSourceVisibility(btn.targetSource, enabled, btn.targetScene || '');
                 showToast(`${btn.actionType} source: ${btn.targetSource}`, 'success');
             } catch (itemIdErr) {
                 console.error("Item ID Error", itemIdErr);
-                showToast(`Source not found in scene: ${sceneName}`, 'error');
+                showToast(`Source not found in target scene(s)`, 'error');
             }
         }
     } catch (err) {
