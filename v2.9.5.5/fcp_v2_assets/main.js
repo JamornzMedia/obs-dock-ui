@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js';
-import { translations } from './languages.js';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6';
+import { translations } from './languages.js?v=2.9.5.6';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -124,6 +124,7 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     backgroundColor: (i % 3 === 0) ? '#22c55e' : (i % 3 === 1 ? '#f97316' : '#3b82f6'),
     height: 35,
     targetSource: '',
+    targetScene: '',
     actionType: 'Toggle',
     internalState: false,
 }));
@@ -162,10 +163,14 @@ const setSourceColor = (sourceName, hexColor) => {
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => { });
 };
 
-const setSourceVisibility = (sourceName, visible) => {
-    return obs.call('GetCurrentProgramScene')
+const setSourceVisibility = (sourceName, visible, targetScene = '') => {
+    const scenePromise = targetScene
+        ? Promise.resolve({ currentProgramSceneName: targetScene })
+        : obs.call('GetCurrentProgramScene');
+
+    return scenePromise
         .then(data => {
-            const activeSceneName = data.currentProgramSceneName;
+            const activeSceneName = targetScene || data.currentProgramSceneName;
             return obs.call('GetSceneItemId', {
                 sceneName: activeSceneName,
                 sourceName: sourceName
@@ -598,6 +603,7 @@ const toggleActionEditMode = (index, enable) => {
     const nameInput = $(`action-name-${index}`);
     const heightInput = $(`action-height-${index}`);
     const sourceInput = $(`action-source-input-${index}`);
+    const sceneInput = $(`action-scene-input-${index}`);
     const actionSelect = $(`action-type-${index}`);
     const editButton = $(`action-edit-${index}`);
     const saveButton = $(`action-save-${index}`);
@@ -606,6 +612,7 @@ const toggleActionEditMode = (index, enable) => {
         nameInput.disabled = false;
         heightInput.disabled = false;
         sourceInput.disabled = false;
+        sceneInput.disabled = false;
         actionSelect.disabled = false;
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
@@ -614,6 +621,7 @@ const toggleActionEditMode = (index, enable) => {
         nameInput.disabled = true;
         heightInput.disabled = true;
         sourceInput.disabled = true;
+        sceneInput.disabled = true;
         actionSelect.disabled = true;
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
@@ -627,6 +635,7 @@ const saveActionSettingsRow = (index) => {
         const colorInput = $(`action-color-${idx}`);
         const heightInput = $(`action-height-${idx}`);
         const sourceInput = $(`action-source-input-${idx}`);
+        const sceneInput = $(`action-scene-input-${idx}`);
         const actionSelect = $(`action-type-${idx}`);
 
         return {
@@ -635,6 +644,7 @@ const saveActionSettingsRow = (index) => {
             backgroundColor: colorInput.value,
             height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
             targetSource: sourceInput.value.trim(),
+            targetScene: sceneInput.value.trim(),
             actionType: actionSelect.value,
         };
     });
@@ -651,6 +661,7 @@ const loadActionSettings = () => {
             ...defaultActionSettings[i],
             ...setting,
             targetSource: setting.targetSource || '',
+            targetScene: setting.targetScene || '',
             actionType: setting.actionType || 'Toggle'
         }));
     }
@@ -670,6 +681,7 @@ const renderActionButtons = () => {
         button.style.height = `${setting.height}px`;
 
         const targetSource = setting.targetSource;
+        const targetScene = setting.targetScene || '';
         const actionType = setting.actionType;
 
         button.onclick = () => {
@@ -687,7 +699,7 @@ const renderActionButtons = () => {
             }
 
             if (newState !== null) {
-                setSourceVisibility(targetSource, newState)
+                setSourceVisibility(targetSource, newState, targetScene)
                     .then(() => {
                         if (actionType === 'Toggle') {
                             settings[i].internalState = newState;
@@ -716,6 +728,7 @@ const populateActionSettingsTable = (lang) => {
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
             <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td><input type="text" id="action-source-input-${index}" value="${setting.targetSource}" disabled></td>
+            <td><input type="text" id="action-scene-input-${index}" value="${setting.targetScene || ''}" placeholder="Current Scene" disabled></td>
             <td>
                 <select id="action-type-${index}" disabled>
                     <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
@@ -2179,6 +2192,7 @@ const setupEventListeners = () => {
             const colorInput = $(`action-color-${idx}`);
             const heightInput = $(`action-height-${idx}`);
             const sourceInput = $(`action-source-input-${idx}`);
+            const sceneInput = $(`action-scene-input-${idx}`);
             const actionSelect = $(`action-type-${idx}`);
             return {
                 ...setting,
@@ -2186,6 +2200,7 @@ const setupEventListeners = () => {
                 backgroundColor: colorInput.value,
                 height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
                 targetSource: sourceInput.value.trim(),
+                targetScene: sceneInput.value.trim(),
                 actionType: actionSelect.value,
             };
         });
@@ -3830,9 +3845,13 @@ window.triggerAction = async (index) => {
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
-            // Get Current Scene
-            const currentScene = await obs.call('GetCurrentProgramScene');
-            const sceneName = currentScene.currentProgramSceneName;
+            // Backward compatible: an empty targetScene keeps the original
+            // behavior and controls the current Program Scene.
+            let sceneName = (btn.targetScene || '').trim();
+            if (!sceneName) {
+                const currentScene = await obs.call('GetCurrentProgramScene');
+                sceneName = currentScene.currentProgramSceneName;
+            }
 
             // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
             try {
@@ -3855,7 +3874,7 @@ window.triggerAction = async (index) => {
                 showToast(`${btn.actionType} source: ${btn.targetSource}`, 'success');
             } catch (itemIdErr) {
                 console.error("Item ID Error", itemIdErr);
-                showToast(`Source not found in current scene`, 'error');
+                showToast(`Source not found in scene: ${sceneName}`, 'error');
             }
         }
     } catch (err) {

@@ -120,11 +120,12 @@ export const translations = {
         clear: "Clear",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "Action Button Settings (Source Visibility)",
-        actionSettingsDesc: "Set button names, colors, height, and the Target OBS Source/Action to control visibility directly. The Source/Group must be in the active Scene.",
+        actionSettingsDesc: "Set the Source/Group and an optional Target Scene. Leave Target Scene blank to keep the original Current Scene behavior.",
         actionSettingsName: "Name",
         actionSettingsColor: "Color",
         actionSettingsHeight: "Height (px)",
         actionSettingsSource: "Source/Group Name",
+        actionSettingsScene: "Target Scene (optional)",
         actionSettingsAction: "Action",
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
@@ -495,11 +496,12 @@ export const translations = {
         clear: "ล้างค่า",
         // START: CHANGED FOR SOURCE CONTROL
         actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
-        actionSettingsDesc: "ตั้งค่าชื่อปุ่ม, สี, ความสูง และชื่อ Source/Group/Action ที่ต้องการควบคุมการแสดงผลโดยตรง โปรแกรมจะใช้ Scene ที่กำลัง Live อยู่ปัจจุบัน",
+        actionSettingsDesc: "กำหนด Source/Group และ Target Scene ได้ หากเว้น Target Scene ว่าง จะทำงานกับ Scene ที่กำลัง Live แบบเดิม",
         actionSettingsName: "ชื่อปุ่ม",
         actionSettingsColor: "สี",
         actionSettingsHeight: "ความสูง (px)",
         actionSettingsSource: "ชื่อ Source/Group",
+        actionSettingsScene: "Target Scene (ไม่บังคับ)",
         actionSettingsAction: "Action",
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL
