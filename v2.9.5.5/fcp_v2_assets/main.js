@@ -79,6 +79,9 @@ let googleSheetUrl = '';
 let googleSheetTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1'); // 1-based sheet number
 let jamornzTournamentUrl = '';
 let jamornzRound = 'group';
+let jamornzConnection = null;
+let lastDockMatchId = null;
+let dockSyncTimer = null;
 let currentJamornzData = null;
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
 window.userIdentity = userIdentity;
@@ -1210,9 +1213,22 @@ const applyMatch = () => {
 
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
+    const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
+    if (jamornzConnection && lastDockMatchId && lastDockMatchId !== id && !confirm(`ยืนยันเปลี่ยนจาก Match ID ${lastDockMatchId} เป็น ${id} และเริ่มสถานะแมตช์ใหม่?`)) {
+        elements.matchID.value = lastDockMatchId;
+        return;
+    }
     const header = sheetData[0];
     const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
     if (!match) return showToast(`${translations[currentLang].toastMatchNotFound} ${id}`, 'error');
+    lastDockMatchId = id;
+    if (jamornzConnection && matchChanged) {
+        masterTeamA.score = masterTeamB.score = 0;
+        masterTeamA.score2 = masterTeamB.score2 = 0;
+        timer = 0;
+        half = '1st';
+        updateTimerDisplay();
+    }
     const get = key => match[header.indexOf(key)] || '';
     let teamAName = get('TeamA') || translations[currentLang].teamA;
     let teamBName = get('TeamB') || translations[currentLang].teamB;
@@ -1238,6 +1254,7 @@ const applyMatch = () => {
     setText('label_3', get('label3'));
     setText('label_4', get('label4'));
     setText('label_5', get('label5'));
+    if (jamornzConnection) syncJamornzMatch('live', true);
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
 
@@ -1329,6 +1346,7 @@ const changeScore = (team, delta) => {
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score = Math.max(0, masterTeam.score + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
+    syncJamornzMatch('live');
 };
 
 const changeScore2 = (team, delta) => {
@@ -1336,6 +1354,7 @@ const changeScore2 = (team, delta) => {
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score2 = Math.max(0, masterTeam.score2 + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
+    syncJamornzMatch('live');
 };
 
 const resetScore = () => {
@@ -1396,6 +1415,7 @@ const startTimer = () => {
     elements.timerText.classList.add('timer-running');
     elements.timerText.classList.remove('timer-paused');
     updateTimerDisplay(); // Update immediately
+    syncJamornzMatch('live', true);
     interval = setInterval(() => {
         if (isCountdown) {
             if (timer > 0) timer--;
@@ -1887,7 +1907,9 @@ function parseJamornzInput(input) {
     // Handle public view: https://jamornz.com/tournament/view/:slug/:id
     const viewMatch = raw.match(/tournament\/view\/([^/?#]+)\/([^/?#]+)/i);
     if (viewMatch) {
-        return { slug: viewMatch[1], id: viewMatch[2] };
+        let dockPin = '';
+        try { dockPin = new URL(raw).searchParams.get('dockPin') || ''; } catch(e) {}
+        return { slug: viewMatch[1], id: viewMatch[2], dockPin };
     }
 
     // Handle API URL: .../tournament.php?...
@@ -1896,7 +1918,8 @@ function parseJamornzInput(input) {
         const slug = u.searchParams.get('slug') || u.searchParams.get('userId');
         const id = u.searchParams.get('id');
         const round = u.searchParams.get('round');
-        if (slug && id) return { slug, id, round };
+        const dockPin = u.searchParams.get('dockPin') || '';
+        if (slug && id) return { slug, id, round, dockPin };
     } catch(e) {}
 
     // Fallback if user just entered ID (UUID)
@@ -1927,7 +1950,7 @@ const buildSheetDataFromJamornz = (tournament) => {
                 m.code2 || '',
                 'รอบแรก',
                 `คู่ที่ ${m.num || (mi + 1)}`,
-                'สนามที่ 1',
+                `สนามที่ ${m.field || 1}`,
                 'รุ่นประชาชน',
                 m.time || ''
             ]);
@@ -1950,7 +1973,7 @@ const buildSheetDataFromJamornz = (tournament) => {
                 m.code2 || '',
                 r.label || 'รอบน็อคเอาท์',
                 `คู่ที่ ${mi + 1}`,
-                'สนามที่ 1',
+                `สนามที่ ${m.field || r.field || 1}`,
                 'รุ่นประชาชน',
                 m.time || r.timeStart || ''
             ]);
@@ -2002,6 +2025,7 @@ const fetchJamornzTournament = async () => {
 
         const tournament = resJson.tournament;
         currentJamornzData = tournament;
+        jamornzConnection = parsed.dockPin ? { slug, id, pin: parsed.dockPin } : null;
 
         // Auto-cache team logos in logoCache
         if (tournament.teamLogos && typeof tournament.teamLogos === 'object') {
@@ -2026,6 +2050,27 @@ const fetchJamornzTournament = async () => {
     }
 };
 window.fetchJamornzTournament = fetchJamornzTournament;
+
+function syncJamornzMatch(status = 'live', immediate = false) {
+    if (!jamornzConnection || !elements.matchID) return;
+    const send = async () => {
+        const header = sheetData[0] || [];
+        const match = sheetData.slice(1).find(row => parseInt(row[0]) === parseInt(elements.matchID.value));
+        const get = key => match ? match[header.indexOf(key)] : '';
+        const field = parseInt(String(get('label3') || 'สนามที่ 1').match(/\d+/)?.[0] || '1');
+        try {
+            await fetch('https://jamornz.com/api/tournament.php?action=dock_update', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...jamornzConnection, matchId: parseInt(elements.matchID.value), score1: masterTeamA.score, score2: masterTeamB.score,
+                    penalty1: masterTeamA.score2, penalty2: masterTeamB.score2, shirtColor1: masterTeamA.color1, shirtColor2: masterTeamB.color1,
+                    half, field, status, startedAt: status === 'live' ? new Date().toISOString() : undefined })
+            });
+        } catch (error) { console.error('Jamornz sync failed', error); }
+    };
+    clearTimeout(dockSyncTimer);
+    if (immediate) send(); else dockSyncTimer = setTimeout(send, 450);
+}
+window.syncJamornzMatch = syncJamornzMatch;
 
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {

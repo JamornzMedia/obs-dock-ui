@@ -2894,6 +2894,11 @@
             <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
                     class="fas fa-cog"></i></button>
 
+            <button id="penaltyShootoutBtn" class="btn-secondary" title="ยิงจุดโทษ / Penalty Shootout"
+                onclick="openPenaltyShootout()" style="color: #fbbf24;">
+                <i class="fas fa-futbol"></i> <span style="font-size:.76rem; margin-left:5px;">จุดโทษ</span>
+            </button>
+
             <!-- V2.9.5.4: Layout Editor Button -->
             <button id="layoutEditorBtn" class="btn-secondary" title="ปรับ Layout / Customize Layout" onclick="openLayoutEditor()" style="color: #a78bfa;">
                 <i class="fas fa-th-large"></i>
@@ -3876,6 +3881,56 @@
     </script>
 
     <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r2"></script>
+
+    <!-- Integrated Penalty Shootout Panel -->
+    <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
+        style="display:none; position:fixed; inset:0; z-index:12000; background:rgba(2,6,23,.94); backdrop-filter:blur(8px); padding:12px; box-sizing:border-box;">
+        <div style="height:100%; max-width:1180px; margin:0 auto; display:flex; flex-direction:column; overflow:hidden; border:1px solid rgba(251,191,36,.38); border-radius:14px; background:#07101f; box-shadow:0 24px 80px rgba(0,0,0,.65);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:linear-gradient(135deg,#172033,#0f172a); border-bottom:1px solid rgba(255,255,255,.1);">
+                <div style="display:flex; align-items:center; gap:9px; color:#f8fafc; font-weight:800;">
+                    <i class="fas fa-futbol" style="color:#fbbf24;"></i>
+                    <span>ยิงจุดโทษ / Penalty Shootout</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn-secondary" onclick="reloadPenaltyShootout()" title="โหลดแผงใหม่">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closePenaltyShootout()" title="ปิดแผง" style="color:#fca5a5;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <iframe id="penaltyShootoutFrame" title="Penalty Shootout controls"
+                data-src="Penalty-Shootout/Penalty-Shootout.html"
+                style="width:100%; flex:1; min-height:0; border:0; background:#020617;" allow="clipboard-read; clipboard-write"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function openPenaltyShootout() {
+            const overlay = document.getElementById('penaltyShootoutOverlay');
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePenaltyShootout() {
+            document.getElementById('penaltyShootoutOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function reloadPenaltyShootout() {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (frame.src) frame.contentWindow.location.reload();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && document.getElementById('penaltyShootoutOverlay').style.display !== 'none') {
+                closePenaltyShootout();
+            }
+        });
+    </script>
 
     <!-- Duplicate Mobile Control Popup Removed (using the one at line ~2160) -->
 
