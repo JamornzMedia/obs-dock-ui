@@ -1994,6 +1994,21 @@ const buildWorkbookFromJamornz = (tournament) => {
     return wb;
 };
 
+const setJamornzConnectionStatus = (message, type = 'info') => {
+    const status = document.getElementById('jamornzConnectionStatus');
+    if (!status) return;
+    const colors = type === 'success'
+        ? ['rgba(34,197,94,.12)', '#4ade80', 'rgba(34,197,94,.35)']
+        : type === 'error'
+            ? ['rgba(239,68,68,.12)', '#f87171', 'rgba(239,68,68,.35)']
+            : ['rgba(56,189,248,.10)', '#7dd3fc', 'rgba(56,189,248,.30)'];
+    status.style.display = 'block';
+    status.style.background = colors[0];
+    status.style.color = colors[1];
+    status.style.border = `1px solid ${colors[2]}`;
+    status.innerHTML = message;
+};
+
 const fetchJamornzTournament = async () => {
     if (!jamornzTournamentUrl) {
         return showToast('กรุณาระบุ URL หรือ ID ของการแข่งขัน Jamornz', 'error');
@@ -2006,18 +2021,34 @@ const fetchJamornzTournament = async () => {
 
     const slug = parsed.slug || '';
     const id = parsed.id;
+    const passwordInput = document.getElementById('jamornzPasswordInput');
+    const pin = (passwordInput?.value || parsed.dockPin || '').trim();
+    if (!/^\d{5}$/.test(pin)) {
+        setJamornzConnectionStatus('<i class="fas fa-exclamation-circle"></i> กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
+        return showToast('กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
+    }
     const apiUrl = `https://jamornz.com/api/tournament.php?action=public_load&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`;
 
+    let loadingToast = null;
     try {
-        const loadingToast = document.createElement('div');
+        loadingToast = document.createElement('div');
         loadingToast.className = 'toast info';
         loadingToast.textContent = 'กำลังโหลดข้อมูลจาก jamornz.com...';
         elements.toastContainer.appendChild(loadingToast);
+
+        setJamornzConnectionStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบรหัสและเชื่อมต่อ...', 'info');
+        const verifyUrl = `https://jamornz.com/api/tournament.php?action=public_export_csv&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}&round=all&dockPin=${encodeURIComponent(pin)}`;
+        const verifyResponse = await fetch(verifyUrl);
+        if (!verifyResponse.ok) {
+            if (verifyResponse.status === 403) throw new Error('รหัส VIP ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองอีกครั้ง');
+            throw new Error('ไม่สามารถตรวจสอบรหัสเชื่อมต่อได้');
+        }
 
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Jamornz ได้');
         const resJson = await response.json();
         loadingToast.remove();
+        loadingToast = null;
 
         if (!resJson.success || !resJson.tournament) {
             throw new Error(resJson.message || 'ไม่พบข้อมูลรายการแข่งขัน');
@@ -2025,7 +2056,9 @@ const fetchJamornzTournament = async () => {
 
         const tournament = resJson.tournament;
         currentJamornzData = tournament;
-        jamornzConnection = parsed.dockPin ? { slug, id, pin: parsed.dockPin } : null;
+        jamornzConnection = { slug, id, pin };
+        localStorage.setItem('jamornzPassword', pin);
+        if (passwordInput) passwordInput.disabled = true;
 
         // Auto-cache team logos in logoCache
         if (tournament.teamLogos && typeof tournament.teamLogos === 'object') {
@@ -2043,9 +2076,13 @@ const fetchJamornzTournament = async () => {
         // Build in-memory workbook for Display Table
         window.currentWorkbook = buildWorkbookFromJamornz(tournament);
 
-        showToast(`โหลดข้อมูลสำเร็จ: ${tournament.name || 'ทัวร์นาเมนต์'} (${sheetData.length - 1} คู่)`, 'success');
+        setJamornzConnectionStatus('<i class="fas fa-check-circle"></i> รหัสถูกต้อง — เชื่อมต่อกับเว็บไซต์แล้ว พร้อมส่งคะแนนกลับสู่ตารางการแข่งขัน', 'success');
+        showToast(`เชื่อมต่อสำเร็จ: ${tournament.name || 'ทัวร์นาเมนต์'} (${sheetData.length - 1} คู่)`, 'success');
     } catch (err) {
+        if (loadingToast) loadingToast.remove();
         console.error('Jamornz fetch error:', err);
+        jamornzConnection = null;
+        setJamornzConnectionStatus(`<i class="fas fa-times-circle"></i> ${err.message}`, 'error');
         showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
     }
 };
@@ -2059,13 +2096,20 @@ function syncJamornzMatch(status = 'live', immediate = false) {
         const get = key => match ? match[header.indexOf(key)] : '';
         const field = parseInt(String(get('label3') || 'สนามที่ 1').match(/\d+/)?.[0] || '1');
         try {
-            await fetch('https://jamornz.com/api/tournament.php?action=dock_update', {
+            const response = await fetch('https://jamornz.com/api/tournament.php?action=dock_update', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...jamornzConnection, matchId: parseInt(elements.matchID.value), score1: masterTeamA.score, score2: masterTeamB.score,
                     penalty1: masterTeamA.score2, penalty2: masterTeamB.score2, shirtColor1: masterTeamA.color1, shirtColor2: masterTeamB.color1,
                     half, field, status, startedAt: status === 'live' ? new Date().toISOString() : undefined })
             });
-        } catch (error) { console.error('Jamornz sync failed', error); }
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.message || `ส่งข้อมูลกลับไม่สำเร็จ (${response.status})`);
+            }
+        } catch (error) {
+            console.error('Jamornz sync failed', error);
+            setJamornzConnectionStatus(`<i class="fas fa-exclamation-triangle"></i> การเชื่อมต่อมีปัญหา: ${error.message}`, 'error');
+        }
     };
     clearTimeout(dockSyncTimer);
     if (immediate) send(); else dockSyncTimer = setTimeout(send, 450);
@@ -2316,6 +2360,19 @@ const setupEventListeners = () => {
                     showToast('กรุณากรอก URL หรือ ID ของ Jamornz Tournament', 'error');
                 }
             }
+        });
+    }
+
+    const editJamornzPasswordBtn = document.getElementById('editJamornzPasswordBtn');
+    if (editJamornzPasswordBtn) {
+        editJamornzPasswordBtn.addEventListener('click', () => {
+            const passwordInput = document.getElementById('jamornzPasswordInput');
+            if (!passwordInput) return;
+            passwordInput.disabled = false;
+            passwordInput.focus();
+            passwordInput.select();
+            jamornzConnection = null;
+            setJamornzConnectionStatus('<i class="fas fa-pen"></i> กรอกรหัส 5 หลัก แล้วกด “ยืนยันรหัสและเชื่อมต่อ”', 'info');
         });
     }
 
@@ -2715,6 +2772,12 @@ document.addEventListener('DOMContentLoaded', () => {
         jamornzTournamentUrl = savedJamornzUrl;
         const input = document.getElementById('jamornzUrlInput');
         if (input) input.value = savedJamornzUrl;
+    }
+
+    const savedJamornzPassword = localStorage.getItem('jamornzPassword');
+    if (savedJamornzPassword) {
+        const passwordInput = document.getElementById('jamornzPasswordInput');
+        if (passwordInput) passwordInput.value = savedJamornzPassword;
     }
 
     const savedJamornzRound = localStorage.getItem('jamornzRound');
