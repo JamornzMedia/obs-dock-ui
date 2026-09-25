@@ -1,6 +1,6 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r2';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r3';
 import { translations } from './languages.js?v=2.9.5.5-r2';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
@@ -83,6 +83,9 @@ let jamornzConnection = null;
 let lastDockMatchId = null;
 let dockSyncTimer = null;
 let currentJamornzData = null;
+let dockMatchStartedAt = null;
+let dockTimerStartedAt = null;
+let dockTimerBaseSeconds = 0;
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
 window.userIdentity = userIdentity;
 
@@ -1161,6 +1164,12 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
+        const isRemoteLogo = /^(https?:|data:|blob:)/i.test(masterTeam.logoFile);
+        if (isRemoteLogo) {
+            logoEl.src = masterTeam.logoFile;
+            logoEl.style.display = 'block';
+            initialsEl.style.display = 'none';
+        } else {
         const logoNameClean = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
 
         let foundKey = null;
@@ -1181,6 +1190,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
+        }
         }
     } else {
         logoEl.src = '';
@@ -1223,6 +1233,9 @@ const applyMatch = () => {
     if (!match) return showToast(`${translations[currentLang].toastMatchNotFound} ${id}`, 'error');
     lastDockMatchId = id;
     if (jamornzConnection && matchChanged) {
+        dockMatchStartedAt = new Date().toISOString();
+        dockTimerStartedAt = null;
+        dockTimerBaseSeconds = 0;
         masterTeamA.score = masterTeamB.score = 0;
         masterTeamA.score2 = masterTeamB.score2 = 0;
         timer = 0;
@@ -1411,6 +1424,8 @@ const updateTimerDisplay = () => {
 
 const startTimer = () => {
     if (interval) return;
+    dockTimerBaseSeconds = timer;
+    dockTimerStartedAt = new Date().toISOString();
     // V2.9.2: Timer state color
     elements.timerText.classList.add('timer-running');
     elements.timerText.classList.remove('timer-paused');
@@ -1428,12 +1443,20 @@ const startTimer = () => {
 };
 
 const stopTimer = () => {
+    if (interval && dockTimerStartedAt) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(dockTimerStartedAt)) / 1000));
+        dockTimerBaseSeconds = isCountdown ? Math.max(0, dockTimerBaseSeconds - elapsed) : dockTimerBaseSeconds + elapsed;
+    } else {
+        dockTimerBaseSeconds = timer;
+    }
     clearInterval(interval);
     interval = null;
+    dockTimerStartedAt = null;
     // V2.9.2: Timer state color
     elements.timerText.classList.remove('timer-running');
     elements.timerText.classList.add('timer-paused');
     updateTimerDisplay(); // Sync stop state immediately
+    if (jamornzConnection) syncJamornzMatch('live', true);
 };
 
 const resetToStartTime = () => {
@@ -1946,8 +1969,8 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#ffffff',
                 '#000000',
                 '#000000',
-                m.code1 || '',
-                m.code2 || '',
+                tournament.teamLogos?.[m.code1] || m.logo1 || m.code1 || '',
+                tournament.teamLogos?.[m.code2] || m.logo2 || m.code2 || '',
                 'รอบแรก',
                 `คู่ที่ ${m.num || (mi + 1)}`,
                 `สนามที่ ${m.field || 1}`,
@@ -1969,8 +1992,8 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#ffffff',
                 '#000000',
                 '#000000',
-                m.code1 || '',
-                m.code2 || '',
+                tournament.teamLogos?.[m.code1] || m.logo1 || m.code1 || '',
+                tournament.teamLogos?.[m.code2] || m.logo2 || m.code2 || '',
                 r.label || 'รอบน็อคเอาท์',
                 `คู่ที่ ${mi + 1}`,
                 `สนามที่ ${m.field || r.field || 1}`,
@@ -2066,6 +2089,8 @@ const fetchJamornzTournament = async () => {
                 if (url) {
                     const cleanCode = code.replace(/\s/g, '').toLowerCase();
                     logoCache[cleanCode] = url;
+                    const team = (tournament.teams || []).find(item => item.code === code);
+                    if (team?.name) logoCache[team.name.replace(/\s/g, '').toLowerCase()] = url;
                 }
             });
         }
@@ -2100,7 +2125,9 @@ function syncJamornzMatch(status = 'live', immediate = false) {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...jamornzConnection, matchId: parseInt(elements.matchID.value), score1: masterTeamA.score, score2: masterTeamB.score,
                     penalty1: masterTeamA.score2, penalty2: masterTeamB.score2, shirtColor1: masterTeamA.color1, shirtColor2: masterTeamB.color1,
-                    half, field, status, startedAt: status === 'live' ? new Date().toISOString() : undefined })
+                    half, field, status, startedAt: dockMatchStartedAt || (dockMatchStartedAt = new Date().toISOString()),
+                    timerStartedAt: dockTimerStartedAt, timerBaseSeconds: interval ? dockTimerBaseSeconds : timer,
+                    timerRunning: Boolean(interval), isCountdown })
             });
             if (!response.ok) {
                 const result = await response.json().catch(() => ({}));
