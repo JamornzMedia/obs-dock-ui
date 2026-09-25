@@ -686,17 +686,36 @@ const saveActionSettingsRow = (index) => {
 
 const loadActionSettings = () => {
     const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
-    if (savedSettings && savedSettings.length === ACTION_BUTTON_COUNT) {
+    if (Array.isArray(savedSettings) && savedSettings.length >= ACTION_BUTTON_COUNT) {
         return savedSettings.map((setting, i) => ({
-            ...defaultActionSettings[i],
+            ...(defaultActionSettings[i] || { id: `actionBtn${i + 1}`, name: `Action ${i + 1}`, backgroundColor: '#3b82f6', height: 35, internalState: false }),
             ...setting,
             targetSource: setting.targetSource || '',
             targetScene: setting.targetScene || '',
             actionType: setting.actionType || 'Toggle'
         }));
     }
-    return defaultActionSettings;
+    return defaultActionSettings.map(setting => ({ ...setting }));
 }
+
+const addActionButton = () => {
+    const settings = loadActionSettings();
+    const index = settings.length + 1;
+    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', internalState: false });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+    renderActionButtons();
+    populateActionSettingsTable(currentLang);
+};
+
+const deleteActionButton = (index) => {
+    if (index <= ACTION_BUTTON_COUNT) return;
+    const settings = loadActionSettings();
+    settings.splice(index - 1, 1);
+    settings.forEach((setting, i) => { setting.id = `actionBtn${i + 1}`; });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+    renderActionButtons();
+    populateActionSettingsTable(currentLang);
+};
 
 const renderActionButtons = () => {
     const settings = loadActionSettings();
@@ -774,6 +793,7 @@ const populateActionSettingsTable = (lang) => {
                 <div class="action-buttons">
                     <button id="action-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
                     <button id="action-save-${index}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                    ${index > ACTION_BUTTON_COUNT ? `<button id="action-delete-${index}" class="btn-danger" title="ลบปุ่ม"><i class="fas fa-trash"></i></button>` : ''}
                 </div>
             </td>
         `;
@@ -782,6 +802,7 @@ const populateActionSettingsTable = (lang) => {
         };
         $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
         $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
+        if (index > ACTION_BUTTON_COUNT) $(`action-delete-${index}`).onclick = () => deleteActionButton(index);
     });
     window.toggleActionEditMode = toggleActionEditMode;
     window.saveActionSettingsRow = saveActionSettingsRow;
@@ -2214,6 +2235,90 @@ const copyDetails = () => {
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
 
+// ─── YouTube long-live timestamps / description builder ────────────────────
+let youtubeTimerInterval = null;
+const applyYoutubeAnnouncementEnabled = enabled => {
+    const checkbox = document.getElementById('youtubeAnnouncementEnabled');
+    const button = document.getElementById('youtubeConfirmBtn');
+    const track = document.getElementById('youtubeAnnouncementSwitch');
+    const knob = document.getElementById('youtubeAnnouncementKnob');
+    if (checkbox) checkbox.checked = enabled;
+    if (button) button.style.display = enabled ? 'inline-flex' : 'none';
+    if (track) track.style.background = enabled ? '#dc2626' : '#475569';
+    if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'translateX(0)';
+};
+const getYoutubeTimerState = () => JSON.parse(localStorage.getItem('youtubeTimerState') || '{"base":0,"startedAt":null,"running":false}');
+const getYoutubeElapsed = () => {
+    const state = getYoutubeTimerState();
+    return Math.max(0, Number(state.base) || 0) + (state.running && state.startedAt ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0);
+};
+const formatYoutubeTime = seconds => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+const updateYoutubeTimerDisplay = () => {
+    const display = document.getElementById('youtubeTimerDisplay');
+    if (display) display.textContent = formatYoutubeTime(getYoutubeElapsed());
+};
+const startYoutubeTimer = () => {
+    const state = getYoutubeTimerState();
+    if (!state.running) localStorage.setItem('youtubeTimerState', JSON.stringify({ base: Number(state.base) || 0, startedAt: Date.now(), running: true }));
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
+    updateYoutubeTimerDisplay();
+};
+const pauseYoutubeTimer = () => {
+    localStorage.setItem('youtubeTimerState', JSON.stringify({ base: getYoutubeElapsed(), startedAt: null, running: false }));
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = null;
+    updateYoutubeTimerDisplay();
+};
+const resetYoutubeTimer = () => {
+    if (!confirm('รีเซ็ตเวลาและรายการ Timestamp ของ YouTube หรือไม่?')) return;
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = null;
+    localStorage.setItem('youtubeTimerState', JSON.stringify({ base: 0, startedAt: null, running: false }));
+    localStorage.setItem('youtubeTimestamps', '[]');
+    renderYoutubeTimestamps();
+    updateYoutubeTimerDisplay();
+};
+const fillYoutubeTemplate = (template, time) => template
+    .replace(/<youtube_time>/gi, time)
+    .replace(/<TeamA>/gi, masterTeamA.name.replace(/\//g, ' '))
+    .replace(/<TeamB>/gi, masterTeamB.name.replace(/\//g, ' '))
+    .replace(/<label1>/gi, elements.label1.textContent)
+    .replace(/<label2>/gi, elements.label2.textContent)
+    .replace(/<label3>/gi, elements.label3.textContent)
+    .replace(/<label4>/gi, elements.label4.textContent)
+    .replace(/<label5>/gi, elements.label5.textContent);
+const renderYoutubeTimestamps = () => {
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+    const output = document.getElementById('youtubeTimestampList');
+    if (output) output.value = list.map(item => item.text).join('\n');
+};
+const confirmYoutubeTimestamp = () => {
+    const seconds = getYoutubeElapsed();
+    const time = formatYoutubeTime(seconds);
+    const template = localStorage.getItem('youtubeDetailsText') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+    const round = elements.label1.textContent.trim();
+    if (round && (!list.length || list[list.length - 1].round !== round)) list.push({ round, text: round });
+    list.push({ round, matchId: parseInt(elements.matchID.value), seconds, text: fillYoutubeTemplate(template, time) });
+    localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+    renderYoutubeTimestamps();
+    showToast(`เพิ่มเวลา ${time} ของ Match ID ${elements.matchID.value} ลงรายละเอียด YouTube แล้ว`, 'success');
+};
+window.insertYoutubeTag = tag => {
+    const textarea = document.getElementById('youtubeDetailsText');
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    textarea.value = textarea.value.slice(0, start) + tag + textarea.value.slice(textarea.selectionEnd);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+};
+
 const enterEditMode = (team) => {
     const isA = team === 'A';
     const masterTeam = isA ? masterTeamA : masterTeamB;
@@ -2524,6 +2629,10 @@ const setupEventListeners = () => {
     }
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
+        const youtubeDetails = document.getElementById('youtubeDetailsText');
+        if (youtubeDetails) youtubeDetails.value = localStorage.getItem('youtubeDetailsText') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        renderYoutubeTimestamps();
+        updateYoutubeTimerDisplay();
         if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
         
         // Load half format settings
@@ -2546,6 +2655,47 @@ const setupEventListeners = () => {
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
+    const addActionBtn = document.getElementById('addActionButtonBtn');
+    if (addActionBtn) addActionBtn.addEventListener('click', addActionButton);
+    const youtubeConfirmBtn = document.getElementById('youtubeConfirmBtn');
+    if (youtubeConfirmBtn) youtubeConfirmBtn.addEventListener('click', confirmYoutubeTimestamp);
+    const youtubeEnabledToggle = document.getElementById('youtubeAnnouncementEnabled');
+    if (youtubeEnabledToggle) youtubeEnabledToggle.addEventListener('change', event => {
+        const enabled = event.target.checked;
+        localStorage.setItem('youtubeAnnouncementEnabled', enabled ? 'true' : 'false');
+        applyYoutubeAnnouncementEnabled(enabled);
+    });
+    const youtubeStartBtn = document.getElementById('youtubeTimerStartBtn');
+    const youtubePauseBtn = document.getElementById('youtubeTimerPauseBtn');
+    const youtubeResetBtn = document.getElementById('youtubeTimerResetBtn');
+    if (youtubeStartBtn) youtubeStartBtn.addEventListener('click', startYoutubeTimer);
+    if (youtubePauseBtn) youtubePauseBtn.addEventListener('click', pauseYoutubeTimer);
+    if (youtubeResetBtn) youtubeResetBtn.addEventListener('click', resetYoutubeTimer);
+    const saveYoutubeBtn = document.getElementById('saveYoutubeDetailsBtn');
+    if (saveYoutubeBtn) saveYoutubeBtn.addEventListener('click', () => {
+        localStorage.setItem('youtubeDetailsText', document.getElementById('youtubeDetailsText').value);
+        showToast('บันทึกรูปแบบรายละเอียด YouTube แล้ว', 'success');
+    });
+    const copyYoutubeBtn = document.getElementById('copyYoutubeDetailsBtn');
+    if (copyYoutubeBtn) copyYoutubeBtn.addEventListener('click', () => {
+        const intro = document.getElementById('youtubeDetailsText')?.value.trim() || '';
+        const timestamps = document.getElementById('youtubeTimestampList')?.value.trim() || '';
+        navigator.clipboard.writeText([intro, timestamps].filter(Boolean).join('\n\n')).then(() => showToast('คัดลอกรายละเอียด YouTube แล้ว', 'success'));
+    });
+    const clearYoutubeBtn = document.getElementById('clearYoutubeTimestampsBtn');
+    if (clearYoutubeBtn) clearYoutubeBtn.addEventListener('click', () => {
+        if (confirm('ล้างรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) { localStorage.setItem('youtubeTimestamps', '[]'); renderYoutubeTimestamps(); }
+    });
+    const mainAnnounceBtn = document.getElementById('announceMainTabBtn');
+    const youtubeAnnounceBtn = document.getElementById('announceYoutubeTabBtn');
+    const switchAnnouncePanel = youtube => {
+        document.getElementById('announceMainPanel').style.display = youtube ? 'none' : 'block';
+        document.getElementById('announceYoutubePanel').style.display = youtube ? 'block' : 'none';
+        mainAnnounceBtn.className = youtube ? 'btn-secondary' : 'btn-primary';
+        youtubeAnnounceBtn.className = youtube ? 'btn-primary' : 'btn-secondary';
+    };
+    if (mainAnnounceBtn) mainAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(false));
+    if (youtubeAnnounceBtn) youtubeAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(true));
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     // V2.9.3: Changelog removed
@@ -2768,6 +2918,11 @@ const processFiles = async (files) => {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyYoutubeAnnouncementEnabled(localStorage.getItem('youtubeAnnouncementEnabled') === 'true');
+    if (getYoutubeTimerState().running) {
+        youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
+    }
+    updateYoutubeTimerDisplay();
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
     const savedTime = localStorage.getItem('countdownStartTime');
     if (savedTime) {

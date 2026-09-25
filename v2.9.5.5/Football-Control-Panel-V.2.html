@@ -2668,6 +2668,7 @@
                         data-lang="load"></span></button>
                 <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span
                         data-lang="copy"></span></button>
+                <button id="youtubeConfirmBtn" class="btn-danger" title="ยืนยันเวลาคู่นี้ลงรายละเอียด YouTube" style="display:none;"><i class="fab fa-youtube"></i> YouTube</button>
             </div>
         </div>
     </div>
@@ -2899,11 +2900,6 @@
                 <i class="fas fa-futbol"></i> <span style="font-size:.76rem; margin-left:5px;">จุดโทษ</span>
             </button>
 
-            <!-- V2.9.5.4: Layout Editor Button -->
-            <button id="layoutEditorBtn" class="btn-secondary" title="ปรับ Layout / Customize Layout" onclick="openLayoutEditor()" style="color: #a78bfa;">
-                <i class="fas fa-th-large"></i>
-            </button>
-
             <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"
                 onclick="openMobileControlPopup()"><i class="fas fa-mobile-alt"></i></button>
 
@@ -2985,6 +2981,11 @@
 
         <!-- Tab 1: General / Announce -->
         <div class="settings-tab-content active" id="settingsTabGeneral">
+            <div style="display:flex;gap:6px;margin-bottom:12px;padding:4px;background:rgba(0,0,0,.25);border-radius:8px;">
+                <button type="button" id="announceMainTabBtn" class="btn-primary" style="flex:1;">ประกาศหลัก</button>
+                <button type="button" id="announceYoutubeTabBtn" class="btn-secondary" style="flex:1;"><i class="fab fa-youtube"></i> ประกาศ YouTube</button>
+            </div>
+            <div id="announceMainPanel">
             <p data-lang="detailsDesc"></p>
             <textarea id="detailsText" rows="4" style="margin-bottom: 5px;"></textarea>
 
@@ -3026,16 +3027,54 @@
                 <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span
                         data-lang="save"></span></button>
             </div>
+            </div>
+            <div id="announceYoutubePanel" style="display:none;">
+                <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;margin-bottom:12px;border:1px solid rgba(239,68,68,.3);background:rgba(127,29,29,.12);border-radius:10px;cursor:pointer;">
+                    <span><strong style="color:#f87171;">เปิดใช้งานประกาศ YouTube</strong><small style="display:block;color:#94a3b8;margin-top:2px;">แสดงปุ่ม YouTube ข้างปุ่มคัดลอกประกาศ</small></span>
+                    <span style="position:relative;width:48px;height:26px;flex:0 0 auto;">
+                        <input type="checkbox" id="youtubeAnnouncementEnabled" style="position:absolute;opacity:0;width:0;height:0;">
+                        <span id="youtubeAnnouncementSwitch" style="position:absolute;inset:0;border-radius:999px;background:#475569;transition:.2s;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);">
+                            <span id="youtubeAnnouncementKnob" style="position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 5px rgba(0,0,0,.35);"></span>
+                        </span>
+                    </span>
+                </label>
+                <div style="padding:12px;border:1px solid rgba(239,68,68,.3);background:rgba(127,29,29,.12);border-radius:10px;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                        <div><strong style="color:#f87171;"><i class="fab fa-youtube"></i> เวลาของ YouTube Live</strong><div style="font-size:.75rem;color:#94a3b8;">เริ่มเมื่อขึ้นไลฟ์และเดินต่อเนื่องตลอดรายการ</div></div>
+                        <strong id="youtubeTimerDisplay" style="font:800 1.5rem monospace;color:#fff;">00:00</strong>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button type="button" id="youtubeTimerStartBtn" class="btn-success" style="flex:1;"><i class="fas fa-play"></i> เริ่ม / ต่อเวลา</button>
+                        <button type="button" id="youtubeTimerPauseBtn" class="btn-secondary" style="flex:1;"><i class="fas fa-pause"></i> หยุด</button>
+                        <button type="button" id="youtubeTimerResetBtn" class="btn-danger"><i class="fas fa-undo"></i></button>
+                    </div>
+                </div>
+                <label style="font-size:.82rem;color:#cbd5e1;">รูปแบบรายละเอียด YouTube</label>
+                <textarea id="youtubeDetailsText" rows="5" placeholder="<label1>\n<youtube_time> <label2> <TeamA> VS <TeamB>" style="margin:5px 0 8px;"></textarea>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+                    <button type="button" class="btn-secondary" onclick="insertYoutubeTag('<youtube_time>')">+ YouTube Time</button>
+                    <button type="button" class="btn-secondary" onclick="insertYoutubeTag('<label1>')">+ รอบแข่ง</button>
+                    <button type="button" class="btn-secondary" onclick="insertYoutubeTag('<label2>')">+ คู่ที่</button>
+                    <button type="button" class="btn-secondary" onclick="insertYoutubeTag('<TeamA> VS <TeamB>')">+ ทีม VS ทีม</button>
+                </div>
+                <label style="font-size:.82rem;color:#cbd5e1;">รายการ Timestamp ที่ยืนยันแล้ว</label>
+                <textarea id="youtubeTimestampList" rows="8" readonly style="margin-top:5px;font-family:monospace;"></textarea>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                    <button type="button" id="saveYoutubeDetailsBtn" class="btn-primary" style="flex:1;"><i class="fas fa-save"></i> บันทึกรูปแบบ</button>
+                    <button type="button" id="copyYoutubeDetailsBtn" class="btn-success" style="flex:1;"><i class="fas fa-copy"></i> คัดลอกรายละเอียด YouTube</button>
+                    <button type="button" id="clearYoutubeTimestampsBtn" class="btn-danger"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
         </div>
 
         <!-- Tab 2: Action Buttons -->
         <div class="settings-tab-content" id="settingsTabActions">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                 <h4 style="margin: 0;"><i class="fas fa-cogs"></i> <span data-lang="actionSettingsTitle"></span></h4>
-                <button class="btn-secondary" onclick="copyTableToClipboard('actionSettingsTable')"
+                <div style="display:flex;gap:6px;"><button type="button" id="addActionButtonBtn" class="btn-success"><i class="fas fa-plus"></i> เพิ่มปุ่ม</button><button class="btn-secondary" onclick="copyTableToClipboard('actionSettingsTable')"
                     title="Copy to Excel" style="padding: 4px 8px; font-size: 0.8rem;">
                     <i class="fas fa-copy"></i> Copy Table
-                </button>
+                </button></div>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;"
                 data-lang="actionSettingsDesc"></p>
@@ -3567,6 +3606,10 @@
                     style="padding: 12px; border-radius: 8px; background: #334155; text-decoration: none; display: block; font-weight: 600;">
                     <i class="fas fa-coffee"></i> Ko-fi (International)
                 </a>
+                <a href="https://jamornz.com" target="_blank" class="btn-secondary"
+                    style="padding:12px;border-radius:8px;background:#0f766e;text-decoration:none;display:block;font-weight:600;">
+                    <i class="fas fa-globe"></i> Official Website — jamornz.com
+                </a>
             </div>
         </div>
 
@@ -3890,7 +3933,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r4"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r6"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
