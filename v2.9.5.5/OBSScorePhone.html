@@ -868,6 +868,23 @@
             background: rgba(100, 116, 139, 0.7);
         }
 
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fullscreen-btn {
+            width: 44px;
+            min-height: 44px;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 10px;
+            background: rgba(59,130,246,.16);
+            color: #bfdbfe;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
         /* Touch-first sizing for phones and tablets, portrait and landscape. */
         @media (pointer: coarse), (max-width: 1024px) {
             button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -882,11 +899,43 @@
         }
 
         @media (orientation: landscape) and (max-height: 700px) {
-            .teams-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .btn-score-new { min-height: 54px; padding: 12px 6px; }
-            .timer-card { padding: 8px 12px; }
-            #timer-text { font-size: 2.45rem; }
-            #action-grid { grid-template-columns: repeat(4, 1fr); }
+            #main-ui.visible {
+                display: grid;
+                grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+                grid-template-areas:
+                    "topbar topbar"
+                    "teams timer"
+                    "teams control"
+                    "actions injury"
+                    "actions obs"
+                    "disconnect disconnect";
+                align-items: stretch;
+                height: 100dvh;
+                padding: 6px;
+                gap: 6px;
+            }
+            .topbar { grid-area: topbar; padding: 5px 8px; }
+            .teams-grid { grid-area: teams; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .mobile-control-card { grid-area: control; }
+            .timer-card { grid-area: timer; padding: 6px 9px; min-height: 88px; }
+            .mobile-injury-card { grid-area: injury; }
+            .mobile-actions-card { grid-area: actions; }
+            .mobile-obs-card { grid-area: obs; }
+            .disconnect-btn { grid-area: disconnect; padding: 3px; }
+            .team-card { padding: 8px; }
+            .team-name { font-size: .9rem; }
+            .score-big { font-size: 2.8rem; }
+            .color-row { margin: 3px 0; }
+            .btn-score-new { min-height: 48px; padding: 8px 5px; }
+            .btn-score-new.minus-1 { min-height: 40px; padding: 7px 5px; }
+            .score2-btn { min-height: 40px; }
+            .btn-playpause { width: 58px; height: 58px; }
+            .btn-ctrl { min-height: 44px; padding: 7px 5px; }
+            #timer-text { font-size: 2.25rem; }
+            #action-grid { grid-template-columns: repeat(3, 1fr); }
+            .action-btn { min-height: 46px; padding: 8px 5px; }
+            .btn-obs-main { min-height: 46px; padding: 8px; font-size: .82rem; }
+            .section-header { margin-bottom: 5px; }
         }
 
         @media (orientation: portrait) and (max-width: 600px) {
@@ -931,7 +980,10 @@
                 </div>
             </div>
             <div class="topbar-center">OBSScore</div>
-            <div class="topbar-right">
+            <div class="topbar-right topbar-actions">
+                <button id="fullscreen-btn" class="fullscreen-btn" type="button" onclick="toggleFullscreenMode()" title="เต็มจอและป้องกันหน้าจอดับ" aria-label="เต็มจอและป้องกันหน้าจอดับ">
+                    <i id="fullscreen-icon" class="fas fa-expand"></i>
+                </button>
                 <button class="match-badge" onclick="openMatchPopup()">
                     Match #<span id="current-match-id">1</span>
                 </button>
@@ -1028,7 +1080,7 @@
         </div>
 
         <!-- Central Controls Card -->
-        <div class="card" style="padding:10px 14px;">
+        <div class="card mobile-control-card" style="padding:10px 14px;">
             <div class="section-header"><i class="fas fa-sliders" style="margin-right: 6px;"></i> Control Dashboard / แผงควบคุม</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
                 <button class="btn-ctrl orange" onclick="sendCmd('swap')" style="padding:12px;border-radius:10px;font-size:0.8rem;background:linear-gradient(135deg, #f59e0b, #d97706); width: 100%;">
@@ -1078,7 +1130,7 @@
         </div>
 
         <!-- Injury Time Controls -->
-        <div class="card" style="padding:8px 12px;">
+        <div class="card mobile-injury-card" style="padding:8px 12px;">
             <div class="section-header"><i class="fas fa-clock-rotate-left"></i> Injury Time</div>
             <div class="timer-controls">
                 <button class="btn-ctrl inj-minus" onclick="sendCmd('injury', null, 'minus')">
@@ -1096,7 +1148,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="card">
+        <div class="card mobile-actions-card">
             <div class="section-header"><i class="fas fa-bolt"></i> Actions</div>
             <div id="action-grid">
                 <div style="grid-column:1/-1; text-align:center; color:var(--muted); font-size:0.8rem; padding:12px;">
@@ -1106,7 +1158,7 @@
         </div>
 
         <!-- OBS Control -->
-        <div class="card">
+        <div class="card mobile-obs-card">
             <div class="section-header" style="justify-content:space-between;">
                 <span><i class="fas fa-video"></i> OBS Control</span>
                 <button onclick="openHelpPopup()"
@@ -1208,6 +1260,43 @@
 
         let peer, conn;
         let isPaused = true; // Track timer state for icon
+        let screenWakeLock = null;
+
+        async function requestScreenWakeLock() {
+            if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+            try {
+                screenWakeLock = await navigator.wakeLock.request('screen');
+                screenWakeLock.addEventListener('release', () => { screenWakeLock = null; });
+            } catch (error) {
+                console.warn('Screen Wake Lock unavailable:', error);
+            }
+        }
+
+        async function toggleFullscreenMode() {
+            try {
+                if (!document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen?.();
+                    await requestScreenWakeLock();
+                } else {
+                    await document.exitFullscreen?.();
+                    if (screenWakeLock) await screenWakeLock.release();
+                }
+            } catch (error) {
+                console.warn('Fullscreen unavailable:', error);
+                await requestScreenWakeLock();
+            }
+            updateFullscreenButton();
+        }
+
+        function updateFullscreenButton() {
+            const icon = document.getElementById('fullscreen-icon');
+            if (icon) icon.className = document.fullscreenElement ? 'fas fa-compress' : 'fas fa-expand';
+        }
+
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && document.fullscreenElement) requestScreenWakeLock();
+        });
 
         // Parse URL params
         const urlParams = new URLSearchParams(window.location.search);

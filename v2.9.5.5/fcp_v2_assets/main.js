@@ -232,15 +232,18 @@ const showToast = (message, type = 'info') => {
 
 // --- V2.9.2: Settings Tab Switching ---
 const switchSettingsTab = (tabName) => {
+    if (!tabName) return;
     document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.settings-tab-btn').forEach(el => el.classList.remove('active'));
     const targetPanel = document.getElementById(tabName);
-    if (targetPanel) targetPanel.classList.add('active');
+    if (!targetPanel) return;
+    targetPanel.classList.add('active');
     const targetBtn = document.querySelector(`.settings-tab-btn[data-tab="${tabName}"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
         targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
+    localStorage.setItem('activeSettingsTab', tabName);
 };
 
 // --- V2.9.2: Confirm Reset Dialog ---
@@ -2016,7 +2019,7 @@ const buildSheetDataFromJamornz = (tournament) => {
                 tournament.teamLogos?.[m.code1] || m.logo1 || m.code1 || '',
                 tournament.teamLogos?.[m.code2] || m.logo2 || m.code2 || '',
                 r.label || 'รอบน็อคเอาท์',
-                `คู่ที่ ${mi + 1}`,
+                `คู่ที่ ${m.roundPairNumber || Math.floor(mi / Math.max(1, Number(r.fieldCount) || 1)) + 1}`,
                 `สนามที่ ${m.field || r.field || 1}`,
                 'รุ่นประชาชน',
                 m.time || r.timeStart || ''
@@ -2237,6 +2240,47 @@ const copyDetails = () => {
 
 // ─── YouTube long-live timestamps / description builder ────────────────────
 let youtubeTimerInterval = null;
+let isYoutubeConfirming = false;
+
+const getLatestYoutubeMatchId = () => {
+    try {
+        const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+        for (let i = list.length - 1; i >= 0; i--) {
+            const item = list[i];
+            if (!item) continue;
+            if (item.matchId !== undefined && item.matchId !== null && item.matchId !== '' && item.matchId !== 0) {
+                return item.matchId;
+            }
+            if (item.pairLabel) {
+                const numMatch = String(item.pairLabel).match(/\d+/);
+                if (numMatch) return numMatch[0];
+                return item.pairLabel;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return null;
+};
+
+const updateYoutubeButtonLabel = (explicitMatchId = null) => {
+    const button = document.getElementById('youtubeConfirmBtn');
+    if (!button) return;
+
+    let matchId = explicitMatchId;
+    if (matchId === null || matchId === undefined) {
+        matchId = getLatestYoutubeMatchId();
+    }
+
+    const badgeText = (matchId !== null && matchId !== undefined && matchId !== '') ? `(${matchId}) ` : '';
+    const content = `<i class="fab fa-youtube"></i> ${badgeText}YouTube`;
+
+    button.setAttribute('data-normal-html', content);
+    if (!isYoutubeConfirming) {
+        button.innerHTML = content;
+    }
+};
+
 const applyYoutubeAnnouncementEnabled = enabled => {
     const checkbox = document.getElementById('youtubeAnnouncementEnabled');
     const button = document.getElementById('youtubeConfirmBtn');
@@ -2246,22 +2290,28 @@ const applyYoutubeAnnouncementEnabled = enabled => {
     if (button) button.style.display = enabled ? 'inline-flex' : 'none';
     if (track) track.style.background = enabled ? '#dc2626' : '#475569';
     if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'translateX(0)';
+    if (enabled) updateYoutubeButtonLabel();
 };
+
 const getYoutubeTimerState = () => JSON.parse(localStorage.getItem('youtubeTimerState') || '{"base":0,"startedAt":null,"running":false}');
+
 const getYoutubeElapsed = () => {
     const state = getYoutubeTimerState();
     return Math.max(0, Number(state.base) || 0) + (state.running && state.startedAt ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0);
 };
+
 const formatYoutubeTime = seconds => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
+
 const updateYoutubeTimerDisplay = () => {
     const display = document.getElementById('youtubeTimerDisplay');
     if (display) display.textContent = formatYoutubeTime(getYoutubeElapsed());
 };
+
 const startYoutubeTimer = () => {
     const state = getYoutubeTimerState();
     if (!state.running) localStorage.setItem('youtubeTimerState', JSON.stringify({ base: Number(state.base) || 0, startedAt: Date.now(), running: true }));
@@ -2269,54 +2319,217 @@ const startYoutubeTimer = () => {
     youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
     updateYoutubeTimerDisplay();
 };
+
 const pauseYoutubeTimer = () => {
     localStorage.setItem('youtubeTimerState', JSON.stringify({ base: getYoutubeElapsed(), startedAt: null, running: false }));
     clearInterval(youtubeTimerInterval);
     youtubeTimerInterval = null;
     updateYoutubeTimerDisplay();
 };
+
 const resetYoutubeTimer = () => {
-    if (!confirm('รีเซ็ตเวลาและรายการ Timestamp ของ YouTube หรือไม่?')) return;
+    if (!confirm('รีเซ็ตเวลาและรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) return;
     clearInterval(youtubeTimerInterval);
     youtubeTimerInterval = null;
     localStorage.setItem('youtubeTimerState', JSON.stringify({ base: 0, startedAt: null, running: false }));
     localStorage.setItem('youtubeTimestamps', '[]');
     renderYoutubeTimestamps();
     updateYoutubeTimerDisplay();
+    updateYoutubeButtonLabel();
 };
-const fillYoutubeTemplate = (template, time) => template
-    .replace(/<youtube_time>/gi, time)
-    .replace(/<TeamA>/gi, masterTeamA.name.replace(/\//g, ' '))
-    .replace(/<TeamB>/gi, masterTeamB.name.replace(/\//g, ' '))
-    .replace(/<label1>/gi, elements.label1.textContent)
-    .replace(/<label2>/gi, elements.label2.textContent)
-    .replace(/<label3>/gi, elements.label3.textContent)
-    .replace(/<label4>/gi, elements.label4.textContent)
-    .replace(/<label5>/gi, elements.label5.textContent);
+
+const fillYoutubeTemplate = (template, time, customData = {}) => {
+    const round = customData.round !== undefined ? customData.round : (elements.label1?.textContent || '').trim();
+    const pairLabel = customData.pairLabel !== undefined ? customData.pairLabel : (elements.label2?.textContent || '').trim();
+    const teamA = customData.teamA !== undefined ? customData.teamA : (masterTeamA?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const teamB = customData.teamB !== undefined ? customData.teamB : (masterTeamB?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const label3 = elements.label3?.textContent || '';
+    const label4 = elements.label4?.textContent || '';
+    const label5 = elements.label5?.textContent || '';
+
+    return (template || '<youtube_time> <label2> <TeamA> VS <TeamB>')
+        .replace(/<youtube_time>/gi, time)
+        .replace(/<TeamA>\s*VS\s*<TeamB>/gi, `${teamA} VS ${teamB}`)
+        .replace(/<TeamA>/gi, teamA)
+        .replace(/<TeamB>/gi, teamB)
+        .replace(/<label1>/gi, round)
+        .replace(/<label2>/gi, pairLabel)
+        .replace(/<label3>/gi, label3)
+        .replace(/<label4>/gi, label4)
+        .replace(/<label5>/gi, label5)
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+};
+
 const renderYoutubeTimestamps = () => {
     const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
     const output = document.getElementById('youtubeTimestampList');
-    if (output) output.value = list.map(item => item.text).join('\n');
+    if (!output) return;
+
+    if (!list.length) {
+        output.value = '';
+        return;
+    }
+
+    let result = '';
+    let currentRound = null;
+
+    list.forEach(item => {
+        if (!item) return;
+
+        // รองรับข้อมูลเดิมที่มีเฉพาะ round text
+        if (!item.matchId && item.round && item.text === item.round) {
+            if (result) result += '\n\n';
+            result += item.round;
+            currentRound = item.round;
+            return;
+        }
+
+        const round = (item.round || '').trim();
+        // หากเปลี่ยนรอบ ให้เว้นบรรทัดใหม่ และขึ้นชื่อรอบ
+        if (round && round !== currentRound) {
+            if (result) result += '\n\n';
+            result += round;
+            currentRound = round;
+        }
+
+        const line = item.text || `${item.timeFormatted || formatYoutubeTime(item.seconds || 0)} ${item.pairLabel || ''} ${item.teamA || ''} VS ${item.teamB || ''}`.replace(/[ \t]+/g, ' ').trim();
+        result += '\n' + line;
+    });
+
+    output.value = result.trim();
 };
+
+const triggerYoutubeCooldown = (button) => {
+    if (!button) return;
+    isYoutubeConfirming = true;
+    button.disabled = true;
+    button.style.opacity = '0.7';
+    button.style.filter = 'grayscale(40%)';
+    button.innerHTML = '<i class="fas fa-check"></i> บันทึกแล้ว';
+
+    setTimeout(() => {
+        isYoutubeConfirming = false;
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.filter = 'none';
+        button.innerHTML = button.getAttribute('data-normal-html') || '<i class="fab fa-youtube"></i> YouTube';
+    }, 2500);
+};
+
 const confirmYoutubeTimestamp = () => {
+    if (isYoutubeConfirming) {
+        showToast('กำลังบันทึกเวลา กรุณารอสักครู่ (ป้องกันการกดซ้ำ)', 'warning');
+        return;
+    }
+
+    const button = document.getElementById('youtubeConfirmBtn');
     const seconds = getYoutubeElapsed();
     const time = formatYoutubeTime(seconds);
-    const template = localStorage.getItem('youtubeDetailsText') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+    const template = localStorage.getItem('youtubeLineTemplate') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
     const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
-    const round = elements.label1.textContent.trim();
-    if (round && (!list.length || list[list.length - 1].round !== round)) list.push({ round, text: round });
-    list.push({ round, matchId: parseInt(elements.matchID.value), seconds, text: fillYoutubeTemplate(template, time) });
+
+    const round = (elements.label1?.textContent || '').trim() || 'รอบการแข่งขัน';
+    const pairLabel = (elements.label2?.textContent || '').trim();
+    const matchId = parseInt(elements.matchID?.value) || 0;
+    const teamA = (masterTeamA?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const teamB = (masterTeamB?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+
+    // ── ตรวจสอบข้อมูลซ้ำ (Duplicate Detection) ──
+    const existingIndex = list.findIndex(item => {
+        if (!item) return false;
+        const sameRound = (item.round || '').trim().toLowerCase() === round.toLowerCase();
+        const sameMatchId = matchId > 0 && item.matchId === matchId;
+        const sameTeams = teamA && teamB && item.teamA === teamA && item.teamB === teamB;
+        const samePair = pairLabel && item.pairLabel && item.pairLabel.toLowerCase() === pairLabel.toLowerCase();
+        
+        return sameRound && (sameMatchId || sameTeams || samePair);
+    });
+
+    if (existingIndex !== -1) {
+        const existing = list[existingIndex];
+        const existingTime = existing.timeFormatted || formatYoutubeTime(existing.seconds || 0);
+        const matchTitle = `${existing.round} - ${existing.pairLabel || ('คู่ที่ ' + existing.matchId)}: ${existing.teamA || teamA} VS ${existing.teamB || teamB}`;
+
+        const wantsUpdate = confirm(
+            `⚠️ แมตช์นี้ถูกบันทึก Timestamp ไปแล้ว!\n\n` +
+            `แมตช์: ${matchTitle}\n` +
+            `เวลาเดิมที่บันทึก: ${existingTime}\n` +
+            `เวลาปัจจุบัน: ${time}\n\n` +
+            `คุณต้องการ "อัปเดตเป็นเวลาใหม่" หรือไม่?\n` +
+            `• [ ตกลง / OK ]: แก้ไขเวลาเดิมเป็น ${time} (ไม่สร้างแถวซ้ำ)\n` +
+            `• [ ยกเลิก / Cancel ]: ข้าม ไม่ทำการเปลี่ยนแปลงใดๆ`
+        );
+
+        if (!wantsUpdate) {
+            showToast('ยกเลิก ไม่บันทึกซ้ำ (ข้อมูลเดิมยังคงอยู่)', 'info');
+            return;
+        }
+
+        // อัปเดตข้อมูลในตำแหน่งเดิม
+        list[existingIndex].seconds = seconds;
+        list[existingIndex].timeFormatted = time;
+        list[existingIndex].round = round;
+        list[existingIndex].pairLabel = pairLabel || list[existingIndex].pairLabel;
+        list[existingIndex].teamA = teamA || list[existingIndex].teamA;
+        list[existingIndex].teamB = teamB || list[existingIndex].teamB;
+        list[existingIndex].matchId = matchId || list[existingIndex].matchId;
+        list[existingIndex].text = fillYoutubeTemplate(template, time, { round, pairLabel, teamA, teamB, matchId });
+
+        localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+        renderYoutubeTimestamps();
+        updateYoutubeButtonLabel(matchId || existing.matchId);
+        showToast(`อัปเดตเวลา ${pairLabel || ('คู่ที่ ' + matchId)} เป็น ${time} เรียบร้อยแล้ว`, 'success');
+        triggerYoutubeCooldown(button);
+        return;
+    }
+
+    // ── บันทึกรายการใหม่ ──
+    const newItem = {
+        round,
+        matchId,
+        pairLabel,
+        teamA,
+        teamB,
+        seconds,
+        timeFormatted: time,
+        text: fillYoutubeTemplate(template, time, { round, pairLabel, teamA, teamB, matchId })
+    };
+
+    list.push(newItem);
     localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
     renderYoutubeTimestamps();
-    showToast(`เพิ่มเวลา ${time} ของ Match ID ${elements.matchID.value} ลงรายละเอียด YouTube แล้ว`, 'success');
+    updateYoutubeButtonLabel(matchId);
+    showToast(`บันทึก ${time} [${pairLabel || ('คู่ที่ ' + matchId)}] ลง YouTube แล้ว`, 'success');
+    triggerYoutubeCooldown(button);
 };
+
+const undoYoutubeTimestamp = () => {
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+    if (!list.length) {
+        showToast('ไม่มีรายการ Timestamp ให้ลบ', 'warning');
+        return;
+    }
+
+    const last = list[list.length - 1];
+    const desc = last.text || `${last.pairLabel || ''} ${last.teamA || ''} VS ${last.teamB || ''}`;
+    if (confirm(`คุณต้องการลบรายการล่าสุดนี้ใช่หรือไม่?\n\n"${desc}"`)) {
+        list.pop();
+        localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+        renderYoutubeTimestamps();
+        updateYoutubeButtonLabel();
+        showToast('ลบรายการล่าสุดเรียบร้อยแล้ว', 'success');
+    }
+};
+
 window.insertYoutubeTag = tag => {
-    const textarea = document.getElementById('youtubeDetailsText');
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    textarea.value = textarea.value.slice(0, start) + tag + textarea.value.slice(textarea.selectionEnd);
-    textarea.focus();
-    textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+    const input = document.getElementById('youtubeLineTemplate');
+    if (!input) return;
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    input.value = input.value.slice(0, start) + tag + input.value.slice(end);
+    input.focus();
+    input.selectionStart = input.selectionEnd = start + tag.length;
 };
 
 const enterEditMode = (team) => {
@@ -2592,7 +2805,12 @@ const setupEventListeners = () => {
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     // V2.9.2: Settings Tab click handlers
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
+        btn.type = 'button';
+        btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            switchSettingsTab(btn.getAttribute('data-tab'));
+        });
     });
 
     // Settings Tab Arrow Navigation
@@ -2629,8 +2847,29 @@ const setupEventListeners = () => {
     }
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
-        const youtubeDetails = document.getElementById('youtubeDetailsText');
-        if (youtubeDetails) youtubeDetails.value = localStorage.getItem('youtubeDetailsText') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        const lineTemplateInput = document.getElementById('youtubeLineTemplate');
+        if (lineTemplateInput) lineTemplateInput.value = localStorage.getItem('youtubeLineTemplate') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        const youtubeFooter = document.getElementById('youtubeFooterText');
+        if (youtubeFooter) {
+            const savedFooter = localStorage.getItem('youtubeFooterText');
+            if (savedFooter !== null) {
+                youtubeFooter.value = savedFooter;
+            } else {
+                const legacy = localStorage.getItem('youtubeDetailsText');
+                if (legacy && !legacy.includes('<youtube_time>')) {
+                    youtubeFooter.value = legacy;
+                } else {
+                    youtubeFooter.value = 
+`-------------------------------------
+รายการ...
+📅 แข่งขันวัน...
+⚽ สนาม...
+-------------------------------------
+🏆 #...
+🎥 #JamornzMedia #จามรมีเดี่ย`;
+                }
+            }
+        }
         renderYoutubeTimestamps();
         updateYoutubeTimerDisplay();
         if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
@@ -2652,6 +2891,8 @@ const setupEventListeners = () => {
         applyVisibilitySettings();
         applyColorCount();
         loadIndicatorSettings();
+        const savedSettingsTab = localStorage.getItem('activeSettingsTab') || 'settingsTabGeneral';
+        switchSettingsTab(document.getElementById(savedSettingsTab) ? savedSettingsTab : 'settingsTabGeneral');
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
@@ -2673,18 +2914,48 @@ const setupEventListeners = () => {
     if (youtubeResetBtn) youtubeResetBtn.addEventListener('click', resetYoutubeTimer);
     const saveYoutubeBtn = document.getElementById('saveYoutubeDetailsBtn');
     if (saveYoutubeBtn) saveYoutubeBtn.addEventListener('click', () => {
-        localStorage.setItem('youtubeDetailsText', document.getElementById('youtubeDetailsText').value);
-        showToast('บันทึกรูปแบบรายละเอียด YouTube แล้ว', 'success');
+        const lineTemplate = document.getElementById('youtubeLineTemplate')?.value.trim() || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        const footer = document.getElementById('youtubeFooterText')?.value || '';
+        localStorage.setItem('youtubeLineTemplate', lineTemplate);
+        localStorage.setItem('youtubeFooterText', footer);
+        showToast('บันทึกการตั้งค่า YouTube เรียบร้อยแล้ว', 'success');
     });
+
     const copyYoutubeBtn = document.getElementById('copyYoutubeDetailsBtn');
     if (copyYoutubeBtn) copyYoutubeBtn.addEventListener('click', () => {
-        const intro = document.getElementById('youtubeDetailsText')?.value.trim() || '';
         const timestamps = document.getElementById('youtubeTimestampList')?.value.trim() || '';
-        navigator.clipboard.writeText([intro, timestamps].filter(Boolean).join('\n\n')).then(() => showToast('คัดลอกรายละเอียด YouTube แล้ว', 'success'));
+        const footer = document.getElementById('youtubeFooterText')?.value.trim() || '';
+        const fullText = [timestamps, footer].filter(Boolean).join('\n\n');
+
+        if (!fullText) {
+            showToast('ไม่มีข้อมูลสำหรับคัดลอก', 'warning');
+            return;
+        }
+
+        navigator.clipboard.writeText(fullText).then(() => {
+            showToast('คัดลอกรายละเอียด YouTube ครบชุดเรียบร้อยแล้ว', 'success');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = fullText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('คัดลอกรายละเอียด YouTube ครบชุดเรียบร้อยแล้ว', 'success');
+        });
     });
+
+    const undoYoutubeBtn = document.getElementById('undoYoutubeTimestampBtn');
+    if (undoYoutubeBtn) undoYoutubeBtn.addEventListener('click', undoYoutubeTimestamp);
+
     const clearYoutubeBtn = document.getElementById('clearYoutubeTimestampsBtn');
     if (clearYoutubeBtn) clearYoutubeBtn.addEventListener('click', () => {
-        if (confirm('ล้างรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) { localStorage.setItem('youtubeTimestamps', '[]'); renderYoutubeTimestamps(); }
+        if (confirm('ล้างรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) {
+            localStorage.setItem('youtubeTimestamps', '[]');
+            renderYoutubeTimestamps();
+            updateYoutubeButtonLabel();
+            showToast('ล้างรายการ Timestamp ทั้งหมดแล้ว', 'info');
+        }
     });
     const mainAnnounceBtn = document.getElementById('announceMainTabBtn');
     const youtubeAnnounceBtn = document.getElementById('announceYoutubeTabBtn');
@@ -2919,6 +3190,7 @@ const processFiles = async (files) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     applyYoutubeAnnouncementEnabled(localStorage.getItem('youtubeAnnouncementEnabled') === 'true');
+    updateYoutubeButtonLabel();
     if (getYoutubeTimerState().running) {
         youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
     }
