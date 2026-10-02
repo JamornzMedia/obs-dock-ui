@@ -1931,19 +1931,24 @@
             display: none !important;
         }
 
-        /* Welcome Screen Styles (Restored from Copy) */
+        /* Welcome Screen */
         #welcomeScreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            background:
+                radial-gradient(circle at 15% 15%, rgba(37, 99, 235, .22), transparent 34%),
+                radial-gradient(circle at 85% 75%, rgba(14, 165, 233, .15), transparent 32%),
+                linear-gradient(145deg, #020617 0%, #071329 52%, #0f172a 100%);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 24px;
+            overflow-y: auto;
             color: #fff;
             transition: opacity 0.5s ease;
         }
@@ -1965,50 +1970,57 @@
         }
 
         .welcome-content {
-            text-align: center;
-            animation: fadeIn 1s ease-out;
+            text-align: left;
+            animation: fadeIn .45s ease-out;
             position: relative;
             z-index: 10;
+            width: min(920px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr);
+            gap: 28px;
+            align-items: center;
         }
 
         .welcome-title {
-            font-size: 4rem;
+            font-size: clamp(2.5rem, 7vw, 5.4rem);
             font-weight: 900;
-            margin-bottom: 5px;
-            background: linear-gradient(to right, #60a5fa, #a855f7);
+            margin: 10px 0 6px;
+            background: linear-gradient(120deg, #f8fafc 5%, #60a5fa 50%, #22d3ee 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
-            letter-spacing: -2px;
+            letter-spacing: -4px;
+            line-height: .92;
             filter: drop-shadow(0 0 20px rgba(96, 165, 250, 0.3));
         }
 
         .welcome-subtitle {
-            font-size: 1.5rem;
+            font-size: .78rem;
             color: #cbd5e1;
-            margin-bottom: 40px;
-            font-weight: 300;
-            letter-spacing: 4px;
+            margin-bottom: 18px;
+            font-weight: 700;
+            letter-spacing: 2.4px;
             text-transform: uppercase;
-            opacity: 0.8;
+            opacity: .76;
             border: none;
             background: none;
             padding: 0;
         }
 
         .welcome-btn {
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #2563eb, #0284c7);
             color: #fff;
             border: none;
-            padding: 16px 48px;
-            font-size: 1.2rem;
+            width: 100%;
+            min-height: 52px;
+            padding: 14px 24px;
+            font-size: 1rem;
             font-weight: 700;
-            border-radius: 50px;
+            border-radius: 12px;
             cursor: pointer;
             box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            letter-spacing: 2px;
+            letter-spacing: .4px;
         }
 
         .welcome-btn:hover {
@@ -2017,12 +2029,203 @@
         }
 
         .welcome-footer {
-            position: absolute;
-            bottom: 30px;
-            font-size: 0.9rem;
+            position: fixed;
+            bottom: 12px;
+            font-size: 0.72rem;
             color: #64748b;
             font-family: 'Inter', monospace;
             z-index: 10;
+        }
+
+        .welcome-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #7dd3fc;
+            background: rgba(14, 165, 233, .1);
+            border: 1px solid rgba(56, 189, 248, .25);
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .welcome-kicker::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 12px #22c55e;
+        }
+
+        .welcome-copy {
+            max-width: 510px;
+        }
+
+        .welcome-copy > p {
+            color: #94a3b8;
+            line-height: 1.65;
+            margin: 0;
+            max-width: 480px;
+        }
+
+        .welcome-roadmap {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 12px;
+            color: #a5b4fc;
+            font-size: .68rem;
+        }
+
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .welcome-feature {
+            min-width: 0;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, .56);
+            border: 1px solid rgba(148, 163, 184, .13);
+        }
+
+        .welcome-feature i { color: #38bdf8; margin-bottom: 8px; }
+        .welcome-feature strong { display: block; font-size: .76rem; color: #e2e8f0; }
+        .welcome-feature span { display: block; margin-top: 3px; font-size: .66rem; color: #64748b; line-height: 1.35; }
+
+        .welcome-login-card {
+            position: relative;
+            padding: 22px;
+            border-radius: 20px;
+            background: linear-gradient(165deg, rgba(30, 41, 59, .92), rgba(15, 23, 42, .8));
+            border: 1px solid rgba(125, 211, 252, .18);
+            box-shadow: 0 28px 80px rgba(0, 0, 0, .38);
+            overflow: hidden;
+        }
+
+        .welcome-login-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #2563eb, #22d3ee, transparent);
+        }
+
+        .welcome-login-head { margin-bottom: 16px; }
+        .welcome-login-head strong { display: block; font-size: 1rem; color: #f8fafc; }
+        .welcome-login-head span { display: block; margin-top: 4px; font-size: .75rem; color: #64748b; }
+
+        .welcome-field { margin-bottom: 10px; }
+        .welcome-field label { display: block; margin: 0 0 6px 2px; font-size: .68rem; font-weight: 700; color: #94a3b8; }
+        .welcome-field input,
+        .welcome-field select { width: 100%; min-height: 44px; }
+
+        .welcome-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+        .welcome-guest-btn {
+            min-width: 48px;
+            min-height: 52px;
+            padding: 0 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.06);
+            color: #cbd5e1;
+            border: 1px solid rgba(255,255,255,.1);
+        }
+        .welcome-login-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: center; margin-top: 12px; }
+        .welcome-tool-btn { min-height: 36px; padding: 6px 9px; background: transparent; color: #64748b; font-size: .7rem; }
+        .welcome-tool-btn:hover { color: #fca5a5; background: rgba(239,68,68,.08); }
+        .welcome-support-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 36px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            color: #86efac;
+            text-decoration: none;
+            font-size: .7rem;
+            white-space: nowrap;
+        }
+        .welcome-support-link:hover { background: rgba(34,197,94,.08); color: #bbf7d0; }
+        .welcome-dock-tip { display: flex; flex: 1 1 180px; gap: 7px; align-items: flex-start; color: #64748b; font-size: .67rem; line-height: 1.45; }
+        .welcome-dock-tip i { color: #38bdf8; margin-top: 2px; }
+
+        /* Touch-first refinements for OBS docks */
+        button, input, select, label { touch-action: manipulation; }
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #7dd3fc;
+            outline-offset: 2px;
+        }
+
+        #mainPanelContainer,
+        body > .card {
+            width: min(900px, calc(100% - 16px));
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        body > .card {
+            margin-top: 6px;
+        }
+
+        .btn-score-plus,
+        .btn-score-minus {
+            min-height: 48px;
+            border-radius: 10px;
+        }
+
+        body.touch-mode button { min-height: 48px; }
+        body.touch-mode .action-buttons-grid button { min-height: 54px; }
+        body.touch-mode .btn-score-plus { min-height: 64px; font-size: 1.45rem; }
+        body.touch-mode .btn-score-minus { min-height: 48px; }
+        body.touch-mode #injuryTimeMinusBtn,
+        body.touch-mode #injuryTimePlusBtn { min-width: 48px; min-height: 48px; padding: 8px !important; }
+        body.touch-mode .score-col-center button { min-width: 48px; min-height: 48px; }
+
+        @media (max-width: 620px) {
+            html, body { font-size: 15px; }
+            .container { padding: 6px; }
+            .card { padding: 10px; border-radius: 10px; }
+            body > .card, #mainPanelContainer { width: calc(100% - 10px); }
+            button { min-height: 44px; padding: 9px 12px; }
+            .row { gap: 6px; }
+            .action-buttons-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .action-buttons-grid button { min-height: 48px; padding: 10px 6px; }
+            .btn-score-plus { min-height: 58px; font-size: 1.4rem; }
+            .btn-score-minus { min-height: 44px; }
+            .clean-score-display { font-size: clamp(3rem, 18vw, 5rem); border-radius: 10px; }
+            .score2-card .clean-score-display { font-size: clamp(2rem, 12vw, 3rem); }
+            .score-col-center { flex-basis: 50px; gap: 8px !important; }
+            .score-col-center button { width: 44px !important; height: 44px !important; min-height: 44px; }
+            .timer-area-container { padding: 10px; gap: 10px; }
+            .timer-display-area .row button { min-width: 52px; min-height: 48px; }
+            #injuryTimeMinusBtn, #injuryTimePlusBtn { min-width: 44px; min-height: 44px; padding: 8px !important; }
+            #swapBtn { min-height: 48px; }
+            #pcMatchIdBtn { width: 56px !important; min-height: 46px; }
+            .labels-row { gap: 5px; margin-top: 6px; }
+            .labels-row div { padding: 7px 4px; font-size: .68rem; }
+            #onlineUserCount, #userRankDisplay { min-height: 38px; }
+        }
+
+        @media (max-width: 760px) {
+            #welcomeScreen { justify-content: flex-start; padding: 18px 12px 48px; }
+            .welcome-content { grid-template-columns: 1fr; gap: 18px; width: min(480px, 100%); }
+            .welcome-copy { text-align: center; margin: 0 auto; }
+            .welcome-copy > p { margin: 0 auto; }
+            .welcome-title { letter-spacing: -2px; }
+            .welcome-subtitle { margin-bottom: 12px; }
+            .welcome-features { margin-top: 14px; }
+            .welcome-feature { padding: 9px 6px; text-align: center; }
+            .welcome-feature span { display: none; }
+            .welcome-login-card { padding: 16px; border-radius: 16px; }
+            .welcome-footer { position: relative; bottom: auto; margin-top: 18px; text-align: center; }
         }
 
         /* V2.9.3: Shake animation for validation */
@@ -2087,62 +2290,57 @@
     <!-- Welcome Screen Restored -->
     <div id="welcomeScreen">
         <div class="welcome-content">
-            <div class="welcome-title">Dock UI : OBSScore</div>
-            <div class="welcome-subtitle">Control Panel</div>
+            <section class="welcome-copy">
+                <div class="welcome-kicker">OBS Dock ready</div>
+                <div class="welcome-title">OBSScore</div>
+                <div class="welcome-subtitle">Live match control</div>
+                <p>ควบคุมคะแนน เวลา ทีม และฉาก OBS จากหน้าจอเดียว ออกแบบใหม่ให้กดง่ายแม้ใช้ Dock ขนาดแคบ</p>
+                <div class="welcome-roadmap"><i class="fas fa-wand-magic-sparkles"></i> Next: ระบบยืนยันตัวตนด้วย Email Login</div>
+                <div class="welcome-features">
+                    <div class="welcome-feature"><i class="fas fa-bolt"></i><strong>Quick control</strong><span>ปุ่มหลักแตะง่ายและตอบสนองเร็ว</span></div>
+                    <div class="welcome-feature"><i class="fas fa-display"></i><strong>OBS ready</strong><span>ทำงานกับ WebSocket และ Browser Source</span></div>
+                    <div class="welcome-feature"><i class="fas fa-mobile-screen"></i><strong>Remote</strong><span>รองรับแผงควบคุมผ่านมือถือ</span></div>
+                </div>
+            </section>
 
-            <!-- Compact Identity Section for OBS Dock -->
-            <div style="width: 100%; max-width: 280px; margin: 0 auto;">
-                <!-- ID Name Field with Icon Button -->
-                <div style="margin-bottom: 12px;">
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                        <input type="text" id="visitorName" placeholder="ชื่อ / ID Name"
-                            style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
-                        <button id="editNameBtn" title="แก้ไขชื่อ" style="display: none; background: #3b82f6; border: none; padding: 8px 12px; color: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-edit"></i></button>
+            <section class="welcome-login-card">
+                <div class="welcome-login-head">
+                    <strong>เริ่มควบคุมการแข่งขัน</strong>
+                    <span>กรอกข้อมูลเพื่อบันทึกโปรไฟล์ หรือเข้าแบบ Guest ได้ทันที</span>
+                </div>
+
+                <div class="welcome-field">
+                    <label for="visitorName">ชื่อผู้ใช้งาน / ID name</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="visitorName" placeholder="ชื่อ / ID Name" style="flex:1; min-width:0;">
+                        <button id="editNameBtn" class="btn-primary" title="แก้ไขชื่อ" style="display:none; min-width:44px; padding:0;"><i class="fas fa-edit"></i></button>
                     </div>
                 </div>
 
-                <!-- Province Dropdown -->
-                <div style="margin-bottom: 12px;">
-                    <select id="visitorProvince"
-                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
-                        <option value="">จังหวัด / Province</option>
-                    </select>
+                <div class="welcome-field">
+                    <label for="visitorProvince">จังหวัด / Province</label>
+                    <select id="visitorProvince"><option value="">เลือกจังหวัด / Select province</option></select>
                 </div>
 
-                <!-- Custom Province Input -->
-                <div id="provinceOtherContainer" style="display: none; margin-bottom: 12px;">
-                    <input type="text" id="visitorProvinceOther" placeholder="ระบุจังหวัด / Custom Province"
-                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
+                <div id="provinceOtherContainer" class="welcome-field" style="display:none;">
+                    <label for="visitorProvinceOther">จังหวัดอื่น ๆ / Custom province</label>
+                    <input type="text" id="visitorProvinceOther" placeholder="ระบุจังหวัด / Custom Province">
                 </div>
-            </div>
 
-            <button id="closeWelcomeBtn" class="welcome-btn">Start</button>
-            <!-- V2.9.3: Loading status -->
-            <div id="welcomeLoadingStatus"
-                style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8; text-align: center; min-height: 20px; transition: all 0.3s;">
-            </div>
-            <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center; margin-bottom: 12px;">
-                * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
-            </p>
-
-            <!-- Quick login & reset actions -->
-            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 280px; margin-left: auto; margin-right: auto;">
-                <button onclick="window.enterAsGuest()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">เข้าแบบผู้ใช้ชั่วคราว (Guest)</button>
-                <button onclick="window.resetStoredIdentity()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 10px 16px; font-size: 0.9rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">ล้างข้อมูลเดิม / สมัครใหม่ (Reset ID)</button>
-            </div>
-                        <div style="margin-top: 15px; text-align: center;">
-                <a href="https://ezdn.app/Jamornz" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-hand-holding-heart"></i> สนับสนุนการพัฒนาโปรแกรม (Donate)</a>
-            </div>
-            
-            <!-- Major Update Warning Card -->
-            <div style="margin-top: 20px; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 12px; max-width: 320px; margin-left: auto; margin-right: auto; text-align: left; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);">
-                <div style="font-weight: bold; color: #f87171; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-rocket"></i> แจ้งเตือนการอัปเดตครั้งใหญ่ (Coming Soon)
+                <div class="welcome-actions">
+                    <button id="closeWelcomeBtn" class="welcome-btn"><i class="fas fa-arrow-right"></i> Start control</button>
+                    <button onclick="window.enterAsGuest()" class="welcome-guest-btn" title="เข้าแบบผู้ใช้ชั่วคราว"><i class="fas fa-user-secret"></i></button>
                 </div>
-                <p style="margin: 0; font-size: 0.75rem; color: #cbd5e1; line-height: 1.45;">
-                    เตรียมก้าวสู่อนาคตที่ยิ่งใหญ่ขึ้น! ในเวอร์ชันถัดไป ระบบจะอัปเกรดมาใช้การยืนยันตัวตนผ่าน <strong>Email Login</strong> เพื่อความปลอดภัยระดับสูงสุด การบริหารจัดการข้อมูลผู้ใช้ที่เสถียรยิ่งขึ้น และเพื่อรองรับบิ๊กโปรเจกต์ใหม่ที่กำลังจะมาถึง... รอติดตาม!
-                </p>
-            </div>
+
+                <div id="welcomeLoadingStatus" style="margin-top:10px; font-size:.75rem; color:#94a3b8; text-align:center; min-height:18px; transition:all .3s;">
+                </div>
+
+                <div class="welcome-login-tools">
+                    <div class="welcome-dock-tip"><i class="fas fa-circle-info"></i><span>Dock แคบ: ใช้ปุ่ม Guest เพื่อเข้าเร็วได้ในหนึ่งแตะ</span></div>
+                    <a class="welcome-support-link" href="https://ezdn.app/Jamornz" target="_blank"><i class="fas fa-hand-holding-heart"></i> สนับสนุน</a>
+                    <button onclick="window.resetStoredIdentity()" class="welcome-tool-btn" title="ล้างข้อมูลเดิม / สมัครใหม่"><i class="fas fa-rotate-left"></i> Reset ID</button>
+                </div>
+            </section>
         </div>
         <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.5 (อัพเดต: 25 กันยายน 2569)</div>
     </div>
@@ -3166,6 +3364,13 @@
                     </div>
                     <span data-lang="actionCardVisibility"></span>
                 </label>
+                <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="touchModeCheck">
+                        <span class="slider"></span>
+                    </div>
+                    <span>โหมดปุ่มใหญ่ / Touch-friendly mode</span>
+                </label>
                 <label class="countdown-toggle">
                     <span data-lang="labelCount" style="margin-right: 10px;">Label Count:</span>
                     <select id="labelCountInput"
@@ -3689,7 +3894,7 @@
             </div>
         </div>
         <div class="row center" style="margin-top: 20px;">
-            <button id="closeWelcomeBtn" class="btn-primary" disabled style="opacity: 0.7; cursor: not-allowed;">
+            <button id="closeWelcomeSponsorBtn" class="btn-primary" disabled style="opacity: 0.7; cursor: not-allowed;">
                 <i class="fas fa-spinner fa-spin"></i> Loading...
             </button>
         </div>
@@ -3952,7 +4157,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r6"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r8"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"

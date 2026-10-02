@@ -24,7 +24,7 @@ const elements = [
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
     "swapCard",
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", "touchModeCheck",
     "actionButtonsCard", "actionButtonsGrid",
     "timerText", "halfText", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
@@ -33,7 +33,7 @@ const elements = [
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
-    "welcomeSponsorPopup", "closeWelcomeBtn",
+    "welcomeSponsorPopup", "closeWelcomeBtn", "closeWelcomeSponsorBtn",
     "copyShopeeLinkBtn", "copyEasyDonateLinkBtn",
     "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom",
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
@@ -839,7 +839,8 @@ const loadVisibilitySettings = () => {
         showResetStart: true,
         showEditTime: true,
         showCountdown: true,
-        showUndoHalf: true
+        showUndoHalf: true,
+        touchMode: false
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -853,6 +854,8 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+    if (elements.touchModeCheck) elements.touchModeCheck.checked = settings.touchMode;
+    document.body.classList.toggle('touch-mode', Boolean(settings.touchMode));
 
     // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
@@ -2045,7 +2048,6 @@ const buildSheetDataFromJamornz = (tournament) => {
 
     return rows;
 };
-};
 
 const buildWorkbookFromJamornz = (tournament) => {
     const wb = XLSX.utils.book_new();
@@ -2799,6 +2801,7 @@ const setupEventListeners = () => {
     elements.score2VisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('score2', e.target.checked));
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
+    if (elements.touchModeCheck) elements.touchModeCheck.addEventListener('change', (e) => saveVisibilitySetting('touchMode', e.target.checked));
 
     // V2.8.1 Listeners
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
@@ -3007,7 +3010,9 @@ const setupEventListeners = () => {
     if (elements.closeChangelogBtn) elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
-    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup);
+    if (elements.closeWelcomeSponsorBtn) {
+        elements.closeWelcomeSponsorBtn.addEventListener('click', closeWelcomePopup);
+    }
 
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
