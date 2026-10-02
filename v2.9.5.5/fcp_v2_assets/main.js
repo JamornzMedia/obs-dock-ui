@@ -150,10 +150,12 @@ function debounce(func, wait) {
 const obs = new OBSWebSocket();
 const setText = (source, text) => obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => { });
 const setImage = (sourceName, filename) => {
-    if (!filename) {
-        obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: "" } }).catch(err => { });
+    if (!filename || filename.startsWith('/api/') || filename.startsWith('http://') || filename.startsWith('https://')) {
+        if (!filename) {
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: "" } }).catch(err => { });
+        }
         return;
-    };
+    }
     const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
     const filePath = `${logoFolderPath}/${filename}${hasExt ? '' : '.png'}`;
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => { });
@@ -1194,19 +1196,21 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         } else {
-        const logoNameClean = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
+        const rawKey = String(masterTeam.logoFile).trim();
+        const upperKey = rawKey.toUpperCase();
+        const lowerKey = rawKey.toLowerCase();
+        const logoNameClean = lowerKey.replace(/\s/g, '').replace(/\.(png|jpe?g|gif|webp)$/i, '');
 
-        let foundKey = null;
-        if (logoCache[logoNameClean]) {
-            foundKey = logoNameClean;
-        } else {
+        let foundUrl = logoCache[rawKey] || logoCache[upperKey] || logoCache[lowerKey] || logoCache[logoNameClean];
+        if (!foundUrl) {
             // Prefix Match Strategy
             const keys = Object.keys(logoCache);
-            foundKey = keys.find(k => k.startsWith(logoNameClean + '.') || k === logoNameClean);
+            const foundKey = keys.find(k => k.toLowerCase() === lowerKey || k.toLowerCase().startsWith(logoNameClean + '.'));
+            if (foundKey) foundUrl = logoCache[foundKey];
         }
 
-        if (foundKey && logoCache[foundKey]) {
-            logoEl.src = logoCache[foundKey];
+        if (foundUrl) {
+            logoEl.src = foundUrl;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         } else {
@@ -1981,6 +1985,18 @@ const buildSheetDataFromJamornz = (tournament) => {
     const rows = [header];
     let matchCounter = 1;
 
+    const getCleanLogo = (code, fallback) => {
+        const c = code ? String(code).trim() : '';
+        if (c && c !== '-') {
+            return /^[a-z]\d+$/i.test(c) ? c.toUpperCase() : c;
+        }
+        const fb = fallback ? String(fallback).trim() : '';
+        if (fb && fb !== '-') {
+            return /^[a-z]\d+$/i.test(fb) ? fb.toUpperCase() : fb;
+        }
+        return '';
+    };
+
     // 1. Group Stage matches
     const sessions = tournament.sessions || [];
     sessions.forEach(s => {
@@ -1993,8 +2009,8 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#ffffff',
                 '#000000',
                 '#000000',
-                tournament.teamLogos?.[m.code1] || m.logo1 || m.code1 || '',
-                tournament.teamLogos?.[m.code2] || m.logo2 || m.code2 || '',
+                getCleanLogo(m.code1, m.logo1),
+                getCleanLogo(m.code2, m.logo2),
                 'รอบแรก',
                 `คู่ที่ ${m.num || (mi + 1)}`,
                 `สนามที่ ${m.field || 1}`,
@@ -2016,8 +2032,8 @@ const buildSheetDataFromJamornz = (tournament) => {
                 '#ffffff',
                 '#000000',
                 '#000000',
-                tournament.teamLogos?.[m.code1] || m.logo1 || m.code1 || '',
-                tournament.teamLogos?.[m.code2] || m.logo2 || m.code2 || '',
+                getCleanLogo(m.code1, m.logo1),
+                getCleanLogo(m.code2, m.logo2),
                 r.label || 'รอบน็อคเอาท์',
                 `คู่ที่ ${m.roundPairNumber || Math.floor(mi / Math.max(1, Number(r.fieldCount) || 1)) + 1}`,
                 `สนามที่ ${m.field || r.field || 1}`,
@@ -2028,6 +2044,7 @@ const buildSheetDataFromJamornz = (tournament) => {
     });
 
     return rows;
+};
 };
 
 const buildWorkbookFromJamornz = (tournament) => {
@@ -2107,14 +2124,22 @@ const fetchJamornzTournament = async () => {
         localStorage.setItem('jamornzPassword', pin);
         if (passwordInput) passwordInput.disabled = true;
 
-        // Auto-cache team logos in logoCache
+        // Auto-cache team logos in logoCache (supporting uppercase, lowercase, and full URLs)
         if (tournament.teamLogos && typeof tournament.teamLogos === 'object') {
             Object.entries(tournament.teamLogos).forEach(([code, url]) => {
                 if (url) {
-                    const cleanCode = code.replace(/\s/g, '').toLowerCase();
-                    logoCache[cleanCode] = url;
-                    const team = (tournament.teams || []).find(item => item.code === code);
-                    if (team?.name) logoCache[team.name.replace(/\s/g, '').toLowerCase()] = url;
+                    const fullUrl = url.startsWith('/') ? `https://jamornz.com${url}` : url;
+                    const cleanCode = code.replace(/\s/g, '');
+                    logoCache[cleanCode] = fullUrl;
+                    logoCache[cleanCode.toUpperCase()] = fullUrl;
+                    logoCache[cleanCode.toLowerCase()] = fullUrl;
+                    const team = (tournament.teams || []).find(item => item.code === code || item.code?.toUpperCase() === cleanCode.toUpperCase());
+                    if (team?.name) {
+                        const cleanName = team.name.replace(/\s/g, '');
+                        logoCache[cleanName] = fullUrl;
+                        logoCache[cleanName.toUpperCase()] = fullUrl;
+                        logoCache[cleanName.toLowerCase()] = fullUrl;
+                    }
                 }
             });
         }
