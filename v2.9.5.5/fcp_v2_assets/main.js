@@ -3336,6 +3336,18 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.style.cursor = 'pointer';
             // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
 
+            // Allow Enter key to trigger Start button
+            const visitorNameInputEl = document.getElementById('visitorName');
+            if (visitorNameInputEl && !visitorNameInputEl.dataset.enterBound) {
+                visitorNameInputEl.dataset.enterBound = 'true';
+                visitorNameInputEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        startBtn.click();
+                    }
+                });
+            }
+
             // Attach Save & Enter Logic
             startBtn.addEventListener('click', async () => {
                 const nameInput = document.getElementById('visitorName');
@@ -3347,13 +3359,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
                 };
 
-                // --- CASE 1: Empty fields → Temporary User ---
-                if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
+                // --- CASE 1: Empty name → Temporary User ---
+                if (!nameInput || !nameInput.value.trim()) {
                     const confirmTemp = await window.customConfirm(
-                        'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+                        'คุณยังไม่ได้กรอกชื่อผู้ใช้งาน\n\n' +
                         'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
                         '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
-                        'You haven\'t filled in the information.\n' +
+                        'You haven\'t entered a name.\n' +
                         'Enter as temporary user?\n' +
                         '(No usage data will be saved)',
                         'เข้าสู่ระบบแบบผู้เยี่ยมชม',
@@ -3389,7 +3401,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
                 const storedMachineId = localStorage.getItem('machineIdentityName');
-                if (storedMachineId && storedMachineId !== enteredName) {
+                if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== enteredName) {
                     // Check cooldown
                     const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
                     const now = Date.now();
@@ -3445,10 +3457,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     setStatus(`🔄 เปลี่ยนชื่อเป็น "${enteredName}" สำเร็จ`, '#60a5fa');
                 }
 
-                // Province validation
+                // Check existing machine cache first (preserve local data!)
+                let cachedIdentity = null;
+                let cachedMinutes = 0;
+                try {
+                    cachedIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+                } catch (e) {}
+                try {
+                    const cachedUsage = JSON.parse(localStorage.getItem('usageTracker') || '{}');
+                    cachedMinutes = cachedUsage.totalMinutes || 0;
+                } catch (e) {}
+
+                // Province validation - prioritize local cache if not selected in UI
                 let province = '';
                 if (provInput) {
                     province = provInput.value;
+                    if (!province && cachedIdentity && cachedIdentity.province && cachedIdentity.province !== 'Unknown') {
+                        province = cachedIdentity.province;
+                        provInput.value = province;
+                    }
                     if (province === 'Other' && provOtherInput) {
                         province = provOtherInput.value.trim();
                         if (!province) {
@@ -3460,49 +3487,74 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
+                if (!province && cachedIdentity && cachedIdentity.province) {
+                    province = cachedIdentity.province;
+                }
 
-                // Reuse existing ID or Generate 6-digit ID
+                // Check if this machine already has cache for this user
+                const isSameCachedUser = cachedIdentity && cachedIdentity.name && cachedIdentity.name.trim().toLowerCase() === enteredName.toLowerCase();
                 let userID = Math.floor(100000 + Math.random() * 900000).toString();
-                try {
-                    const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-                    if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-                        userID = existingIdentity.ID;
-                    }
-                } catch(e) {}
 
-                // V2.9.3: Restore usage data from Firebase
+                if (cachedIdentity && cachedIdentity.ID && !cachedIdentity.isTemporary) {
+                    // PRESERVE the existing cache on this machine
+                    if (isSameCachedUser || !cachedIdentity.name) {
+                        userID = cachedIdentity.ID;
+                    }
+                }
+
+                // Restore/sync usage data, always preserving the machine's local cache
                 try {
                     startBtn.disabled = true;
-                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบข้อมูล...', '#60a5fa');
 
                     const existingData = await fetchFirebaseUserData(enteredName, userID);
-                    // Check if it's a true duplicate (name taken by another ID)
-                    if (existingData && existingData.ID && existingData.ID !== userID) {
-                        setStatus(`⚠️ ชื่อ "${enteredName}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
-                        startBtn.disabled = false;
-                        startBtn.textContent = 'Start';
-                        return;
-                    }
 
-                    if (existingData && existingData.totalMinutes) {
-                        // V2.9.3: Always trust Firebase as the single source of truth for time
-                        const restoredMinutes = existingData.totalMinutes;
-                        localStorage.setItem('usageTracker', JSON.stringify({
-                            totalMinutes: restoredMinutes,
-                            lastUpdated: new Date().toISOString()
-                        }));
-                        const restoredRank = getRank(restoredMinutes);
-                        setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
-                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${enteredName}`);
+                    if (existingData) {
+                        // If local cache didn't have a valid permanent ID, adopt from Firebase
+                        if (!cachedIdentity || !cachedIdentity.ID || cachedIdentity.isTemporary) {
+                            if (existingData.ID) userID = existingData.ID;
+                        }
+                        // If province is still empty, restore from Firebase
+                        if ((!province || province === 'Unknown') && existingData.province && existingData.province !== 'Unknown') {
+                            province = existingData.province;
+                            if (provInput) provInput.value = province;
+                        }
+
+                        const firebaseMinutes = existingData.totalMinutes || 0;
+                        // PRESERVE MACHINE CACHE: Take the maximum of local cache and Firebase
+                        const finalMinutes = Math.max(cachedMinutes, firebaseMinutes);
+                        if (finalMinutes > 0) {
+                            localStorage.setItem('usageTracker', JSON.stringify({
+                                totalMinutes: finalMinutes,
+                                lastUpdated: new Date().toISOString()
+                            }));
+                            const restoredRank = getRank(finalMinutes);
+                            setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(finalMinutes/60)} ชม.)`, '#4ade80');
+                            console.log(`Preserved machine cache: ${finalMinutes} mins (local: ${cachedMinutes}, fb: ${firebaseMinutes}) for ${enteredName}`);
+                        } else {
+                            setStatus(`✅ ยินดีต้อนรับกลับ คุณ ${enteredName}!`, '#4ade80');
+                        }
                     } else {
-                        setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+                        // User not in Firebase yet, but might have machine cache
+                        if (cachedMinutes > 0 && isSameCachedUser) {
+                            const restoredRank = getRank(cachedMinutes);
+                            setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(cachedMinutes/60)} ชม.)`, '#4ade80');
+                        } else {
+                            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+                        }
                     }
 
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 } catch (err) {
                     console.error('Firebase user check error:', err);
-                    setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+                    // Offline fallback: continue using machine cache!
+                    if (cachedMinutes > 0 && isSameCachedUser) {
+                        const restoredRank = getRank(cachedMinutes);
+                        setStatus(`✅ ออฟไลน์ (ใช้ข้อมูลเดิมในเครื่อง: ${restoredRank.nameTh})`, '#4ade80');
+                    } else {
+                        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+                    }
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 }
@@ -3519,6 +3571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('machineIdentityName', enteredName);
                 userIdentity = identity;
                 window.userIdentity = identity;
+                if (window.updateUserIdentityUI) window.updateUserIdentityUI();
 
                 // Create com_ room in Firebase
                 if (window.initOnlinePresenceSystem) {
@@ -3836,9 +3889,9 @@ window.initWelcomeScreen = () => {
             }
         }
     } else {
-        // V2.9.3: Auto-fill locked name from anti-spam if exists
+        // V2.9.3: Auto-fill locked name from anti-spam if exists (ignore guest)
         const lockedName = localStorage.getItem('machineIdentityName');
-        if (lockedName && nameInput) {
+        if (lockedName && !lockedName.startsWith('Guest_') && nameInput) {
             nameInput.value = lockedName;
         }
     }
@@ -3857,10 +3910,10 @@ window.saveAndEnterApp = async () => {
 
     const name = nameInput ? nameInput.value.trim() : '';
 
-    // CASE 1: Empty fields → Temporary User
-    if (!name || (provinceSelect && !provinceSelect.value)) {
+    // CASE 1: Empty name → Temporary User
+    if (!name) {
         const confirmTemp = await window.customConfirm(
-            'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+            'คุณยังไม่ได้กรอกชื่อผู้ใช้งาน\n\n' +
             'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
             '(จะไม่มีการเก็บข้อมูลการใช้งาน)',
             'เข้าสู่ระบบแบบผู้เยี่ยมชม',
@@ -3889,7 +3942,7 @@ window.saveAndEnterApp = async () => {
 
     // CASE 2: Soft anti-spam — cooldown timer + warn
     const storedMachineId = localStorage.getItem('machineIdentityName');
-    if (storedMachineId && storedMachineId !== name) {
+    if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== name) {
         const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
         const now = Date.now();
         const cooldownMs = 30 * 60 * 1000;
@@ -3933,7 +3986,22 @@ window.saveAndEnterApp = async () => {
         setStatus(`🔄 เปลี่ยนชื่อเป็น "${name}" สำเร็จ`, '#60a5fa');
     }
 
-    let province = provinceSelect ? provinceSelect.value : 'Unknown';
+    // Check existing machine cache first (preserve local data!)
+    let cachedIdentity = null;
+    let cachedMinutes = 0;
+    try {
+        cachedIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+    } catch (e) {}
+    try {
+        const cachedUsage = JSON.parse(localStorage.getItem('usageTracker') || '{}');
+        cachedMinutes = cachedUsage.totalMinutes || 0;
+    } catch (e) {}
+
+    let province = provinceSelect ? provinceSelect.value : '';
+    if (!province && cachedIdentity && cachedIdentity.province && cachedIdentity.province !== 'Unknown') {
+        province = cachedIdentity.province;
+        if (provinceSelect) provinceSelect.value = province;
+    }
     if (province === 'Other' && provinceOtherInput) {
         province = provinceOtherInput.value.trim();
         if (!province) {
@@ -3941,46 +4009,73 @@ window.saveAndEnterApp = async () => {
             return;
         }
     }
+    if (!province && cachedIdentity && cachedIdentity.province) {
+        province = cachedIdentity.province;
+    }
+    if (!province) province = 'Unknown';
 
-    // Reuse existing ID or Generate 6-digit ID
+    // Check if this machine already has cache for this user
+    const isSameCachedUser = cachedIdentity && cachedIdentity.name && cachedIdentity.name.trim().toLowerCase() === name.toLowerCase();
     let userID = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-            userID = existingIdentity.ID;
-        }
-    } catch(e) {}
 
-    // CASE 3: Full login — Restore from Firebase
+    if (cachedIdentity && cachedIdentity.ID && !cachedIdentity.isTemporary) {
+        // PRESERVE the existing cache on this machine
+        if (isSameCachedUser || !cachedIdentity.name) {
+            userID = cachedIdentity.ID;
+        }
+    }
+
+    // CASE 3: Full login — Restore from Firebase (preserving machine cache)
     try {
         if (startBtn) startBtn.disabled = true;
-        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบข้อมูล...', '#60a5fa');
 
         const existingData = await fetchFirebaseUserData(name, userID);
-        // Check if it's a true duplicate (name taken by another ID)
-        if (existingData && existingData.ID && existingData.ID !== userID) {
-            setStatus(`⚠️ ชื่อ "${name}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
-            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
-            return;
-        }
 
-        if (existingData && existingData.totalMinutes) {
-            // V2.9.3: Always trust Firebase as the single source of truth for time
-            const restoredMinutes = existingData.totalMinutes;
-            localStorage.setItem('usageTracker', JSON.stringify({
-                totalMinutes: restoredMinutes,
-                lastUpdated: new Date().toISOString()
-            }));
-            const restoredRank = getRank(restoredMinutes);
-            setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+        if (existingData) {
+            // If local cache didn't have a valid permanent ID, adopt from Firebase
+            if (!cachedIdentity || !cachedIdentity.ID || cachedIdentity.isTemporary) {
+                if (existingData.ID) userID = existingData.ID;
+            }
+            // Restore province if still empty
+            if ((!province || province === 'Unknown') && existingData.province && existingData.province !== 'Unknown') {
+                province = existingData.province;
+                if (provinceSelect) provinceSelect.value = province;
+            }
+
+            const firebaseMinutes = existingData.totalMinutes || 0;
+            // PRESERVE MACHINE CACHE: Take the maximum of local cache and Firebase
+            const finalMinutes = Math.max(cachedMinutes, firebaseMinutes);
+            if (finalMinutes > 0) {
+                localStorage.setItem('usageTracker', JSON.stringify({
+                    totalMinutes: finalMinutes,
+                    lastUpdated: new Date().toISOString()
+                }));
+                const restoredRank = getRank(finalMinutes);
+                setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(finalMinutes/60)} ชม.)`, '#4ade80');
+                console.log(`Preserved machine cache: ${finalMinutes} mins (local: ${cachedMinutes}, fb: ${firebaseMinutes}) for ${name}`);
+            } else {
+                setStatus(`✅ ยินดีต้อนรับกลับ คุณ ${name}!`, '#4ade80');
+            }
         } else {
-            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+            // User not in Firebase yet, but might have machine cache
+            if (cachedMinutes > 0 && isSameCachedUser) {
+                const restoredRank = getRank(cachedMinutes);
+                setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(cachedMinutes/60)} ชม.)`, '#4ade80');
+            } else {
+                setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+            }
         }
 
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     } catch (err) {
         console.error('Firebase user check error:', err);
-        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        if (cachedMinutes > 0 && isSameCachedUser) {
+            const restoredRank = getRank(cachedMinutes);
+            setStatus(`✅ ออฟไลน์ (ใช้ข้อมูลเดิมในเครื่อง: ${restoredRank.nameTh})`, '#4ade80');
+        } else {
+            setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        }
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     }
 
@@ -4545,7 +4640,7 @@ window.enterAsGuest = () => {
         isTemporary: true
     };
     localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
-    localStorage.setItem('machineIdentityName', tempIdentity.name);
+    // Do not lock machineIdentityName to temporary guest name
     window.userIdentity = tempIdentity;
     
     try {
