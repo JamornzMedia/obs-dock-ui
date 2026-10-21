@@ -360,16 +360,22 @@ obs_rooms_score/
 
 ---
 
-## 📊 Data Source System (Excel / Google Sheet)
+## 📊 Data Source System (Excel / Google Sheet / Jamornz.com)
 
 ### Excel Mode
 - ผู้ใช้โหลดไฟล์ `.xlsx` / `.csv`
 - Parse ด้วย `handleExcel()` → เก็บใน `sheetData[]`
-- Column order: `MatchID, LogoA, TeamA, LogoB, TeamB, label1-5`
+- Column order: `MatchID, TeamA, TeamB, ColorA, ColorB, ColorA2, ColorB2, LogoA, LogoB, label1-5`
 
 ### Google Sheet Mode
 - ผู้ใช้วาง URL → ดึงข้อมูลผ่าน CORS proxy
 - Parse ด้วย `fetchGoogleSheet()` → เก็บใน `sheetData[]`
+
+### Jamornz.com Mode (V2.9.5.5)
+- ผู้ใช้วาง URL การแข่งขัน (เช่น `https://jamornz.com/tournament/view/...`) หรือ ID
+- ดึงข้อมูลอัตโนมัติผ่าน `fetchJamornzTournament()` จาก Jamornz Public API
+- รองรับการเลือกรอบแข่งขัน (รอบแบ่งกลุ่ม หรือรอบน็อกเอาต์)
+- บันทึกแคชโลโก้ทีมจาก R2 เข้า `logoCache` และสร้าง Workbook ในหน่วยความจำให้อัตโนมัติ
 
 ### applyMatch()
 - อ่าน `matchID` จาก input

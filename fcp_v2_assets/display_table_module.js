@@ -438,10 +438,17 @@ function renderDynamicColumns() {
 
 // Process sheetData and broadcast
 async function broadcastTableData() {
-  // Update file from source if using Google Sheets
-  if (localStorage.getItem('dataSourceMode') === 'gsheet' && window.fetchGoogleSheet) {
+  // Update file from source if using Google Sheets or Jamornz
+  const currentMode = localStorage.getItem('dataSourceMode');
+  if (currentMode === 'gsheet' && window.fetchGoogleSheet) {
     try {
       await window.fetchGoogleSheet();
+    } catch (e) {
+      console.error("Auto-fetch error during broadcast:", e);
+    }
+  } else if (currentMode === 'jamornz' && window.fetchJamornzTournament) {
+    try {
+      await window.fetchJamornzTournament();
     } catch (e) {
       console.error("Auto-fetch error during broadcast:", e);
     }

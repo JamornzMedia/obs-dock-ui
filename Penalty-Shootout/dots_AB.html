@@ -30,12 +30,13 @@
     }
 
     .dot {
-      width: var(--dot-size, 20px);
-      height: var(--dot-size, 20px);
+      box-sizing: border-box;
+      width: calc(var(--dot-size, 20px) + 4px);
+      height: calc(var(--dot-size, 20px) + 4px);
       border-radius: var(--dot-radius, 50%);
-      background-color: transparent;
-      border: 2px solid #666;
-      opacity: 0.4;
+      background-color: var(--dot-bg-unshot, transparent);
+      border: var(--dot-border, 2px solid #666);
+      opacity: var(--dot-opacity-unshot, 0.4);
       transition: background-color 0.1s ease, opacity 0.1s ease;
     }
 
@@ -83,8 +84,21 @@
       const layoutDirection = settings.layout === 'top-bottom' ? 'column' : 'row';
       document.documentElement.style.setProperty('--layout-direction', layoutDirection);
 
-      const dotRadius = settings.dotShape === 'square' ? '4px' : '50%';
-      document.documentElement.style.setProperty('--dot-radius', dotRadius);
+      const borderRadius = (settings.dotBorderRadius !== undefined) ? settings.dotBorderRadius + '%' : (settings.dotShape === 'square' ? '4px' : '50%');
+      document.documentElement.style.setProperty('--dot-radius', borderRadius);
+
+      // We toggle transparent border instead of "none" to preserve the outer sizing calculation
+      const borderWidth = settings.dotBorderWidth !== undefined ? settings.dotBorderWidth : 2;
+      const borderColor = settings.dotBorderColor || '#666';
+      const borderValue = settings.dotBorder === false 
+        ? `${borderWidth}px solid transparent` 
+        : `${borderWidth}px solid ${borderColor}`;
+      document.documentElement.style.setProperty('--dot-border', borderValue);
+
+      // Unshot dots properties
+      const showUnshot = settings.showUnshotDots !== false;
+      document.documentElement.style.setProperty('--dot-opacity-unshot', showUnshot ? '0.4' : '0');
+      document.documentElement.style.setProperty('--dot-bg-unshot', settings.unshotColor || '#555555');
     }
 
     channel.onmessage = (e) => {

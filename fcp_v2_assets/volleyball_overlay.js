@@ -25,7 +25,9 @@ let state = {
   autoServe: true,
   timeoutActive: '',
   setLimit: 25,
-  sport: 'volleyball'
+  sport: 'volleyball',
+  vbShowTimer: true,
+  vbShowHalf: true
 };
 
 // ──────────────────────────────────────── RENDER
@@ -101,7 +103,7 @@ function renderScoreboard(newState, prevState) {
     sport, colorActiveScore, colorActiveScoreText, colorSetsBg,
     colorSetsText, colorLogoBg, colorText, colorServe,
     customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore,
-    showServeBall
+    showServeBall, vbShowTimer, vbShowHalf, timer, half
   } = newState;
 
   // Custom CSS properties
@@ -182,8 +184,8 @@ function renderScoreboard(newState, prevState) {
 
   // Sport support variables
   const activeSport = sport || 'volleyball';
-  const serveSupport = (showServeBall !== false);
-  const timeoutSupport = (activeSport !== 'badminton');
+  const serveSupport = (showServeBall !== false && activeSport !== 'football');
+  const timeoutSupport = (activeSport !== 'badminton' && activeSport !== 'football');
 
   const getSportEmoji = (sp) => {
     switch (sp) {
@@ -281,6 +283,65 @@ function renderScoreboard(newState, prevState) {
     } else {
       statusB.className = 'status-cell';
       txtB.textContent = '';
+    }
+  }
+
+  // Show/Hide Sets Won Area based on sport
+  const setsWonArea = document.querySelector('.sets-won-area');
+  if (setsWonArea) {
+    if (activeSport === 'football') {
+      setsWonArea.classList.add('hidden');
+    } else {
+      setsWonArea.classList.remove('hidden');
+    }
+  }
+
+  // Show/Hide Status Area based on sport
+  const statusArea = document.querySelector('.status-area');
+  if (statusArea) {
+    if (activeSport === 'football') {
+      statusArea.classList.add('hidden');
+    } else {
+      statusArea.classList.remove('hidden');
+    }
+  }
+
+  // Football Info Area
+  const fbInfoArea = document.getElementById('fb-info-area');
+  const fbHalf = document.getElementById('fb-half');
+  const fbTime = document.getElementById('fb-time');
+  
+  if (fbInfoArea) {
+    if (activeSport === 'football' && (vbShowTimer || vbShowHalf)) {
+      fbInfoArea.style.display = 'flex';
+      
+      if (fbHalf) {
+        if (vbShowHalf) {
+          fbHalf.style.display = 'flex';
+          fbHalf.textContent = half || '1st';
+        } else {
+          fbHalf.style.display = 'none';
+        }
+      }
+      
+      if (fbTime) {
+        if (vbShowTimer) {
+          fbTime.style.display = 'flex';
+          fbTime.textContent = timer || '00:00';
+        } else {
+          fbTime.style.display = 'none';
+        }
+      }
+      
+      if (fbHalf && fbTime) {
+        if (vbShowHalf && vbShowTimer) {
+          fbHalf.style.borderBottom = '2px solid rgba(0, 0, 0, 0.2)';
+        } else {
+          fbHalf.style.borderBottom = 'none';
+        }
+      }
+    } else {
+      fbInfoArea.style.display = 'none';
     }
   }
 

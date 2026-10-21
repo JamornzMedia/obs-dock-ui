@@ -118,6 +118,10 @@ function broadcast() {
     timeoutsA: parseInt(getVbState(VB_TIMEOUTSA_KEY, '0')),
     timeoutsB: parseInt(getVbState(VB_TIMEOUTSB_KEY, '0')),
     
+    // Football settings
+    vbShowTimer: getVbState('vb_show_timer', 'true') === 'true',
+    vbShowHalf: getVbState('vb_show_half', 'true') === 'true',
+    
     // Boxing state additions
     timer: document.getElementById('timerText')?.textContent || '00:00',
     half: document.getElementById('halfText')?.textContent || '1st',
@@ -666,17 +670,22 @@ function updateSportUI() {
   const bxObs = document.getElementById('vb2-boxing-obs-container');
   
   const isBoxing = vbEnabled && sport === 'boxing';
+  const isFootball = vbEnabled && sport === 'football';
+  const hideVbSettings = isBoxing || isFootball;
   
   if (bxSettings) bxSettings.style.display = isBoxing ? 'block' : 'none';
   
-  if (vLimit) vLimit.style.display = isBoxing ? 'none' : 'block';
-  if (vfLimit) vfLimit.style.display = isBoxing ? 'none' : 'flex';
-  if (vHist) vHist.style.display = isBoxing ? 'none' : 'block';
-  if (vActions) vActions.style.display = isBoxing ? 'none' : 'grid';
+  const fbSettings = document.getElementById('vb2-football-settings-container');
+  if (fbSettings) fbSettings.style.display = isFootball ? 'block' : 'none';
   
-  if (vbShowServe) vbShowServe.style.display = isBoxing ? 'none' : 'flex';
+  if (vLimit) vLimit.style.display = hideVbSettings ? 'none' : 'block';
+  if (vfLimit) vfLimit.style.display = hideVbSettings ? 'none' : 'flex';
+  if (vHist) vHist.style.display = hideVbSettings ? 'none' : 'block';
+  if (vActions) vActions.style.display = hideVbSettings ? 'none' : 'grid';
+  
+  if (vbShowServe) vbShowServe.style.display = hideVbSettings ? 'none' : 'flex';
   if (vbFonts) vbFonts.style.display = vbEnabled ? 'block' : 'none';
-  if (vbWidthServe) vbWidthServe.style.display = isBoxing ? 'none' : 'block';
+  if (vbWidthServe) vbWidthServe.style.display = hideVbSettings ? 'none' : 'block';
   if (vbColors) vbColors.style.display = isBoxing ? 'none' : 'block';
   if (vbObs) vbObs.style.display = isBoxing ? 'none' : 'grid';
   if (bxObs) bxObs.style.display = isBoxing ? 'block' : 'none';
@@ -697,9 +706,19 @@ function injectSettingsTab() {
   const tabBtn = document.createElement('button');
   tabBtn.className = 'settings-tab-btn';
   tabBtn.setAttribute('data-tab', TAB_ID);
-  tabBtn.innerHTML = '🎨 กราฟิกกีฬา / Sport Graphics';
+  tabBtn.setAttribute('data-lang', 'sportTabBtn');
   tabBtn.style.color = '#f59e0b';
-  tabsContainer.appendChild(tabBtn);
+  
+  const initialLang = localStorage.getItem('scoreboardLang') || 'th';
+  const initialTrans = (window.translations && window.translations[initialLang]) ? window.translations[initialLang] : null;
+  tabBtn.innerHTML = (initialTrans && initialTrans.sportTabBtn) ? initialTrans.sportTabBtn : '🎨 Sport Graphics';
+
+  const cacheBtn = tabsContainer.querySelector('[data-tab="settingsTabCache"]');
+  if (cacheBtn) {
+    tabsContainer.insertBefore(tabBtn, cacheBtn);
+  } else {
+    tabsContainer.appendChild(tabBtn);
+  }
 
   // Wire into existing switchSettingsTab (exposed on window by main.js)
   tabBtn.addEventListener('click', () => {
@@ -763,6 +782,35 @@ function injectSettingsTab() {
         <option value="badminton"${getVbState('vb_sport', 'volleyball') === 'badminton' ? ' selected' : ''}>Badminton / แบดมินตัน</option>
         <option value="boxing"${getVbState('vb_sport', 'volleyball') === 'boxing' ? ' selected' : ''}>Boxing / มวย</option>
       </select>
+    </div>
+    
+    <!-- Football Graphic Settings -->
+    <div id="vb2-football-settings-container" style="margin-bottom: 14px; display: none;">
+      <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px;">
+        <div style="font-size: .8rem; font-weight: 700; color: #10b981; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid rgba(16,185,129,0.2); padding-bottom: 4px;">⚽ กราฟิกฟุตบอล (Football Settings)</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Show Timer Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+            <span style="font-size: 11px; color: #cbd5e1;">แสดงตัวจับเวลา (Show Timer)</span>
+            <label class="container-toggle" style="margin: 0; cursor: pointer;">
+              <div class="toggle-switch">
+                <input type="checkbox" id="vb2-fb-show-timer" ${getVbState('vb_show_timer', 'true') === 'true' ? 'checked' : ''}>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+          <!-- Show Half Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+            <span style="font-size: 11px; color: #cbd5e1;">แสดงครึ่งเวลา (Show Half)</span>
+            <label class="container-toggle" style="margin: 0; cursor: pointer;">
+              <div class="toggle-switch">
+                <input type="checkbox" id="vb2-fb-show-half" ${getVbState('vb_show_half', 'true') === 'true' ? 'checked' : ''}>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Boxing Graphic Settings Grouped by Component -->
@@ -1189,12 +1237,17 @@ function injectSettingsTab() {
     </div>
   `;
 
-  // Append panel after the last existing tab-content inside detailsPopup
+  // Insert panel BEFORE the Cache tab so Sport Graphics is not the last tab
   const detailsPopup = document.getElementById('detailsPopup');
   if (detailsPopup) {
-    const lastTab = [...detailsPopup.querySelectorAll('.settings-tab-content')].pop();
-    if (lastTab) lastTab.insertAdjacentElement('afterend', panel);
-    else detailsPopup.appendChild(panel);
+    const cacheTabContent = detailsPopup.querySelector('#settingsTabCache');
+    if (cacheTabContent) {
+      detailsPopup.insertBefore(panel, cacheTabContent);
+    } else {
+      const lastTab = [...detailsPopup.querySelectorAll('.settings-tab-content')].pop();
+      if (lastTab) lastTab.insertAdjacentElement('afterend', panel);
+      else detailsPopup.appendChild(panel);
+    }
   }
 
   // ── 3. Inject CSS ─────────────────────────────────────────────
@@ -1235,6 +1288,17 @@ function injectSettingsTab() {
   document.getElementById('vb2-sport-select').addEventListener('change', e => {
     localStorage.setItem('vb_sport', e.target.value);
     updateSportUI();
+    broadcast();
+  });
+
+  // Football settings
+  document.getElementById('vb2-fb-show-timer').addEventListener('change', e => {
+    localStorage.setItem('vb_show_timer', e.target.checked ? 'true' : 'false');
+    broadcast();
+  });
+  
+  document.getElementById('vb2-fb-show-half').addEventListener('change', e => {
+    localStorage.setItem('vb_show_half', e.target.checked ? 'true' : 'false');
     broadcast();
   });
 

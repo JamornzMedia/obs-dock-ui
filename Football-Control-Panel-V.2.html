@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.2</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.5</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -870,27 +870,6 @@
             gap: 4px;
         }
 
-        #announcement-text {
-            color: #fca5a5;
-            font-size: 1em;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            min-height: auto;
-            display: inline-block;
-            animation: scroll-left 60s linear infinite;
-        }
-
-        @keyframes scroll-left {
-            0% {
-                transform: translateX(100%);
-            }
-
-            100% {
-                transform: translateX(-100%);
-            }
-        }
-
-
         .labels-row {
             display: flex;
             gap: 12px;
@@ -1177,39 +1156,31 @@
         .popup-modal {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
+            top: 0;
+            left: 0;
             background: rgb(30, 41, 59);
-            padding: 30px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 600px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            width: 100%;
+            height: 100%;
             z-index: 100;
-            max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes modalSlideIn {
-            to {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
+            box-shadow: none;
+            border: none;
+            border-radius: 0;
+            max-width: 100%;
+            max-height: 100%;
         }
 
         .popup-modal h3 {
             margin-top: 0;
-            font-size: 1.5rem;
+            font-size: 1.1rem;
             color: #fff;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
+            padding-bottom: 6px;
         }
 
         .popup-modal p {
@@ -1736,47 +1707,28 @@
             align-items: center;
             gap: 8px;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             width: 100%;
         }
         .settings-tabs {
             display: flex;
             flex-wrap: nowrap;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
             gap: 6px;
             background: rgba(15, 23, 42, 0.6);
             padding: 6px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             justify-content: flex-start;
-            scrollbar-width: none; /* Firefox */
             flex-grow: 1;
-            scroll-behavior: smooth;
-        }
-
-        .settings-tabs::-webkit-scrollbar {
-            display: none; /* Safari and Chrome */
+            min-width: 0;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-width: thin;
+            scroll-snap-type: x proximity;
         }
 
         .settings-tabs-arrow {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            z-index: 2;
-            flex-shrink: 0;
-        }
-
-        .settings-tabs-arrow:hover {
-            background: var(--accent-color);
-            color: #fff;
+            display: none !important;
         }
 
         .settings-tab-btn {
@@ -1792,6 +1744,8 @@
             transition: all 0.2s;
             white-space: nowrap;
             flex: 0 0 auto;
+            min-height: 38px;
+            scroll-snap-align: center;
         }
 
         .settings-tab-btn.active {
@@ -1977,19 +1931,24 @@
             display: none !important;
         }
 
-        /* Welcome Screen Styles (Restored from Copy) */
+        /* Welcome Screen */
         #welcomeScreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            background:
+                radial-gradient(circle at 15% 15%, rgba(37, 99, 235, .22), transparent 34%),
+                radial-gradient(circle at 85% 75%, rgba(14, 165, 233, .15), transparent 32%),
+                linear-gradient(145deg, #020617 0%, #071329 52%, #0f172a 100%);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 24px;
+            overflow-y: auto;
             color: #fff;
             transition: opacity 0.5s ease;
         }
@@ -2011,50 +1970,57 @@
         }
 
         .welcome-content {
-            text-align: center;
-            animation: fadeIn 1s ease-out;
+            text-align: left;
+            animation: fadeIn .45s ease-out;
             position: relative;
             z-index: 10;
+            width: min(920px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr);
+            gap: 28px;
+            align-items: center;
         }
 
         .welcome-title {
-            font-size: 4rem;
+            font-size: clamp(2.5rem, 7vw, 5.4rem);
             font-weight: 900;
-            margin-bottom: 5px;
-            background: linear-gradient(to right, #60a5fa, #a855f7);
+            margin: 10px 0 6px;
+            background: linear-gradient(120deg, #f8fafc 5%, #60a5fa 50%, #22d3ee 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
-            letter-spacing: -2px;
+            letter-spacing: -4px;
+            line-height: .92;
             filter: drop-shadow(0 0 20px rgba(96, 165, 250, 0.3));
         }
 
         .welcome-subtitle {
-            font-size: 1.5rem;
+            font-size: .78rem;
             color: #cbd5e1;
-            margin-bottom: 40px;
-            font-weight: 300;
-            letter-spacing: 4px;
+            margin-bottom: 18px;
+            font-weight: 700;
+            letter-spacing: 2.4px;
             text-transform: uppercase;
-            opacity: 0.8;
+            opacity: .76;
             border: none;
             background: none;
             padding: 0;
         }
 
         .welcome-btn {
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #2563eb, #0284c7);
             color: #fff;
             border: none;
-            padding: 16px 48px;
-            font-size: 1.2rem;
+            width: 100%;
+            min-height: 52px;
+            padding: 14px 24px;
+            font-size: 1rem;
             font-weight: 700;
-            border-radius: 50px;
+            border-radius: 12px;
             cursor: pointer;
             box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            letter-spacing: 2px;
+            letter-spacing: .4px;
         }
 
         .welcome-btn:hover {
@@ -2063,12 +2029,203 @@
         }
 
         .welcome-footer {
-            position: absolute;
-            bottom: 30px;
-            font-size: 0.9rem;
+            position: fixed;
+            bottom: 12px;
+            font-size: 0.72rem;
             color: #64748b;
             font-family: 'Inter', monospace;
             z-index: 10;
+        }
+
+        .welcome-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #7dd3fc;
+            background: rgba(14, 165, 233, .1);
+            border: 1px solid rgba(56, 189, 248, .25);
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .welcome-kicker::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 12px #22c55e;
+        }
+
+        .welcome-copy {
+            max-width: 510px;
+        }
+
+        .welcome-copy > p {
+            color: #94a3b8;
+            line-height: 1.65;
+            margin: 0;
+            max-width: 480px;
+        }
+
+        .welcome-roadmap {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 12px;
+            color: #a5b4fc;
+            font-size: .68rem;
+        }
+
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .welcome-feature {
+            min-width: 0;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, .56);
+            border: 1px solid rgba(148, 163, 184, .13);
+        }
+
+        .welcome-feature i { color: #38bdf8; margin-bottom: 8px; }
+        .welcome-feature strong { display: block; font-size: .76rem; color: #e2e8f0; }
+        .welcome-feature span { display: block; margin-top: 3px; font-size: .66rem; color: #64748b; line-height: 1.35; }
+
+        .welcome-login-card {
+            position: relative;
+            padding: 22px;
+            border-radius: 20px;
+            background: linear-gradient(165deg, rgba(30, 41, 59, .92), rgba(15, 23, 42, .8));
+            border: 1px solid rgba(125, 211, 252, .18);
+            box-shadow: 0 28px 80px rgba(0, 0, 0, .38);
+            overflow: hidden;
+        }
+
+        .welcome-login-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #2563eb, #22d3ee, transparent);
+        }
+
+        .welcome-login-head { margin-bottom: 16px; }
+        .welcome-login-head strong { display: block; font-size: 1rem; color: #f8fafc; }
+        .welcome-login-head span { display: block; margin-top: 4px; font-size: .75rem; color: #64748b; }
+
+        .welcome-field { margin-bottom: 10px; }
+        .welcome-field label { display: block; margin: 0 0 6px 2px; font-size: .68rem; font-weight: 700; color: #94a3b8; }
+        .welcome-field input,
+        .welcome-field select { width: 100%; min-height: 44px; }
+
+        .welcome-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+        .welcome-guest-btn {
+            min-width: 48px;
+            min-height: 52px;
+            padding: 0 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.06);
+            color: #cbd5e1;
+            border: 1px solid rgba(255,255,255,.1);
+        }
+        .welcome-login-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: center; margin-top: 12px; }
+        .welcome-tool-btn { min-height: 36px; padding: 6px 9px; background: transparent; color: #64748b; font-size: .7rem; }
+        .welcome-tool-btn:hover { color: #fca5a5; background: rgba(239,68,68,.08); }
+        .welcome-support-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 36px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            color: #86efac;
+            text-decoration: none;
+            font-size: .7rem;
+            white-space: nowrap;
+        }
+        .welcome-support-link:hover { background: rgba(34,197,94,.08); color: #bbf7d0; }
+        .welcome-dock-tip { display: flex; flex: 1 1 180px; gap: 7px; align-items: flex-start; color: #64748b; font-size: .67rem; line-height: 1.45; }
+        .welcome-dock-tip i { color: #38bdf8; margin-top: 2px; }
+
+        /* Touch-first refinements for OBS docks */
+        button, input, select, label { touch-action: manipulation; }
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid #7dd3fc;
+            outline-offset: 2px;
+        }
+
+        #mainPanelContainer,
+        body > .card {
+            width: min(900px, calc(100% - 16px));
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        body > .card {
+            margin-top: 6px;
+        }
+
+        .btn-score-plus,
+        .btn-score-minus {
+            min-height: 48px;
+            border-radius: 10px;
+        }
+
+        body.touch-mode button { min-height: 48px; }
+        body.touch-mode .action-buttons-grid button { min-height: 54px; }
+        body.touch-mode .btn-score-plus { min-height: 64px; font-size: 1.45rem; }
+        body.touch-mode .btn-score-minus { min-height: 48px; }
+        body.touch-mode #injuryTimeMinusBtn,
+        body.touch-mode #injuryTimePlusBtn { min-width: 48px; min-height: 48px; padding: 8px !important; }
+        body.touch-mode .score-col-center button { min-width: 48px; min-height: 48px; }
+
+        @media (max-width: 620px) {
+            html, body { font-size: 15px; }
+            .container { padding: 6px; }
+            .card { padding: 10px; border-radius: 10px; }
+            body > .card, #mainPanelContainer { width: calc(100% - 10px); }
+            button { min-height: 44px; padding: 9px 12px; }
+            .row { gap: 6px; }
+            .action-buttons-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+            .action-buttons-grid button { min-height: 48px; padding: 10px 6px; }
+            .btn-score-plus { min-height: 58px; font-size: 1.4rem; }
+            .btn-score-minus { min-height: 44px; }
+            .clean-score-display { font-size: clamp(3rem, 18vw, 5rem); border-radius: 10px; }
+            .score2-card .clean-score-display { font-size: clamp(2rem, 12vw, 3rem); }
+            .score-col-center { flex-basis: 50px; gap: 8px !important; }
+            .score-col-center button { width: 44px !important; height: 44px !important; min-height: 44px; }
+            .timer-area-container { padding: 10px; gap: 10px; }
+            .timer-display-area .row button { min-width: 52px; min-height: 48px; }
+            #injuryTimeMinusBtn, #injuryTimePlusBtn { min-width: 44px; min-height: 44px; padding: 8px !important; }
+            #swapBtn { min-height: 48px; }
+            #pcMatchIdBtn { width: 56px !important; min-height: 46px; }
+            .labels-row { gap: 5px; margin-top: 6px; }
+            .labels-row div { padding: 7px 4px; font-size: .68rem; }
+            #onlineUserCount, #userRankDisplay { min-height: 38px; }
+        }
+
+        @media (max-width: 760px) {
+            #welcomeScreen { justify-content: flex-start; padding: 18px 12px 48px; }
+            .welcome-content { grid-template-columns: 1fr; gap: 18px; width: min(480px, 100%); }
+            .welcome-copy { text-align: center; margin: 0 auto; }
+            .welcome-copy > p { margin: 0 auto; }
+            .welcome-title { letter-spacing: -2px; }
+            .welcome-subtitle { margin-bottom: 12px; }
+            .welcome-features { margin-top: 14px; }
+            .welcome-feature { padding: 9px 6px; text-align: center; }
+            .welcome-feature span { display: none; }
+            .welcome-login-card { padding: 16px; border-radius: 16px; }
+            .welcome-footer { position: relative; bottom: auto; margin-top: 18px; text-align: center; }
         }
 
         /* V2.9.3: Shake animation for validation */
@@ -2133,58 +2290,59 @@
     <!-- Welcome Screen Restored -->
     <div id="welcomeScreen">
         <div class="welcome-content">
-            <div class="welcome-title">Dock UI : OBSScore</div>
-            <div class="welcome-subtitle">Control Panel</div>
+            <section class="welcome-copy">
+                <div class="welcome-kicker">OBS Dock ready</div>
+                <div class="welcome-title">OBSScore</div>
+                <div class="welcome-subtitle">Live match control</div>
+                <p>ควบคุมคะแนน เวลา ทีม และฉาก OBS จากหน้าจอเดียว ออกแบบใหม่ให้กดง่ายแม้ใช้ Dock ขนาดแคบ</p>
+                <div class="welcome-roadmap"><i class="fas fa-wand-magic-sparkles"></i> Next: ระบบยืนยันตัวตนด้วย Email Login</div>
+                <div class="welcome-features">
+                    <div class="welcome-feature"><i class="fas fa-bolt"></i><strong>Quick control</strong><span>ปุ่มหลักแตะง่ายและตอบสนองเร็ว</span></div>
+                    <div class="welcome-feature"><i class="fas fa-display"></i><strong>OBS ready</strong><span>ทำงานกับ WebSocket และ Browser Source</span></div>
+                    <div class="welcome-feature"><i class="fas fa-mobile-screen"></i><strong>Remote</strong><span>รองรับแผงควบคุมผ่านมือถือ</span></div>
+                </div>
+            </section>
 
-            <!-- Compact Identity Section for OBS Dock -->
-            <div style="width: 100%; max-width: 280px; margin: 0 auto;">
-                <!-- ID Name Field with Icon Button -->
-                <div style="margin-bottom: 12px;">
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                        <input type="text" id="visitorName" placeholder="ชื่อ / ID Name"
-                            style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
-                        <button id="editNameBtn" title="แก้ไขชื่อ" style="display: none; background: #3b82f6; border: none; padding: 8px 12px; color: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-edit"></i></button>
+            <section class="welcome-login-card">
+                <div class="welcome-login-head">
+                    <strong>เริ่มควบคุมการแข่งขัน</strong>
+                    <span>กรอกข้อมูลเพื่อบันทึกโปรไฟล์ หรือเข้าแบบ Guest ได้ทันที</span>
+                </div>
+
+                <div class="welcome-field">
+                    <label for="visitorName">ชื่อผู้ใช้งาน / ID name</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="visitorName" placeholder="ชื่อ / ID Name" style="flex:1; min-width:0;">
+                        <button id="editNameBtn" class="btn-primary" title="แก้ไขชื่อ" style="display:none; min-width:44px; padding:0;"><i class="fas fa-edit"></i></button>
                     </div>
                 </div>
 
-                <!-- Province Dropdown -->
-                <div style="margin-bottom: 12px;">
-                    <select id="visitorProvince"
-                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
-                        <option value="">จังหวัด / Province</option>
-                    </select>
+                <div class="welcome-field">
+                    <label for="visitorProvince">จังหวัด / Province</label>
+                    <select id="visitorProvince"><option value="">เลือกจังหวัด / Select province</option></select>
                 </div>
 
-                <!-- Custom Province Input -->
-                <div id="provinceOtherContainer" style="display: none; margin-bottom: 12px;">
-                    <input type="text" id="visitorProvinceOther" placeholder="ระบุจังหวัด / Custom Province"
-                        style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; color: white; border-radius: 6px; font-size: 0.9rem;">
+                <div id="provinceOtherContainer" class="welcome-field" style="display:none;">
+                    <label for="visitorProvinceOther">จังหวัดอื่น ๆ / Custom province</label>
+                    <input type="text" id="visitorProvinceOther" placeholder="ระบุจังหวัด / Custom Province">
                 </div>
-            </div>
 
-            <button id="closeWelcomeBtn" class="welcome-btn">Start</button>
-            <!-- V2.9.3: Loading status -->
-            <div id="welcomeLoadingStatus"
-                style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8; text-align: center; min-height: 20px; transition: all 0.3s;">
-            </div>
-            <p style="margin-top: 8px; font-size: 0.7rem; color: #475569; text-align: center;">
-                * หากไม่กรอกข้อมูล จะเข้าแบบผู้ใช้ชั่วคราว
-            </p>
-                        <div style="margin-top: 15px; text-align: center;">
-                <a href="https://ezdn.app/Jamornz" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; text-decoration: none; font-weight: bold; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"><i class="fas fa-hand-holding-heart"></i> สนับสนุนการพัฒนาโปรแกรม (Donate)</a>
-            </div>
-            
-            <!-- Major Update Warning Card -->
-            <div style="margin-top: 20px; background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 12px; max-width: 320px; margin-left: auto; margin-right: auto; text-align: left; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);">
-                <div style="font-weight: bold; color: #f87171; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-rocket"></i> แจ้งเตือนการอัปเดตครั้งใหญ่ (Coming Soon)
+                <div class="welcome-actions">
+                    <button id="closeWelcomeBtn" class="welcome-btn"><i class="fas fa-arrow-right"></i> Start control</button>
+                    <button onclick="window.enterAsGuest()" class="welcome-guest-btn" title="เข้าแบบผู้ใช้ชั่วคราว"><i class="fas fa-user-secret"></i></button>
                 </div>
-                <p style="margin: 0; font-size: 0.75rem; color: #cbd5e1; line-height: 1.45;">
-                    เตรียมก้าวสู่อนาคตที่ยิ่งใหญ่ขึ้น! ในเวอร์ชันถัดไป ระบบจะอัปเกรดมาใช้การยืนยันตัวตนผ่าน <strong>Email Login</strong> เพื่อความปลอดภัยระดับสูงสุด การบริหารจัดการข้อมูลผู้ใช้ที่เสถียรยิ่งขึ้น และเพื่อรองรับบิ๊กโปรเจกต์ใหม่ที่กำลังจะมาถึง... รอติดตาม!
-                </p>
-            </div>
+
+                <div id="welcomeLoadingStatus" style="margin-top:10px; font-size:.75rem; color:#94a3b8; text-align:center; min-height:18px; transition:all .3s;">
+                </div>
+
+                <div class="welcome-login-tools">
+                    <div class="welcome-dock-tip"><i class="fas fa-circle-info"></i><span>Dock แคบ: ใช้ปุ่ม Guest เพื่อเข้าเร็วได้ในหนึ่งแตะ</span></div>
+                    <a class="welcome-support-link" href="https://ezdn.app/Jamornz" target="_blank"><i class="fas fa-hand-holding-heart"></i> สนับสนุน</a>
+                    <button onclick="window.resetStoredIdentity()" class="welcome-tool-btn" title="ล้างข้อมูลเดิม / สมัครใหม่"><i class="fas fa-rotate-left"></i> Reset ID</button>
+                </div>
+            </section>
         </div>
-        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.3 (อัพเดต: 16 กรกฎาคม 2569)</div>
+        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.5 (อัพเดต: 25 กันยายน 2569)</div>
     </div>
 
     <script>
@@ -2590,7 +2748,8 @@
         const profileKeys = [
             'cardVisibility', 'customKeybinds', 'actionButtonSettings', 'maxHalves', 
             'colorCount', 'labelCount', 'dataSourceMode', 'googleSheetUrl', 
-            'googleSheetTabIndex', 'obsMainSceneName', 'obsReplaySceneName', 
+            'googleSheetTabIndex', 'jamornzTournamentUrl', 'jamornzRound',
+            'obsMainSceneName', 'obsReplaySceneName', 
             'controlPanelLayout', 'tagsData', 'detailsText'
         ];
         
@@ -2667,8 +2826,8 @@
             }
         });
     </script>
-    <div class="container">
-        <div class="card"
+    <div class="container" id="mainPanelContainer">
+        <div class="card" data-panel-id="panelTopBar"
             style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px;">
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -2686,12 +2845,6 @@
                     🔰 <span id="rankUserName" style="color: #e2e8f0; font-weight: 600;"></span> <span class="rank-name"
                         style="color: #94a3b8">เด็กฝึกหัด</span> <span class="rank-time">0h 00m</span>
                 </div>
-                <!-- Announcement Text (Fixed Visibility) -->
-                <div style="flex: 1; margin-left: 10px; overflow: hidden; position: relative; height: 30px;">
-                    <div id="announcement-text"
-                        style="position: absolute; white-space: nowrap; color: #cbd5e1; font-size: 1rem; line-height: 30px; top: 0;">
-                    </div>
-                </div>
             </div>
 
         </div>
@@ -2699,7 +2852,7 @@
     <!-- We keep existing settingsBtn if it exists elsewhere, otherwise add here if missing -->
     </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelExcelLoad">
         <div class="row space-between">
             <div class="row" style="margin-bottom:0;">
                 <button id="excelBtn" class="btn-secondary"><i class="fas fa-file-excel"></i> <span
@@ -2720,10 +2873,11 @@
                         data-lang="load"></span></button>
                 <button id="copyBtn" class="btn-success" data-lang-title="copy"><i class="fas fa-copy"></i> <span
                         data-lang="copy"></span></button>
+                <button id="youtubeConfirmBtn" class="btn-danger" title="บันทึกเวลาคู่นี้ลง YouTube Timestamps (มีระบบป้องกันกดซ้ำ)" style="display:none;"><i class="fab fa-youtube"></i> YouTube</button>
             </div>
         </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelTeamEditor">
         <div class="team-editor">
             <div class="team-row">
                 <!-- Row 1: Header (Colors + Logo) -->
@@ -2794,27 +2948,27 @@
             </div>
         </div>
         <div class="labels-row">
-            <div id="label1" data-lang="label1"></div>
-            <div id="label2" data-lang="label2"></div>
-            <div id="label3" data-lang="label3"></div>
+            <div id="label1" data-lang="label1" title="Label 1: รอบการแข่งขัน (เช่น รอบแรก / รอบ 16 ทีม)"></div>
+            <div id="label2" data-lang="label2" title="Label 2: คู่ที่ (ของแต่ละรอบ เช่น คู่ที่ 1)"></div>
+            <div id="label3" data-lang="label3" title="Label 3: สนามแข่งขัน (เช่น สนามที่ 1)"></div>
         </div>
         <div class="labels-row" style="margin-top: 8px;">
-            <div id="label4" data-lang="label4"></div>
-            <div id="label5" data-lang="label5"></div>
+            <div id="label4" data-lang="label4" title="Label 4: รุ่นการแข่งขัน (เช่น รุ่นประชาชน)"></div>
+            <div id="label5" data-lang="label5" title="Label 5: เวลาแข่งขัน (เช่น 14:00)"></div>
         </div>
     </div>
-    <div class="card" id="swapCard" style="padding: 8px;">
+    <div class="card" data-panel-id="panelSwap" id="swapCard" style="padding: 8px;">
         <div class="row center">
             <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span
                     data-lang="swap"></span></button>
         </div>
     </div>
 
-    <div class="card" id="actionButtonsCard">
+    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
         <div class="action-buttons-grid" id="actionButtonsGrid">
         </div>
     </div>
-    <div class="card">
+    <div class="card" data-panel-id="panelScore">
         <div class="score-panel-clean">
             <!-- Team A -->
             <div class="score-col-team">
@@ -2881,7 +3035,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel-id="panelTimer">
         <div class="row timer-area-container">
             <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
                 <button id="halfBtn" class="btn-secondary"
@@ -2930,7 +3084,7 @@
     </div>
 
     <!-- Display Table Control Panel on Main Page -->
-    <div id="dt-main-control-card" class="card" style="display: none; border: 1.5px solid #22c55e;">
+    <div id="dt-main-control-card" class="card" data-panel-id="panelDtControl" style="display: none; border: 1.5px solid #22c55e;">
         <div style="font-size: 0.75rem; font-weight: 700; color: #22c55e; text-transform: uppercase; margin-bottom: 8px; text-align: center;">📊 ควบคุมตาราง / Display Table Row Filter</div>
         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 12px; color: #cbd5e1;">MatchID Range:</span>
@@ -2946,6 +3100,11 @@
             <button id="settingsBtn" class="btn-secondary" data-lang-title="settings"><i
                     class="fas fa-cog"></i></button>
 
+            <button id="penaltyShootoutBtn" class="btn-secondary" title="ยิงจุดโทษ / Penalty Shootout"
+                onclick="openPenaltyShootout()" style="color: #fbbf24;">
+                <i class="fas fa-futbol"></i> <span style="font-size:.76rem; margin-left:5px;">จุดโทษ</span>
+            </button>
+
             <button id="mobileControlBtn" class="btn-secondary" style="color: #3b82f6;" title="Mobile Control"
                 onclick="openMobileControlPopup()"><i class="fas fa-mobile-alt"></i></button>
 
@@ -2959,6 +3118,33 @@
             </select>
         </div>
     </div>
+
+    <!-- V2.9.5.4: Layout Editor Overlay -->
+    <div id="layoutEditorOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,15,28,0.97); z-index:9999; overflow-y:auto; padding:16px; box-sizing:border-box; font-family:Inter,sans-serif;">
+        <div style="max-width:480px; margin:0 auto;">
+            <!-- Header -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:1.15rem; color:#a78bfa; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-th-large"></i> ปรับ Layout / Customize Layout
+                </h2>
+                <button onclick="closeLayoutEditor()" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+            </div>
+            <p style="color:#64748b; font-size:0.78rem; margin-top:-12px; margin-bottom:16px;">กดตา 👁 เพื่อซ่อน/แสดง &bull; ลูกศร ▲▼ เพื่อเลื่อน &bull; แล้วกด Confirm เพื่อบันทึก</p>
+
+            <!-- Panel list -->
+            <div id="layoutEditorList" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+            <!-- Action buttons -->
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="confirmLayout()" style="flex:1; padding:12px; background:linear-gradient(135deg,#7c3aed,#5b21b6); border:none; border-radius:8px; color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer;">
+                    <i class="fas fa-check"></i> Confirm &amp; Save
+                </button>
+                <button onclick="resetLayout()" style="padding:12px 20px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#fca5a5; font-size:0.9rem; font-weight:600; cursor:pointer;">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
     <div class="footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
         <div class="custom-counter" id="visitorCounterContainer" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.6); padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             <i class="fas fa-eye" style="color: #38bdf8; font-size: 0.9rem;"></i>
@@ -2968,7 +3154,7 @@
             </div>
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.3</span> (อัพเดต: <span id="fcp-update-date-text">16 กรกฎาคม 2569</span>)
+            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.5</span> (อัพเดต: <span id="fcp-update-date-text">25 กันยายน 2569</span>)
         </div>
     </div>
     </div>
@@ -2976,28 +3162,35 @@
     <!-- Duplicate Mobile Popup Removed -->
 
     <div id="detailsPopup" class="popup-modal">
+        <!-- Top Right Close Button -->
+        <button onclick="closeAllPopups()" class="close-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.08); border: none; width: 32px; height: 32px; border-radius: 50%; color: white; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 101;">&times;</button>
         <h3><i class="fas fa-cog"></i> <span data-lang="detailsTitle"></span></h3>
 
         <!-- Settings Tabs -->
         <div class="settings-tabs-wrapper">
             <button type="button" class="settings-tabs-arrow" id="settingsTabArrowLeft"><i class="fas fa-chevron-left"></i></button>
             <div class="settings-tabs" id="settingsTabs">
-            <button class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
+            <button type="button" class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
-            <button class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
-            <button class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">ðŸŽ®
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">ðŸŽ®
                 Actions</button>
-            <button class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">âŒ¨ï¸
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">âŒ¨ï¸
                 Keys</button>
-            <button class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">ðŸ‘ï¸
                 Display</button>
-            <button class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
             </div>
             <button type="button" class="settings-tabs-arrow" id="settingsTabArrowRight"><i class="fas fa-chevron-right"></i></button>
         </div>
 
         <!-- Tab 1: General / Announce -->
         <div class="settings-tab-content active" id="settingsTabGeneral">
+            <div style="display:flex;gap:6px;margin-bottom:12px;padding:4px;background:rgba(0,0,0,.25);border-radius:8px;">
+                <button type="button" id="announceMainTabBtn" class="btn-primary" style="flex:1;">ประกาศหลัก</button>
+                <button type="button" id="announceYoutubeTabBtn" class="btn-secondary" style="flex:1;"><i class="fab fa-youtube"></i> ประกาศ YouTube</button>
+            </div>
+            <div id="announceMainPanel">
             <p data-lang="detailsDesc"></p>
             <textarea id="detailsText" rows="4" style="margin-bottom: 5px;"></textarea>
 
@@ -3013,15 +3206,15 @@
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
                         onclick="insertTag('<TeamB>')">+ Team B</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label1>')">+ Label 1</button>
+                        onclick="insertTag('<label1>')">+ Label 1 (รอบแข่ง)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label2>')">+ Label 2</button>
+                        onclick="insertTag('<label2>')">+ Label 2 (คู่ที่)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label3>')">+ Label 3</button>
+                        onclick="insertTag('<label3>')">+ Label 3 (สนาม)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label4>')">+ Label 4</button>
+                        onclick="insertTag('<label4>')">+ Label 4 (รุ่น)</button>
                     <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;"
-                        onclick="insertTag('<label5>')">+ Label 5</button>
+                        onclick="insertTag('<label5>')">+ Label 5 (เวลา)</button>
                 </div>
             </div>
 
@@ -3039,16 +3232,66 @@
                 <button id="saveDetailsBtnTop" class="btn-primary"><i class="fas fa-save"></i> <span
                         data-lang="save"></span></button>
             </div>
+            </div>
+            <div id="announceYoutubePanel" style="display:none;">
+                <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;margin-bottom:12px;border:1px solid rgba(239,68,68,.3);background:rgba(127,29,29,.12);border-radius:10px;cursor:pointer;">
+                    <span><strong style="color:#f87171;"><i class="fab fa-youtube"></i> เปิดใช้งานประกาศ YouTube</strong><small style="display:block;color:#94a3b8;margin-top:2px;">แสดงปุ่ม YouTube ข้างปุ่มคัดลอกประกาศ เพื่อบันทึกเวลาแต่ละคู่</small></span>
+                    <span style="position:relative;width:48px;height:26px;flex:0 0 auto;">
+                        <input type="checkbox" id="youtubeAnnouncementEnabled" style="position:absolute;opacity:0;width:0;height:0;">
+                        <span id="youtubeAnnouncementSwitch" style="position:absolute;inset:0;border-radius:999px;background:#475569;transition:.2s;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);">
+                            <span id="youtubeAnnouncementKnob" style="position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 5px rgba(0,0,0,.35);"></span>
+                        </span>
+                    </span>
+                </label>
+                <div style="padding:12px;border:1px solid rgba(239,68,68,.3);background:rgba(127,29,29,.12);border-radius:10px;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                        <div><strong style="color:#f87171;"><i class="fab fa-youtube"></i> เวลาของ YouTube Live</strong><div style="font-size:.75rem;color:#94a3b8;">เริ่มเมื่อขึ้นไลฟ์และเดินต่อเนื่องตลอดรายการ</div></div>
+                        <strong id="youtubeTimerDisplay" style="font:800 1.5rem monospace;color:#fff;">00:00</strong>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button type="button" id="youtubeTimerStartBtn" class="btn-success" style="flex:1;"><i class="fas fa-play"></i> เริ่ม / ต่อเวลา</button>
+                        <button type="button" id="youtubeTimerPauseBtn" class="btn-secondary" style="flex:1;"><i class="fas fa-pause"></i> หยุด</button>
+                        <button type="button" id="youtubeTimerResetBtn" class="btn-danger" title="รีเซ็ตเวลาตัวจับเวลา"><i class="fas fa-undo"></i></button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:12px;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+                    <label style="font-size:.82rem;color:#cbd5e1;font-weight:600;display:block;margin-bottom:4px;">รูปแบบบรรทัดแต่ละคู่ (Timestamp Pattern)</label>
+                    <input type="text" id="youtubeLineTemplate" value="<youtube_time> <label2> <TeamA> VS <TeamB>" style="width:100%;margin-bottom:6px;font-family:monospace;font-size:0.85rem;" placeholder="<youtube_time> <label2> <TeamA> VS <TeamB>">
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="insertYoutubeTag('<youtube_time>')">+ เวลาคลิป</button>
+                        <button type="button" class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="insertYoutubeTag('<label2>')">+ คู่ที่</button>
+                        <button type="button" class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="insertYoutubeTag('<TeamA> VS <TeamB>')">+ ทีม VS ทีม</button>
+                        <button type="button" class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="insertYoutubeTag('<TeamA>')">+ ทีม A</button>
+                        <button type="button" class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="insertYoutubeTag('<TeamB>')">+ ทีม B</button>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <label style="font-size:.82rem;color:#cbd5e1;font-weight:600;margin:0;">รายการ Timestamp ที่บันทึกไว้ (แบ่งกลุ่มตามรอบ)</label>
+                    <button type="button" id="undoYoutubeTimestampBtn" class="btn-secondary" style="padding:2px 8px;font-size:0.75rem;" title="ลบรายการล่าสุดที่เพิ่งบันทึก"><i class="fas fa-backspace"></i> ลบคู่ล่าสุด</button>
+                </div>
+                <textarea id="youtubeTimestampList" rows="8" style="width:100%;margin-bottom:12px;font-family:monospace;font-size:0.85rem;white-space:pre;" placeholder="รอบแรก&#10;00:11 คู่ที่ 1 ทีม A VS ทีม B&#10;&#10;รอบ 16 ทีม&#10;05:52:35 คู่ที่ 1 ทีม C VS ทีม D"></textarea>
+
+                <label style="font-size:.82rem;color:#cbd5e1;font-weight:600;display:block;margin-bottom:4px;">ข้อความรายละเอียดท้ายคลิป (Description / รายการ / สนาม / แฮชแท็ก)</label>
+                <textarea id="youtubeFooterText" rows="6" style="width:100%;margin-bottom:10px;font-size:0.85rem;" placeholder="-------------------------------------&#10;รายการแข่งขัน...&#10;📅 วันที่...&#10;⚽ สนาม...&#10;-------------------------------------&#10;🏆 #...&#10;🎥 #JamornzMedia"></textarea>
+
+                <div style="display:flex;gap:6px;">
+                    <button type="button" id="saveYoutubeDetailsBtn" class="btn-primary" style="flex:1;" title="บันทึกเทมเพลตและรายละเอียดท้ายคลิป"><i class="fas fa-save"></i> บันทึกการตั้งค่า</button>
+                    <button type="button" id="copyYoutubeDetailsBtn" class="btn-success" style="flex:2;" title="คัดลอก Timestamp ทั้งหมด + ข้อความท้ายคลิป ไปวางลง YouTube"><i class="fas fa-copy"></i> คัดลอกรายละเอียด YouTube ทั้งหมด</button>
+                    <button type="button" id="clearYoutubeTimestampsBtn" class="btn-danger" title="ล้างรายการ Timestamp ทั้งหมด"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
         </div>
 
         <!-- Tab 2: Action Buttons -->
         <div class="settings-tab-content" id="settingsTabActions">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                 <h4 style="margin: 0;"><i class="fas fa-cogs"></i> <span data-lang="actionSettingsTitle"></span></h4>
-                <button class="btn-secondary" onclick="copyTableToClipboard('actionSettingsTable')"
+                <div style="display:flex;gap:6px;"><button type="button" id="addActionButtonBtn" class="btn-success"><i class="fas fa-plus"></i> เพิ่มปุ่ม</button><button class="btn-secondary" onclick="copyTableToClipboard('actionSettingsTable')"
                     title="Copy to Excel" style="padding: 4px 8px; font-size: 0.8rem;">
                     <i class="fas fa-copy"></i> Copy Table
-                </button>
+                </button></div>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;"
                 data-lang="actionSettingsDesc"></p>
@@ -3060,6 +3303,7 @@
                         <th data-lang="actionSettingsColor"></th>
                         <th data-lang="actionSettingsHeight"></th>
                         <th data-lang="actionSettingsSource"></th>
+                        <th data-lang="actionSettingsScene"></th>
                         <th data-lang="actionSettingsAction"></th>
                         <th><span data-lang="actionSettingsEditSave"></span></th>
                     </tr>
@@ -3119,6 +3363,13 @@
                         <span class="slider"></span>
                     </div>
                     <span data-lang="actionCardVisibility"></span>
+                </label>
+                <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="touchModeCheck">
+                        <span class="slider"></span>
+                    </div>
+                    <span>โหมดปุ่มใหญ่ / Touch-friendly mode</span>
                 </label>
                 <label class="countdown-toggle">
                     <span data-lang="labelCount" style="margin-right: 10px;">Label Count:</span>
@@ -3344,7 +3595,7 @@
             <h4 style="margin: 0;"><i class="fas fa-database"></i> <span data-lang="dataSourceTitle">Data Source</span>
             </h4>
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-                <div class="row">
+                <div class="row" style="flex-wrap: wrap; gap: 12px;">
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                         <input type="radio" name="dataSource" value="excel" checked> <span data-lang="dsExcel">Excel
                             File</span>
@@ -3352,6 +3603,9 @@
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                         <input type="radio" name="dataSource" value="gsheet"> <span data-lang="dsGoogleSheet">Google
                             Sheet</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="dataSource" value="jamornz"> <span style="color: #38bdf8; font-weight: 600;"><i class="fas fa-globe"></i> jamornz.com</span>
                     </label>
                 </div>
 
@@ -3387,6 +3641,46 @@
                     <div class="row center">
                         <button id="saveGSheetBtn" class="btn-success" style="width: 100%; padding: 5px;"><i
                                 class="fas fa-check"></i> <span data-lang="confirm">Confirm</span></button>
+                    </div>
+                </div>
+
+                <!-- jamornz.com Settings (V2.9.5.5) -->
+                <div id="jamornzSettings"
+                    style="display: none; background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 6px; margin-top: 5px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 10px; line-height: 1.45; border-left: 2px solid #38bdf8; padding-left: 8px;">
+                        <strong style="color: #38bdf8;">🌐 เชื่อมต่อ Jamornz Tournament:</strong><br>
+                        1. ไปที่หน้ารายการแข่งขันใน <strong>jamornz.com</strong><br>
+                        2. คัดลอกลิงก์ เช่น <code>https://jamornz.com/tournament/view/...</code> หรือ ID<br>
+                        3. วางลงในช่องด้านล่าง แล้วกด <strong>ยืนยัน / โหลดข้อมูล</strong>
+                    </p>
+                    <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Jamornz Tournament URL หรือ ID:</label>
+                    <input type="text" id="jamornzUrlInput" placeholder="https://jamornz.com/tournament/view/username/uuid..."
+                        style="width: 100%; margin-bottom: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 0.85rem;">
+
+                    <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Password สำหรับ VIP (รหัสเชื่อมต่อ 5 หลัก):</label>
+                    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                        <input type="password" id="jamornzPasswordInput" inputmode="numeric" maxlength="5" placeholder="•••••" disabled
+                            style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 0.95rem; letter-spacing: .2em;">
+                        <button type="button" id="editJamornzPasswordBtn" class="btn-secondary" style="padding: 6px 12px; white-space: nowrap;">
+                            <i class="fas fa-pen"></i> แก้ไข
+                        </button>
+                    </div>
+                    <div id="jamornzConnectionStatus" style="display:none; margin-bottom: 10px; padding: 7px 9px; border-radius: 5px; font-size: 0.8rem;"></div>
+
+                    <div class="row center">
+                        <button id="saveJamornzBtn" class="btn-success" style="width: 100%; padding: 6px; font-size: 0.85rem; background: #0284c7; border: none; border-radius: 4px; color: #fff; cursor: pointer;">
+                            <i class="fas fa-check-circle"></i> ยืนยันรหัสและเชื่อมต่อ
+                        </button>
+                    </div>
+
+                    <!-- Label guide -->
+                    <div style="margin-top: 10px; padding: 8px 10px; background: rgba(56, 189, 248, 0.08); border-radius: 6px; border: 1px dashed rgba(56, 189, 248, 0.35); font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">
+                        <div style="font-weight: 600; color: #38bdf8; margin-bottom: 4px;"><i class="fas fa-tags"></i> ความหมาย Labels ที่ส่งเข้าโปรแกรม:</div>
+                        <div>• <strong>Label 1:</strong> รอบการแข่งขัน (เช่น รอบแรก, รอบ 16 ทีม)</div>
+                        <div>• <strong>Label 2:</strong> คู่ที่ (ของแต่ละรอบ เช่น คู่ที่ 1, คู่ที่ 2)</div>
+                        <div>• <strong>Label 3:</strong> สนาม (เช่น สนามที่ 1)</div>
+                        <div>• <strong>Label 4:</strong> รุ่นการแข่งขัน (เช่น รุ่นประชาชน)</div>
+                        <div>• <strong>Label 5:</strong> เวลาแข่งขัน (เช่น 14:00)</div>
                     </div>
                 </div>
             </div>
@@ -3536,6 +3830,10 @@
                     style="padding: 12px; border-radius: 8px; background: #334155; text-decoration: none; display: block; font-weight: 600;">
                     <i class="fas fa-coffee"></i> Ko-fi (International)
                 </a>
+                <a href="https://jamornz.com" target="_blank" class="btn-secondary"
+                    style="padding:12px;border-radius:8px;background:#0f766e;text-decoration:none;display:block;font-weight:600;">
+                    <i class="fas fa-globe"></i> Official Website — jamornz.com
+                </a>
             </div>
         </div>
 
@@ -3596,7 +3894,7 @@
             </div>
         </div>
         <div class="row center" style="margin-top: 20px;">
-            <button id="closeWelcomeBtn" class="btn-primary" disabled style="opacity: 0.7; cursor: not-allowed;">
+            <button id="closeWelcomeSponsorBtn" class="btn-primary" disabled style="opacity: 0.7; cursor: not-allowed;">
                 <i class="fas fa-spinner fa-spin"></i> Loading...
             </button>
         </div>
@@ -3689,8 +3987,227 @@
         }
     </script>
 
+    <!-- V2.9.5.4: Layout Editor Script -->
+    <script>
+        // --- Layout Editor ---
+        const LAYOUT_KEY = 'panelLayout_v2954';
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.2"></script>
+        const PANEL_DEFS = [
+            { id: 'panelTopBar',        label: '📡 แถบข้อมูล / Info Bar',        defaultHidden: false },
+            { id: 'panelExcelLoad',     label: '📂 โหลดข้อมูล / Excel Load',     defaultHidden: false },
+            { id: 'panelTeamEditor',    label: '🎽 แก้ไขทีม / Team Editor',       defaultHidden: false },
+            { id: 'panelSwap',          label: '🔄 สลับทีม / Swap Teams',         defaultHidden: false },
+            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
+            { id: 'panelScore',         label: '🏆 คะแนน / Score Panel',           defaultHidden: false },
+            { id: 'panelTimer',         label: '⏱️ เวลา / Timer Panel',            defaultHidden: false },
+            { id: 'panelDtControl',     label: '📊 ตาราง / Display Table Control', defaultHidden: true  },
+        ];
+
+        function getDefaultLayout() {
+            return {
+                order: PANEL_DEFS.map(p => p.id),
+                hidden: PANEL_DEFS.filter(p => p.defaultHidden).map(p => p.id)
+            };
+        }
+
+        function loadLayout() {
+            try {
+                const saved = localStorage.getItem(LAYOUT_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
+            return getDefaultLayout();
+        }
+
+        function saveLayout(layout) {
+            localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+        }
+
+        function applyLayout(layout) {
+            const container = document.getElementById('mainPanelContainer');
+            if (!container) return;
+
+            // Reorder panels
+            layout.order.forEach(panelId => {
+                const el = container.querySelector(`[data-panel-id="${panelId}"]`);
+                if (el) container.appendChild(el);
+            });
+
+            // Show/hide panels
+            PANEL_DEFS.forEach(({ id }) => {
+                const el = container.querySelector(`[data-panel-id="${id}"]`);
+                if (!el) return;
+
+                // Special case: panelDtControl is managed by its own display table toggle
+                if (id === 'panelDtControl') return;
+
+                const isHidden = layout.hidden.includes(id);
+                el.style.display = isHidden ? 'none' : '';
+            });
+        }
+
+        // --- Editor state (editable copy while overlay is open) ---
+        let editorState = null;
+
+        function renderEditorList() {
+            const list = document.getElementById('layoutEditorList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            editorState.order.forEach((panelId, idx) => {
+                const def = PANEL_DEFS.find(p => p.id === panelId);
+                if (!def) return;
+                const isHidden = editorState.hidden.includes(panelId);
+                const isFirst = idx === 0;
+                const isLast  = idx === editorState.order.length - 1;
+
+                const row = document.createElement('div');
+                row.style.cssText = `
+                    display:flex; align-items:center; gap:10px;
+                    background:${isHidden ? 'rgba(15,23,42,0.6)' : 'rgba(30,41,59,0.8)'};
+                    border:1px solid ${isHidden ? 'rgba(255,255,255,0.06)' : 'rgba(167,139,250,0.3)'};
+                    border-radius:10px; padding:10px 14px;
+                    transition:all 0.2s;
+                    opacity:${isHidden ? '0.5' : '1'};
+                `;
+
+                // Eye toggle
+                const eyeBtn = document.createElement('button');
+                eyeBtn.innerHTML = `<i class="fas ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
+                eyeBtn.title = isHidden ? 'แสดง / Show' : 'ซ่อน / Hide';
+                eyeBtn.style.cssText = `
+                    background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px;
+                    font-size:1.1rem; color:${isHidden ? '#475569' : '#a78bfa'};
+                    transition:color 0.2s;
+                `;
+                eyeBtn.onclick = () => {
+                    if (editorState.hidden.includes(panelId)) {
+                        editorState.hidden = editorState.hidden.filter(x => x !== panelId);
+                    } else {
+                        editorState.hidden.push(panelId);
+                    }
+                    renderEditorList();
+                };
+
+                // Label
+                const label = document.createElement('span');
+                label.textContent = def.label;
+                label.style.cssText = `flex:1; font-size:0.88rem; font-weight:600; color:${isHidden ? '#64748b' : '#e2e8f0'}; transition:color 0.2s;`;
+
+                // Move buttons
+                const moveUp = document.createElement('button');
+                moveUp.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                moveUp.disabled = isFirst;
+                moveUp.title = 'เลื่อนขึ้น / Move Up';
+                moveUp.style.cssText = `background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:${isFirst ? '#1e293b' : '#94a3b8'}; border-radius:6px; padding:4px 8px; cursor:${isFirst ? 'default' : 'pointer'}; font-size:0.75rem;`;
+                moveUp.onclick = () => {
+                    if (isFirst) return;
+                    const arr = editorState.order;
+                    [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
+                    renderEditorList();
+                };
+
+                const moveDown = document.createElement('button');
+                moveDown.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                moveDown.disabled = isLast;
+                moveDown.title = 'เลื่อนลง / Move Down';
+                moveDown.style.cssText = `background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:${isLast ? '#1e293b' : '#94a3b8'}; border-radius:6px; padding:4px 8px; cursor:${isLast ? 'default' : 'pointer'}; font-size:0.75rem;`;
+                moveDown.onclick = () => {
+                    if (isLast) return;
+                    const arr = editorState.order;
+                    [arr[idx], arr[idx+1]] = [arr[idx+1], arr[idx]];
+                    renderEditorList();
+                };
+
+                row.appendChild(eyeBtn);
+                row.appendChild(label);
+                row.appendChild(moveUp);
+                row.appendChild(moveDown);
+                list.appendChild(row);
+            });
+        }
+
+        window.openLayoutEditor = function() {
+            editorState = JSON.parse(JSON.stringify(loadLayout())); // deep copy
+            renderEditorList();
+            const overlay = document.getElementById('layoutEditorOverlay');
+            if (overlay) { overlay.style.display = 'block'; overlay.scrollTop = 0; }
+        };
+
+        window.closeLayoutEditor = function() {
+            const overlay = document.getElementById('layoutEditorOverlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        window.confirmLayout = function() {
+            saveLayout(editorState);
+            applyLayout(editorState);
+            closeLayoutEditor();
+            if (window.showToast) window.showToast('Layout บันทึกแล้ว / Layout saved!', 'success');
+        };
+
+        window.resetLayout = function() {
+            if (!confirm('คืนค่า Layout เริ่มต้น? / Reset to default layout?')) return;
+            editorState = getDefaultLayout();
+            renderEditorList();
+        };
+
+        // Apply saved layout on load
+        document.addEventListener('DOMContentLoaded', () => {
+            applyLayout(loadLayout());
+        });
+    </script>
+
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r8"></script>
+
+    <!-- Integrated Penalty Shootout Panel -->
+    <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
+        style="display:none; position:fixed; inset:0; z-index:12000; background:rgba(2,6,23,.94); backdrop-filter:blur(8px); padding:12px; box-sizing:border-box;">
+        <div style="height:100%; max-width:1180px; margin:0 auto; display:flex; flex-direction:column; overflow:hidden; border:1px solid rgba(251,191,36,.38); border-radius:14px; background:#07101f; box-shadow:0 24px 80px rgba(0,0,0,.65);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:linear-gradient(135deg,#172033,#0f172a); border-bottom:1px solid rgba(255,255,255,.1);">
+                <div style="display:flex; align-items:center; gap:9px; color:#f8fafc; font-weight:800;">
+                    <i class="fas fa-futbol" style="color:#fbbf24;"></i>
+                    <span>ยิงจุดโทษ / Penalty Shootout</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn-secondary" onclick="reloadPenaltyShootout()" title="โหลดแผงใหม่">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closePenaltyShootout()" title="ปิดแผง" style="color:#fca5a5;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <iframe id="penaltyShootoutFrame" title="Penalty Shootout controls"
+                data-src="Penalty-Shootout/Penalty-Shootout.html"
+                style="width:100%; flex:1; min-height:0; border:0; background:#020617;" allow="clipboard-read; clipboard-write"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function openPenaltyShootout() {
+            const overlay = document.getElementById('penaltyShootoutOverlay');
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePenaltyShootout() {
+            document.getElementById('penaltyShootoutOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function reloadPenaltyShootout() {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (frame.src) frame.contentWindow.location.reload();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && document.getElementById('penaltyShootoutOverlay').style.display !== 'none') {
+                closePenaltyShootout();
+            }
+        });
+    </script>
 
     <!-- Duplicate Mobile Control Popup Removed (using the one at line ~2160) -->
 

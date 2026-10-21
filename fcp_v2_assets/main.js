@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js';
-import { translations } from './languages.js';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r3';
+import { translations } from './languages.js?v=2.9.5.5-r2';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -24,16 +24,16 @@ const elements = [
     "scoreA", "scoreB",
     "score2Card", "score2A", "score2B", "score2APlusBtn", "score2AMinusBtn", "score2BPlusBtn", "score2BMinusBtn", "resetScore2Btn",
     "swapCard",
-    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck",
+    "score2VisibilityCheck", "swapCardVisibilityCheck", "actionCardVisibilityCheck", "touchModeCheck",
     "actionButtonsCard", "actionButtonsGrid",
-    "timerText", "halfText", "announcement-text", "matchID",
+    "timerText", "halfText", "matchID",
     "colorA", "colorB", "colorA2", "colorB2",
     "countdownCheck", "languageSelector", "nameA-input", "nameB-input", "excelBtn", "loadBtn",
     "editBtnA", "okBtnA", "editBtnB", "okBtnB", "swapBtn", "swapScoreBtn", "scoreAPlusBtn", "scoreAMinusBtn",
     "scoreBPlusBtn", "scoreBMinusBtn", "resetScoreBtn", "fullResetBtn", "halfBtn", "playBtn", "pauseBtn",
     "resetToStartBtn", "editTimeBtn", "settingsBtn", "copyBtn", "helpBtn", "donateBtn",
     "toast-container", "popupOverlay", "detailsPopup", "helpPopup", "donatePopup", "detailsText",
-    "welcomeSponsorPopup", "closeWelcomeBtn",
+    "welcomeSponsorPopup", "closeWelcomeBtn", "closeWelcomeSponsorBtn",
     "copyShopeeLinkBtn", "copyEasyDonateLinkBtn",
     "saveDetailsBtnTop", "closeDetailsBtnTop", "closeDetailsBtnBottom",
     "closeHelpBtn", "closeDonateBtn", "injuryTimeDisplay",
@@ -77,6 +77,15 @@ let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
 let googleSheetTabIndex = parseInt(localStorage.getItem('googleSheetTabIndex') || '1'); // 1-based sheet number
+let jamornzTournamentUrl = '';
+let jamornzRound = 'group';
+let jamornzConnection = null;
+let lastDockMatchId = null;
+let dockSyncTimer = null;
+let currentJamornzData = null;
+let dockMatchStartedAt = null;
+let dockTimerStartedAt = null;
+let dockTimerBaseSeconds = 0;
 let userIdentity = JSON.parse(localStorage.getItem('userIdentity') || 'null');
 window.userIdentity = userIdentity;
 
@@ -121,6 +130,7 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     backgroundColor: (i % 3 === 0) ? '#22c55e' : (i % 3 === 1 ? '#f97316' : '#3b82f6'),
     height: 35,
     targetSource: '',
+    targetScene: '',
     actionType: 'Toggle',
     internalState: false,
 }));
@@ -140,10 +150,12 @@ function debounce(func, wait) {
 const obs = new OBSWebSocket();
 const setText = (source, text) => obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => { });
 const setImage = (sourceName, filename) => {
-    if (!filename) {
-        obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: "" } }).catch(err => { });
+    if (!filename || filename.startsWith('/api/') || filename.startsWith('http://') || filename.startsWith('https://')) {
+        if (!filename) {
+            obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: "" } }).catch(err => { });
+        }
         return;
-    };
+    }
     const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(filename);
     const filePath = `${logoFolderPath}/${filename}${hasExt ? '' : '.png'}`;
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { file: filePath } }).catch(err => { });
@@ -159,26 +171,54 @@ const setSourceColor = (sourceName, hexColor) => {
     obs.call('SetInputSettings', { inputName: sourceName, inputSettings: { color: hexToObsColor(hexColor) } }).catch(err => { });
 };
 
-const setSourceVisibility = (sourceName, visible) => {
-    return obs.call('GetCurrentProgramScene')
-        .then(data => {
-            const activeSceneName = data.currentProgramSceneName;
-            return obs.call('GetSceneItemId', {
-                sceneName: activeSceneName,
-                sourceName: sourceName
-            })
-                .then(itemData => {
-                    return obs.call('SetSceneItemEnabled', {
-                        sceneName: activeSceneName,
-                        sceneItemId: itemData.sceneItemId,
-                        sceneItemEnabled: visible
-                    });
-                });
-        })
-        .catch(err => {
-            showToast(`${translations[currentLang].toastActionControlFailed} ${sourceName} (${err.code || err.error})`, 'error');
-            throw new Error(err.code || err.error);
-        });
+const isAllScenesTarget = targetScene => ['*', 'all', 'all scenes'].includes((targetScene || '').trim().toLowerCase());
+
+const findSourceSceneItems = async (sourceName, targetScene = '') => {
+    let sceneNames;
+    if (isAllScenesTarget(targetScene)) {
+        const { scenes } = await obs.call('GetSceneList');
+        sceneNames = scenes.map(scene => scene.sceneName);
+    } else if ((targetScene || '').trim()) {
+        sceneNames = [targetScene.trim()];
+    } else {
+        const current = await obs.call('GetCurrentProgramScene');
+        sceneNames = [current.currentProgramSceneName];
+    }
+
+    const items = await Promise.all(sceneNames.map(async sceneName => {
+        try {
+            const item = await obs.call('GetSceneItemId', { sceneName, sourceName });
+            return { sceneName, sceneItemId: item.sceneItemId };
+        } catch (_) {
+            return null;
+        }
+    }));
+    return items.filter(Boolean);
+};
+
+const getSourceVisibility = async (sourceName, targetScene = '') => {
+    const items = await findSourceSceneItems(sourceName, targetScene);
+    if (!items.length) throw new Error(`Source '${sourceName}' was not found in the target scene(s).`);
+    const first = items[0];
+    const state = await obs.call('GetSceneItemEnabled', first);
+    return state.sceneItemEnabled;
+};
+
+const setSourceVisibility = async (sourceName, visible, targetScene = '') => {
+    try {
+        const items = await findSourceSceneItems(sourceName, targetScene);
+        if (!items.length) throw new Error(`Source '${sourceName}' was not found in the target scene(s).`);
+        // Send every request together so matching Groups begin their own child
+        // Show/Hide transitions at effectively the same time in every scene.
+        await Promise.all(items.map(item => obs.call('SetSceneItemEnabled', {
+            ...item,
+            sceneItemEnabled: visible
+        })));
+        return items;
+    } catch (err) {
+        showToast(`${translations[currentLang].toastActionControlFailed} ${sourceName} (${err.code || err.error || err.message})`, 'error');
+        throw err;
+    }
 };
 
 
@@ -194,15 +234,18 @@ const showToast = (message, type = 'info') => {
 
 // --- V2.9.2: Settings Tab Switching ---
 const switchSettingsTab = (tabName) => {
+    if (!tabName) return;
     document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.settings-tab-btn').forEach(el => el.classList.remove('active'));
     const targetPanel = document.getElementById(tabName);
-    if (targetPanel) targetPanel.classList.add('active');
+    if (!targetPanel) return;
+    targetPanel.classList.add('active');
     const targetBtn = document.querySelector(`.settings-tab-btn[data-tab="${tabName}"]`);
     if (targetBtn) {
         targetBtn.classList.add('active');
         targetBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
+    localStorage.setItem('activeSettingsTab', tabName);
 };
 
 // --- V2.9.2: Confirm Reset Dialog ---
@@ -595,6 +638,7 @@ const toggleActionEditMode = (index, enable) => {
     const nameInput = $(`action-name-${index}`);
     const heightInput = $(`action-height-${index}`);
     const sourceInput = $(`action-source-input-${index}`);
+    const sceneInput = $(`action-scene-input-${index}`);
     const actionSelect = $(`action-type-${index}`);
     const editButton = $(`action-edit-${index}`);
     const saveButton = $(`action-save-${index}`);
@@ -603,6 +647,7 @@ const toggleActionEditMode = (index, enable) => {
         nameInput.disabled = false;
         heightInput.disabled = false;
         sourceInput.disabled = false;
+        sceneInput.disabled = false;
         actionSelect.disabled = false;
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
@@ -611,6 +656,7 @@ const toggleActionEditMode = (index, enable) => {
         nameInput.disabled = true;
         heightInput.disabled = true;
         sourceInput.disabled = true;
+        sceneInput.disabled = true;
         actionSelect.disabled = true;
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
@@ -624,6 +670,7 @@ const saveActionSettingsRow = (index) => {
         const colorInput = $(`action-color-${idx}`);
         const heightInput = $(`action-height-${idx}`);
         const sourceInput = $(`action-source-input-${idx}`);
+        const sceneInput = $(`action-scene-input-${idx}`);
         const actionSelect = $(`action-type-${idx}`);
 
         return {
@@ -632,6 +679,7 @@ const saveActionSettingsRow = (index) => {
             backgroundColor: colorInput.value,
             height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
             targetSource: sourceInput.value.trim(),
+            targetScene: sceneInput.value.trim(),
             actionType: actionSelect.value,
         };
     });
@@ -643,16 +691,36 @@ const saveActionSettingsRow = (index) => {
 
 const loadActionSettings = () => {
     const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
-    if (savedSettings && savedSettings.length === ACTION_BUTTON_COUNT) {
+    if (Array.isArray(savedSettings) && savedSettings.length >= ACTION_BUTTON_COUNT) {
         return savedSettings.map((setting, i) => ({
-            ...defaultActionSettings[i],
+            ...(defaultActionSettings[i] || { id: `actionBtn${i + 1}`, name: `Action ${i + 1}`, backgroundColor: '#3b82f6', height: 35, internalState: false }),
             ...setting,
             targetSource: setting.targetSource || '',
+            targetScene: setting.targetScene || '',
             actionType: setting.actionType || 'Toggle'
         }));
     }
-    return defaultActionSettings;
+    return defaultActionSettings.map(setting => ({ ...setting }));
 }
+
+const addActionButton = () => {
+    const settings = loadActionSettings();
+    const index = settings.length + 1;
+    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', internalState: false });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+    renderActionButtons();
+    populateActionSettingsTable(currentLang);
+};
+
+const deleteActionButton = (index) => {
+    if (index <= ACTION_BUTTON_COUNT) return;
+    const settings = loadActionSettings();
+    settings.splice(index - 1, 1);
+    settings.forEach((setting, i) => { setting.id = `actionBtn${i + 1}`; });
+    localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
+    renderActionButtons();
+    populateActionSettingsTable(currentLang);
+};
 
 const renderActionButtons = () => {
     const settings = loadActionSettings();
@@ -667,9 +735,10 @@ const renderActionButtons = () => {
         button.style.height = `${setting.height}px`;
 
         const targetSource = setting.targetSource;
+        const targetScene = setting.targetScene || '';
         const actionType = setting.actionType;
 
-        button.onclick = () => {
+        button.onclick = async () => {
             if (!targetSource) {
                 return showToast('Source Name is missing.', 'error');
             }
@@ -679,12 +748,16 @@ const renderActionButtons = () => {
             } else if (actionType === 'Hide') {
                 newState = false;
             } else if (actionType === 'Toggle') {
-                const currentState = settings[i].internalState;
-                newState = !currentState;
+                try {
+                    newState = !(await getSourceVisibility(targetSource, targetScene));
+                } catch (err) {
+                    showToast(`${translations[currentLang].toastActionControlFailed} ${targetSource} (${err.message})`, 'error');
+                    return;
+                }
             }
 
             if (newState !== null) {
-                setSourceVisibility(targetSource, newState)
+                setSourceVisibility(targetSource, newState, targetScene)
                     .then(() => {
                         if (actionType === 'Toggle') {
                             settings[i].internalState = newState;
@@ -713,6 +786,7 @@ const populateActionSettingsTable = (lang) => {
             <td><input type="color" id="action-color-${index}" value="${setting.backgroundColor}"></td>
             <td><input type="number" id="action-height-${index}" value="${setting.height}" min="25" max="100" style="width: 55px;" disabled></td>
             <td><input type="text" id="action-source-input-${index}" value="${setting.targetSource}" disabled></td>
+            <td><input type="text" id="action-scene-input-${index}" value="${setting.targetScene || ''}" placeholder="Current Scene / * = All" disabled></td>
             <td>
                 <select id="action-type-${index}" disabled>
                     <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
@@ -724,6 +798,7 @@ const populateActionSettingsTable = (lang) => {
                 <div class="action-buttons">
                     <button id="action-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
                     <button id="action-save-${index}" class="btn-success" title="${trans.save}" style="display: none;"><i class="fas fa-save"></i></button>
+                    ${index > ACTION_BUTTON_COUNT ? `<button id="action-delete-${index}" class="btn-danger" title="ลบปุ่ม"><i class="fas fa-trash"></i></button>` : ''}
                 </div>
             </td>
         `;
@@ -732,6 +807,7 @@ const populateActionSettingsTable = (lang) => {
         };
         $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
         $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
+        if (index > ACTION_BUTTON_COUNT) $(`action-delete-${index}`).onclick = () => deleteActionButton(index);
     });
     window.toggleActionEditMode = toggleActionEditMode;
     window.saveActionSettingsRow = saveActionSettingsRow;
@@ -763,7 +839,8 @@ const loadVisibilitySettings = () => {
         showResetStart: true,
         showEditTime: true,
         showCountdown: true,
-        showUndoHalf: true
+        showUndoHalf: true,
+        touchMode: false
     };
     const saved = JSON.parse(localStorage.getItem(VISIBILITY_KEY) || '{}');
     return { ...defaultSettings, ...saved };
@@ -777,6 +854,8 @@ const applyVisibilitySettings = () => {
     if (elements.score2VisibilityCheck) elements.score2VisibilityCheck.checked = settings.score2;
     if (elements.swapCardVisibilityCheck) elements.swapCardVisibilityCheck.checked = settings.swapCard;
     if (elements.actionCardVisibilityCheck) elements.actionCardVisibilityCheck.checked = settings.actionButtons;
+    if (elements.touchModeCheck) elements.touchModeCheck.checked = settings.touchMode;
+    document.body.classList.toggle('touch-mode', Boolean(settings.touchMode));
 
     // V2.9 Visibility Logic
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.checked = settings.showPlusMinus;
@@ -898,22 +977,6 @@ const resetTeamColors = () => {
     localStorage.removeItem(TEAM_COLORS_KEY);
     showToast(translations[currentLang].toastColorsCleared, 'info');
 }
-
-const fetchAnnouncement = async () => {
-    const filePath = 'fcp_v2_assets/announcement.txt';
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            elements.announcementText.textContent = `Error loading announcement file: ${response.status}`;
-            return;
-        }
-        const text = await response.text();
-        elements.announcementText.textContent = text.trim();
-    } catch (error) {
-        console.error("Announcement fetch failed:", error);
-        elements.announcementText.textContent = "Load Failed (Check fcp_v2_assets/announcement.txt)";
-    }
-};
 
 const saveTeamColors = (teamName, color1, color2) => {
     const defaultNameA = translations[currentLang].teamA;
@@ -1130,19 +1193,27 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
-        const logoNameClean = masterTeam.logoFile.replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
-
-        let foundKey = null;
-        if (logoCache[logoNameClean]) {
-            foundKey = logoNameClean;
+        const isRemoteLogo = /^(https?:|data:|blob:)/i.test(masterTeam.logoFile);
+        if (isRemoteLogo) {
+            logoEl.src = masterTeam.logoFile;
+            logoEl.style.display = 'block';
+            initialsEl.style.display = 'none';
         } else {
+        const rawKey = String(masterTeam.logoFile).trim();
+        const upperKey = rawKey.toUpperCase();
+        const lowerKey = rawKey.toLowerCase();
+        const logoNameClean = lowerKey.replace(/\s/g, '').replace(/\.(png|jpe?g|gif|webp)$/i, '');
+
+        let foundUrl = logoCache[rawKey] || logoCache[upperKey] || logoCache[lowerKey] || logoCache[logoNameClean];
+        if (!foundUrl) {
             // Prefix Match Strategy
             const keys = Object.keys(logoCache);
-            foundKey = keys.find(k => k.startsWith(logoNameClean + '.') || k === logoNameClean);
+            const foundKey = keys.find(k => k.toLowerCase() === lowerKey || k.toLowerCase().startsWith(logoNameClean + '.'));
+            if (foundKey) foundUrl = logoCache[foundKey];
         }
 
-        if (foundKey && logoCache[foundKey]) {
-            logoEl.src = logoCache[foundKey];
+        if (foundUrl) {
+            logoEl.src = foundUrl;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         } else {
@@ -1150,6 +1221,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
+        }
         }
     } else {
         logoEl.src = '';
@@ -1182,9 +1254,25 @@ const applyMatch = () => {
 
     if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
+    const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
+    if (jamornzConnection && lastDockMatchId && lastDockMatchId !== id && !confirm(`ยืนยันเปลี่ยนจาก Match ID ${lastDockMatchId} เป็น ${id} และเริ่มสถานะแมตช์ใหม่?`)) {
+        elements.matchID.value = lastDockMatchId;
+        return;
+    }
     const header = sheetData[0];
     const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
     if (!match) return showToast(`${translations[currentLang].toastMatchNotFound} ${id}`, 'error');
+    lastDockMatchId = id;
+    if (jamornzConnection && matchChanged) {
+        dockMatchStartedAt = new Date().toISOString();
+        dockTimerStartedAt = null;
+        dockTimerBaseSeconds = 0;
+        masterTeamA.score = masterTeamB.score = 0;
+        masterTeamA.score2 = masterTeamB.score2 = 0;
+        timer = 0;
+        half = '1st';
+        updateTimerDisplay();
+    }
     const get = key => match[header.indexOf(key)] || '';
     let teamAName = get('TeamA') || translations[currentLang].teamA;
     let teamBName = get('TeamB') || translations[currentLang].teamB;
@@ -1210,6 +1298,7 @@ const applyMatch = () => {
     setText('label_3', get('label3'));
     setText('label_4', get('label4'));
     setText('label_5', get('label5'));
+    if (jamornzConnection) syncJamornzMatch('live', true);
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
 };
 
@@ -1301,6 +1390,7 @@ const changeScore = (team, delta) => {
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score = Math.max(0, masterTeam.score + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
+    syncJamornzMatch('live');
 };
 
 const changeScore2 = (team, delta) => {
@@ -1308,6 +1398,7 @@ const changeScore2 = (team, delta) => {
     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
     masterTeam.score2 = Math.max(0, masterTeam.score2 + delta);
     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2, masterTeam.score, masterTeam.score2);
+    syncJamornzMatch('live');
 };
 
 const resetScore = () => {
@@ -1364,10 +1455,13 @@ const updateTimerDisplay = () => {
 
 const startTimer = () => {
     if (interval) return;
+    dockTimerBaseSeconds = timer;
+    dockTimerStartedAt = new Date().toISOString();
     // V2.9.2: Timer state color
     elements.timerText.classList.add('timer-running');
     elements.timerText.classList.remove('timer-paused');
     updateTimerDisplay(); // Update immediately
+    syncJamornzMatch('live', true);
     interval = setInterval(() => {
         if (isCountdown) {
             if (timer > 0) timer--;
@@ -1380,12 +1474,20 @@ const startTimer = () => {
 };
 
 const stopTimer = () => {
+    if (interval && dockTimerStartedAt) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - Date.parse(dockTimerStartedAt)) / 1000));
+        dockTimerBaseSeconds = isCountdown ? Math.max(0, dockTimerBaseSeconds - elapsed) : dockTimerBaseSeconds + elapsed;
+    } else {
+        dockTimerBaseSeconds = timer;
+    }
     clearInterval(interval);
     interval = null;
+    dockTimerStartedAt = null;
     // V2.9.2: Timer state color
     elements.timerText.classList.remove('timer-running');
     elements.timerText.classList.add('timer-paused');
     updateTimerDisplay(); // Sync stop state immediately
+    if (jamornzConnection) syncJamornzMatch('live', true);
 };
 
 const resetToStartTime = () => {
@@ -1848,9 +1950,255 @@ const fetchGoogleSheet = async () => {
 }
 window.fetchGoogleSheet = fetchGoogleSheet;
 
+// ─── Jamornz.com Tournament Data Source (V2.9.5.5) ──────────────────────────
+function parseJamornzInput(input) {
+    if (!input) return null;
+    let raw = input.trim();
+    // Handle formula =IMPORTDATA("...")
+    const formulaMatch = raw.match(/IMPORTDATA\s*\(\s*["']([^"']+)["']\s*\)/i);
+    if (formulaMatch) raw = formulaMatch[1];
+
+    // Handle public view: https://jamornz.com/tournament/view/:slug/:id
+    const viewMatch = raw.match(/tournament\/view\/([^/?#]+)\/([^/?#]+)/i);
+    if (viewMatch) {
+        let dockPin = '';
+        try { dockPin = new URL(raw).searchParams.get('dockPin') || ''; } catch(e) {}
+        return { slug: viewMatch[1], id: viewMatch[2], dockPin };
+    }
+
+    // Handle API URL: .../tournament.php?...
+    try {
+        const u = new URL(raw);
+        const slug = u.searchParams.get('slug') || u.searchParams.get('userId');
+        const id = u.searchParams.get('id');
+        const round = u.searchParams.get('round');
+        const dockPin = u.searchParams.get('dockPin') || '';
+        if (slug && id) return { slug, id, round, dockPin };
+    } catch(e) {}
+
+    // Fallback if user just entered ID (UUID)
+    if (/^[0-9a-fA-F-]{20,}$/.test(raw)) {
+        return { slug: '', id: raw };
+    }
+    return null;
+}
+
+const buildSheetDataFromJamornz = (tournament) => {
+    const header = ['MatchID', 'TeamA', 'TeamB', 'ColorA', 'ColorB', 'ColorA2', 'ColorB2', 'LogoA', 'LogoB', 'label1', 'label2', 'label3', 'label4', 'label5'];
+    const rows = [header];
+    let matchCounter = 1;
+
+    const getCleanLogo = (code, fallback) => {
+        const c = code ? String(code).trim() : '';
+        if (c && c !== '-') {
+            return /^[a-z]\d+$/i.test(c) ? c.toUpperCase() : c;
+        }
+        const fb = fallback ? String(fallback).trim() : '';
+        if (fb && fb !== '-') {
+            return /^[a-z]\d+$/i.test(fb) ? fb.toUpperCase() : fb;
+        }
+        return '';
+    };
+
+    // 1. Group Stage matches
+    const sessions = tournament.sessions || [];
+    sessions.forEach(s => {
+        (s.matches || []).forEach((m, mi) => {
+            rows.push([
+                matchCounter++,
+                m.team1 || '',
+                m.team2 || '',
+                '#ffffff',
+                '#ffffff',
+                '#000000',
+                '#000000',
+                getCleanLogo(m.code1, m.logo1),
+                getCleanLogo(m.code2, m.logo2),
+                'รอบแรก',
+                `คู่ที่ ${m.num || (mi + 1)}`,
+                `สนามที่ ${m.field || 1}`,
+                'รุ่นประชาชน',
+                m.time || ''
+            ]);
+        });
+    });
+
+    // 2. Knockout Stage matches
+    const rounds = tournament.rounds || [];
+    rounds.forEach(r => {
+        (r.matches || []).forEach((m, mi) => {
+            rows.push([
+                matchCounter++,
+                m.name1 || '',
+                m.name2 || '',
+                '#ffffff',
+                '#ffffff',
+                '#000000',
+                '#000000',
+                getCleanLogo(m.code1, m.logo1),
+                getCleanLogo(m.code2, m.logo2),
+                r.label || 'รอบน็อคเอาท์',
+                `คู่ที่ ${m.roundPairNumber || Math.floor(mi / Math.max(1, Number(r.fieldCount) || 1)) + 1}`,
+                `สนามที่ ${m.field || r.field || 1}`,
+                'รุ่นประชาชน',
+                m.time || r.timeStart || ''
+            ]);
+        });
+    });
+
+    return rows;
+};
+
+const buildWorkbookFromJamornz = (tournament) => {
+    const wb = XLSX.utils.book_new();
+    
+    // Sheet 1: All Matches in continuous sequence
+    const allData = buildSheetDataFromJamornz(tournament);
+    const allWs = XLSX.utils.aoa_to_sheet(allData);
+    XLSX.utils.book_append_sheet(wb, allWs, 'แมตช์ทั้งหมด');
+
+    return wb;
+};
+
+const setJamornzConnectionStatus = (message, type = 'info') => {
+    const status = document.getElementById('jamornzConnectionStatus');
+    if (!status) return;
+    const colors = type === 'success'
+        ? ['rgba(34,197,94,.12)', '#4ade80', 'rgba(34,197,94,.35)']
+        : type === 'error'
+            ? ['rgba(239,68,68,.12)', '#f87171', 'rgba(239,68,68,.35)']
+            : ['rgba(56,189,248,.10)', '#7dd3fc', 'rgba(56,189,248,.30)'];
+    status.style.display = 'block';
+    status.style.background = colors[0];
+    status.style.color = colors[1];
+    status.style.border = `1px solid ${colors[2]}`;
+    status.innerHTML = message;
+};
+
+const fetchJamornzTournament = async () => {
+    if (!jamornzTournamentUrl) {
+        return showToast('กรุณาระบุ URL หรือ ID ของการแข่งขัน Jamornz', 'error');
+    }
+
+    const parsed = parseJamornzInput(jamornzTournamentUrl);
+    if (!parsed || !parsed.id) {
+        return showToast('รูปแบบ Jamornz URL ไม่ถูกต้อง', 'error');
+    }
+
+    const slug = parsed.slug || '';
+    const id = parsed.id;
+    const passwordInput = document.getElementById('jamornzPasswordInput');
+    const pin = (passwordInput?.value || parsed.dockPin || '').trim();
+    if (!/^\d{5}$/.test(pin)) {
+        setJamornzConnectionStatus('<i class="fas fa-exclamation-circle"></i> กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
+        return showToast('กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
+    }
+    const apiUrl = `https://jamornz.com/api/tournament.php?action=public_load&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`;
+
+    let loadingToast = null;
+    try {
+        loadingToast = document.createElement('div');
+        loadingToast.className = 'toast info';
+        loadingToast.textContent = 'กำลังโหลดข้อมูลจาก jamornz.com...';
+        elements.toastContainer.appendChild(loadingToast);
+
+        setJamornzConnectionStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบรหัสและเชื่อมต่อ...', 'info');
+        const verifyUrl = `https://jamornz.com/api/tournament.php?action=public_export_csv&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}&round=all&dockPin=${encodeURIComponent(pin)}`;
+        const verifyResponse = await fetch(verifyUrl);
+        if (!verifyResponse.ok) {
+            if (verifyResponse.status === 403) throw new Error('รหัส VIP ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองอีกครั้ง');
+            throw new Error('ไม่สามารถตรวจสอบรหัสเชื่อมต่อได้');
+        }
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Jamornz ได้');
+        const resJson = await response.json();
+        loadingToast.remove();
+        loadingToast = null;
+
+        if (!resJson.success || !resJson.tournament) {
+            throw new Error(resJson.message || 'ไม่พบข้อมูลรายการแข่งขัน');
+        }
+
+        const tournament = resJson.tournament;
+        currentJamornzData = tournament;
+        jamornzConnection = { slug, id, pin };
+        localStorage.setItem('jamornzPassword', pin);
+        if (passwordInput) passwordInput.disabled = true;
+
+        // Auto-cache team logos in logoCache (supporting uppercase, lowercase, and full URLs)
+        if (tournament.teamLogos && typeof tournament.teamLogos === 'object') {
+            Object.entries(tournament.teamLogos).forEach(([code, url]) => {
+                if (url) {
+                    const fullUrl = url.startsWith('/') ? `https://jamornz.com${url}` : url;
+                    const cleanCode = code.replace(/\s/g, '');
+                    logoCache[cleanCode] = fullUrl;
+                    logoCache[cleanCode.toUpperCase()] = fullUrl;
+                    logoCache[cleanCode.toLowerCase()] = fullUrl;
+                    const team = (tournament.teams || []).find(item => item.code === code || item.code?.toUpperCase() === cleanCode.toUpperCase());
+                    if (team?.name) {
+                        const cleanName = team.name.replace(/\s/g, '');
+                        logoCache[cleanName] = fullUrl;
+                        logoCache[cleanName.toUpperCase()] = fullUrl;
+                        logoCache[cleanName.toLowerCase()] = fullUrl;
+                    }
+                }
+            });
+        }
+
+        // Build continuous sheetData for all matches
+        sheetData = buildSheetDataFromJamornz(tournament);
+
+        // Build in-memory workbook for Display Table
+        window.currentWorkbook = buildWorkbookFromJamornz(tournament);
+
+        setJamornzConnectionStatus('<i class="fas fa-check-circle"></i> รหัสถูกต้อง — เชื่อมต่อกับเว็บไซต์แล้ว พร้อมส่งคะแนนกลับสู่ตารางการแข่งขัน', 'success');
+        showToast(`เชื่อมต่อสำเร็จ: ${tournament.name || 'ทัวร์นาเมนต์'} (${sheetData.length - 1} คู่)`, 'success');
+    } catch (err) {
+        if (loadingToast) loadingToast.remove();
+        console.error('Jamornz fetch error:', err);
+        jamornzConnection = null;
+        setJamornzConnectionStatus(`<i class="fas fa-times-circle"></i> ${err.message}`, 'error');
+        showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
+    }
+};
+window.fetchJamornzTournament = fetchJamornzTournament;
+
+function syncJamornzMatch(status = 'live', immediate = false) {
+    if (!jamornzConnection || !elements.matchID) return;
+    const send = async () => {
+        const header = sheetData[0] || [];
+        const match = sheetData.slice(1).find(row => parseInt(row[0]) === parseInt(elements.matchID.value));
+        const get = key => match ? match[header.indexOf(key)] : '';
+        const field = parseInt(String(get('label3') || 'สนามที่ 1').match(/\d+/)?.[0] || '1');
+        try {
+            const response = await fetch('https://jamornz.com/api/tournament.php?action=dock_update', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...jamornzConnection, matchId: parseInt(elements.matchID.value), score1: masterTeamA.score, score2: masterTeamB.score,
+                    penalty1: masterTeamA.score2, penalty2: masterTeamB.score2, shirtColor1: masterTeamA.color1, shirtColor2: masterTeamB.color1,
+                    half, field, status, startedAt: dockMatchStartedAt || (dockMatchStartedAt = new Date().toISOString()),
+                    timerStartedAt: dockTimerStartedAt, timerBaseSeconds: interval ? dockTimerBaseSeconds : timer,
+                    timerRunning: Boolean(interval), isCountdown })
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.message || `ส่งข้อมูลกลับไม่สำเร็จ (${response.status})`);
+            }
+        } catch (error) {
+            console.error('Jamornz sync failed', error);
+            setJamornzConnectionStatus(`<i class="fas fa-exclamation-triangle"></i> การเชื่อมต่อมีปัญหา: ${error.message}`, 'error');
+        }
+    };
+    clearTimeout(dockSyncTimer);
+    if (immediate) send(); else dockSyncTimer = setTimeout(send, 450);
+}
+window.syncJamornzMatch = syncJamornzMatch;
+
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
         fetchGoogleSheet();
+    } else if (dataSourceMode === 'jamornz') {
+        fetchJamornzTournament();
     } else {
         handleExcel();
     }
@@ -1861,22 +2209,22 @@ const setDataSourceMode = (mode) => {
     localStorage.setItem('dataSourceMode', mode);
 
     const isGSheet = mode === 'gsheet';
+    const isJamornz = mode === 'jamornz';
     const gsheetSettings = document.getElementById('gsheetSettings');
+    const jamornzSettings = document.getElementById('jamornzSettings');
     const excelSettings = document.getElementById('excelSettings'); // V2.9.2
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = isGSheet ? 'none' : 'block'; // V2.9.2
+    if (jamornzSettings) jamornzSettings.style.display = isJamornz ? 'block' : 'none';
+    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz) ? 'none' : 'block';
 
-    const btnSpan = elements.excelBtn.querySelector('span');
     const trans = translations[currentLang];
 
-    if (isGSheet) {
-        // btnSpan.textContent = trans.loadFromGoogleSheet || "Fetch GS";
-        btnSpan.setAttribute('data-lang', 'loadFromGoogleSheet');
+    if (isJamornz) {
+        elements.excelBtn.innerHTML = `<i class="fas fa-globe" style="color: #38bdf8;"></i> <span>โหลด Jamornz</span>`;
+    } else if (isGSheet) {
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
     } else {
-        // btnSpan.textContent = trans.excel;
-        btnSpan.setAttribute('data-lang', 'excel');
         elements.excelBtn.innerHTML = `<i class="fas fa-file-excel"></i> <span data-lang="excel">${trans.excel}</span>`;
     }
 };
@@ -1915,6 +2263,300 @@ const copyDetails = () => {
         .replace(/<time_counter>/gi, elements.timerText.textContent)
         .replace(/<half_text>/gi, elements.halfText.textContent);
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
+};
+
+// ─── YouTube long-live timestamps / description builder ────────────────────
+let youtubeTimerInterval = null;
+let isYoutubeConfirming = false;
+
+const getLatestYoutubeMatchId = () => {
+    try {
+        const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+        for (let i = list.length - 1; i >= 0; i--) {
+            const item = list[i];
+            if (!item) continue;
+            if (item.matchId !== undefined && item.matchId !== null && item.matchId !== '' && item.matchId !== 0) {
+                return item.matchId;
+            }
+            if (item.pairLabel) {
+                const numMatch = String(item.pairLabel).match(/\d+/);
+                if (numMatch) return numMatch[0];
+                return item.pairLabel;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return null;
+};
+
+const updateYoutubeButtonLabel = (explicitMatchId = null) => {
+    const button = document.getElementById('youtubeConfirmBtn');
+    if (!button) return;
+
+    let matchId = explicitMatchId;
+    if (matchId === null || matchId === undefined) {
+        matchId = getLatestYoutubeMatchId();
+    }
+
+    const badgeText = (matchId !== null && matchId !== undefined && matchId !== '') ? `(${matchId}) ` : '';
+    const content = `<i class="fab fa-youtube"></i> ${badgeText}YouTube`;
+
+    button.setAttribute('data-normal-html', content);
+    if (!isYoutubeConfirming) {
+        button.innerHTML = content;
+    }
+};
+
+const applyYoutubeAnnouncementEnabled = enabled => {
+    const checkbox = document.getElementById('youtubeAnnouncementEnabled');
+    const button = document.getElementById('youtubeConfirmBtn');
+    const track = document.getElementById('youtubeAnnouncementSwitch');
+    const knob = document.getElementById('youtubeAnnouncementKnob');
+    if (checkbox) checkbox.checked = enabled;
+    if (button) button.style.display = enabled ? 'inline-flex' : 'none';
+    if (track) track.style.background = enabled ? '#dc2626' : '#475569';
+    if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'translateX(0)';
+    if (enabled) updateYoutubeButtonLabel();
+};
+
+const getYoutubeTimerState = () => JSON.parse(localStorage.getItem('youtubeTimerState') || '{"base":0,"startedAt":null,"running":false}');
+
+const getYoutubeElapsed = () => {
+    const state = getYoutubeTimerState();
+    return Math.max(0, Number(state.base) || 0) + (state.running && state.startedAt ? Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000)) : 0);
+};
+
+const formatYoutubeTime = seconds => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return h > 0 ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+const updateYoutubeTimerDisplay = () => {
+    const display = document.getElementById('youtubeTimerDisplay');
+    if (display) display.textContent = formatYoutubeTime(getYoutubeElapsed());
+};
+
+const startYoutubeTimer = () => {
+    const state = getYoutubeTimerState();
+    if (!state.running) localStorage.setItem('youtubeTimerState', JSON.stringify({ base: Number(state.base) || 0, startedAt: Date.now(), running: true }));
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
+    updateYoutubeTimerDisplay();
+};
+
+const pauseYoutubeTimer = () => {
+    localStorage.setItem('youtubeTimerState', JSON.stringify({ base: getYoutubeElapsed(), startedAt: null, running: false }));
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = null;
+    updateYoutubeTimerDisplay();
+};
+
+const resetYoutubeTimer = () => {
+    if (!confirm('รีเซ็ตเวลาและรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) return;
+    clearInterval(youtubeTimerInterval);
+    youtubeTimerInterval = null;
+    localStorage.setItem('youtubeTimerState', JSON.stringify({ base: 0, startedAt: null, running: false }));
+    localStorage.setItem('youtubeTimestamps', '[]');
+    renderYoutubeTimestamps();
+    updateYoutubeTimerDisplay();
+    updateYoutubeButtonLabel();
+};
+
+const fillYoutubeTemplate = (template, time, customData = {}) => {
+    const round = customData.round !== undefined ? customData.round : (elements.label1?.textContent || '').trim();
+    const pairLabel = customData.pairLabel !== undefined ? customData.pairLabel : (elements.label2?.textContent || '').trim();
+    const teamA = customData.teamA !== undefined ? customData.teamA : (masterTeamA?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const teamB = customData.teamB !== undefined ? customData.teamB : (masterTeamB?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const label3 = elements.label3?.textContent || '';
+    const label4 = elements.label4?.textContent || '';
+    const label5 = elements.label5?.textContent || '';
+
+    return (template || '<youtube_time> <label2> <TeamA> VS <TeamB>')
+        .replace(/<youtube_time>/gi, time)
+        .replace(/<TeamA>\s*VS\s*<TeamB>/gi, `${teamA} VS ${teamB}`)
+        .replace(/<TeamA>/gi, teamA)
+        .replace(/<TeamB>/gi, teamB)
+        .replace(/<label1>/gi, round)
+        .replace(/<label2>/gi, pairLabel)
+        .replace(/<label3>/gi, label3)
+        .replace(/<label4>/gi, label4)
+        .replace(/<label5>/gi, label5)
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+};
+
+const renderYoutubeTimestamps = () => {
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+    const output = document.getElementById('youtubeTimestampList');
+    if (!output) return;
+
+    if (!list.length) {
+        output.value = '';
+        return;
+    }
+
+    let result = '';
+    let currentRound = null;
+
+    list.forEach(item => {
+        if (!item) return;
+
+        // รองรับข้อมูลเดิมที่มีเฉพาะ round text
+        if (!item.matchId && item.round && item.text === item.round) {
+            if (result) result += '\n\n';
+            result += item.round;
+            currentRound = item.round;
+            return;
+        }
+
+        const round = (item.round || '').trim();
+        // หากเปลี่ยนรอบ ให้เว้นบรรทัดใหม่ และขึ้นชื่อรอบ
+        if (round && round !== currentRound) {
+            if (result) result += '\n\n';
+            result += round;
+            currentRound = round;
+        }
+
+        const line = item.text || `${item.timeFormatted || formatYoutubeTime(item.seconds || 0)} ${item.pairLabel || ''} ${item.teamA || ''} VS ${item.teamB || ''}`.replace(/[ \t]+/g, ' ').trim();
+        result += '\n' + line;
+    });
+
+    output.value = result.trim();
+};
+
+const triggerYoutubeCooldown = (button) => {
+    if (!button) return;
+    isYoutubeConfirming = true;
+    button.disabled = true;
+    button.style.opacity = '0.7';
+    button.style.filter = 'grayscale(40%)';
+    button.innerHTML = '<i class="fas fa-check"></i> บันทึกแล้ว';
+
+    setTimeout(() => {
+        isYoutubeConfirming = false;
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.filter = 'none';
+        button.innerHTML = button.getAttribute('data-normal-html') || '<i class="fab fa-youtube"></i> YouTube';
+    }, 2500);
+};
+
+const confirmYoutubeTimestamp = () => {
+    if (isYoutubeConfirming) {
+        showToast('กำลังบันทึกเวลา กรุณารอสักครู่ (ป้องกันการกดซ้ำ)', 'warning');
+        return;
+    }
+
+    const button = document.getElementById('youtubeConfirmBtn');
+    const seconds = getYoutubeElapsed();
+    const time = formatYoutubeTime(seconds);
+    const template = localStorage.getItem('youtubeLineTemplate') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+
+    const round = (elements.label1?.textContent || '').trim() || 'รอบการแข่งขัน';
+    const pairLabel = (elements.label2?.textContent || '').trim();
+    const matchId = parseInt(elements.matchID?.value) || 0;
+    const teamA = (masterTeamA?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+    const teamB = (masterTeamB?.name || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+
+    // ── ตรวจสอบข้อมูลซ้ำ (Duplicate Detection) ──
+    const existingIndex = list.findIndex(item => {
+        if (!item) return false;
+        const sameRound = (item.round || '').trim().toLowerCase() === round.toLowerCase();
+        const sameMatchId = matchId > 0 && item.matchId === matchId;
+        const sameTeams = teamA && teamB && item.teamA === teamA && item.teamB === teamB;
+        const samePair = pairLabel && item.pairLabel && item.pairLabel.toLowerCase() === pairLabel.toLowerCase();
+        
+        return sameRound && (sameMatchId || sameTeams || samePair);
+    });
+
+    if (existingIndex !== -1) {
+        const existing = list[existingIndex];
+        const existingTime = existing.timeFormatted || formatYoutubeTime(existing.seconds || 0);
+        const matchTitle = `${existing.round} - ${existing.pairLabel || ('คู่ที่ ' + existing.matchId)}: ${existing.teamA || teamA} VS ${existing.teamB || teamB}`;
+
+        const wantsUpdate = confirm(
+            `⚠️ แมตช์นี้ถูกบันทึก Timestamp ไปแล้ว!\n\n` +
+            `แมตช์: ${matchTitle}\n` +
+            `เวลาเดิมที่บันทึก: ${existingTime}\n` +
+            `เวลาปัจจุบัน: ${time}\n\n` +
+            `คุณต้องการ "อัปเดตเป็นเวลาใหม่" หรือไม่?\n` +
+            `• [ ตกลง / OK ]: แก้ไขเวลาเดิมเป็น ${time} (ไม่สร้างแถวซ้ำ)\n` +
+            `• [ ยกเลิก / Cancel ]: ข้าม ไม่ทำการเปลี่ยนแปลงใดๆ`
+        );
+
+        if (!wantsUpdate) {
+            showToast('ยกเลิก ไม่บันทึกซ้ำ (ข้อมูลเดิมยังคงอยู่)', 'info');
+            return;
+        }
+
+        // อัปเดตข้อมูลในตำแหน่งเดิม
+        list[existingIndex].seconds = seconds;
+        list[existingIndex].timeFormatted = time;
+        list[existingIndex].round = round;
+        list[existingIndex].pairLabel = pairLabel || list[existingIndex].pairLabel;
+        list[existingIndex].teamA = teamA || list[existingIndex].teamA;
+        list[existingIndex].teamB = teamB || list[existingIndex].teamB;
+        list[existingIndex].matchId = matchId || list[existingIndex].matchId;
+        list[existingIndex].text = fillYoutubeTemplate(template, time, { round, pairLabel, teamA, teamB, matchId });
+
+        localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+        renderYoutubeTimestamps();
+        updateYoutubeButtonLabel(matchId || existing.matchId);
+        showToast(`อัปเดตเวลา ${pairLabel || ('คู่ที่ ' + matchId)} เป็น ${time} เรียบร้อยแล้ว`, 'success');
+        triggerYoutubeCooldown(button);
+        return;
+    }
+
+    // ── บันทึกรายการใหม่ ──
+    const newItem = {
+        round,
+        matchId,
+        pairLabel,
+        teamA,
+        teamB,
+        seconds,
+        timeFormatted: time,
+        text: fillYoutubeTemplate(template, time, { round, pairLabel, teamA, teamB, matchId })
+    };
+
+    list.push(newItem);
+    localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+    renderYoutubeTimestamps();
+    updateYoutubeButtonLabel(matchId);
+    showToast(`บันทึก ${time} [${pairLabel || ('คู่ที่ ' + matchId)}] ลง YouTube แล้ว`, 'success');
+    triggerYoutubeCooldown(button);
+};
+
+const undoYoutubeTimestamp = () => {
+    const list = JSON.parse(localStorage.getItem('youtubeTimestamps') || '[]');
+    if (!list.length) {
+        showToast('ไม่มีรายการ Timestamp ให้ลบ', 'warning');
+        return;
+    }
+
+    const last = list[list.length - 1];
+    const desc = last.text || `${last.pairLabel || ''} ${last.teamA || ''} VS ${last.teamB || ''}`;
+    if (confirm(`คุณต้องการลบรายการล่าสุดนี้ใช่หรือไม่?\n\n"${desc}"`)) {
+        list.pop();
+        localStorage.setItem('youtubeTimestamps', JSON.stringify(list));
+        renderYoutubeTimestamps();
+        updateYoutubeButtonLabel();
+        showToast('ลบรายการล่าสุดเรียบร้อยแล้ว', 'success');
+    }
+};
+
+window.insertYoutubeTag = tag => {
+    const input = document.getElementById('youtubeLineTemplate');
+    if (!input) return;
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    input.value = input.value.slice(0, start) + tag + input.value.slice(end);
+    input.focus();
+    input.selectionStart = input.selectionEnd = start + tag.length;
 };
 
 const enterEditMode = (team) => {
@@ -2023,6 +2665,7 @@ const setupEventListeners = () => {
             const colorInput = $(`action-color-${idx}`);
             const heightInput = $(`action-height-${idx}`);
             const sourceInput = $(`action-source-input-${idx}`);
+            const sceneInput = $(`action-scene-input-${idx}`);
             const actionSelect = $(`action-type-${idx}`);
             return {
                 ...setting,
@@ -2030,6 +2673,7 @@ const setupEventListeners = () => {
                 backgroundColor: colorInput.value,
                 height: Math.max(25, Math.min(100, parseInt(heightInput.value) || 35)),
                 targetSource: sourceInput.value.trim(),
+                targetScene: sceneInput.value.trim(),
                 actionType: actionSelect.value,
             };
         });
@@ -2073,6 +2717,38 @@ const setupEventListeners = () => {
             }
         });
     }
+
+    const saveJamornzBtn = document.getElementById('saveJamornzBtn');
+    if (saveJamornzBtn) {
+        saveJamornzBtn.addEventListener('click', () => {
+            const input = document.getElementById('jamornzUrlInput');
+            if (input) {
+                const url = input.value.trim();
+                if (url) {
+                    jamornzTournamentUrl = url;
+                    localStorage.setItem('jamornzTournamentUrl', url);
+                    fetchJamornzTournament();
+                } else {
+                    showToast('กรุณากรอก URL หรือ ID ของ Jamornz Tournament', 'error');
+                }
+            }
+        });
+    }
+
+    const editJamornzPasswordBtn = document.getElementById('editJamornzPasswordBtn');
+    if (editJamornzPasswordBtn) {
+        editJamornzPasswordBtn.addEventListener('click', () => {
+            const passwordInput = document.getElementById('jamornzPasswordInput');
+            if (!passwordInput) return;
+            passwordInput.disabled = false;
+            passwordInput.focus();
+            passwordInput.select();
+            jamornzConnection = null;
+            setJamornzConnectionStatus('<i class="fas fa-pen"></i> กรอกรหัส 5 หลัก แล้วกด “ยืนยันรหัสและเชื่อมต่อ”', 'info');
+        });
+    }
+
+
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', showConfirmReset);
     // V2.9.2: Confirm dialog buttons
@@ -2125,6 +2801,7 @@ const setupEventListeners = () => {
     elements.score2VisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('score2', e.target.checked));
     elements.swapCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('swapCard', e.target.checked));
     elements.actionCardVisibilityCheck.addEventListener('change', (e) => saveVisibilitySetting('actionButtons', e.target.checked));
+    if (elements.touchModeCheck) elements.touchModeCheck.addEventListener('change', (e) => saveVisibilitySetting('touchMode', e.target.checked));
 
     // V2.8.1 Listeners
     if (elements.visibility_plus_minus) elements.visibility_plus_minus.addEventListener('change', (e) => saveVisibilitySetting('showPlusMinus', e.target.checked));
@@ -2156,7 +2833,12 @@ const setupEventListeners = () => {
     elements.countdownCheck.addEventListener('change', () => { isCountdown = elements.countdownCheck.checked; });
     // V2.9.2: Settings Tab click handlers
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchSettingsTab(btn.getAttribute('data-tab')));
+        btn.type = 'button';
+        btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            switchSettingsTab(btn.getAttribute('data-tab'));
+        });
     });
 
     // Settings Tab Arrow Navigation
@@ -2193,6 +2875,31 @@ const setupEventListeners = () => {
     }
     elements.settingsBtn.addEventListener('click', () => {
         elements.detailsText.value = localStorage.getItem('detailsText') || '';
+        const lineTemplateInput = document.getElementById('youtubeLineTemplate');
+        if (lineTemplateInput) lineTemplateInput.value = localStorage.getItem('youtubeLineTemplate') || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        const youtubeFooter = document.getElementById('youtubeFooterText');
+        if (youtubeFooter) {
+            const savedFooter = localStorage.getItem('youtubeFooterText');
+            if (savedFooter !== null) {
+                youtubeFooter.value = savedFooter;
+            } else {
+                const legacy = localStorage.getItem('youtubeDetailsText');
+                if (legacy && !legacy.includes('<youtube_time>')) {
+                    youtubeFooter.value = legacy;
+                } else {
+                    youtubeFooter.value = 
+`-------------------------------------
+รายการ...
+📅 แข่งขันวัน...
+⚽ สนาม...
+-------------------------------------
+🏆 #...
+🎥 #JamornzMedia #จามรมีเดี่ย`;
+                }
+            }
+        }
+        renderYoutubeTimestamps();
+        updateYoutubeTimerDisplay();
         if (elements.maxHalvesSelect) elements.maxHalvesSelect.value = maxHalves; // NEW: Set value
         
         // Load half format settings
@@ -2212,9 +2919,82 @@ const setupEventListeners = () => {
         applyVisibilitySettings();
         applyColorCount();
         loadIndicatorSettings();
+        const savedSettingsTab = localStorage.getItem('activeSettingsTab') || 'settingsTabGeneral';
+        switchSettingsTab(document.getElementById(savedSettingsTab) ? savedSettingsTab : 'settingsTabGeneral');
         openPopup(elements.detailsPopup);
     });
     elements.copyBtn.addEventListener('click', copyDetails);
+    const addActionBtn = document.getElementById('addActionButtonBtn');
+    if (addActionBtn) addActionBtn.addEventListener('click', addActionButton);
+    const youtubeConfirmBtn = document.getElementById('youtubeConfirmBtn');
+    if (youtubeConfirmBtn) youtubeConfirmBtn.addEventListener('click', confirmYoutubeTimestamp);
+    const youtubeEnabledToggle = document.getElementById('youtubeAnnouncementEnabled');
+    if (youtubeEnabledToggle) youtubeEnabledToggle.addEventListener('change', event => {
+        const enabled = event.target.checked;
+        localStorage.setItem('youtubeAnnouncementEnabled', enabled ? 'true' : 'false');
+        applyYoutubeAnnouncementEnabled(enabled);
+    });
+    const youtubeStartBtn = document.getElementById('youtubeTimerStartBtn');
+    const youtubePauseBtn = document.getElementById('youtubeTimerPauseBtn');
+    const youtubeResetBtn = document.getElementById('youtubeTimerResetBtn');
+    if (youtubeStartBtn) youtubeStartBtn.addEventListener('click', startYoutubeTimer);
+    if (youtubePauseBtn) youtubePauseBtn.addEventListener('click', pauseYoutubeTimer);
+    if (youtubeResetBtn) youtubeResetBtn.addEventListener('click', resetYoutubeTimer);
+    const saveYoutubeBtn = document.getElementById('saveYoutubeDetailsBtn');
+    if (saveYoutubeBtn) saveYoutubeBtn.addEventListener('click', () => {
+        const lineTemplate = document.getElementById('youtubeLineTemplate')?.value.trim() || '<youtube_time> <label2> <TeamA> VS <TeamB>';
+        const footer = document.getElementById('youtubeFooterText')?.value || '';
+        localStorage.setItem('youtubeLineTemplate', lineTemplate);
+        localStorage.setItem('youtubeFooterText', footer);
+        showToast('บันทึกการตั้งค่า YouTube เรียบร้อยแล้ว', 'success');
+    });
+
+    const copyYoutubeBtn = document.getElementById('copyYoutubeDetailsBtn');
+    if (copyYoutubeBtn) copyYoutubeBtn.addEventListener('click', () => {
+        const timestamps = document.getElementById('youtubeTimestampList')?.value.trim() || '';
+        const footer = document.getElementById('youtubeFooterText')?.value.trim() || '';
+        const fullText = [timestamps, footer].filter(Boolean).join('\n\n');
+
+        if (!fullText) {
+            showToast('ไม่มีข้อมูลสำหรับคัดลอก', 'warning');
+            return;
+        }
+
+        navigator.clipboard.writeText(fullText).then(() => {
+            showToast('คัดลอกรายละเอียด YouTube ครบชุดเรียบร้อยแล้ว', 'success');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = fullText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('คัดลอกรายละเอียด YouTube ครบชุดเรียบร้อยแล้ว', 'success');
+        });
+    });
+
+    const undoYoutubeBtn = document.getElementById('undoYoutubeTimestampBtn');
+    if (undoYoutubeBtn) undoYoutubeBtn.addEventListener('click', undoYoutubeTimestamp);
+
+    const clearYoutubeBtn = document.getElementById('clearYoutubeTimestampsBtn');
+    if (clearYoutubeBtn) clearYoutubeBtn.addEventListener('click', () => {
+        if (confirm('ล้างรายการ Timestamp ของ YouTube ทั้งหมดหรือไม่?')) {
+            localStorage.setItem('youtubeTimestamps', '[]');
+            renderYoutubeTimestamps();
+            updateYoutubeButtonLabel();
+            showToast('ล้างรายการ Timestamp ทั้งหมดแล้ว', 'info');
+        }
+    });
+    const mainAnnounceBtn = document.getElementById('announceMainTabBtn');
+    const youtubeAnnounceBtn = document.getElementById('announceYoutubeTabBtn');
+    const switchAnnouncePanel = youtube => {
+        document.getElementById('announceMainPanel').style.display = youtube ? 'none' : 'block';
+        document.getElementById('announceYoutubePanel').style.display = youtube ? 'block' : 'none';
+        mainAnnounceBtn.className = youtube ? 'btn-secondary' : 'btn-primary';
+        youtubeAnnounceBtn.className = youtube ? 'btn-primary' : 'btn-secondary';
+    };
+    if (mainAnnounceBtn) mainAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(false));
+    if (youtubeAnnounceBtn) youtubeAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(true));
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     // V2.9.3: Changelog removed
@@ -2230,7 +3010,9 @@ const setupEventListeners = () => {
     if (elements.closeChangelogBtn) elements.closeChangelogBtn.addEventListener('click', closeAllPopups);
     elements.closeTimeSettingsBtn.addEventListener('click', closeAllPopups);
     elements.closeLogoPathBtn.addEventListener('click', closeAllPopups);
-    elements.closeWelcomeBtn.addEventListener('click', closeWelcomePopup);
+    if (elements.closeWelcomeSponsorBtn) {
+        elements.closeWelcomeSponsorBtn.addEventListener('click', closeWelcomePopup);
+    }
 
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
@@ -2437,6 +3219,12 @@ const processFiles = async (files) => {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyYoutubeAnnouncementEnabled(localStorage.getItem('youtubeAnnouncementEnabled') === 'true');
+    updateYoutubeButtonLabel();
+    if (getYoutubeTimerState().running) {
+        youtubeTimerInterval = setInterval(updateYoutubeTimerDisplay, 1000);
+    }
+    updateYoutubeTimerDisplay();
     const savedLang = localStorage.getItem('scoreboardLang') || 'th';
     const savedTime = localStorage.getItem('countdownStartTime');
     if (savedTime) {
@@ -2461,6 +3249,24 @@ document.addEventListener('DOMContentLoaded', () => {
         googleSheetUrl = savedGSUrl;
         const input = document.getElementById('gsheetUrlInput');
         if (input) input.value = savedGSUrl;
+    }
+
+    const savedJamornzUrl = localStorage.getItem('jamornzTournamentUrl');
+    if (savedJamornzUrl) {
+        jamornzTournamentUrl = savedJamornzUrl;
+        const input = document.getElementById('jamornzUrlInput');
+        if (input) input.value = savedJamornzUrl;
+    }
+
+    const savedJamornzPassword = localStorage.getItem('jamornzPassword');
+    if (savedJamornzPassword) {
+        const passwordInput = document.getElementById('jamornzPasswordInput');
+        if (passwordInput) passwordInput.value = savedJamornzPassword;
+    }
+
+    const savedJamornzRound = localStorage.getItem('jamornzRound');
+    if (savedJamornzRound) {
+        jamornzRound = savedJamornzRound;
     }
 
     setDataSourceMode(dataSourceMode);
@@ -2518,11 +3324,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Fetch Announcement
-        fetchAnnouncement();
-        setInterval(fetchAnnouncement, 3600000);
-
-        // 3. Enable Start Button & Fix Logic
+        // 2. Enable Start Button & Fix Logic
         if (startBtn) {
             // Remove old listeners (like closeWelcomePopup) to ensure "Start" behavior
             const newBtn = startBtn.cloneNode(true);
@@ -3643,32 +4445,18 @@ window.triggerAction = async (index) => {
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
-            // Get Current Scene
-            const currentScene = await obs.call('GetCurrentProgramScene');
-            const sceneName = currentScene.currentProgramSceneName;
-
-            // Get Item ID (OBS v5 requires Item ID, not Source Name for visibility)
             try {
-                const itemIdResp = await obs.call('GetSceneItemId', { sceneName, sourceName: btn.targetSource });
-                const sceneItemId = itemIdResp.sceneItemId;
-
                 let enabled = true;
                 if (actionType === 'show') enabled = true;
                 else if (actionType === 'hide') enabled = false;
                 else if (actionType === 'toggle') {
-                    const itemState = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
-                    enabled = !itemState.sceneItemEnabled;
+                    enabled = !(await getSourceVisibility(btn.targetSource, btn.targetScene || ''));
                 }
-
-                await obs.call('SetSceneItemEnabled', {
-                    sceneName,
-                    sceneItemId,
-                    sceneItemEnabled: enabled
-                });
+                await setSourceVisibility(btn.targetSource, enabled, btn.targetScene || '');
                 showToast(`${btn.actionType} source: ${btn.targetSource}`, 'success');
             } catch (itemIdErr) {
                 console.error("Item ID Error", itemIdErr);
-                showToast(`Source not found in current scene`, 'error');
+                showToast(`Source not found in target scene(s)`, 'error');
             }
         }
     } catch (err) {
@@ -3746,4 +4534,42 @@ const initBibOverride = (team) => {
 
 initBibOverride('A');
 initBibOverride('B');
+
+// --- Global helper actions for welcome screen guest & reset ---
+window.enterAsGuest = () => {
+    const tempIdentity = {
+        name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
+        province: 'Unknown',
+        platform: 'PC',
+        ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
+        isTemporary: true
+    };
+    localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
+    localStorage.setItem('machineIdentityName', tempIdentity.name);
+    window.userIdentity = tempIdentity;
+    
+    try {
+        updateUserIdentityUI();
+    } catch (e) { console.error("Error updating user identity UI:", e); }
+    try {
+        startUsageTracking(tempIdentity);
+    } catch (e) { console.error("Error starting usage tracking:", e); }
+    try {
+        if (window.incrementVisitorCounter) window.incrementVisitorCounter();
+    } catch (e) {}
+
+    const screen = document.getElementById('welcomeScreen');
+    if (screen) {
+        screen.style.opacity = '0';
+        setTimeout(() => { screen.style.display = 'none'; }, 500);
+    }
+};
+
+window.resetStoredIdentity = () => {
+    localStorage.removeItem('userIdentity');
+    localStorage.removeItem('machineIdentityName');
+    localStorage.removeItem('usageTracker');
+    localStorage.removeItem('nameChangeLog');
+    location.reload();
+};
 
