@@ -384,6 +384,9 @@ const closeAllPopups = () => {
     if (onlinePopup) onlinePopup.style.display = 'none';
     // Mobile Control popup
     if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
+    // Bib Override popup
+    const bibPopup = document.getElementById('bibOverridePopup');
+    if (bibPopup) bibPopup.style.display = 'none';
     // V2.9.2 Confirm dialog
     hideConfirmReset();
 };
@@ -4570,7 +4573,168 @@ window.getSheetData = () => sheetData;
 import './volleyball_module_v2.js?v=2.9.5.2';
 import './display_table_module.js?v=2.9.5.2';
 
-// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
+// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว พร้อมหน้าต่าง Popup กลางจอ) ─────────────
+const isColorLight = (hex) => {
+    if (!hex || hex[0] !== '#') return true;
+    const c = hex.substring(1);
+    const rgb = parseInt(c.length === 3 ? c.split('').map(x=>x+x).join('') : c, 16);
+    if (isNaN(rgb)) return true;
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >>  8) & 0xff;
+    const b = (rgb >>  0) & 0xff;
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luma > 140;
+};
+
+let currentBibModalTeam = 'A';
+
+window.openBibModal = (team) => {
+    currentBibModalTeam = team;
+    const popup = document.getElementById('bibOverridePopup');
+    if (!popup) return;
+
+    // Get current team name
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    // Update modal title
+    const titleEl = document.getElementById('bibModalTitle');
+    if (titleEl) titleEl.textContent = `เสื้อเอี๊ยม - ทีม ${team} (${teamName})`;
+
+    // Get active state and color
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const isActive = bibToggle ? bibToggle.checked : false;
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+
+    // Update UI controls in modal
+    window.updateBibModalUI(isActive, activeColor, teamName);
+
+    // Show popup centered
+    popup.style.display = 'flex';
+};
+
+window.updateBibModalUI = (isActive, color, teamName) => {
+    const statusText = document.getElementById('bibModalStatusText');
+    const toggleBtn = document.getElementById('bibModalToggleBtn');
+    const customColorInput = document.getElementById('bibModalCustomColor');
+    const hexText = document.getElementById('bibModalHexCode');
+    const previewBadge = document.getElementById('bibModalPreviewBadge');
+    const previewName = document.getElementById('bibModalPreviewName');
+
+    if (customColorInput) customColorInput.value = color;
+    if (hexText) hexText.textContent = color.toUpperCase();
+
+    if (teamName && previewName) previewName.textContent = teamName;
+
+    if (previewBadge) {
+        previewBadge.style.background = color;
+        const isLight = isColorLight(color);
+        previewBadge.style.color = isLight ? '#0f172a' : '#ffffff';
+    }
+
+    if (isActive) {
+        if (statusText) {
+            statusText.textContent = '🟢 กำลังเปิดใช้งานเสื้อเอี๊ยม';
+            statusText.style.color = '#4ade80';
+        }
+        if (toggleBtn) {
+            toggleBtn.textContent = '✕ ปิดเสื้อเอี๊ยม';
+            toggleBtn.style.background = '#ef4444';
+            toggleBtn.style.color = '#ffffff';
+        }
+    } else {
+        if (statusText) {
+            statusText.textContent = '⚪ ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)';
+            statusText.style.color = '#94a3b8';
+        }
+        if (toggleBtn) {
+            toggleBtn.textContent = '🎽 เปิดใช้เอี๊ยม';
+            toggleBtn.style.background = '#22c55e';
+            toggleBtn.style.color = '#ffffff';
+        }
+    }
+
+    // Highlight selected preset button
+    document.querySelectorAll('.bib-modal-preset-btn').forEach(btn => {
+        const btnColor = btn.getAttribute('data-color');
+        if (btnColor && btnColor.toLowerCase() === color.toLowerCase()) {
+            btn.style.borderColor = '#ffffff';
+            btn.style.boxShadow = '0 0 10px rgba(255,255,255,0.6)';
+        } else {
+            btn.style.borderColor = 'transparent';
+            btn.style.boxShadow = 'none';
+        }
+    });
+};
+
+window.toggleBibInModal = () => {
+    const team = currentBibModalTeam;
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    if (!bibToggle) return;
+
+    bibToggle.checked = !bibToggle.checked;
+    bibToggle.dispatchEvent(new Event('change'));
+
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    window.updateBibModalUI(bibToggle.checked, activeColor, teamName);
+    window.updateBibBadgeUI(team);
+};
+
+window.selectBibModalColor = (color) => {
+    const team = currentBibModalTeam;
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const customColor = document.getElementById(`bibCustomColor${team}`);
+
+    localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, color);
+    if (customColor) customColor.value = color;
+
+    // Automatically activate bib when picking a color
+    if (bibToggle && !bibToggle.checked) {
+        bibToggle.checked = true;
+    }
+    if (bibToggle) {
+        bibToggle.dispatchEvent(new Event('change'));
+    }
+
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    window.updateBibModalUI(true, color, teamName);
+    window.updateBibBadgeUI(team);
+};
+
+window.updateBibBadgeUI = (team) => {
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const badge = document.getElementById(`bibBadge${team}`);
+    const btn = document.getElementById(`bibBtn${team}`);
+    if (!badge || !btn) return;
+
+    const isActive = bibToggle && bibToggle.checked;
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+
+    if (isActive) {
+        badge.textContent = 'ON';
+        badge.style.background = activeColor;
+        badge.style.color = isColorLight(activeColor) ? '#0f172a' : '#ffffff';
+        btn.style.borderColor = activeColor;
+        btn.style.background = 'rgba(255,255,255,0.12)';
+        btn.style.boxShadow = `0 0 8px ${activeColor}55`;
+    } else {
+        badge.textContent = 'OFF';
+        badge.style.background = 'rgba(148,163,184,0.2)';
+        badge.style.color = '#94a3b8';
+        btn.style.borderColor = 'rgba(255,255,255,0.15)';
+        btn.style.background = 'rgba(255,255,255,0.06)';
+        btn.style.boxShadow = 'none';
+    }
+};
+
 const initBibOverride = (team) => {
     const bibToggle = document.getElementById(`bibOverride${team}`);
     const bibColors = document.getElementById(`bibColors${team}`);
@@ -4596,6 +4760,7 @@ const initBibOverride = (team) => {
             
             // Just update team UI which will route the effective color properly
             updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+            window.updateBibBadgeUI(team);
         });
 
         if (bibCustomColor) {
@@ -4604,6 +4769,7 @@ const initBibOverride = (team) => {
                 if (bibToggle.checked) {
                     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
                     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                    window.updateBibBadgeUI(team);
                 }
             };
             bibCustomColor.addEventListener('input', handleCustomColor);
@@ -4620,10 +4786,13 @@ const initBibOverride = (team) => {
                     if (bibToggle.checked) {
                         const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
                         updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                        window.updateBibBadgeUI(team);
                     }
                 });
             });
         }
+
+        window.updateBibBadgeUI(team);
     }
 };
 
