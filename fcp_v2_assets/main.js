@@ -384,6 +384,9 @@ const closeAllPopups = () => {
     if (onlinePopup) onlinePopup.style.display = 'none';
     // Mobile Control popup
     if (document.getElementById('mobileControlPopup')) document.getElementById('mobileControlPopup').style.display = 'none';
+    // Bib Override popup
+    const bibPopup = document.getElementById('bibOverridePopup');
+    if (bibPopup) bibPopup.style.display = 'none';
     // V2.9.2 Confirm dialog
     hideConfirmReset();
 };
@@ -3336,6 +3339,18 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.style.cursor = 'pointer';
             // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
 
+            // Allow Enter key to trigger Start button
+            const visitorNameInputEl = document.getElementById('visitorName');
+            if (visitorNameInputEl && !visitorNameInputEl.dataset.enterBound) {
+                visitorNameInputEl.dataset.enterBound = 'true';
+                visitorNameInputEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        startBtn.click();
+                    }
+                });
+            }
+
             // Attach Save & Enter Logic
             startBtn.addEventListener('click', async () => {
                 const nameInput = document.getElementById('visitorName');
@@ -3347,13 +3362,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
                 };
 
-                // --- CASE 1: Empty fields → Temporary User ---
-                if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
+                // --- CASE 1: Empty name → Temporary User ---
+                if (!nameInput || !nameInput.value.trim()) {
                     const confirmTemp = await window.customConfirm(
-                        'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+                        'คุณยังไม่ได้กรอกชื่อผู้ใช้งาน\n\n' +
                         'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
                         '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
-                        'You haven\'t filled in the information.\n' +
+                        'You haven\'t entered a name.\n' +
                         'Enter as temporary user?\n' +
                         '(No usage data will be saved)',
                         'เข้าสู่ระบบแบบผู้เยี่ยมชม',
@@ -3389,7 +3404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
                 const storedMachineId = localStorage.getItem('machineIdentityName');
-                if (storedMachineId && storedMachineId !== enteredName) {
+                if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== enteredName) {
                     // Check cooldown
                     const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
                     const now = Date.now();
@@ -3445,10 +3460,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     setStatus(`🔄 เปลี่ยนชื่อเป็น "${enteredName}" สำเร็จ`, '#60a5fa');
                 }
 
-                // Province validation
+                // Check existing machine cache first (preserve local data!)
+                let cachedIdentity = null;
+                let cachedMinutes = 0;
+                try {
+                    cachedIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+                } catch (e) {}
+                try {
+                    const cachedUsage = JSON.parse(localStorage.getItem('usageTracker') || '{}');
+                    cachedMinutes = cachedUsage.totalMinutes || 0;
+                } catch (e) {}
+
+                // Province validation - prioritize local cache if not selected in UI
                 let province = '';
                 if (provInput) {
                     province = provInput.value;
+                    if (!province && cachedIdentity && cachedIdentity.province && cachedIdentity.province !== 'Unknown') {
+                        province = cachedIdentity.province;
+                        provInput.value = province;
+                    }
                     if (province === 'Other' && provOtherInput) {
                         province = provOtherInput.value.trim();
                         if (!province) {
@@ -3460,49 +3490,74 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
+                if (!province && cachedIdentity && cachedIdentity.province) {
+                    province = cachedIdentity.province;
+                }
 
-                // Reuse existing ID or Generate 6-digit ID
+                // Check if this machine already has cache for this user
+                const isSameCachedUser = cachedIdentity && cachedIdentity.name && cachedIdentity.name.trim().toLowerCase() === enteredName.toLowerCase();
                 let userID = Math.floor(100000 + Math.random() * 900000).toString();
-                try {
-                    const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-                    if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-                        userID = existingIdentity.ID;
-                    }
-                } catch(e) {}
 
-                // V2.9.3: Restore usage data from Firebase
+                if (cachedIdentity && cachedIdentity.ID && !cachedIdentity.isTemporary) {
+                    // PRESERVE the existing cache on this machine
+                    if (isSameCachedUser || !cachedIdentity.name) {
+                        userID = cachedIdentity.ID;
+                    }
+                }
+
+                // Restore/sync usage data, always preserving the machine's local cache
                 try {
                     startBtn.disabled = true;
-                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบข้อมูล...', '#60a5fa');
 
                     const existingData = await fetchFirebaseUserData(enteredName, userID);
-                    // Check if it's a true duplicate (name taken by another ID)
-                    if (existingData && existingData.ID && existingData.ID !== userID) {
-                        setStatus(`⚠️ ชื่อ "${enteredName}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
-                        startBtn.disabled = false;
-                        startBtn.textContent = 'Start';
-                        return;
-                    }
 
-                    if (existingData && existingData.totalMinutes) {
-                        // V2.9.3: Always trust Firebase as the single source of truth for time
-                        const restoredMinutes = existingData.totalMinutes;
-                        localStorage.setItem('usageTracker', JSON.stringify({
-                            totalMinutes: restoredMinutes,
-                            lastUpdated: new Date().toISOString()
-                        }));
-                        const restoredRank = getRank(restoredMinutes);
-                        setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
-                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${enteredName}`);
+                    if (existingData) {
+                        // If local cache didn't have a valid permanent ID, adopt from Firebase
+                        if (!cachedIdentity || !cachedIdentity.ID || cachedIdentity.isTemporary) {
+                            if (existingData.ID) userID = existingData.ID;
+                        }
+                        // If province is still empty, restore from Firebase
+                        if ((!province || province === 'Unknown') && existingData.province && existingData.province !== 'Unknown') {
+                            province = existingData.province;
+                            if (provInput) provInput.value = province;
+                        }
+
+                        const firebaseMinutes = existingData.totalMinutes || 0;
+                        // PRESERVE MACHINE CACHE: Take the maximum of local cache and Firebase
+                        const finalMinutes = Math.max(cachedMinutes, firebaseMinutes);
+                        if (finalMinutes > 0) {
+                            localStorage.setItem('usageTracker', JSON.stringify({
+                                totalMinutes: finalMinutes,
+                                lastUpdated: new Date().toISOString()
+                            }));
+                            const restoredRank = getRank(finalMinutes);
+                            setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(finalMinutes/60)} ชม.)`, '#4ade80');
+                            console.log(`Preserved machine cache: ${finalMinutes} mins (local: ${cachedMinutes}, fb: ${firebaseMinutes}) for ${enteredName}`);
+                        } else {
+                            setStatus(`✅ ยินดีต้อนรับกลับ คุณ ${enteredName}!`, '#4ade80');
+                        }
                     } else {
-                        setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+                        // User not in Firebase yet, but might have machine cache
+                        if (cachedMinutes > 0 && isSameCachedUser) {
+                            const restoredRank = getRank(cachedMinutes);
+                            setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(cachedMinutes/60)} ชม.)`, '#4ade80');
+                        } else {
+                            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+                        }
                     }
 
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 } catch (err) {
                     console.error('Firebase user check error:', err);
-                    setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+                    // Offline fallback: continue using machine cache!
+                    if (cachedMinutes > 0 && isSameCachedUser) {
+                        const restoredRank = getRank(cachedMinutes);
+                        setStatus(`✅ ออฟไลน์ (ใช้ข้อมูลเดิมในเครื่อง: ${restoredRank.nameTh})`, '#4ade80');
+                    } else {
+                        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+                    }
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
                 }
@@ -3519,6 +3574,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('machineIdentityName', enteredName);
                 userIdentity = identity;
                 window.userIdentity = identity;
+                if (window.updateUserIdentityUI) window.updateUserIdentityUI();
 
                 // Create com_ room in Firebase
                 if (window.initOnlinePresenceSystem) {
@@ -3836,9 +3892,9 @@ window.initWelcomeScreen = () => {
             }
         }
     } else {
-        // V2.9.3: Auto-fill locked name from anti-spam if exists
+        // V2.9.3: Auto-fill locked name from anti-spam if exists (ignore guest)
         const lockedName = localStorage.getItem('machineIdentityName');
-        if (lockedName && nameInput) {
+        if (lockedName && !lockedName.startsWith('Guest_') && nameInput) {
             nameInput.value = lockedName;
         }
     }
@@ -3857,10 +3913,10 @@ window.saveAndEnterApp = async () => {
 
     const name = nameInput ? nameInput.value.trim() : '';
 
-    // CASE 1: Empty fields → Temporary User
-    if (!name || (provinceSelect && !provinceSelect.value)) {
+    // CASE 1: Empty name → Temporary User
+    if (!name) {
         const confirmTemp = await window.customConfirm(
-            'คุณยังไม่ได้กรอกข้อมูล\n\n' +
+            'คุณยังไม่ได้กรอกชื่อผู้ใช้งาน\n\n' +
             'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
             '(จะไม่มีการเก็บข้อมูลการใช้งาน)',
             'เข้าสู่ระบบแบบผู้เยี่ยมชม',
@@ -3889,7 +3945,7 @@ window.saveAndEnterApp = async () => {
 
     // CASE 2: Soft anti-spam — cooldown timer + warn
     const storedMachineId = localStorage.getItem('machineIdentityName');
-    if (storedMachineId && storedMachineId !== name) {
+    if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== name) {
         const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
         const now = Date.now();
         const cooldownMs = 30 * 60 * 1000;
@@ -3933,7 +3989,22 @@ window.saveAndEnterApp = async () => {
         setStatus(`🔄 เปลี่ยนชื่อเป็น "${name}" สำเร็จ`, '#60a5fa');
     }
 
-    let province = provinceSelect ? provinceSelect.value : 'Unknown';
+    // Check existing machine cache first (preserve local data!)
+    let cachedIdentity = null;
+    let cachedMinutes = 0;
+    try {
+        cachedIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+    } catch (e) {}
+    try {
+        const cachedUsage = JSON.parse(localStorage.getItem('usageTracker') || '{}');
+        cachedMinutes = cachedUsage.totalMinutes || 0;
+    } catch (e) {}
+
+    let province = provinceSelect ? provinceSelect.value : '';
+    if (!province && cachedIdentity && cachedIdentity.province && cachedIdentity.province !== 'Unknown') {
+        province = cachedIdentity.province;
+        if (provinceSelect) provinceSelect.value = province;
+    }
     if (province === 'Other' && provinceOtherInput) {
         province = provinceOtherInput.value.trim();
         if (!province) {
@@ -3941,46 +4012,73 @@ window.saveAndEnterApp = async () => {
             return;
         }
     }
+    if (!province && cachedIdentity && cachedIdentity.province) {
+        province = cachedIdentity.province;
+    }
+    if (!province) province = 'Unknown';
 
-    // Reuse existing ID or Generate 6-digit ID
+    // Check if this machine already has cache for this user
+    const isSameCachedUser = cachedIdentity && cachedIdentity.name && cachedIdentity.name.trim().toLowerCase() === name.toLowerCase();
     let userID = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-            userID = existingIdentity.ID;
-        }
-    } catch(e) {}
 
-    // CASE 3: Full login — Restore from Firebase
+    if (cachedIdentity && cachedIdentity.ID && !cachedIdentity.isTemporary) {
+        // PRESERVE the existing cache on this machine
+        if (isSameCachedUser || !cachedIdentity.name) {
+            userID = cachedIdentity.ID;
+        }
+    }
+
+    // CASE 3: Full login — Restore from Firebase (preserving machine cache)
     try {
         if (startBtn) startBtn.disabled = true;
-        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
+        setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบข้อมูล...', '#60a5fa');
 
         const existingData = await fetchFirebaseUserData(name, userID);
-        // Check if it's a true duplicate (name taken by another ID)
-        if (existingData && existingData.ID && existingData.ID !== userID) {
-            setStatus(`⚠️ ชื่อ "${name}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
-            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
-            return;
-        }
 
-        if (existingData && existingData.totalMinutes) {
-            // V2.9.3: Always trust Firebase as the single source of truth for time
-            const restoredMinutes = existingData.totalMinutes;
-            localStorage.setItem('usageTracker', JSON.stringify({
-                totalMinutes: restoredMinutes,
-                lastUpdated: new Date().toISOString()
-            }));
-            const restoredRank = getRank(restoredMinutes);
-            setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
+        if (existingData) {
+            // If local cache didn't have a valid permanent ID, adopt from Firebase
+            if (!cachedIdentity || !cachedIdentity.ID || cachedIdentity.isTemporary) {
+                if (existingData.ID) userID = existingData.ID;
+            }
+            // Restore province if still empty
+            if ((!province || province === 'Unknown') && existingData.province && existingData.province !== 'Unknown') {
+                province = existingData.province;
+                if (provinceSelect) provinceSelect.value = province;
+            }
+
+            const firebaseMinutes = existingData.totalMinutes || 0;
+            // PRESERVE MACHINE CACHE: Take the maximum of local cache and Firebase
+            const finalMinutes = Math.max(cachedMinutes, firebaseMinutes);
+            if (finalMinutes > 0) {
+                localStorage.setItem('usageTracker', JSON.stringify({
+                    totalMinutes: finalMinutes,
+                    lastUpdated: new Date().toISOString()
+                }));
+                const restoredRank = getRank(finalMinutes);
+                setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(finalMinutes/60)} ชม.)`, '#4ade80');
+                console.log(`Preserved machine cache: ${finalMinutes} mins (local: ${cachedMinutes}, fb: ${firebaseMinutes}) for ${name}`);
+            } else {
+                setStatus(`✅ ยินดีต้อนรับกลับ คุณ ${name}!`, '#4ade80');
+            }
         } else {
-            setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+            // User not in Firebase yet, but might have machine cache
+            if (cachedMinutes > 0 && isSameCachedUser) {
+                const restoredRank = getRank(cachedMinutes);
+                setStatus(`✅ ข้อมูลเดิมในเครื่อง: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(cachedMinutes/60)} ชม.)`, '#4ade80');
+            } else {
+                setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
+            }
         }
 
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     } catch (err) {
         console.error('Firebase user check error:', err);
-        setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        if (cachedMinutes > 0 && isSameCachedUser) {
+            const restoredRank = getRank(cachedMinutes);
+            setStatus(`✅ ออฟไลน์ (ใช้ข้อมูลเดิมในเครื่อง: ${restoredRank.nameTh})`, '#4ade80');
+        } else {
+            setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
+        }
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
     }
 
@@ -4475,7 +4573,168 @@ window.getSheetData = () => sheetData;
 import './volleyball_module_v2.js?v=2.9.5.2';
 import './display_table_module.js?v=2.9.5.2';
 
-// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
+// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว พร้อมหน้าต่าง Popup กลางจอ) ─────────────
+const isColorLight = (hex) => {
+    if (!hex || hex[0] !== '#') return true;
+    const c = hex.substring(1);
+    const rgb = parseInt(c.length === 3 ? c.split('').map(x=>x+x).join('') : c, 16);
+    if (isNaN(rgb)) return true;
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >>  8) & 0xff;
+    const b = (rgb >>  0) & 0xff;
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luma > 140;
+};
+
+let currentBibModalTeam = 'A';
+
+window.openBibModal = (team) => {
+    currentBibModalTeam = team;
+    const popup = document.getElementById('bibOverridePopup');
+    if (!popup) return;
+
+    // Get current team name
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    // Update modal title
+    const titleEl = document.getElementById('bibModalTitle');
+    if (titleEl) titleEl.textContent = `เสื้อเอี๊ยม - ทีม ${team} (${teamName})`;
+
+    // Get active state and color
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const isActive = bibToggle ? bibToggle.checked : false;
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+
+    // Update UI controls in modal
+    window.updateBibModalUI(isActive, activeColor, teamName);
+
+    // Show popup centered
+    popup.style.display = 'flex';
+};
+
+window.updateBibModalUI = (isActive, color, teamName) => {
+    const statusText = document.getElementById('bibModalStatusText');
+    const toggleBtn = document.getElementById('bibModalToggleBtn');
+    const customColorInput = document.getElementById('bibModalCustomColor');
+    const hexText = document.getElementById('bibModalHexCode');
+    const previewBadge = document.getElementById('bibModalPreviewBadge');
+    const previewName = document.getElementById('bibModalPreviewName');
+
+    if (customColorInput) customColorInput.value = color;
+    if (hexText) hexText.textContent = color.toUpperCase();
+
+    if (teamName && previewName) previewName.textContent = teamName;
+
+    if (previewBadge) {
+        previewBadge.style.background = color;
+        const isLight = isColorLight(color);
+        previewBadge.style.color = isLight ? '#0f172a' : '#ffffff';
+    }
+
+    if (isActive) {
+        if (statusText) {
+            statusText.textContent = '🟢 กำลังเปิดใช้งานเสื้อเอี๊ยม';
+            statusText.style.color = '#4ade80';
+        }
+        if (toggleBtn) {
+            toggleBtn.textContent = '✕ ปิดเสื้อเอี๊ยม';
+            toggleBtn.style.background = '#ef4444';
+            toggleBtn.style.color = '#ffffff';
+        }
+    } else {
+        if (statusText) {
+            statusText.textContent = '⚪ ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)';
+            statusText.style.color = '#94a3b8';
+        }
+        if (toggleBtn) {
+            toggleBtn.textContent = '🎽 เปิดใช้เอี๊ยม';
+            toggleBtn.style.background = '#22c55e';
+            toggleBtn.style.color = '#ffffff';
+        }
+    }
+
+    // Highlight selected preset button
+    document.querySelectorAll('.bib-modal-preset-btn').forEach(btn => {
+        const btnColor = btn.getAttribute('data-color');
+        if (btnColor && btnColor.toLowerCase() === color.toLowerCase()) {
+            btn.style.borderColor = '#ffffff';
+            btn.style.boxShadow = '0 0 10px rgba(255,255,255,0.6)';
+        } else {
+            btn.style.borderColor = 'transparent';
+            btn.style.boxShadow = 'none';
+        }
+    });
+};
+
+window.toggleBibInModal = () => {
+    const team = currentBibModalTeam;
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    if (!bibToggle) return;
+
+    bibToggle.checked = !bibToggle.checked;
+    bibToggle.dispatchEvent(new Event('change'));
+
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    window.updateBibModalUI(bibToggle.checked, activeColor, teamName);
+    window.updateBibBadgeUI(team);
+};
+
+window.selectBibModalColor = (color) => {
+    const team = currentBibModalTeam;
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const customColor = document.getElementById(`bibCustomColor${team}`);
+
+    localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, color);
+    if (customColor) customColor.value = color;
+
+    // Automatically activate bib when picking a color
+    if (bibToggle && !bibToggle.checked) {
+        bibToggle.checked = true;
+    }
+    if (bibToggle) {
+        bibToggle.dispatchEvent(new Event('change'));
+    }
+
+    const teamNameEl = document.getElementById(`name${team}`);
+    const teamName = teamNameEl ? (teamNameEl.value || teamNameEl.textContent || `Team ${team}`) : `Team ${team}`;
+
+    window.updateBibModalUI(true, color, teamName);
+    window.updateBibBadgeUI(team);
+};
+
+window.updateBibBadgeUI = (team) => {
+    const bibToggle = document.getElementById(`bibOverride${team}`);
+    const badge = document.getElementById(`bibBadge${team}`);
+    const btn = document.getElementById(`bibBtn${team}`);
+    if (!badge || !btn) return;
+
+    const isActive = bibToggle && bibToggle.checked;
+    const defaultColor = team === 'A' ? '#84cc16' : '#f97316';
+    const activeColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultColor;
+
+    if (isActive) {
+        badge.textContent = 'ON';
+        badge.style.background = activeColor;
+        badge.style.color = isColorLight(activeColor) ? '#0f172a' : '#ffffff';
+        btn.style.borderColor = activeColor;
+        btn.style.background = 'rgba(255,255,255,0.12)';
+        btn.style.boxShadow = `0 0 8px ${activeColor}55`;
+    } else {
+        badge.textContent = 'OFF';
+        badge.style.background = 'rgba(148,163,184,0.2)';
+        badge.style.color = '#94a3b8';
+        btn.style.borderColor = 'rgba(255,255,255,0.15)';
+        btn.style.background = 'rgba(255,255,255,0.06)';
+        btn.style.boxShadow = 'none';
+    }
+};
+
 const initBibOverride = (team) => {
     const bibToggle = document.getElementById(`bibOverride${team}`);
     const bibColors = document.getElementById(`bibColors${team}`);
@@ -4501,6 +4760,7 @@ const initBibOverride = (team) => {
             
             // Just update team UI which will route the effective color properly
             updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+            window.updateBibBadgeUI(team);
         });
 
         if (bibCustomColor) {
@@ -4509,6 +4769,7 @@ const initBibOverride = (team) => {
                 if (bibToggle.checked) {
                     const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
                     updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                    window.updateBibBadgeUI(team);
                 }
             };
             bibCustomColor.addEventListener('input', handleCustomColor);
@@ -4525,10 +4786,13 @@ const initBibOverride = (team) => {
                     if (bibToggle.checked) {
                         const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
                         updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
+                        window.updateBibBadgeUI(team);
                     }
                 });
             });
         }
+
+        window.updateBibBadgeUI(team);
     }
 };
 
@@ -4545,7 +4809,7 @@ window.enterAsGuest = () => {
         isTemporary: true
     };
     localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
-    localStorage.setItem('machineIdentityName', tempIdentity.name);
+    // Do not lock machineIdentityName to temporary guest name
     window.userIdentity = tempIdentity;
     
     try {
