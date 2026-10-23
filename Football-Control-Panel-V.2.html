@@ -2278,59 +2278,6 @@
             font-size: 0.8rem;
             font-weight: 500;
         }
-    
-        /* Bib Override Popup & Dock Button */
-        .bib-dock-btn {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 6px;
-            padding: 2px 7px;
-            cursor: pointer;
-            color: #cbd5e1;
-            font-size: 11px;
-            height: 26px;
-            box-sizing: border-box;
-            transition: all 0.2s ease;
-            user-select: none;
-            white-space: nowrap;
-        }
-        .bib-dock-btn:hover {
-            background: rgba(255, 255, 255, 0.15) !important;
-            border-color: rgba(255, 255, 255, 0.35) !important;
-            transform: translateY(-1px);
-        }
-        .bib-dock-badge {
-            font-size: 9px;
-            font-weight: 700;
-            padding: 1px 5px;
-            border-radius: 4px;
-            letter-spacing: 0.5px;
-            transition: all 0.2s ease;
-        }
-        .bib-popup-modal {
-            animation: bibPopupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes bibPopupFadeIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -46%) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-        }
-        .bib-modal-preset-btn {
-            transition: transform 0.15s ease, border-color 0.15s ease;
-        }
-        .bib-modal-preset-btn:hover {
-            transform: scale(1.06) !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
-        }
-
     </style>
 </head>
 
@@ -2584,115 +2531,6 @@
 
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
-
-    <!-- Bib Override Popup Modal (Center of Dock) -->
-    <div id="bibOverridePopup" class="bib-popup-modal" onclick="if(event.target===this)closeAllPopups()"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 10005; justify-content: center; align-items: center;">
-        <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; max-width: 350px; width: 92%; box-shadow: 0 20px 50px rgba(0,0,0,0.65); color: #f8fafc; box-sizing: border-box;" onclick="event.stopPropagation()">
-            
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5rem; line-height: 1;">🎽</span>
-                    <div>
-                        <h3 id="bibModalTitle" style="margin: 0; font-size: 1rem; color: #fff; font-weight: 700;">เสื้อเอี๊ยม - ทีม A</h3>
-                        <span id="bibModalSubtitle" style="font-size: 0.75rem; color: #94a3b8;">Bib Color Override (แสดงบนหน้าจอแทนสีเสื้อหลัก)</span>
-                    </div>
-                </div>
-                <button type="button" onclick="closeAllPopups()"
-                    style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                    onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='#fff'"
-                    onmouseout="this.style.background='transparent'; this.style.color='#94a3b8'">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <!-- Toggle ON / OFF Status Card -->
-            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 6px;">
-                        <span>สถานะเสื้อเอี๊ยม</span>
-                    </div>
-                    <div id="bibModalStatusText" style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)</div>
-                </div>
-                <button type="button" id="bibModalToggleBtn" onclick="toggleBibInModal()"
-                    style="padding: 7px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                    เปิดเอี๊ยม
-                </button>
-            </div>
-
-            <!-- Color Palette Presets -->
-            <div style="margin-bottom: 14px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <label style="font-size: 0.8rem; color: #cbd5e1; font-weight: 600; display: flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-palette" style="color: #60a5fa;"></i> เลือกสีเสื้อเอี๊ยมด่วน
-                    </label>
-                    <span style="font-size: 0.7rem; color: #64748b;">แตะเลือกสีเพื่อเปิดทันที</span>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;">
-                    <button type="button" class="bib-modal-preset-btn" data-color="#84cc16" onclick="selectBibModalColor('#84cc16')"
-                        style="height: 38px; border-radius: 8px; background: #84cc16; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1e293b; font-weight: 800; font-size: 0.75rem;" title="เขียวตอง">
-                        เขียว
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#f97316" onclick="selectBibModalColor('#f97316')"
-                        style="height: 38px; border-radius: 8px; background: #f97316; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 0.75rem;" title="ส้ม">
-                        ส้ม
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#ffffff" onclick="selectBibModalColor('#ffffff')"
-                        style="height: 38px; border-radius: 8px; background: #ffffff; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1e293b; font-weight: 800; font-size: 0.75rem;" title="ขาว">
-                        ขาว
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#eab308" onclick="selectBibModalColor('#eab308')"
-                        style="height: 38px; border-radius: 8px; background: #eab308; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1e293b; font-weight: 800; font-size: 0.75rem;" title="เหลือง">
-                        เหลือง
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#06b6d4" onclick="selectBibModalColor('#06b6d4')"
-                        style="height: 38px; border-radius: 8px; background: #06b6d4; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 0.75rem;" title="ฟ้า">
-                        ฟ้า
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#ef4444" onclick="selectBibModalColor('#ef4444')"
-                        style="height: 38px; border-radius: 8px; background: #ef4444; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 0.75rem;" title="แดง">
-                        แดง
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#ec4899" onclick="selectBibModalColor('#ec4899')"
-                        style="height: 38px; border-radius: 8px; background: #ec4899; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 0.75rem;" title="ชมพู">
-                        ชมพู
-                    </button>
-                    <button type="button" class="bib-modal-preset-btn" data-color="#3b82f6" onclick="selectBibModalColor('#3b82f6')"
-                        style="height: 38px; border-radius: 8px; background: #3b82f6; border: 2.5px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 0.75rem;" title="น้ำเงิน">
-                        น้ำเงิน
-                    </button>
-                </div>
-
-                <!-- Custom Color Picker Row -->
-                <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 10px;">
-                    <span style="font-size: 0.8rem; color: #94a3b8; flex: 1;">สีอื่นๆ (Color Picker):</span>
-                    <input type="color" id="bibModalCustomColor" onchange="selectBibModalColor(this.value)" oninput="selectBibModalColor(this.value)"
-                        style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;">
-                    <span id="bibModalHexCode" style="font-size: 0.82rem; color: #cbd5e1; font-family: monospace; font-weight: 600;">#84CC16</span>
-                </div>
-            </div>
-
-            <!-- Live Preview Card -->
-            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">ตัวอย่างสีที่แสดง:</span>
-                <div id="bibModalPreviewBadge" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; background: #84cc16; color: #1e293b; font-weight: 700; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.2s;">
-                    <span>🎽</span>
-                    <span id="bibModalPreviewName">Team A</span>
-                </div>
-            </div>
-
-            <!-- Footer Action Button -->
-            <button type="button" onclick="closeAllPopups()"
-                style="width: 100%; padding: 11px; border-radius: 10px; background: #334155; color: #f8fafc; border: 1px solid rgba(255,255,255,0.12); font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;"
-                onmouseover="this.style.background='#475569'"
-                onmouseout="this.style.background='#334155'">
-                เรียบร้อย / ปิดหน้าต่าง (Done)
-            </button>
-        </div>
-    </div>
-
 
     <!-- Mobile Control Popup -->
     <div id="mobileControlPopup"
@@ -3051,23 +2889,18 @@
                     <div class="logo-container" style="position: relative;"><img id="logoA" src="" alt="">
                         <div class="logo-initials" id="initialsA">A</div>
                     </div>
-                    <!-- Bib Override A (Popup in center of Dock) -->
-                    <div class="bib-override-container" style="display: flex; align-items: center; margin-left: 6px;">
-                        <!-- Hidden inputs for backward compatibility -->
-                        <input type="checkbox" id="bibOverrideA" style="display: none;">
-                        <div id="bibColorsA" style="display: none;">
-                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="display:none;"></button>
-                            <button type="button" class="bib-color-btn" data-color="#f97316" style="display:none;"></button>
-                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="display:none;"></button>
-                            <input type="color" id="bibCustomColorA" value="#84cc16" style="display: none;">
+                    <!-- Bib Override A -->
+                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
+                            <input type="checkbox" id="bibOverrideA" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
+                            🎽
+                        </label>
+                        <div id="bibColorsA" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorA" value="#84cc16" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
                         </div>
-
-                        <!-- Compact Bib Trigger Button -->
-                        <button type="button" id="bibBtnA" class="bib-dock-btn" onclick="openBibModal('A')"
-                            title="เสื้อเอี้ยม ทีม A (คลิกเพื่อเลือกสี)">
-                            <span style="font-size: 13px;">🎽</span>
-                            <span id="bibBadgeA" class="bib-dock-badge" style="background: rgba(148,163,184,0.2); color: #94a3b8;">OFF</span>
-                        </button>
                     </div>
                 </div>
                 <!-- Row 2: Name + Buttons -->
@@ -3090,23 +2923,18 @@
                     <div class="logo-container" style="position: relative;"><img id="logoB" src="" alt="">
                         <div class="logo-initials" id="initialsB">B</div>
                     </div>
-                    <!-- Bib Override B (Popup in center of Dock) -->
-                    <div class="bib-override-container" style="display: flex; align-items: center; margin-left: 6px;">
-                        <!-- Hidden inputs for backward compatibility -->
-                        <input type="checkbox" id="bibOverrideB" style="display: none;">
-                        <div id="bibColorsB" style="display: none;">
-                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="display:none;"></button>
-                            <button type="button" class="bib-color-btn" data-color="#f97316" style="display:none;"></button>
-                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="display:none;"></button>
-                            <input type="color" id="bibCustomColorB" value="#f97316" style="display: none;">
+                    <!-- Bib Override B -->
+                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
+                            <input type="checkbox" id="bibOverrideB" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
+                            🎽
+                        </label>
+                        <div id="bibColorsB" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorB" value="#f97316" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
                         </div>
-
-                        <!-- Compact Bib Trigger Button -->
-                        <button type="button" id="bibBtnB" class="bib-dock-btn" onclick="openBibModal('B')"
-                            title="เสื้อเอี้ยม ทีม B (คลิกเพื่อเลือกสี)">
-                            <span style="font-size: 13px;">🎽</span>
-                            <span id="bibBadgeB" class="bib-dock-badge" style="background: rgba(148,163,184,0.2); color: #94a3b8;">OFF</span>
-                        </button>
                     </div>
                 </div>
                 <!-- Row 2: Name + Buttons -->
@@ -4329,7 +4157,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r8"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r9"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
