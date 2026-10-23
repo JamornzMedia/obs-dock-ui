@@ -143,7 +143,7 @@ function syncToFirebase(identity) {
     }
 }
 
-// --- Firebase: Fetch existing user data (for profile restore & usage tracking) ---
+// --- Firebase: Fetch existing user data (for duplicate name protection) ---
 export async function fetchFirebaseUserData(name, currentID = null) {
     if (!name) return null;
     if (typeof firebase === 'undefined' || !firebase.database) return null;
@@ -153,15 +153,12 @@ export async function fetchFirebaseUserData(name, currentID = null) {
         const allUsers = snapshot.val() || {};
         
         let foundUser = null;
-        const searchName = name.trim().toLowerCase();
-
         Object.keys(allUsers).forEach(key => {
             const user = allUsers[key];
-            if (user && user.name && user.name.trim().toLowerCase() === searchName) {
-                // If multiple entries exist with same name, pick the one with highest totalMinutes
-                if (!foundUser || (user.totalMinutes || 0) > (foundUser.totalMinutes || 0)) {
-                    foundUser = { ...user };
-                    if (!foundUser.ID) foundUser.ID = key;
+            if (user && user.name && user.name.toLowerCase() === name.toLowerCase()) {
+                // Ignore if it's the current user's ID
+                if (!currentID || key !== currentID) {
+                    foundUser = user;
                 }
             }
         });
@@ -173,7 +170,6 @@ export async function fetchFirebaseUserData(name, currentID = null) {
                 const oldSnapshot = await firebase.database().ref(`${OBS_ID_PATH}/${sanitizedName}`).once('value');
                 if (oldSnapshot.exists()) {
                     foundUser = oldSnapshot.val();
-                    if (foundUser && !foundUser.ID) foundUser.ID = sanitizedName;
                 }
             }
         }
