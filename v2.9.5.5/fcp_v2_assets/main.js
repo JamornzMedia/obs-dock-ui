@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r3';
-import { translations } from './languages.js?v=2.9.5.5-r2';
+import { translations } from './languages.js?v=2.9.5.5-r3';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
