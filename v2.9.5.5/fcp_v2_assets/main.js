@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r3';
-import { translations } from './languages.js?v=2.9.5.5-r3';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6-r1';
+import { translations } from './languages.js?v=2.9.5.6-r1';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -3065,6 +3065,10 @@ const setupEventListeners = () => {
 
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+    const copyFacebookLinkBtn = document.getElementById('copyFacebookLinkBtn');
+    if (copyFacebookLinkBtn) {
+        copyFacebookLinkBtn.addEventListener('click', () => copyLink(copyFacebookLinkBtn.getAttribute('data-link')));
+    }
 
     if (elements.copyExcelColumnsBtn) {
         elements.copyExcelColumnsBtn.addEventListener('click', () => {

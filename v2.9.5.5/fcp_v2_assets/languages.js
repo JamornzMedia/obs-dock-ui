@@ -272,7 +272,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 2.9.5.5 Hotfix</h5>
+                    <h5>Version 2.9.5.6 Hotfix</h5>
                     <ul>
                         <li><strong>OBS Image Stability:</strong> Logo updates are now queued, deduplicated, and spaced apart to reduce OBS/NVIDIA graphics crashes when loading a Match ID.</li>
                         <li>If you still experience a problem, please contact <a href="https://www.facebook.com/kh.jamorn" target="_blank" rel="noopener noreferrer">Jamornz on Facebook</a>.</li>
@@ -658,7 +658,7 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 2.9.5.5 Hotfix</h5>
+                    <h5>เวอร์ชัน 2.9.5.6 Hotfix</h5>
                     <ul>
                         <li><strong>เพิ่มความเสถียรในการโหลดภาพเข้า OBS:</strong> ปรับให้การอัปเดตโลโก้ทำงานทีละรายการ ไม่ส่งภาพเดิมซ้ำ และเว้นช่วงระหว่างภาพ เพื่อลดปัญหา OBS/NVIDIA เด้งขณะโหลด Match ID</li>
                         <li>หากยังพบปัญหา กรุณาแจ้งมาทาง <a href="https://www.facebook.com/kh.jamorn" target="_blank" rel="noopener noreferrer">Facebook ส่วนตัว Jamornz</a></li>

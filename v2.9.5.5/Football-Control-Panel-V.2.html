@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.5</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.6</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2342,7 +2342,7 @@
                 </div>
             </section>
         </div>
-        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.5 (อัพเดต: 25 กันยายน 2569)</div>
+        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.6 (อัพเดต: 23 ตุลาคม 2569)</div>
     </div>
 
     <script>
@@ -3110,10 +3110,6 @@
 
             <button id="helpBtn" class="btn-secondary" data-lang-title="help"><i
                     class="fas fa-question-circle"></i></button>
-            <button id="changelogBtn" class="btn-secondary" type="button"
-                title="อัปเดตล่าสุด / What's New" style="color: #38bdf8;">
-                <i class="fas fa-bullhorn"></i> <span style="font-size:.76rem; margin-left:5px;">อัปเดตล่าสุด</span>
-            </button>
             <button id="donateBtn" class="btn-secondary" data-lang-title="donate"><i
                     class="fas fa-hand-holding-usd"></i></button>
             <select id="languageSelector" title="Select Language">
@@ -3157,8 +3153,19 @@
                 ------
             </div>
         </div>
-        <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem;">
-            <span data-lang="footerAppName"></span> - <span id="fcp-version-text">V2.9.5.5</span> (อัพเดต: <span id="fcp-update-date-text">25 กันยายน 2569</span>)
+        <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+            <div><span data-lang="footerAppName">OBS Dock UI Scoreboard</span></div>
+            <div><span id="fcp-version-text">V2.9.5.6</span></div>
+            <div>(อัพเดต: <span id="fcp-update-date-text">23 ตุลาคม 2569</span>)</div>
+            <div style="margin-top: 4px; color: #94a3b8;">ติดต่อ Facebook ส่วนตัว</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #e2e8f0; font-weight: 600;">Jamornz</span>
+                <button id="copyFacebookLinkBtn" type="button" class="btn-secondary"
+                    data-link="https://www.facebook.com/kh.jamorn"
+                    style="padding: 2px 8px; font-size: 0.72rem; line-height: 1.4;">
+                    <i class="fas fa-copy"></i> คัดลอกลิงก์
+                </button>
+            </div>
         </div>
     </div>
     </div>
@@ -4161,7 +4168,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.5-r10"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.6-r1"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
