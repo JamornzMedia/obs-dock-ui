@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.7';
-import { translations } from './languages.js?v=2.9.5.7';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6-r1';
+import { translations } from './languages.js?v=2.9.5.6-r1';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -163,15 +163,10 @@ const setImage = (sourceName, filename) => {
         return Promise.resolve(false);
     }
 
-    let filePath = '';
-    if (normalizedFilename) {
-        if (/^[a-zA-Z]:[/\\]/.test(normalizedFilename) || normalizedFilename.startsWith('\\\\')) {
-            filePath = normalizedFilename.replace(/\\/g, '/');
-        } else {
-            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(normalizedFilename);
-            filePath = `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`;
-        }
-    }
+    const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(normalizedFilename);
+    const filePath = normalizedFilename
+        ? `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`
+        : '';
 
     if (lastQueuedImagePath.get(sourceName) === filePath) {
         console.debug(`[OBS Image] Skipped unchanged path for ${sourceName}:`, filePath);
@@ -1258,11 +1253,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             initialsEl.style.display = 'none';
         } else {
             const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
-            const isAbs = /^[a-zA-Z]:[/\\]/.test(masterTeam.logoFile) || masterTeam.logoFile.startsWith('\\\\');
-            const targetPath = isAbs
-                ? masterTeam.logoFile.replace(/\\/g, '/')
-                : `${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
-            logoEl.src = targetPath.startsWith('file:///') ? targetPath : `file:///${targetPath.replace(/^file:\/\/\/?/, '')}`;
+            logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         }
@@ -1286,7 +1277,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
 let isApplyingMatch = false;
 
-const applyMatch = async () => {
+const applyMatch = () => {
     if (isApplyingMatch) {
         console.warn('[OBS Image] Ignored overlapping Load Match request.');
         return Promise.resolve(false);
@@ -1304,21 +1295,7 @@ const applyMatch = async () => {
         bibToggleB.dispatchEvent(new Event('change'));
     }
 
-    if (!sheetData.length) {
-
-        if (dataSourceMode === 'local') {
-
-            const ok = await fetchLocalTournament(false);
-
-            if (!ok || !sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-
-        } else {
-
-            return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-
-        }
-
-    }
+    if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
     const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
     if (jamornzConnection && lastDockMatchId && lastDockMatchId !== id && !confirm(`ยืนยันเปลี่ยนจาก Match ID ${lastDockMatchId} เป็น ${id} และเริ่มสถานะแมตช์ใหม่?`)) {
@@ -1354,14 +1331,6 @@ const applyMatch = async () => {
     if (savedColorA) { colorA1 = savedColorA.color1; colorA2 = savedColorA.color2; }
     const savedColorB = loadTeamColors(teamBName);
     if (savedColorB) { colorB1 = savedColorB.color1; colorB2 = savedColorB.color2; }
-    const scoreAVal = get('ScoreA');
-    const scoreBVal = get('ScoreB');
-    if (scoreAVal !== '' && !isNaN(parseInt(scoreAVal))) {
-        masterTeamA.score = parseInt(scoreAVal);
-    }
-    if (scoreBVal !== '' && !isNaN(parseInt(scoreBVal))) {
-        masterTeamB.score = parseInt(scoreBVal);
-    }
     const logoAUpdate = updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
     const logoBUpdate = updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
     elements.label1.textContent = get('label1');
@@ -1957,7 +1926,7 @@ const changeInjuryTime = (delta) => {
 const handleExcel = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.xlsx, .xls, .csv';
+    input.accept = '.xlsx, .xls';
     input.onchange = e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -2274,64 +2243,11 @@ function syncJamornzMatch(status = 'live', immediate = false) {
 }
 window.syncJamornzMatch = syncJamornzMatch;
 
-const fetchLocalTournament = async (showSuccessToast = true) => {
-    const url = (localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').replace(/\/+$/, '');
-    const selectedField = localStorage.getItem('localManagerField') || 'all';
-    const statusEl = document.getElementById('localConnectionStatus');
-
-    try {
-        if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.background = 'rgba(5, 150, 105, 0.2)';
-            statusEl.style.color = '#34d399';
-            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูลจาก Local Tournament Manager...';
-        }
-
-        const endpoint = `${url}/api/dock-feed?field=${encodeURIComponent(selectedField)}&t=${Date.now()}`;
-        const res = await fetch(endpoint);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Server error');
-
-        sheetData = [data.headers, ...data.rows];
-
-        if (data.logoRoot && (!logoFolderPath || logoFolderPath === 'C:/OBSAssets/logos')) {
-            logoFolderPath = data.logoRoot.replace(/\\/g, '/');
-            localStorage.setItem('logoFolderPath', logoFolderPath);
-            if (elements.logoPathInput) elements.logoPathInput.value = logoFolderPath;
-            if (elements.currentLogoPath) elements.currentLogoPath.textContent = logoFolderPath;
-        }
-
-        const fieldDesc = selectedField === 'all' ? 'ทุกสนาม' : `สนาม ${selectedField}`;
-        if (statusEl) {
-            statusEl.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่ (${fieldDesc})`;
-        }
-
-        if (showSuccessToast) {
-            showToast(`โหลดตารางสดจาก Local สำเร็จ (${data.rows.length} คู่ - ${fieldDesc})`, 'success');
-        }
-        return true;
-    } catch (err) {
-        console.error('Local feed error:', err);
-        if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
-            statusEl.style.color = '#f87171';
-            statusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ไม่สามารถเชื่อมต่อกับ ${url} ได้ (กรุณารันไฟล์ 'เปิดระบบจัดการทีมและตาราง.cmd')`;
-        }
-        showToast(`เชื่อมต่อ Local Manager ไม่สำเร็จ: ${err.message}`, 'error');
-        return false;
-    }
-};
-window.fetchLocalTournament = fetchLocalTournament;
-
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
         fetchGoogleSheet();
     } else if (dataSourceMode === 'jamornz') {
         fetchJamornzTournament();
-    } else if (dataSourceMode === 'local') {
-        fetchLocalTournament();
     } else {
         handleExcel();
     }
@@ -2343,22 +2259,17 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const isJamornz = mode === 'jamornz';
-    const isLocal = mode === 'local';
     const gsheetSettings = document.getElementById('gsheetSettings');
     const jamornzSettings = document.getElementById('jamornzSettings');
     const excelSettings = document.getElementById('excelSettings'); // V2.9.2
-    const localSettings = document.getElementById('localSettings'); // V2.9.5.7
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
     if (jamornzSettings) jamornzSettings.style.display = isJamornz ? 'block' : 'none';
-    if (localSettings) localSettings.style.display = isLocal ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz || isLocal) ? 'none' : 'block';
+    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz) ? 'none' : 'block';
 
     const trans = translations[currentLang];
 
-    if (isLocal) {
-        elements.excelBtn.innerHTML = `<i class="fas fa-sync-alt" style="color: #34d399;"></i> <span>Local Sync</span>`;
-    } else if (isJamornz) {
+    if (isJamornz) {
         elements.excelBtn.innerHTML = `<i class="fas fa-globe" style="color: #38bdf8;"></i> <span>โหลด Jamornz</span>`;
     } else if (isGSheet) {
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
@@ -2840,58 +2751,6 @@ const setupEventListeners = () => {
             setDataSourceMode(e.target.value);
         });
     });
-
-    const saveLocalBtn = document.getElementById('saveLocalBtn');
-
-    if (saveLocalBtn) {
-
-        saveLocalBtn.addEventListener('click', () => {
-
-            const urlInput = document.getElementById('localManagerUrlInput');
-
-            const fieldSelect = document.getElementById('localManagerFieldSelect');
-
-            if (urlInput) {
-
-                const url = urlInput.value.trim() || 'http://127.0.0.1:8765';
-
-                localStorage.setItem('localManagerUrl', url);
-
-            }
-
-            if (fieldSelect) {
-
-                localStorage.setItem('localManagerField', fieldSelect.value);
-
-            }
-
-            fetchLocalTournament(true);
-
-        });
-
-    }
-
-
-
-    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
-
-    if (localManagerFieldSelect) {
-
-        localManagerFieldSelect.addEventListener('change', (e) => {
-
-            localStorage.setItem('localManagerField', e.target.value);
-
-            if (dataSourceMode === 'local') {
-
-                fetchLocalTournament(true);
-
-            }
-
-        });
-
-    }
-
-
 
     const saveGSheetBtn = document.getElementById('saveGSheetBtn');
     if (saveGSheetBtn) {
@@ -3437,20 +3296,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const radio = document.querySelector(`input[name="dataSource"][value="${savedDSMode}"]`);
         if (radio) radio.checked = true;
     }
-
-    const savedLocalUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
-
-    const savedLocalField = localStorage.getItem('localManagerField') || 'all';
-
-    const localUrlInput = document.getElementById('localManagerUrlInput');
-
-    const localFieldSelect = document.getElementById('localManagerFieldSelect');
-
-    if (localUrlInput) localUrlInput.value = savedLocalUrl;
-
-    if (localFieldSelect) localFieldSelect.value = savedLocalField;
-
-
 
     const savedGSUrl = localStorage.getItem('googleSheetUrl');
     if (savedGSUrl) {
@@ -4683,65 +4528,75 @@ window.getSheetData = () => sheetData;
 import './volleyball_module_v2.js?v=2.9.5.2';
 import './display_table_module.js?v=2.9.5.2';
 
-// ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
-const initBibOverride = (team) => {
-    const bibToggle = document.getElementById(`bibOverride${team}`);
-    const bibColors = document.getElementById(`bibColors${team}`);
-    const bibCustomColor = document.getElementById(`bibCustomColor${team}`);
-    const colorInput = document.getElementById(`color${team}`);
-    const defaultBibColor = team === 'A' ? '#84cc16' : '#f97316';
-
-    if (bibToggle && colorInput) {
-        // Clear stale active bib color selections on load to ensure clean state
-        localStorage.removeItem(`bib_active_color_${team.toLowerCase()}`);
-
-        bibToggle.addEventListener('change', e => {
-            const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
-            if (e.target.checked) {
-                if (bibColors) bibColors.style.display = 'flex';
-                
-                // Get active bib color
-                const bibColor = localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || defaultBibColor;
-                if (bibCustomColor) bibCustomColor.value = bibColor;
-            } else {
-                if (bibColors) bibColors.style.display = 'none';
-            }
-            
-            // Just update team UI which will route the effective color properly
-            updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
-        });
-
-        if (bibCustomColor) {
-            const handleCustomColor = e => {
-                localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, e.target.value);
-                if (bibToggle.checked) {
-                    const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
-                    updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
-                }
-            };
-            bibCustomColor.addEventListener('input', handleCustomColor);
-            bibCustomColor.addEventListener('change', handleCustomColor);
-        }
-
-        if (bibColors) {
-            const btns = bibColors.querySelectorAll('.bib-color-btn');
-            btns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const color = btn.getAttribute('data-color');
-                    localStorage.setItem(`bib_active_color_${team.toLowerCase()}`, color);
-                    if (bibCustomColor) bibCustomColor.value = color;
-                    if (bibToggle.checked) {
-                        const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
-                        updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
-                    }
-                });
-            });
-        }
-    }
+// ── Centered bib-color popup (keeps existing score/OBS color routing) ──
+let activeBibTeam = null;
+const bibDefaultColor = team => team === 'A' ? '#84cc16' : '#f97316';
+const bibColorKey = team => `bib_active_color_${team.toLowerCase()}`;
+const getBibColor = team => localStorage.getItem(bibColorKey(team)) || bibDefaultColor(team);
+const refreshBibTeam = team => {
+    const masterTeam = team === 'A' ? masterTeamA : masterTeamB;
+    updateTeamUI(team, masterTeam.name, masterTeam.logoFile, masterTeam.color1, masterTeam.color2);
 };
-
-initBibOverride('A');
-initBibOverride('B');
+const updateBibButton = team => {
+    const enabled = !!document.getElementById(`bibOverride${team}`)?.checked;
+    const color = getBibColor(team);
+    const badge = document.getElementById(`bibBadge${team}`);
+    const button = document.getElementById(`bibBtn${team}`);
+    if (!badge || !button) return;
+    badge.textContent = enabled ? 'ON' : 'OFF';
+    badge.style.background = enabled ? color : 'rgba(148,163,184,.2)';
+    badge.style.color = enabled && ['#ffffff','#eab308','#84cc16'].includes(color.toLowerCase()) ? '#172033' : enabled ? '#fff' : '#94a3b8';
+    button.setAttribute('aria-pressed', String(enabled));
+};
+const syncBibModal = () => {
+    if (!activeBibTeam) return;
+    const enabled = !!document.getElementById(`bibOverride${activeBibTeam}`)?.checked;
+    const color = getBibColor(activeBibTeam);
+    document.getElementById('bibModalTitle').textContent = `🎽 เสื้อเอี้ยม - ทีม ${activeBibTeam}`;
+    document.getElementById('bibModalStatusText').textContent = enabled ? 'เปิดใช้งาน (ใช้สีเสื้อเอี้ยม)' : 'ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)';
+    const toggle = document.getElementById('bibModalToggleBtn');
+    toggle.textContent = enabled ? 'ปิดเอี้ยม' : 'เปิดเอี้ยม';
+    toggle.className = enabled ? 'btn-danger' : 'btn-success';
+    document.getElementById('bibModalCustomColor').value = color;
+    document.getElementById('bibModalHexCode').textContent = color.toUpperCase();
+    document.querySelectorAll('.bib-modal-preset-btn').forEach(btn => btn.classList.toggle('is-selected', btn.dataset.color.toLowerCase() === color.toLowerCase()));
+};
+const closeBibModal = () => {
+    document.getElementById('bibOverridePopup')?.classList.remove('is-open');
+    activeBibTeam = null;
+};
+const openBibModal = team => {
+    activeBibTeam = team;
+    syncBibModal();
+    document.getElementById('bibOverridePopup')?.classList.add('is-open');
+};
+const setBibColor = color => {
+    if (!activeBibTeam || !/^#[0-9a-f]{6}$/i.test(color)) return;
+    localStorage.setItem(bibColorKey(activeBibTeam), color);
+    const toggle = document.getElementById(`bibOverride${activeBibTeam}`);
+    if (!toggle.checked) { toggle.checked = true; toggle.dispatchEvent(new Event('change')); }
+    else refreshBibTeam(activeBibTeam);
+    updateBibButton(activeBibTeam);
+    syncBibModal();
+};
+['A','B'].forEach(team => {
+    const toggle = document.getElementById(`bibOverride${team}`);
+    document.getElementById(`bibBtn${team}`)?.addEventListener('click', () => openBibModal(team));
+    toggle?.addEventListener('change', () => { updateBibButton(team); refreshBibTeam(team); if (activeBibTeam === team) syncBibModal(); });
+    updateBibButton(team);
+});
+document.getElementById('bibModalToggleBtn')?.addEventListener('click', () => {
+    if (!activeBibTeam) return;
+    const toggle = document.getElementById(`bibOverride${activeBibTeam}`);
+    toggle.checked = !toggle.checked;
+    toggle.dispatchEvent(new Event('change'));
+});
+document.querySelectorAll('.bib-modal-preset-btn').forEach(btn => btn.addEventListener('click', () => setBibColor(btn.dataset.color)));
+document.getElementById('bibModalCustomColor')?.addEventListener('input', event => setBibColor(event.target.value));
+document.getElementById('bibModalCloseBtn')?.addEventListener('click', closeBibModal);
+document.getElementById('bibModalDoneBtn')?.addEventListener('click', closeBibModal);
+document.getElementById('bibOverridePopup')?.addEventListener('click', event => { if (event.target.id === 'bibOverridePopup') closeBibModal(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && activeBibTeam) closeBibModal(); });
 
 // --- Global helper actions for welcome screen guest & reset ---
 window.enterAsGuest = () => {
