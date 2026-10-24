@@ -1286,7 +1286,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
 let isApplyingMatch = false;
 
-const applyMatch = () => {
+const applyMatch = async () => {
     if (isApplyingMatch) {
         console.warn('[OBS Image] Ignored overlapping Load Match request.');
         return Promise.resolve(false);
@@ -1304,13 +1304,20 @@ const applyMatch = () => {
         bibToggleB.dispatchEvent(new Event('change'));
     }
 
-    if (!sheetData.length) {
-        if (dataSourceMode === 'local') {
-            const ok = await fetchLocalTournament(false);
-            if (!ok || !sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-        } else {
-            return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-        }
+    if (!sheetData.length) {
+
+        if (dataSourceMode === 'local') {
+
+            const ok = await fetchLocalTournament(false);
+
+            if (!ok || !sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
+
+        } else {
+
+            return showToast(translations[currentLang].toastLoadFileFirst, 'error');
+
+        }
+
     }
     const id = parseInt(elements.matchID.value);
     const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
@@ -1347,6 +1354,14 @@ const applyMatch = () => {
     if (savedColorA) { colorA1 = savedColorA.color1; colorA2 = savedColorA.color2; }
     const savedColorB = loadTeamColors(teamBName);
     if (savedColorB) { colorB1 = savedColorB.color1; colorB2 = savedColorB.color2; }
+    const scoreAVal = get('ScoreA');
+    const scoreBVal = get('ScoreB');
+    if (scoreAVal !== '' && !isNaN(parseInt(scoreAVal))) {
+        masterTeamA.score = parseInt(scoreAVal);
+    }
+    if (scoreBVal !== '' && !isNaN(parseInt(scoreBVal))) {
+        masterTeamB.score = parseInt(scoreBVal);
+    }
     const logoAUpdate = updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
     const logoBUpdate = updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
     elements.label1.textContent = get('label1');
@@ -2826,32 +2841,58 @@ const setupEventListeners = () => {
         });
     });
 
-    const saveLocalBtn = document.getElementById('saveLocalBtn');
-    if (saveLocalBtn) {
-        saveLocalBtn.addEventListener('click', () => {
-            const urlInput = document.getElementById('localManagerUrlInput');
-            const fieldSelect = document.getElementById('localManagerFieldSelect');
-            if (urlInput) {
-                const url = urlInput.value.trim() || 'http://127.0.0.1:8765';
-                localStorage.setItem('localManagerUrl', url);
-            }
-            if (fieldSelect) {
-                localStorage.setItem('localManagerField', fieldSelect.value);
-            }
-            fetchLocalTournament(true);
-        });
-    }
-
-    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
-    if (localManagerFieldSelect) {
-        localManagerFieldSelect.addEventListener('change', (e) => {
-            localStorage.setItem('localManagerField', e.target.value);
-            if (dataSourceMode === 'local') {
-                fetchLocalTournament(true);
-            }
-        });
-    }
-
+    const saveLocalBtn = document.getElementById('saveLocalBtn');
+
+    if (saveLocalBtn) {
+
+        saveLocalBtn.addEventListener('click', () => {
+
+            const urlInput = document.getElementById('localManagerUrlInput');
+
+            const fieldSelect = document.getElementById('localManagerFieldSelect');
+
+            if (urlInput) {
+
+                const url = urlInput.value.trim() || 'http://127.0.0.1:8765';
+
+                localStorage.setItem('localManagerUrl', url);
+
+            }
+
+            if (fieldSelect) {
+
+                localStorage.setItem('localManagerField', fieldSelect.value);
+
+            }
+
+            fetchLocalTournament(true);
+
+        });
+
+    }
+
+
+
+    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
+
+    if (localManagerFieldSelect) {
+
+        localManagerFieldSelect.addEventListener('change', (e) => {
+
+            localStorage.setItem('localManagerField', e.target.value);
+
+            if (dataSourceMode === 'local') {
+
+                fetchLocalTournament(true);
+
+            }
+
+        });
+
+    }
+
+
+
     const saveGSheetBtn = document.getElementById('saveGSheetBtn');
     if (saveGSheetBtn) {
         saveGSheetBtn.addEventListener('click', () => {
@@ -3397,13 +3438,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (radio) radio.checked = true;
     }
 
-    const savedLocalUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
-    const savedLocalField = localStorage.getItem('localManagerField') || 'all';
-    const localUrlInput = document.getElementById('localManagerUrlInput');
-    const localFieldSelect = document.getElementById('localManagerFieldSelect');
-    if (localUrlInput) localUrlInput.value = savedLocalUrl;
-    if (localFieldSelect) localFieldSelect.value = savedLocalField;
-
+    const savedLocalUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
+
+    const savedLocalField = localStorage.getItem('localManagerField') || 'all';
+
+    const localUrlInput = document.getElementById('localManagerUrlInput');
+
+    const localFieldSelect = document.getElementById('localManagerFieldSelect');
+
+    if (localUrlInput) localUrlInput.value = savedLocalUrl;
+
+    if (localFieldSelect) localFieldSelect.value = savedLocalField;
+
+
+
     const savedGSUrl = localStorage.getItem('googleSheetUrl');
     if (savedGSUrl) {
         googleSheetUrl = savedGSUrl;
