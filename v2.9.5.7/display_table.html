@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display Table Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap');
+
+  :root {
+    --dt-font: 'Prompt', 'Barlow Condensed', sans-serif;
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --alt-bg-color: #1e293b;
+    --border-color: #334155;
+    --font-size: 16px;
+    --score-bg-color: #f59e0b;
+    --score-text-color: #000000;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--dt-font);
+    background: transparent;
+    color: var(--text-color);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px;
+  }
+
+  .table-container {
+    width: 100%;
+    max-width: 1400px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    animation: zoomIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  th {
+    background: rgba(0, 0, 0, 0.3);
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: calc(var(--font-size) + 2px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 18px 24px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  td {
+    padding: 16px 24px;
+    font-size: var(--font-size);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:nth-child(even) {
+    background: var(--alt-bg-color);
+  }
+
+  /* Animations */
+  @keyframes zoomIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .logo-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-img {
+    height: 40px;
+    max-width: 60px;
+    object-fit: contain;
+  }
+
+  /* Score styling */
+  .score-badge {
+    display: inline-block;
+    background: var(--score-bg-color);
+    color: var(--score-text-color);
+    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: calc(var(--font-size) + 1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Serve / Serve status inside table */
+  .team-a, .team-b {
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<div class="table-container" id="table-container" style="display: none;">
+  <table id="display-table">
+    <thead>
+      <tr id="table-header-row">
+        <!-- Dynamic headers -->
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- Dynamic rows -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const container = document.getElementById('table-container');
+  const headerRow = document.getElementById('table-header-row');
+  const tableBody = document.getElementById('table-body');
+
+  function injectCustomFont(fontData, fontFamily) {
+    if (fontData && fontFamily) {
+      let style = document.getElementById('dt-custom-font-style');
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'dt-custom-font-style';
+        document.head.appendChild(style);
+      }
+      style.textContent = `
+        @font-face {
+          font-family: '${fontFamily}';
+          src: url('${fontData}');
+        }
+        body { font-family: '${fontFamily}', var(--dt-font); }
+      `;
+    }
+  }
+
+  function resolveLogo(value, logoCache) {
+    if (!value) return '';
+    const clean = value.toString().replace(/\s/g, '').toLowerCase().replace(/\.(png|jpe?g|gif|webp)$/i, '');
+    
+    // Look up in logo cache
+    if (logoCache && logoCache[clean]) {
+      return logoCache[clean];
+    }
+    // Prefix lookup
+    if (logoCache) {
+      const foundKey = Object.keys(logoCache).find(k => k.startsWith(clean) || clean.startsWith(k));
+      if (foundKey) return logoCache[foundKey];
+    }
+    
+    // Fallback if local path is specified directly
+    return value;
+  }
+
+  function renderTable(payload) {
+    if (!payload || !payload.data || !payload.data.length) {
+      container.style.display = 'none';
+      return;
+    }
+
+    const { settings, data } = payload;
+
+    // Apply custom styling
+    const root = document.documentElement;
+    if (settings.bgColor) root.style.setProperty('--bg-color', settings.bgColor);
+    if (settings.textColor) root.style.setProperty('--text-color', settings.textColor);
+    if (settings.altBgColor) root.style.setProperty('--alt-bg-color', settings.altBgColor);
+    if (settings.borderColor) root.style.setProperty('--border-color', settings.borderColor);
+    if (settings.fontSize) root.style.setProperty('--font-size', settings.fontSize);
+    if (settings.scoreBgColor) root.style.setProperty('--score-bg-color', settings.scoreBgColor);
+    if (settings.scoreTextColor) root.style.setProperty('--score-text-color', settings.scoreTextColor);
+
+    // Font family override
+    if (settings.fontFamily) {
+      root.style.setProperty('--dt-font', settings.fontFamily);
+    }
+    if (settings.customFontData) {
+      injectCustomFont(settings.customFontData, settings.fontFamily);
+    }
+
+    // Render headers
+    const columns = settings.columnsOrder || [];
+    const showHeader = (settings.showHeader !== false);
+    const tableHeader = document.querySelector('#display-table thead');
+    
+    if (tableHeader) {
+      if (showHeader && columns.length > 0) {
+        tableHeader.style.display = '';
+        headerRow.innerHTML = '';
+        const th = document.createElement('th');
+        th.setAttribute('colspan', columns.length.toString());
+        th.style.textAlign = 'center';
+        th.style.fontSize = 'calc(var(--font-size) + 4px)';
+        th.textContent = settings.tableTitle || 'ผลคะแนน';
+        headerRow.appendChild(th);
+      } else {
+        tableHeader.style.display = 'none';
+      }
+    }
+
+    // Render body
+    tableBody.innerHTML = '';
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      columns.forEach(col => {
+        const td = document.createElement('td');
+        const val = row[col] !== undefined ? row[col] : '';
+
+        // Format Logo cells
+        if (col.toLowerCase().includes('logo')) {
+          const logoSrc = resolveLogo(val, settings.logoCache);
+          if (logoSrc) {
+            td.innerHTML = `<div class="logo-cell"><img src="${logoSrc}" class="logo-img"></div>`;
+          } else {
+            td.textContent = '';
+          }
+        }
+        // Format Score cells
+        else if (col.toLowerCase().includes('score')) {
+          td.innerHTML = `<span class="score-badge">${val}</span>`;
+          td.style.textAlign = 'center';
+        } 
+        // Normal text cells
+        else {
+          td.textContent = val;
+        }
+
+        tr.appendChild(td);
+      });
+      tableBody.appendChild(tr);
+    });
+
+    container.style.display = 'block';
+  }
+
+  // Listen for broadcast channel
+  const channel = new BroadcastChannel('dt_score_channel');
+  channel.onmessage = (e) => {
+    if (e.data && e.data.type === 'dt_update') {
+      renderTable(e.data.payload);
+    }
+  };
+
+  // Listen for storage changes
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'dt_broadcast_data' && e.newValue) {
+      try {
+        renderTable(JSON.parse(e.newValue));
+      } catch (_) {}
+    }
+  });
+
+  // Initial load
+  (function init() {
+    try {
+      const saved = localStorage.getItem('dt_broadcast_data');
+      if (saved) {
+        renderTable(JSON.parse(saved));
+      }
+    } catch (_) {}
+  })();
+</script>
+</body>
+</html>

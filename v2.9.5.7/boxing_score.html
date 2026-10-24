@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Muay Thai / Boxing Score Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ─── Base Reset & Styling variables ──────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bx-logo-size: 20px;
+    --bx-name-font-size: 20px;
+    --bx-name-panel-width: 250px;
+    --bx-name-panel-height: 66px;
+    --bx-time-font-size: 38px;
+    --bx-label1-width: 120px;
+    --bx-label1-font-size: 10px;
+    
+    --bx-color-left: #ef4444;
+    --bx-color-left-txt: #ffffff;
+    --bx-color-left-bg: #1e293b;
+    --bx-color-right: #3b82f6;
+    --bx-color-right-txt: #ffffff;
+    --bx-color-right-bg: #1e293b;
+    --bx-color-center-bg: #ffffff;
+    --bx-color-time-txt: #020617;
+    --bx-color-label1-bg: #020617;
+    --bx-color-label1-txt: #e2e8f0;
+    --bx-color-header-bg: #0f172a;
+    --bx-color-dash-active: #fbbf24;
+    --bx-color-dash-inactive: #334155;
+
+    --bx-dash-width: 25px;
+    --bx-dash-height: 6px;
+    --bx-font-team: 'Outfit', sans-serif;
+    --bx-font-score: 'Outfit', sans-serif;
+  }
+
+  body {
+    font-family: var(--bx-font-team);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    color: #ffffff;
+  }
+
+  /* ─── HUD Container ──────────────────────────────────────── */
+  .hud-container {
+    display: flex;
+    align-items: stretch;
+    height: var(--bx-name-panel-height);
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+  }
+
+  /* Panels: Straight-cut rectangular designs */
+  .panel {
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: #0f172a; /* Slate 900 */
+    border-top: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.2s ease-out;
+  }
+
+  /* ─── Team A (Left Panel) ────────────────────────────────── */
+  .team-panel-a {
+    padding-left: 25px;
+    padding-right: 15px;
+    width: var(--bx-name-panel-width);
+    justify-content: flex-start;
+    background: var(--bx-color-left-bg);
+    border-left: 1.5px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .accent-red {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background: var(--bx-color-left);
+    box-shadow: 0 0 12px var(--bx-color-left);
+    transition: background 0.3s ease;
+  }
+
+  /* ─── Team B (Right Panel) ───────────────────────────────── */
+  .team-panel-b {
+    padding-left: 15px;
+    padding-right: 25px;
+    width: var(--bx-name-panel-width);
+    justify-content: flex-end;
+    background: var(--bx-color-right-bg);
+    border-right: 1.5px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .accent-blue {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background: var(--bx-color-right);
+    box-shadow: 0 0 12px var(--bx-color-right);
+    transition: background 0.3s ease;
+  }
+
+  /* ─── Names ─────────────────────────────────────────────── */
+  .team-name {
+    font-size: var(--bx-name-font-size);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    flex-grow: 1;
+    transition: color 0.3s ease;
+  }
+  .team-name-a {
+    text-align: left;
+    color: var(--bx-color-left-txt);
+  }
+  .team-name-b {
+    text-align: right;
+    color: var(--bx-color-right-txt);
+  }
+
+  /* ─── Flags & Logos ──────────────────────────────────────── */
+  .flag-container {
+    width: 48px;
+    height: 32px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .flag-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .team-panel-a .flag-container {
+    margin-left: 12px;
+  }
+  .team-panel-b .flag-container {
+    margin-right: 12px;
+  }
+
+  /* ─── Center panel ────────────────────────────────────────── */
+  .center-panel {
+    width: 156px;
+    background: var(--bx-color-center-bg);
+    border-top: 2.5px solid #ffffff;
+    border-bottom: 2.5px solid #cbd5e1;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0,0,0,0.25);
+    transition: background 0.3s ease;
+  }
+
+  /* ─── Round Segments Header ────────────────────────────── */
+  .center-header {
+    position: absolute;
+    top: calc(-18px - var(--bx-logo-size));
+    min-width: 140px;
+    width: max-content;
+    padding-left: 10px;
+    padding-right: 10px;
+    height: calc(20px + var(--bx-logo-size));
+    background: var(--bx-color-header-bg);
+    border-radius: 6px 6px 0 0;
+    border-top: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-left: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-right: 1.5px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 3px;
+    gap: 2px;
+    transition: background 0.3s ease;
+  }
+
+  .round-bar {
+    display: flex;
+    gap: 4px;
+    width: max-content;
+    justify-content: center;
+  }
+
+  .round-dash {
+    width: var(--bx-dash-width);
+    height: var(--bx-dash-height);
+    background: var(--bx-color-dash-inactive);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  .round-dash.active {
+    background: var(--bx-color-dash-active);
+    box-shadow: 0 0 6px var(--bx-color-dash-active);
+  }
+
+  .event-logo-container {
+    width: 90px;
+    height: var(--bx-logo-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    overflow: hidden;
+  }
+  .event-logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  /* ─── Timer Display ─────────────────────────────────────── */
+  .timer-display {
+    font-size: var(--bx-time-font-size);
+    font-weight: 900;
+    color: var(--bx-color-time-txt);
+    line-height: 1.05;
+    letter-spacing: -1px;
+    font-family: var(--bx-font-score);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s ease;
+    margin-top: 2px;
+  }
+  .timer-display.bump {
+    transform: scale(1.1);
+  }
+
+  /* ─── Bottom Detail (Label 1) ───────────────────────────── */
+  .bottom-detail {
+    position: absolute;
+    bottom: -16px;
+    width: var(--bx-label1-width);
+    height: 16px;
+    background: var(--bx-color-label1-bg);
+    clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 100%, 0% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.3s ease;
+  }
+
+  #label1 {
+    font-size: var(--bx-label1-font-size);
+    font-weight: 800;
+    color: var(--bx-color-label1-txt);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(var(--bx-label1-width) - 10px);
+    transition: color 0.3s ease;
+  }
+</style>
+</head>
+<body>
+
+<div class="hud-container">
+  <!-- Team A (Left Panel) -->
+  <div class="panel team-panel-a">
+    <div class="accent-red"></div>
+    <div class="team-name team-name-a" id="nameA">YOD-IQ</div>
+    <div class="flag-container" id="flagA-container">
+      <img id="flagA" src="" alt="Flag A">
+    </div>
+  </div>
+
+  <!-- Center Timer & Round Block -->
+  <div class="panel center-panel">
+    <!-- Round Dash Segment Bar & Event Logo -->
+    <div class="center-header">
+      <div class="round-bar">
+        <div class="round-dash" id="dash1"></div>
+        <div class="round-dash" id="dash2"></div>
+        <div class="round-dash" id="dash3"></div>
+      </div>
+      <div class="event-logo-container">
+        <img id="event-logo" src="" alt="" style="display: none;">
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-display" id="timerText">0:00</div>
+
+    <!-- Bottom detail (Label 1) -->
+    <div class="bottom-detail">
+      <span id="label1">MUAY THAI</span>
+    </div>
+  </div>
+
+  <!-- Team B (Right Panel) -->
+  <div class="panel team-panel-b">
+    <div class="flag-container" id="flagB-container">
+      <img id="flagB" src="" alt="Flag B">
+    </div>
+    <div class="team-name team-name-b" id="nameB">DAYAKAEV</div>
+    <div class="accent-blue"></div>
+  </div>
+</div>
+
+<script>
+  // ─── Constants ───────────────────────────────────────────
+  const VB_CHANNEL = 'vb_score_channel';
+  const VB_STATE_KEY = 'vb_state';
+
+  let prevTimer = '';
+
+  // ─── Rendering functions ─────────────────────────────────
+  function updateDashes(roundName, maxRounds) {
+    const roundBar = document.querySelector('.round-bar');
+    if (!roundBar) return;
+
+    const maxR = Math.max(1, parseInt(maxRounds) || 3);
+
+    // Re-create dashes if the count of children doesn't match maxR
+    if (roundBar.children.length !== maxR) {
+      roundBar.innerHTML = '';
+      for (let i = 0; i < maxR; i++) {
+        const dash = document.createElement('div');
+        dash.className = 'round-dash';
+        roundBar.appendChild(dash);
+      }
+    }
+
+    const dashes = roundBar.children;
+    for (let i = 0; i < dashes.length; i++) {
+      dashes[i].classList.remove('active');
+    }
+
+    // Map round ordinal/number to integer index
+    let currentRound = 0;
+    if (roundName) {
+      const lower = roundName.toLowerCase().trim();
+      const match = lower.match(/(\d+)/);
+      if (match) {
+        currentRound = parseInt(match[1]);
+      } else if (lower.includes('1st') || lower.includes('first')) {
+        currentRound = 1;
+      } else if (lower.includes('2nd') || lower.includes('second')) {
+        currentRound = 2;
+      } else if (lower.includes('3rd') || lower.includes('third')) {
+        currentRound = 3;
+      } else if (lower.includes('4th') || lower.includes('fourth')) {
+        currentRound = 4;
+      } else if (lower.includes('5th') || lower.includes('fifth')) {
+        currentRound = 5;
+      } else if (lower.includes('6th') || lower.includes('sixth')) {
+        currentRound = 6;
+      } else if (lower.includes('7th') || lower.includes('seventh')) {
+        currentRound = 7;
+      } else if (lower.includes('8th') || lower.includes('eighth')) {
+        currentRound = 8;
+      } else if (lower.includes('9th') || lower.includes('ninth')) {
+        currentRound = 9;
+      } else if (lower.includes('10th') || lower.includes('tenth')) {
+        currentRound = 10;
+      } else if (lower.includes('11th') || lower.includes('eleventh')) {
+        currentRound = 11;
+      } else if (lower.includes('12th') || lower.includes('twelfth')) {
+        currentRound = 12;
+      }
+    }
+
+    for (let i = 0; i < currentRound; i++) {
+      if (dashes[i]) dashes[i].classList.add('active');
+    }
+  }
+
+  function injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDataScore, customFontFamilyScore) {
+    let style = document.getElementById('vb-custom-font-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'vb-custom-font-style';
+      document.head.appendChild(style);
+    }
+    
+    let css = '';
+    if (customFontDataTeam && customFontFamilyTeam) {
+      css += `
+        @font-face {
+          font-family: '${customFontFamilyTeam}';
+          src: url('${customFontDataTeam}');
+        }
+      `;
+    }
+    if (customFontDataScore && customFontFamilyScore) {
+      css += `
+        @font-face {
+          font-family: '${customFontFamilyScore}';
+          src: url('${customFontDataScore}');
+        }
+      `;
+    }
+    style.textContent = css;
+  }
+
+  function render(state) {
+    if (!state) return;
+
+    // Apply custom sizing variables to document root
+    const root = document.documentElement;
+    root.style.setProperty('--bx-logo-size', (state.bxLogoSize || 30) + 'px');
+    root.style.setProperty('--bx-name-font-size', (state.bxNameFontSize || 20) + 'px');
+    root.style.setProperty('--bx-name-panel-width', (state.bxNamePanelWidth || 350) + 'px');
+    root.style.setProperty('--bx-name-panel-height', (state.bxNamePanelHeight || 50) + 'px');
+    root.style.setProperty('--bx-time-font-size', (state.bxTimeFontSize || 35) + 'px');
+    root.style.setProperty('--bx-label1-width', (state.bxLabel1Width || 165) + 'px');
+    root.style.setProperty('--bx-label1-font-size', (state.bxLabel1FontSize || 20) + 'px');
+    root.style.setProperty('--bx-dash-width', (state.bxDashWidth || 25) + 'px');
+    root.style.setProperty('--bx-dash-height', (state.bxDashHeight || 6) + 'px');
+
+    // Apply custom color variables to document root
+    root.style.setProperty('--bx-color-left', state.bxColorLeft || '#ef4444');
+    root.style.setProperty('--bx-color-left-txt', state.bxColorLeftTxt || '#ffffff');
+    root.style.setProperty('--bx-color-left-bg', state.bxColorLeftBg || '#1e293b');
+    root.style.setProperty('--bx-color-right', state.bxColorRight || '#3b82f6');
+    root.style.setProperty('--bx-color-right-txt', state.bxColorRightTxt || '#ffffff');
+    root.style.setProperty('--bx-color-right-bg', state.bxColorRightBg || '#1e293b');
+    root.style.setProperty('--bx-color-center-bg', state.bxColorCenterBg || '#ffffff');
+    root.style.setProperty('--bx-color-time-txt', state.bxColorTimeTxt || '#020617');
+    root.style.setProperty('--bx-color-label1-bg', state.bxColorLabel1Bg || '#020617');
+    root.style.setProperty('--bx-color-label1-txt', state.bxColorLabel1Txt || '#e2e8f0');
+    root.style.setProperty('--bx-color-header-bg', state.bxColorHeaderBg || '#0f172a');
+    root.style.setProperty('--bx-color-dash-active', state.bxColorDashActive || '#fbbf24');
+    root.style.setProperty('--bx-color-dash-inactive', state.bxColorDashInactive || '#334155');
+
+    // Apply custom fonts
+    const activeFontTeam = state.customFontFamilyTeam ? `'${state.customFontFamilyTeam}'` : (state.fontTeam || "'Kanit', sans-serif");
+    root.style.setProperty('--bx-font-team', activeFontTeam);
+
+    const activeFontScore = state.customFontFamilyScore ? `'${state.customFontFamilyScore}'` : (state.fontScore || "'Barlow Condensed', sans-serif");
+    root.style.setProperty('--bx-font-score', activeFontScore);
+
+    // Inject custom font stylesheet
+    injectCustomFont(state.customFontDataTeam, state.customFontFamilyTeam, state.customFontDataScore, state.customFontFamilyScore);
+
+    // Names
+    document.getElementById('nameA').textContent = state.nameA || 'TEAM A';
+    document.getElementById('nameB').textContent = state.nameB || 'TEAM B';
+
+    // Label 1
+    document.getElementById('label1').textContent = state.label1 || 'MUAY THAI';
+
+    // Bottom Detail Label 1 visibility
+    const label1Container = document.querySelector('.bottom-detail');
+    if (label1Container) {
+      label1Container.style.display = (state.bxShowLabel1 !== false) ? 'flex' : 'none';
+    }
+
+    // Event Logo
+    const logoImg = document.getElementById('event-logo');
+    if (logoImg) {
+      if (state.logoUrl) {
+        logoImg.src = state.logoUrl;
+        logoImg.style.display = 'block';
+      } else {
+        logoImg.style.display = 'none';
+        logoImg.src = '';
+      }
+    }
+
+    const showTeamLogos = state.bxShowTeamLogos !== false;
+
+    // Team A Flag/Logo
+    const flagA = document.getElementById('flagA');
+    const flagAContainer = document.getElementById('flagA-container');
+    if (flagA && flagAContainer) {
+      if (showTeamLogos && state.logoAUrl && !state.logoAUrl.includes('undefined')) {
+        flagA.src = state.logoAUrl;
+        flagAContainer.style.display = 'flex';
+      } else {
+        flagAContainer.style.display = 'none';
+        flagA.src = '';
+      }
+    }
+
+    // Team B Flag/Logo
+    const flagB = document.getElementById('flagB');
+    const flagBContainer = document.getElementById('flagB-container');
+    if (flagB && flagBContainer) {
+      if (showTeamLogos && state.logoBUrl && !state.logoBUrl.includes('undefined')) {
+        flagB.src = state.logoBUrl;
+        flagBContainer.style.display = 'flex';
+      } else {
+        flagBContainer.style.display = 'none';
+        flagB.src = '';
+      }
+    }
+
+    // Timer
+    const timerTextEl = document.getElementById('timerText');
+    const timerVal = state.timer || '0:00';
+    timerTextEl.textContent = timerVal;
+    
+    // Bump animation on change
+    if (timerVal !== prevTimer) {
+      timerTextEl.classList.remove('bump');
+      void timerTextEl.offsetWidth; // Reflow
+      timerTextEl.classList.add('bump');
+      prevTimer = timerVal;
+    }
+
+    // Round dashes
+    updateDashes(state.half, state.maxSets);
+  }
+
+  // ─── BroadcastChannel Listener ────────────────────────────
+  try {
+    const ch = new BroadcastChannel(VB_CHANNEL);
+    ch.onmessage = e => {
+      if (e.data?.type === 'vb_update') {
+        render(e.data.payload);
+      }
+    };
+  } catch (_) {}
+
+  // ─── LocalStorage Fallback Listener ───────────────────────
+  window.addEventListener('storage', e => {
+    if (e.key === VB_STATE_KEY && e.newValue) {
+      try { render(JSON.parse(e.newValue)); } catch (_) {}
+    }
+  });
+
+  // ─── Initial Load ────────────────────────────────────────
+  (function init() {
+    try {
+      const saved = localStorage.getItem(VB_STATE_KEY);
+      if (saved) render(JSON.parse(saved));
+    } catch (_) {}
+  })();
+</script>
+</body>
+</html>
