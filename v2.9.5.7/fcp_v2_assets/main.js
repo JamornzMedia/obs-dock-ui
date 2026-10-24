@@ -1304,7 +1304,14 @@ const applyMatch = () => {
         bibToggleB.dispatchEvent(new Event('change'));
     }
 
-    if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
+    if (!sheetData.length) {
+        if (dataSourceMode === 'local') {
+            const ok = await fetchLocalTournament(false);
+            if (!ok || !sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
+        } else {
+            return showToast(translations[currentLang].toastLoadFileFirst, 'error');
+        }
+    }
     const id = parseInt(elements.matchID.value);
     const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
     if (jamornzConnection && lastDockMatchId && lastDockMatchId !== id && !confirm(`ยืนยันเปลี่ยนจาก Match ID ${lastDockMatchId} เป็น ${id} และเริ่มสถานะแมตช์ใหม่?`)) {
@@ -2252,11 +2259,64 @@ function syncJamornzMatch(status = 'live', immediate = false) {
 }
 window.syncJamornzMatch = syncJamornzMatch;
 
+const fetchLocalTournament = async (showSuccessToast = true) => {
+    const url = (localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').replace(/\/+$/, '');
+    const selectedField = localStorage.getItem('localManagerField') || 'all';
+    const statusEl = document.getElementById('localConnectionStatus');
+
+    try {
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = 'rgba(5, 150, 105, 0.2)';
+            statusEl.style.color = '#34d399';
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูลจาก Local Tournament Manager...';
+        }
+
+        const endpoint = `${url}/api/dock-feed?field=${encodeURIComponent(selectedField)}&t=${Date.now()}`;
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Server error');
+
+        sheetData = [data.headers, ...data.rows];
+
+        if (data.logoRoot && (!logoFolderPath || logoFolderPath === 'C:/OBSAssets/logos')) {
+            logoFolderPath = data.logoRoot.replace(/\\/g, '/');
+            localStorage.setItem('logoFolderPath', logoFolderPath);
+            if (elements.logoPathInput) elements.logoPathInput.value = logoFolderPath;
+            if (elements.currentLogoPath) elements.currentLogoPath.textContent = logoFolderPath;
+        }
+
+        const fieldDesc = selectedField === 'all' ? 'ทุกสนาม' : `สนาม ${selectedField}`;
+        if (statusEl) {
+            statusEl.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่ (${fieldDesc})`;
+        }
+
+        if (showSuccessToast) {
+            showToast(`โหลดตารางสดจาก Local สำเร็จ (${data.rows.length} คู่ - ${fieldDesc})`, 'success');
+        }
+        return true;
+    } catch (err) {
+        console.error('Local feed error:', err);
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            statusEl.style.color = '#f87171';
+            statusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ไม่สามารถเชื่อมต่อกับ ${url} ได้ (กรุณารันไฟล์ 'เปิดระบบจัดการทีมและตาราง.cmd')`;
+        }
+        showToast(`เชื่อมต่อ Local Manager ไม่สำเร็จ: ${err.message}`, 'error');
+        return false;
+    }
+};
+window.fetchLocalTournament = fetchLocalTournament;
+
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
         fetchGoogleSheet();
     } else if (dataSourceMode === 'jamornz') {
         fetchJamornzTournament();
+    } else if (dataSourceMode === 'local') {
+        fetchLocalTournament();
     } else {
         handleExcel();
     }
@@ -2268,17 +2328,22 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const isJamornz = mode === 'jamornz';
+    const isLocal = mode === 'local';
     const gsheetSettings = document.getElementById('gsheetSettings');
     const jamornzSettings = document.getElementById('jamornzSettings');
     const excelSettings = document.getElementById('excelSettings'); // V2.9.2
+    const localSettings = document.getElementById('localSettings'); // V2.9.5.7
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
     if (jamornzSettings) jamornzSettings.style.display = isJamornz ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz) ? 'none' : 'block';
+    if (localSettings) localSettings.style.display = isLocal ? 'block' : 'none';
+    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz || isLocal) ? 'none' : 'block';
 
     const trans = translations[currentLang];
 
-    if (isJamornz) {
+    if (isLocal) {
+        elements.excelBtn.innerHTML = `<i class="fas fa-sync-alt" style="color: #34d399;"></i> <span>Local Sync</span>`;
+    } else if (isJamornz) {
         elements.excelBtn.innerHTML = `<i class="fas fa-globe" style="color: #38bdf8;"></i> <span>โหลด Jamornz</span>`;
     } else if (isGSheet) {
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
@@ -2761,6 +2826,32 @@ const setupEventListeners = () => {
         });
     });
 
+    const saveLocalBtn = document.getElementById('saveLocalBtn');
+    if (saveLocalBtn) {
+        saveLocalBtn.addEventListener('click', () => {
+            const urlInput = document.getElementById('localManagerUrlInput');
+            const fieldSelect = document.getElementById('localManagerFieldSelect');
+            if (urlInput) {
+                const url = urlInput.value.trim() || 'http://127.0.0.1:8765';
+                localStorage.setItem('localManagerUrl', url);
+            }
+            if (fieldSelect) {
+                localStorage.setItem('localManagerField', fieldSelect.value);
+            }
+            fetchLocalTournament(true);
+        });
+    }
+
+    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
+    if (localManagerFieldSelect) {
+        localManagerFieldSelect.addEventListener('change', (e) => {
+            localStorage.setItem('localManagerField', e.target.value);
+            if (dataSourceMode === 'local') {
+                fetchLocalTournament(true);
+            }
+        });
+    }
+
     const saveGSheetBtn = document.getElementById('saveGSheetBtn');
     if (saveGSheetBtn) {
         saveGSheetBtn.addEventListener('click', () => {
@@ -3306,6 +3397,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (radio) radio.checked = true;
     }
 
+    const savedLocalUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
+    const savedLocalField = localStorage.getItem('localManagerField') || 'all';
+    const localUrlInput = document.getElementById('localManagerUrlInput');
+    const localFieldSelect = document.getElementById('localManagerFieldSelect');
+    if (localUrlInput) localUrlInput.value = savedLocalUrl;
+    if (localFieldSelect) localFieldSelect.value = savedLocalField;
+
     const savedGSUrl = localStorage.getItem('googleSheetUrl');
     if (savedGSUrl) {
         googleSheetUrl = savedGSUrl;
