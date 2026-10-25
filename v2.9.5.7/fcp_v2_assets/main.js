@@ -2358,7 +2358,11 @@ const fetchTournamentManagerFeed = async () => {
 
         if (sheetData.length > 1) {
             const firstId = sheetData[1][0];
-            if (elements.matchID) elements.matchID.value = firstId;
+            if (elements.matchID) {
+                elements.matchID.value = firstId;
+                elements.matchID.min = 1;
+                elements.matchID.max = sheetData.length - 1;
+            }
             const pcBtn = document.getElementById('pcMatchIdBtn');
             if (pcBtn) pcBtn.textContent = firstId;
             applyMatch();
@@ -2385,10 +2389,12 @@ async function syncScoreToTournamentManager(targetMatchId, askConfirm = false) {
     if (!matchRow) return false;
 
     const get = key => matchRow[header.indexOf(key)] || '';
-    const fieldMatch = String(get('label3') || '').match(/\d+/);
+    const fieldMatch = String(get('MatchField') || get('label3') || '').match(/\d+/);
     const fieldVal = fieldMatch ? parseInt(fieldMatch[0]) : 1;
-    const orderMatch = String(get('label2') || '').match(/\d+/);
+    const orderMatch = String(get('MatchOrder') || get('label2') || '').match(/\d+/);
     const orderVal = orderMatch ? parseInt(orderMatch[0]) : id;
+    const dateVal = get('MatchDate') || get('label1') || (document.getElementById('localManagerDateSelect')?.value !== 'all' ? document.getElementById('localManagerDateSelect')?.value : '') || localStorage.getItem('localManagerDate') || '';
+    const uniqueId = get('MatchUID') || '';
 
     const urlInput = document.getElementById('localManagerUrlInput');
     let rawUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
@@ -2406,8 +2412,10 @@ async function syncScoreToTournamentManager(targetMatchId, askConfirm = false) {
         const payload = {
             id: id,
             matchId: id,
+            unique_id: uniqueId,
             order: orderVal,
             field: fieldVal,
+            date: dateVal,
             scoreA: masterTeamA.score,
             scoreB: masterTeamB.score,
             penaltyA: masterTeamA.score2,
