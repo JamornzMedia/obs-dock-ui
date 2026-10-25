@@ -2290,7 +2290,12 @@ const fetchTournamentManagerFeed = async () => {
     const fieldSelect = document.getElementById('localManagerFieldSelect');
     const statusDiv = document.getElementById('localManagerConnectionStatus');
 
-    const baseUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '');
+    let rawUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
+    if (rawUrl.includes(':8080')) {
+        rawUrl = rawUrl.replace(':8080', ':8765');
+        if (urlInput) urlInput.value = rawUrl;
+    }
+    const baseUrl = rawUrl || 'http://127.0.0.1:8765';
     const dateVal = dateSelect?.value || localStorage.getItem('localManagerDate') || 'all';
     const fieldVal = fieldSelect?.value || localStorage.getItem('localManagerField') || 'all';
 
@@ -2386,7 +2391,9 @@ async function syncScoreToTournamentManager(targetMatchId, askConfirm = false) {
     const orderVal = orderMatch ? parseInt(orderMatch[0]) : id;
 
     const urlInput = document.getElementById('localManagerUrlInput');
-    const baseUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '');
+    let rawUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
+    if (rawUrl.includes(':8080')) rawUrl = rawUrl.replace(':8080', ':8765');
+    const baseUrl = rawUrl || 'http://127.0.0.1:8765';
 
     const currentKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
 
@@ -3539,7 +3546,26 @@ document.addEventListener('DOMContentLoaded', () => {
         jamornzRound = savedJamornzRound;
     }
 
+    let savedLocalManagerUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
+    if (savedLocalManagerUrl.includes(':8080')) {
+        savedLocalManagerUrl = savedLocalManagerUrl.replace(':8080', ':8765');
+        localStorage.setItem('localManagerUrl', savedLocalManagerUrl);
+    }
+    const localManagerInput = document.getElementById('localManagerUrlInput');
+    if (localManagerInput) localManagerInput.value = savedLocalManagerUrl;
+
+    const savedLocalManagerDate = localStorage.getItem('localManagerDate');
+    const localManagerDateEl = document.getElementById('localManagerDateSelect');
+    if (savedLocalManagerDate && localManagerDateEl) localManagerDateEl.value = savedLocalManagerDate;
+
+    const savedLocalManagerField = localStorage.getItem('localManagerField');
+    const localManagerFieldEl = document.getElementById('localManagerFieldSelect');
+    if (savedLocalManagerField && localManagerFieldEl) localManagerFieldEl.value = savedLocalManagerField;
+
     setDataSourceMode(dataSourceMode);
+    if (dataSourceMode === 'tournamentManager') {
+        fetchTournamentManagerFeed();
+    }
 
     loadLogoCache();
     masterTeamA = createDefaultTeam('A');
