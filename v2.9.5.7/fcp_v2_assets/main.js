@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.7';
-import { translations } from './languages.js?v=2.9.5.7';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6-r1';
+import { translations } from './languages.js?v=2.9.5.6-r1';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -81,6 +81,8 @@ let jamornzTournamentUrl = '';
 let jamornzRound = 'group';
 let jamornzConnection = null;
 let lastDockMatchId = null;
+const syncedManagerMatches = new Map();
+let localManagerFeedData = null;
 let dockSyncTimer = null;
 let currentJamornzData = null;
 let dockMatchStartedAt = null;
@@ -163,15 +165,10 @@ const setImage = (sourceName, filename) => {
         return Promise.resolve(false);
     }
 
-    let filePath = '';
-    if (normalizedFilename) {
-        if (/^[a-zA-Z]:[/\\]/.test(normalizedFilename) || normalizedFilename.startsWith('\\\\')) {
-            filePath = normalizedFilename.replace(/\\/g, '/');
-        } else {
-            const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(normalizedFilename);
-            filePath = `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`;
-        }
-    }
+    const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(normalizedFilename);
+    const filePath = normalizedFilename
+        ? `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`
+        : '';
 
     if (lastQueuedImagePath.get(sourceName) === filePath) {
         console.debug(`[OBS Image] Skipped unchanged path for ${sourceName}:`, filePath);
@@ -1258,11 +1255,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             initialsEl.style.display = 'none';
         } else {
             const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(masterTeam.logoFile);
-            const isAbs = /^[a-zA-Z]:[/\\]/.test(masterTeam.logoFile) || masterTeam.logoFile.startsWith('\\\\');
-            const targetPath = isAbs
-                ? masterTeam.logoFile.replace(/\\/g, '/')
-                : `${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
-            logoEl.src = targetPath.startsWith('file:///') ? targetPath : `file:///${targetPath.replace(/^file:\/\/\/?/, '')}`;
+            logoEl.src = `file:///${logoFolderPath}/${masterTeam.logoFile}${hasExt ? '' : '.png'}`;
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         }
@@ -1286,7 +1279,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
 let isApplyingMatch = false;
 
-const applyMatch = async () => {
+const applyMatch = () => {
     if (isApplyingMatch) {
         console.warn('[OBS Image] Ignored overlapping Load Match request.');
         return Promise.resolve(false);
@@ -1304,26 +1297,20 @@ const applyMatch = async () => {
         bibToggleB.dispatchEvent(new Event('change'));
     }
 
-    if (!sheetData.length) {
-
-        if (dataSourceMode === 'local') {
-
-            const ok = await fetchLocalTournament(false);
-
-            if (!ok || !sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-
-        } else {
-
-            return showToast(translations[currentLang].toastLoadFileFirst, 'error');
-
-        }
-
-    }
+    if (!sheetData.length) return showToast(translations[currentLang].toastLoadFileFirst, 'error');
     const id = parseInt(elements.matchID.value);
     const matchChanged = !!lastDockMatchId && lastDockMatchId !== id;
     if (jamornzConnection && lastDockMatchId && lastDockMatchId !== id && !confirm(`ยืนยันเปลี่ยนจาก Match ID ${lastDockMatchId} เป็น ${id} และเริ่มสถานะแมตช์ใหม่?`)) {
         elements.matchID.value = lastDockMatchId;
         return;
+    }
+    if (dataSourceMode === 'tournamentManager' && lastDockMatchId && lastDockMatchId !== id) {
+        const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+        const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+        const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+        if (hasScore && !alreadySynced) {
+            syncScoreToTournamentManager(lastDockMatchId, true);
+        }
     }
     const header = sheetData[0];
     const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
@@ -1337,6 +1324,20 @@ const applyMatch = async () => {
         dockTimerBaseSeconds = 0;
         masterTeamA.score = masterTeamB.score = 0;
         masterTeamA.score2 = masterTeamB.score2 = 0;
+        timer = 0;
+        half = '1st';
+        updateTimerDisplay();
+    } else if (dataSourceMode === 'tournamentManager' && matchChanged) {
+        dockMatchStartedAt = new Date().toISOString();
+        dockTimerStartedAt = null;
+        dockTimerBaseSeconds = 0;
+        const getRowVal = key => match[header.indexOf(key)] || '';
+        const sA = getRowVal('ScoreA');
+        const sB = getRowVal('ScoreB');
+        masterTeamA.score = (sA !== undefined && sA !== null && String(sA).trim() !== '') ? parseInt(sA) : 0;
+        masterTeamB.score = (sB !== undefined && sB !== null && String(sB).trim() !== '') ? parseInt(sB) : 0;
+        masterTeamA.score2 = 0;
+        masterTeamB.score2 = 0;
         timer = 0;
         half = '1st';
         updateTimerDisplay();
@@ -1354,14 +1355,6 @@ const applyMatch = async () => {
     if (savedColorA) { colorA1 = savedColorA.color1; colorA2 = savedColorA.color2; }
     const savedColorB = loadTeamColors(teamBName);
     if (savedColorB) { colorB1 = savedColorB.color1; colorB2 = savedColorB.color2; }
-    const scoreAVal = get('ScoreA');
-    const scoreBVal = get('ScoreB');
-    if (scoreAVal !== '' && !isNaN(parseInt(scoreAVal))) {
-        masterTeamA.score = parseInt(scoreAVal);
-    }
-    if (scoreBVal !== '' && !isNaN(parseInt(scoreBVal))) {
-        masterTeamB.score = parseInt(scoreBVal);
-    }
     const logoAUpdate = updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
     const logoBUpdate = updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
     elements.label1.textContent = get('label1');
@@ -1482,6 +1475,14 @@ const changeScore2 = (team, delta) => {
 };
 
 const resetScore = () => {
+    if (dataSourceMode === 'tournamentManager' && lastDockMatchId) {
+        const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+        const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+        const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+        if (hasScore && !alreadySynced) {
+            syncScoreToTournamentManager(lastDockMatchId, true);
+        }
+    }
     pushResetHistory();
     masterTeamA.score = masterTeamB.score = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, masterTeamA.score2);
@@ -1498,6 +1499,14 @@ const resetScore2 = () => {
 };
 
 const fullReset = () => {
+    if (dataSourceMode === 'tournamentManager' && lastDockMatchId) {
+        const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+        const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+        const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+        if (hasScore && !alreadySynced) {
+            syncScoreToTournamentManager(lastDockMatchId, true);
+        }
+    }
     pushResetHistory();
     // Uncheck and reset bib overrides on full reset
     const bibToggleA = document.getElementById('bibOverrideA');
@@ -1957,7 +1966,7 @@ const changeInjuryTime = (delta) => {
 const handleExcel = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.xlsx, .xls, .csv';
+    input.accept = '.xlsx, .xls';
     input.onchange = e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -2274,105 +2283,159 @@ function syncJamornzMatch(status = 'live', immediate = false) {
 }
 window.syncJamornzMatch = syncJamornzMatch;
 
-const fetchLocalTournament = async (showSuccessToast = true) => {
-    const url = (localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').replace(/\/+$/, '');
-    const selectedField = localStorage.getItem('localManagerField') || 'all';
-    const statusEl = document.getElementById('localConnectionStatus');
+
+const fetchTournamentManagerFeed = async () => {
+    const urlInput = document.getElementById('localManagerUrlInput');
+    const dateSelect = document.getElementById('localManagerDateSelect');
+    const fieldSelect = document.getElementById('localManagerFieldSelect');
+    const statusDiv = document.getElementById('localManagerConnectionStatus');
+
+    const baseUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '');
+    const dateVal = dateSelect?.value || localStorage.getItem('localManagerDate') || 'all';
+    const fieldVal = fieldSelect?.value || localStorage.getItem('localManagerField') || 'all';
+
+    localStorage.setItem('localManagerUrl', baseUrl);
+    localStorage.setItem('localManagerDate', dateVal);
+    localStorage.setItem('localManagerField', fieldVal);
+
+    if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = 'rgba(2, 132, 199, 0.2)';
+        statusDiv.style.border = '1px solid #0284c7';
+        statusDiv.style.color = '#38bdf8';
+        statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเชื่อมต่อ Tournament Manager...';
+    }
 
     try {
-        if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.background = 'rgba(5, 150, 105, 0.2)';
-            statusEl.style.color = '#34d399';
-            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูลจาก Local Tournament Manager...';
+        const queryParams = new URLSearchParams();
+        if (fieldVal !== 'all') queryParams.set('field', fieldVal);
+        if (dateVal !== 'all') queryParams.set('date', dateVal);
+
+        const feedUrl = `${baseUrl}/api/dock-feed?${queryParams.toString()}`;
+        const res = await fetch(feedUrl);
+        if (!res.ok) throw new Error(`ไม่สามารถเชื่อมต่อได้ (HTTP ${res.status})`);
+        const data = await res.json();
+
+        if (!data.ok || !data.rows) throw new Error('รูปแบบข้อมูลจาก Tournament Manager ไม่ถูกต้อง');
+
+        localManagerFeedData = data;
+
+        // Auto populate date select if available
+        if (data.dates && data.dates.length && dateSelect) {
+            const currentSelected = dateSelect.value;
+            dateSelect.innerHTML = '<option value="all">ทุกวัน (All Dates)</option>' +
+                data.dates.map(d => `<option value="${d}">${d}</option>`).join('');
+            if (data.dates.includes(currentSelected) || currentSelected === 'all') {
+                dateSelect.value = currentSelected;
+            }
         }
 
-        const endpoint = `${url}/api/dock-feed?field=${encodeURIComponent(selectedField)}&t=${Date.now()}`;
-        const res = await fetch(endpoint);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Server error');
-
+        // Build sheetData: [headers, ...rows]
         sheetData = [data.headers, ...data.rows];
 
-        if (data.logoRoot) {
-            logoFolderPath = data.logoRoot.replace(/\\/g, '/');
-            localStorage.setItem('logoFolderPath', logoFolderPath);
-            if (elements.logoPathInput) elements.logoPathInput.value = logoFolderPath;
-            if (elements.currentLogoPath) elements.currentLogoPath.textContent = logoFolderPath;
+        // Build in-memory workbook for Display Table
+        if (typeof XLSX !== 'undefined') {
+            const ws = XLSX.utils.aoa_to_sheet(sheetData);
+            window.currentWorkbook = {
+                SheetNames: ['Tournament'],
+                Sheets: { 'Tournament': ws }
+            };
         }
 
-        // Cache logo URLs for immediate browser preview in Dock UI
-        if (data.rows && Array.isArray(data.rows)) {
-            data.rows.forEach(r => {
-                const teamA = r[1];
-                const teamB = r[2];
-                const logoA = r[7];
-                const logoB = r[8];
-                if (logoA) {
-                    const cleanA = String(logoA).trim();
-                    const urlA = `${url}/TeamLogos/${encodeURIComponent(cleanA)}`;
-                    logoCache[cleanA] = urlA;
-                    logoCache[cleanA.toLowerCase()] = urlA;
-                    logoCache[cleanA.toUpperCase()] = urlA;
-                    const bareA = cleanA.replace(/\.(png|jpe?g|gif|webp)$/i, '');
-                    logoCache[bareA] = urlA;
-                    logoCache[bareA.toLowerCase()] = urlA;
-                    if (teamA) {
-                        const cleanT = String(teamA).trim().replace(/\s/g, '');
-                        logoCache[cleanT] = urlA;
-                        logoCache[cleanT.toLowerCase()] = urlA;
-                    }
-                }
-                if (logoB) {
-                    const cleanB = String(logoB).trim();
-                    const urlB = `${url}/TeamLogos/${encodeURIComponent(cleanB)}`;
-                    logoCache[cleanB] = urlB;
-                    logoCache[cleanB.toLowerCase()] = urlB;
-                    logoCache[cleanB.toUpperCase()] = urlB;
-                    const bareB = cleanB.replace(/\.(png|jpe?g|gif|webp)$/i, '');
-                    logoCache[bareB] = urlB;
-                    logoCache[bareB.toLowerCase()] = urlB;
-                    if (teamB) {
-                        const cleanT = String(teamB).trim().replace(/\s/g, '');
-                        logoCache[cleanT] = urlB;
-                        logoCache[cleanT.toLowerCase()] = urlB;
-                    }
-                }
-            });
-            saveLogoCache();
+        if (statusDiv) {
+            statusDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+            statusDiv.style.border = '1px solid #10b981';
+            statusDiv.style.color = '#34d399';
+            statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่`;
         }
 
-        const fieldDesc = selectedField === 'all' ? 'ทุกสนาม' : `สนาม ${selectedField}`;
-        if (statusEl) {
-            statusEl.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่ (${fieldDesc})`;
-        }
+        showToast(`เชื่อมต่อ Tournament Manager สำเร็จ (${data.rows.length} คู่)`, 'success');
 
-        if (showSuccessToast) {
-            showToast(`โหลดตารางสดจาก Local สำเร็จ (${data.rows.length} คู่ - ${fieldDesc})`, 'success');
+        if (sheetData.length > 1) {
+            const firstId = sheetData[1][0];
+            if (elements.matchID) elements.matchID.value = firstId;
+            const pcBtn = document.getElementById('pcMatchIdBtn');
+            if (pcBtn) pcBtn.textContent = firstId;
+            applyMatch();
         }
-        return true;
     } catch (err) {
-        console.error('Local feed error:', err);
-        if (statusEl) {
-            statusEl.style.display = 'block';
-            statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
-            statusEl.style.color = '#f87171';
-            statusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ไม่สามารถเชื่อมต่อกับ ${url} ได้ (กรุณารันไฟล์ 'เปิดระบบจัดการทีมและตาราง.cmd')`;
+        console.error('Local Tournament Manager fetch error:', err);
+        if (statusDiv) {
+            statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+            statusDiv.style.border = '1px solid #ef4444';
+            statusDiv.style.color = '#f87171';
+            statusDiv.innerHTML = `<i class="fas fa-times-circle"></i> ข้อผิดพลาด: ${err.message}`;
         }
-        showToast(`เชื่อมต่อ Local Manager ไม่สำเร็จ: ${err.message}`, 'error');
-        return false;
+        showToast(`เชื่อมต่อไม่สำเร็จ: ${err.message}`, 'error');
     }
 };
-window.fetchLocalTournament = fetchLocalTournament;
+window.fetchTournamentManagerFeed = fetchTournamentManagerFeed;
 
+async function syncScoreToTournamentManager(targetMatchId, askConfirm = false) {
+    const id = targetMatchId !== undefined ? targetMatchId : parseInt(elements.matchID.value);
+    if (!id || !sheetData.length) return false;
+
+    const header = sheetData[0] || [];
+    const matchRow = sheetData.slice(1).find(r => parseInt(r[0]) === id);
+    if (!matchRow) return false;
+
+    const get = key => matchRow[header.indexOf(key)] || '';
+    const fieldMatch = String(get('label3') || '').match(/\d+/);
+    const fieldVal = fieldMatch ? parseInt(fieldMatch[0]) : 1;
+    const orderMatch = String(get('label2') || '').match(/\d+/);
+    const orderVal = orderMatch ? parseInt(orderMatch[0]) : id;
+
+    const urlInput = document.getElementById('localManagerUrlInput');
+    const baseUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8080').trim().replace(/\/+$/, '');
+
+    const currentKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+
+    if (askConfirm) {
+        const ok = confirm(`คู่นี้ยังไม่ได้ส่งคะแนนเข้า Tournament Manager!\n\nต้องการอัปเดตคะแนน (${masterTeamA.name} ${masterTeamA.score} - ${masterTeamB.score} ${masterTeamB.name}) เข้าสู่ระบบหรือไม่?`);
+        if (!ok) return false;
+    }
+
+    try {
+        const payload = {
+            id: id,
+            matchId: id,
+            order: orderVal,
+            field: fieldVal,
+            scoreA: masterTeamA.score,
+            scoreB: masterTeamB.score,
+            penaltyA: masterTeamA.score2,
+            penaltyB: masterTeamB.score2,
+            status: 'finished'
+        };
+
+        const res = await fetch(`${baseUrl}/api/save-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.message || `HTTP ${res.status}`);
+        }
+
+        syncedManagerMatches.set(id, currentKey);
+        showToast(`⚡ บันทึกคะแนนคู่ที่ ${orderVal} เข้า Tournament Manager เรียบร้อย!`, 'success');
+        return true;
+    } catch (err) {
+        console.error('Failed to sync score to Tournament Manager:', err);
+        showToast(`ส่งคะแนนไม่สำเร็จ: ${err.message}`, 'error');
+        return false;
+    }
+}
+window.syncScoreToTournamentManager = syncScoreToTournamentManager;
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
         fetchGoogleSheet();
     } else if (dataSourceMode === 'jamornz') {
         fetchJamornzTournament();
-    } else if (dataSourceMode === 'local') {
-        fetchLocalTournament();
+    } else if (dataSourceMode === 'tournamentManager') {
+        fetchTournamentManagerFeed();
     } else {
         handleExcel();
     }
@@ -2384,21 +2447,21 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const isJamornz = mode === 'jamornz';
-    const isLocal = mode === 'local';
+    const isTournamentManager = mode === 'tournamentManager';
     const gsheetSettings = document.getElementById('gsheetSettings');
     const jamornzSettings = document.getElementById('jamornzSettings');
+    const tournamentManagerSettings = document.getElementById('tournamentManagerSettings');
     const excelSettings = document.getElementById('excelSettings'); // V2.9.2
-    const localSettings = document.getElementById('localSettings'); // V2.9.5.7
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
     if (jamornzSettings) jamornzSettings.style.display = isJamornz ? 'block' : 'none';
-    if (localSettings) localSettings.style.display = isLocal ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz || isLocal) ? 'none' : 'block';
+    if (tournamentManagerSettings) tournamentManagerSettings.style.display = isTournamentManager ? 'block' : 'none';
+    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz || isTournamentManager) ? 'none' : 'block';
 
     const trans = translations[currentLang];
 
-    if (isLocal) {
-        elements.excelBtn.innerHTML = `<i class="fas fa-sync-alt" style="color: #34d399;"></i> <span>Local Sync</span>`;
+    if (isTournamentManager) {
+        elements.excelBtn.innerHTML = `<i class="fas fa-desktop" style="color: #10b981;"></i> <span>โหลด Tournament Manager</span>`;
     } else if (isJamornz) {
         elements.excelBtn.innerHTML = `<i class="fas fa-globe" style="color: #38bdf8;"></i> <span>โหลด Jamornz</span>`;
     } else if (isGSheet) {
@@ -2882,58 +2945,6 @@ const setupEventListeners = () => {
         });
     });
 
-    const saveLocalBtn = document.getElementById('saveLocalBtn');
-
-    if (saveLocalBtn) {
-
-        saveLocalBtn.addEventListener('click', () => {
-
-            const urlInput = document.getElementById('localManagerUrlInput');
-
-            const fieldSelect = document.getElementById('localManagerFieldSelect');
-
-            if (urlInput) {
-
-                const url = urlInput.value.trim() || 'http://127.0.0.1:8765';
-
-                localStorage.setItem('localManagerUrl', url);
-
-            }
-
-            if (fieldSelect) {
-
-                localStorage.setItem('localManagerField', fieldSelect.value);
-
-            }
-
-            fetchLocalTournament(true);
-
-        });
-
-    }
-
-
-
-    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
-
-    if (localManagerFieldSelect) {
-
-        localManagerFieldSelect.addEventListener('change', (e) => {
-
-            localStorage.setItem('localManagerField', e.target.value);
-
-            if (dataSourceMode === 'local') {
-
-                fetchLocalTournament(true);
-
-            }
-
-        });
-
-    }
-
-
-
     const saveGSheetBtn = document.getElementById('saveGSheetBtn');
     if (saveGSheetBtn) {
         saveGSheetBtn.addEventListener('click', () => {
@@ -2977,6 +2988,30 @@ const setupEventListeners = () => {
             jamornzConnection = null;
             setJamornzConnectionStatus('<i class="fas fa-pen"></i> กรอกรหัส 5 หลัก แล้วกด “ยืนยันรหัสและเชื่อมต่อ”', 'info');
         });
+    }
+
+    const fetchLocalManagerBtn = document.getElementById('fetchLocalManagerBtn');
+    if (fetchLocalManagerBtn) {
+        fetchLocalManagerBtn.addEventListener('click', fetchTournamentManagerFeed);
+    }
+
+    const localManagerDateSelect = document.getElementById('localManagerDateSelect');
+    if (localManagerDateSelect) {
+        localManagerDateSelect.addEventListener('change', () => {
+            if (dataSourceMode === 'tournamentManager') fetchTournamentManagerFeed();
+        });
+    }
+
+    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
+    if (localManagerFieldSelect) {
+        localManagerFieldSelect.addEventListener('change', () => {
+            if (dataSourceMode === 'tournamentManager') fetchTournamentManagerFeed();
+        });
+    }
+
+    const syncScoreBtn = document.getElementById('syncScoreBtn');
+    if (syncScoreBtn) {
+        syncScoreBtn.addEventListener('click', () => syncScoreToTournamentManager());
     }
 
 
@@ -3478,20 +3513,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const radio = document.querySelector(`input[name="dataSource"][value="${savedDSMode}"]`);
         if (radio) radio.checked = true;
     }
-
-    const savedLocalUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
-
-    const savedLocalField = localStorage.getItem('localManagerField') || 'all';
-
-    const localUrlInput = document.getElementById('localManagerUrlInput');
-
-    const localFieldSelect = document.getElementById('localManagerFieldSelect');
-
-    if (localUrlInput) localUrlInput.value = savedLocalUrl;
-
-    if (localFieldSelect) localFieldSelect.value = savedLocalField;
-
-
 
     const savedGSUrl = localStorage.getItem('googleSheetUrl');
     if (savedGSUrl) {
@@ -4783,62 +4804,6 @@ const initBibOverride = (team) => {
 
 initBibOverride('A');
 initBibOverride('B');
-
-// Centered bib popup. The original hidden checkboxes and color keys remain the
-// source of truth so OBS, swap-team, half-change and volleyball behavior stay intact.
-let activeBibPopupTeam = null;
-const popupBibDefault = team => team === 'A' ? '#84cc16' : '#f97316';
-const popupBibColor = team => localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || popupBibDefault(team);
-const refreshBibPopup = () => {
-    if (!activeBibPopupTeam) return;
-    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
-    const color = popupBibColor(activeBibPopupTeam);
-    document.getElementById('bibModalTitle').textContent = `🎽 เสื้อเอี้ยม - ทีม ${activeBibPopupTeam}`;
-    document.getElementById('bibModalStatusText').textContent = toggle.checked ? 'เปิดใช้งาน (ใช้สีเสื้อเอี้ยม)' : 'ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)';
-    const button = document.getElementById('bibModalToggleBtn');
-    button.textContent = toggle.checked ? 'ปิดเอี้ยม' : 'เปิดเอี้ยม';
-    button.className = toggle.checked ? 'btn-danger' : 'btn-success';
-    document.getElementById('bibModalCustomColor').value = color;
-    document.getElementById('bibModalHexCode').textContent = color.toUpperCase();
-    document.querySelectorAll('.bib-modal-preset-btn').forEach(item => item.classList.toggle('is-selected', item.dataset.color.toLowerCase() === color.toLowerCase()));
-};
-const closeBibPopup = () => {
-    document.getElementById('bibOverridePopup')?.classList.remove('is-open');
-    activeBibPopupTeam = null;
-};
-const openBibPopup = team => {
-    activeBibPopupTeam = team;
-    refreshBibPopup();
-    document.getElementById('bibOverridePopup')?.classList.add('is-open');
-};
-const setPopupBibColor = color => {
-    if (!activeBibPopupTeam || !/^#[0-9a-f]{6}$/i.test(color)) return;
-    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
-    localStorage.setItem(`bib_active_color_${activeBibPopupTeam.toLowerCase()}`, color);
-    const hiddenPicker = document.getElementById(`bibCustomColor${activeBibPopupTeam}`);
-    if (hiddenPicker) hiddenPicker.value = color;
-    if (!toggle.checked) toggle.checked = true;
-    toggle.dispatchEvent(new Event('change'));
-    refreshBibPopup();
-};
-['A','B'].forEach(team => {
-    const toggle = document.getElementById(`bibOverride${team}`);
-    const label = toggle?.closest('label');
-    label?.addEventListener('click', event => { event.preventDefault(); openBibPopup(team); });
-    toggle?.addEventListener('change', () => { if (activeBibPopupTeam === team) refreshBibPopup(); });
-});
-document.getElementById('bibModalToggleBtn')?.addEventListener('click', () => {
-    if (!activeBibPopupTeam) return;
-    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
-    toggle.checked = !toggle.checked;
-    toggle.dispatchEvent(new Event('change'));
-});
-document.querySelectorAll('.bib-modal-preset-btn').forEach(item => item.addEventListener('click', () => setPopupBibColor(item.dataset.color)));
-document.getElementById('bibModalCustomColor')?.addEventListener('input', event => setPopupBibColor(event.target.value));
-document.getElementById('bibModalCloseBtn')?.addEventListener('click', closeBibPopup);
-document.getElementById('bibModalDoneBtn')?.addEventListener('click', closeBibPopup);
-document.getElementById('bibOverridePopup')?.addEventListener('click', event => { if (event.target.id === 'bibOverridePopup') closeBibPopup(); });
-document.addEventListener('keydown', event => { if (event.key === 'Escape' && activeBibPopupTeam) closeBibPopup(); });
 
 // --- Global helper actions for welcome screen guest & reset ---
 window.enterAsGuest = () => {
