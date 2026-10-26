@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.6</title>
+    <title data-lang="appTitle">OBSScore Control Panel V2.9.5.7</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2342,7 +2342,7 @@
                 </div>
             </section>
         </div>
-        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.6 (อัพเดต: 23 ตุลาคม 2569)</div>
+        <div class="welcome-footer" id="fcp-welcome-version-text">Developed by JamornzMedia - Version 2.9.5.7 (อัพเดต: 26 ตุลาคม 2569)</div>
     </div>
 
     <script>
@@ -2948,6 +2948,12 @@
                 </div>
             </div>
         </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;margin-bottom:6px;padding:0 2px;">
+            <span style="font-size:0.75rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;"><i class="fas fa-tags" style="color:#60a5fa;"></i> Match Labels</span>
+            <button type="button" id="openLabelAllBtn" class="btn-secondary" style="font-size:0.72rem;padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.35);color:#93c5fd;cursor:pointer;" title="จัดการและกำหนดแพทเทิร์น LabelAll (OBS Text)">
+                <i class="fas fa-cog"></i> <span>จัดการ LabelAll</span>
+            </button>
+        </div>
         <div class="labels-row">
             <div id="label1" data-lang="label1" title="Label 1: รอบการแข่งขัน (เช่น รอบแรก / รอบ 16 ทีม)"></div>
             <div id="label2" data-lang="label2" title="Label 2: คู่ที่ (ของแต่ละรอบ เช่น คู่ที่ 1)"></div>
@@ -3156,8 +3162,8 @@
         </div>
         <div class="footer-changelog-link" style="color: #64748b; font-size: 0.85rem; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
             <div><span data-lang="footerAppName">OBS Dock UI Scoreboard</span></div>
-            <div><span id="fcp-version-text">V2.9.5.6</span></div>
-            <div>(อัพเดต: <span id="fcp-update-date-text">23 ตุลาคม 2569</span>)</div>
+            <div><span id="fcp-version-text">V2.9.5.7</span></div>
+            <div>(อัพเดต: <span id="fcp-update-date-text">26 ตุลาคม 2569</span>)</div>
             <div style="margin-top: 4px; color: #94a3b8;">ติดต่อ Facebook ส่วนตัว</div>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="color: #e2e8f0; font-weight: 600;">Jamornz</span>
@@ -3184,6 +3190,7 @@
             <div class="settings-tabs" id="settingsTabs">
             <button type="button" class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabLabelAll" data-lang="settingsTabLabelAll">🏷️ LabelAll</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">ðŸŽ®
                 Actions</button>
@@ -3297,6 +3304,117 @@
                     <button type="button" id="copyYoutubeDetailsBtn" class="btn-success" style="flex:2;" title="คัดลอก Timestamp ทั้งหมด + ข้อความท้ายคลิป ไปวางลง YouTube"><i class="fas fa-copy"></i> คัดลอกรายละเอียด YouTube ทั้งหมด</button>
                     <button type="button" id="clearYoutubeTimestampsBtn" class="btn-danger" title="ล้างรายการ Timestamp ทั้งหมด"><i class="fas fa-trash"></i></button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tab: LabelAll -->
+        <div class="settings-tab-content" id="settingsTabLabelAll">
+            <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:12px;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.3rem;">🏷️</span>
+                        <div>
+                            <strong style="font-size:0.95rem;color:#93c5fd;" data-lang="labelAllTitle">จัดการรูปแบบข้อความ LabelAll (OBS Text)</strong>
+                            <div style="font-size:0.78rem;color:#94a3b8;" data-lang="labelAllDesc">กำหนดแพทเทิร์นรวมข้อความ Label เพื่อส่งไปยัง Text Source ใน OBS ชื่อ LabelAll โดยอัตโนมัติ</div>
+                        </div>
+                    </div>
+                    <button type="button" id="createObsLabelAllBtn" class="btn-success" style="padding:5px 12px;font-size:0.8rem;display:inline-flex;align-items:center;gap:6px;" title="สร้าง Text Source ชื่อ LabelAll ใน OBS">
+                        <i class="fas fa-plus-circle"></i> <span data-lang="labelAllCreateSource">สร้าง Source ใน OBS</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pattern Template Input -->
+            <label style="display:block;font-size:0.85rem;font-weight:600;margin-bottom:6px;color:#e2e8f0;">
+                <i class="fas fa-magic" style="color:#60a5fa;"></i> <span data-lang="labelAllPatternTitle">แพทเทิร์นข้อความ (Pattern / Template):</span>
+            </label>
+            <textarea id="labelAllPatternInput" rows="3" style="width:100%;margin-bottom:8px;font-family:inherit;font-size:0.92rem;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px;color:#fff;resize:vertical;" placeholder="ตัวอย่าง: &lt;label1&gt; | &lt;label2&gt; | &lt;label3&gt;"></textarea>
+
+            <!-- Auto Clean Separator Option -->
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;font-size:0.83rem;color:#cbd5e1;background:rgba(0,0,0,0.2);padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);">
+                <input type="checkbox" id="labelAllAutoCleanCheck" checked style="accent-color:#3b82f6;width:16px;height:16px;cursor:pointer;">
+                <span><strong style="color:#93c5fd;">ตัดตัวคั่นอัตโนมัติเมื่อ Label ว่าง (Auto-clean Delimiters)</strong> <span style="color:#94a3b8;font-size:0.77rem;">— หาก Label ใดเป็นช่องว่าง เช่น <code>&lt;label1&gt; | &lt;label2&gt; | &lt;label3&gt;</code> ระบบจะตัดตัวคั่นเหลือ <code>&lt;label1&gt; | &lt;label3&gt;</code> ให้โดยอัตโนมัติ</span></span>
+            </label>
+
+            <!-- Quick Insert Tags Area -->
+            <div style="margin-bottom:14px;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-size:0.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;" data-lang="labelAllQuickInsert">Quick Insert Tags (คลิกเพื่อแทรก):</span>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.78rem;background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35);color:#93c5fd;" onclick="insertLabelAllTag('<label1>')">+ Label 1 (รอบแข่ง)</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.78rem;background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35);color:#93c5fd;" onclick="insertLabelAllTag('<label2>')">+ Label 2 (คู่ที่)</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.78rem;background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35);color:#93c5fd;" onclick="insertLabelAllTag('<label3>')">+ Label 3 (สนาม)</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.78rem;background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35);color:#93c5fd;" onclick="insertLabelAllTag('<label4>')">+ Label 4 (รุ่น)</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.78rem;background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.35);color:#93c5fd;" onclick="insertLabelAllTag('<label5>')">+ Label 5 (เวลา)</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.75rem;" onclick="insertLabelAllTag('<TeamA>')">+ Team A</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.75rem;" onclick="insertLabelAllTag('<TeamB>')">+ Team B</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.75rem;" onclick="insertLabelAllTag('<score_team_a>')">+ Score A</button>
+                    <button type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.75rem;" onclick="insertLabelAllTag('<score_team_b>')">+ Score B</button>
+                </div>
+
+                <!-- Quick Presets -->
+                <div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <span style="font-size:0.73rem;color:#94a3b8;font-weight:600;" data-lang="labelAllPresets">Preset แนะนำ:</span>
+                    <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:0.72rem;" onclick="applyLabelAllPreset('<label1> | <label2> | <label3>')">รอบ | คู่ที่ | สนาม</button>
+                    <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:0.72rem;" onclick="applyLabelAllPreset('<label1> - <label2> - <label3> - <label4> - <label5>')">ทุก Label (1-5)</button>
+                    <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:0.72rem;" onclick="applyLabelAllPreset('<label2> : <TeamA> VS <TeamB>')">คู่ที่ + คู่แข่งขัน</button>
+                    <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:0.72rem;" onclick="applyLabelAllPreset('<label4> | <label1> | <label3> (<label5>)')">รุ่น | รอบ | สนาม (เวลา)</button>
+                </div>
+            </div>
+
+            <!-- Live Preview Area -->
+            <div style="margin-bottom:14px;background:rgba(15,23,42,0.9);padding:10px 12px;border-radius:8px;border:1px solid rgba(59,130,246,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="font-size:0.75rem;color:#60a5fa;font-weight:600;"><i class="fas fa-eye"></i> <span data-lang="labelAllPreview">ตัวอย่างข้อความที่ออก OBS (Live Preview):</span></span>
+                    <button type="button" class="btn-secondary" id="copyLabelAllBtn" style="padding:2px 8px;font-size:0.75rem;" title="คัดลอกข้อความนี้"><i class="fas fa-copy"></i> คัดลอก</button>
+                </div>
+                <div id="labelAllLivePreview" style="font-family:monospace;font-size:0.95rem;color:#38bdf8;word-break:break-word;min-height:24px;padding:6px;background:rgba(0,0,0,0.3);border-radius:4px;"></div>
+            </div>
+
+            <!-- Quick Edit Labels Content -->
+            <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+                <span style="font-size:0.75rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:8px;text-transform:uppercase;" data-lang="labelAllDirectEdit">แก้ไขข้อความในแต่ละ Label โดยตรง:</span>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:8px;">
+                    <div>
+                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 1 (รอบแข่งขัน)</label>
+                        <input type="text" id="labelAllInput1" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 2 (คู่ที่)</label>
+                        <input type="text" id="labelAllInput2" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 3 (สนามแข่งขัน)</label>
+                        <input type="text" id="labelAllInput3" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 4 (รุ่นการแข่งขัน)</label>
+                        <input type="text" id="labelAllInput4" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 5 (เวลาแข่งขัน)</label>
+                        <input type="text" id="labelAllInput5" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tags Table Reference -->
+            <div class="item-list" style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h4 style="margin:0;"><i class="fas fa-list-alt"></i> รายการแท็กที่ใช้ได้ (คลิกชื่อ Tag เพื่อแทรก)</h4>
+                </div>
+                <table class="tags-table" id="labelAllTagsTable"></table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+                <button type="button" id="saveLabelAllBtn" class="btn-primary" style="padding:8px 18px;font-size:0.88rem;">
+                    <i class="fas fa-save"></i> <span data-lang="labelAllSaveAndSend">บันทึกและส่งไป OBS</span>
+                </button>
+                <button type="button" id="resetLabelAllPatternBtn" class="btn-secondary" style="padding:8px 14px;font-size:0.88rem;">
+                    <i class="fas fa-undo"></i> <span data-lang="labelAllResetPattern">รีเซ็ตแพทเทิร์นเริ่มต้น</span>
+                </button>
             </div>
         </div>
 
@@ -4215,7 +4333,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.7-tm2"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.7-labelall"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"

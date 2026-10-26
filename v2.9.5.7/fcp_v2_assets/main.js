@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.6-r1';
-import { translations } from './languages.js?v=2.9.5.6-r1';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.7';
+import { translations } from './languages.js?v=2.9.5.7';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -326,7 +326,11 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
         // Settings: If text source, set 'text' to sourceName so it's not empty
         const settings = {};
         if (inputKind === 'text_gdiplus_v3' || inputKind === 'text_gdiplus_v2') {
-            settings.text = sourceName;
+            if (sourceName === 'LabelAll' || sourceName === 'label_all') {
+                settings.text = (typeof formatLabelAllText === 'function' ? formatLabelAllText() : '') || 'LabelAll';
+            } else {
+                settings.text = sourceName;
+            }
         }
 
         const response = await obs.call('CreateInput', {
@@ -528,6 +532,26 @@ const populateTagsTable = (lang) => {
     });
     tbody += '</tbody>';
     elements.tagsTable.innerHTML = thead + tbody;
+};
+
+const populateLabelAllTagsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const tags = trans.tagsList || [];
+    const table = document.getElementById('labelAllTagsTable');
+    if (!table) return;
+    const thead = `<thead><tr><th style="width:38%;">Tag</th><th>${trans.detailsTitle || 'รายละเอียด'}</th></tr></thead>`;
+    let tbody = '<tbody>';
+    tags.forEach(item => {
+        const cleanTag = item.code.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        tbody += `
+        <tr>
+            <td style="cursor:pointer;color:#38bdf8;font-weight:600;" onclick="insertLabelAllTag('${cleanTag}')" title="คลิกเพื่อแทรก Tag ลงในแพทเทิร์น LabelAll">${item.code}</td>
+            <td>${item.desc}</td>
+        </tr>
+    `;
+    });
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
 }
 
 // --- KEYBINDS LOGIC ---
@@ -940,6 +964,7 @@ const saveVisibilitySetting = (key, value) => {
 
 const populateDynamicLists = (lang) => {
     populateTagsTable(lang);
+    populateLabelAllTagsTable(lang);
     populateActionSettingsTable(lang);
     populateKeybindsTable(lang);
     populateHelpTable(lang);
@@ -1272,6 +1297,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
     setText(obsScore2Source, masterTeam.score2);
+    updateObsLabelAll();
     saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
     if (window.broadcastToMobile) window.broadcastToMobile();
     return logoUpdatePromise;
@@ -1367,6 +1393,7 @@ const applyMatch = () => {
     setText('label_3', get('label3'));
     setText('label_4', get('label4'));
     setText('label_5', get('label5'));
+    updateObsLabelAll();
     if (jamornzConnection) syncJamornzMatch('live', true);
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
     return Promise.allSettled([logoAUpdate, logoBUpdate]).finally(() => {
@@ -2522,6 +2549,168 @@ const copyDetails = () => {
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
 
+// ─── LabelAll (OBS Text Source Pattern Manager) ───────────────────────────
+const DEFAULT_LABEL_ALL_TEMPLATE = '<label1> | <label2> | <label3>';
+
+function getLabelValue(num) {
+    const inp = document.getElementById(`labelAllInput${num}`);
+    if (inp && inp.value !== undefined && inp.value !== '') {
+        return inp.value.trim();
+    }
+    const el = elements[`label${num}`];
+    return el ? (el.textContent || '').trim() : '';
+}
+
+function formatLabelAllText() {
+    const template = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    const autoClean = localStorage.getItem('labelAllAutoClean') !== 'false';
+    const teamAName = (masterTeamA && masterTeamA.name) ? masterTeamA.name.replace(/\//g, ' ') : '';
+    const teamBName = (masterTeamB && masterTeamB.name) ? masterTeamB.name.replace(/\//g, ' ') : '';
+    const scoreA = (masterTeamA && masterTeamA.score !== undefined) ? masterTeamA.score : 0;
+    const scoreB = (masterTeamB && masterTeamB.score !== undefined) ? masterTeamB.score : 0;
+    const score2A = (masterTeamA && masterTeamA.score2 !== undefined) ? masterTeamA.score2 : 0;
+    const score2B = (masterTeamB && masterTeamB.score2 !== undefined) ? masterTeamB.score2 : 0;
+    const timeVal = elements.timerText ? (elements.timerText.textContent || '') : '';
+    const halfVal = elements.halfText ? (elements.halfText.textContent || '') : '';
+
+    let res = template
+        .replace(/<TeamA>/gi, teamAName)
+        .replace(/<TeamB>/gi, teamBName)
+        .replace(/<label1>/gi, getLabelValue(1))
+        .replace(/<label2>/gi, getLabelValue(2))
+        .replace(/<label3>/gi, getLabelValue(3))
+        .replace(/<label4>/gi, getLabelValue(4))
+        .replace(/<label5>/gi, getLabelValue(5))
+        .replace(/<score_team_a>/gi, scoreA)
+        .replace(/<score_team_b>/gi, scoreB)
+        .replace(/<score2_team_a>/gi, score2A)
+        .replace(/<score2_team_b>/gi, score2B)
+        .replace(/<time_counter>/gi, timeVal)
+        .replace(/<half_text>/gi, halfVal);
+
+    if (autoClean) {
+        // 1. Remove empty brackets/parentheses left over from empty tags
+        res = res.replace(/\(\s*\)/g, ' ').replace(/\[\s*\]/g, ' ');
+
+        // 2. Collapse consecutive separator sequences, e.g. " |  | " -> " | "
+        res = res.replace(/(\s*([\|\-•·/,\:—–])\s*)+/g, (match, p1, lastSep) => ` ${lastSep} `);
+
+        // 3. Trim leading separators and whitespace
+        res = res.replace(/^[\s\|\-•·/,\:—–]+/, '');
+
+        // 4. Trim trailing separators and whitespace
+        res = res.replace(/[\s\|\-•·/,\:—–]+$/, '');
+
+        // 5. Clean duplicate spaces
+        res = res.replace(/[ \t]+/g, ' ').trim();
+    }
+
+    return res;
+}
+
+function updateLabelAllPreview() {
+    const preview = document.getElementById('labelAllLivePreview');
+    if (!preview) return;
+    const formatted = formatLabelAllText();
+    preview.textContent = formatted || '(ว่าง / Empty)';
+}
+
+function updateObsLabelAll() {
+    const formatted = formatLabelAllText();
+    setText('LabelAll', formatted);
+    setText('label_all', formatted);
+    updateLabelAllPreview();
+    return formatted;
+}
+
+function loadLabelAllSettings() {
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        patternInput.value = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    }
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        cleanCheck.checked = localStorage.getItem('labelAllAutoClean') !== 'false';
+    }
+    for (let i = 1; i <= 5; i++) {
+        const inp = document.getElementById(`labelAllInput${i}`);
+        const el = elements[`label${i}`];
+        if (inp && el) {
+            inp.value = el.textContent || '';
+        }
+    }
+    updateLabelAllPreview();
+}
+
+function saveLabelAllSettings() {
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        localStorage.setItem('labelAllTemplate', patternInput.value);
+    }
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        localStorage.setItem('labelAllAutoClean', cleanCheck.checked ? 'true' : 'false');
+    }
+    for (let i = 1; i <= 5; i++) {
+        const inp = document.getElementById(`labelAllInput${i}`);
+        const el = elements[`label${i}`];
+        if (inp && el) {
+            el.textContent = inp.value;
+            setText(`label_${i}`, inp.value);
+        }
+    }
+    const formatted = updateObsLabelAll();
+    const trans = translations[currentLang] || translations.en;
+    showToast(trans.toastLabelAllSaved || 'บันทึกแพทเทิร์น LabelAll และส่งไปยัง OBS แล้ว!', 'success');
+}
+
+function copyLabelAllText() {
+    const text = formatLabelAllText();
+    if (!text.trim()) {
+        const trans = translations[currentLang] || translations.en;
+        return showToast(trans.toastNoTextToCopy || 'ไม่มีข้อความที่จะคัดลอก', 'error');
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        const trans = translations[currentLang] || translations.en;
+        showToast(trans.toastCopied || 'คัดลอกสำเร็จ', 'info');
+    }).catch(() => {
+        const trans = translations[currentLang] || translations.en;
+        showToast(trans.toastCopyFailed || 'คัดลอกไม่สำเร็จ', 'error');
+    });
+}
+
+window.insertLabelAllTag = (tagCode) => {
+    const textarea = document.getElementById('labelAllPatternInput');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    textarea.value = before + tagCode + after;
+    textarea.selectionStart = textarea.selectionEnd = start + tagCode.length;
+    textarea.focus();
+
+    localStorage.setItem('labelAllTemplate', textarea.value);
+    updateLabelAllPreview();
+};
+
+window.applyLabelAllPreset = (presetText) => {
+    const textarea = document.getElementById('labelAllPatternInput');
+    if (!textarea) return;
+    textarea.value = presetText;
+    localStorage.setItem('labelAllTemplate', presetText);
+    updateLabelAllPreview();
+};
+
+window.formatLabelAllText = formatLabelAllText;
+window.updateObsLabelAll = updateObsLabelAll;
+window.copyLabelAllText = copyLabelAllText;
+window.saveLabelAllSettings = saveLabelAllSettings;
+window.loadLabelAllSettings = loadLabelAllSettings;
+
 // ─── YouTube long-live timestamps / description builder ────────────────────
 let youtubeTimerInterval = null;
 let isYoutubeConfirming = false;
@@ -3200,6 +3389,8 @@ const setupEventListeners = () => {
         applyVisibilitySettings();
         applyColorCount();
         loadIndicatorSettings();
+        loadLabelAllSettings();
+        updateObsLabelAll();
         const savedSettingsTab = localStorage.getItem('activeSettingsTab') || 'settingsTabGeneral';
         switchSettingsTab(document.getElementById(savedSettingsTab) ? savedSettingsTab : 'settingsTabGeneral');
         openPopup(elements.detailsPopup);
@@ -3276,6 +3467,58 @@ const setupEventListeners = () => {
     };
     if (mainAnnounceBtn) mainAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(false));
     if (youtubeAnnounceBtn) youtubeAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(true));
+
+    // LabelAll Event Listeners
+    const saveLabelAllBtn = document.getElementById('saveLabelAllBtn');
+    if (saveLabelAllBtn) saveLabelAllBtn.addEventListener('click', saveLabelAllSettings);
+
+    const resetLabelAllBtn = document.getElementById('resetLabelAllPatternBtn');
+    if (resetLabelAllBtn) resetLabelAllBtn.addEventListener('click', () => {
+        applyLabelAllPreset(DEFAULT_LABEL_ALL_TEMPLATE);
+        showToast('รีเซ็ตแพทเทิร์น LabelAll เรียบร้อยแล้ว', 'info');
+    });
+
+    const copyLabelAllBtn = document.getElementById('copyLabelAllBtn');
+    if (copyLabelAllBtn) copyLabelAllBtn.addEventListener('click', copyLabelAllText);
+
+    const createObsLabelAllBtn = document.getElementById('createObsLabelAllBtn');
+    if (createObsLabelAllBtn) createObsLabelAllBtn.addEventListener('click', () => {
+        createObsSource('LabelAll', 'Text (GDI+)', createObsLabelAllBtn);
+    });
+
+    const openLabelAllBtn = document.getElementById('openLabelAllBtn');
+    if (openLabelAllBtn) openLabelAllBtn.addEventListener('click', () => {
+        loadLabelAllSettings();
+        openPopup(elements.detailsPopup);
+        switchSettingsTab('settingsTabLabelAll');
+    });
+
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        cleanCheck.addEventListener('change', () => {
+            localStorage.setItem('labelAllAutoClean', cleanCheck.checked ? 'true' : 'false');
+            updateObsLabelAll();
+        });
+    }
+
+    const labelAllPatternInput = document.getElementById('labelAllPatternInput');
+    if (labelAllPatternInput) {
+        labelAllPatternInput.addEventListener('input', () => {
+            localStorage.setItem('labelAllTemplate', labelAllPatternInput.value);
+            updateLabelAllPreview();
+        });
+    }
+
+    for (let i = 1; i <= 5; i++) {
+        const inp = document.getElementById(`labelAllInput${i}`);
+        if (inp) {
+            inp.addEventListener('input', () => {
+                const el = elements[`label${i}`];
+                if (el) el.textContent = inp.value;
+                updateLabelAllPreview();
+            });
+        }
+    }
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     // V2.9.3: Changelog removed
@@ -3591,6 +3834,8 @@ document.addEventListener('DOMContentLoaded', () => {
     resetToZero();
     resetHalfToDefault();
     loadIndicatorSettings();
+    loadLabelAllSettings();
+    updateObsLabelAll();
 
     window.copyTag = copyTag;
 
@@ -4358,7 +4603,8 @@ window.copyDetails = () => {
         .replace(/<score2_team_b>/gi, masterTeamB.score2)
         .replace(/<time_counter>/gi, elements.timerText.textContent)
         // Remove half_text logic or keep it but it's not in the list
-        .replace(/<half_text>/gi, elements.halfText.textContent);
+        .replace(/<half_text>/gi, elements.halfText.textContent)
+        .replace(/<LabelAll>/gi, formatLabelAllText());
 
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
