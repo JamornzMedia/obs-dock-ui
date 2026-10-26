@@ -3372,30 +3372,78 @@
                 <div id="labelAllLivePreview" style="font-family:monospace;font-size:0.95rem;color:#38bdf8;word-break:break-word;min-height:24px;padding:6px;background:rgba(0,0,0,0.3);border-radius:4px;"></div>
             </div>
 
-            <!-- Quick Edit Labels Content -->
-            <div style="margin-bottom:14px;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
-                <span style="font-size:0.75rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:8px;text-transform:uppercase;" data-lang="labelAllDirectEdit">แก้ไขข้อความในแต่ละ Label โดยตรง:</span>
+            <!-- Choose which labels to include with Checkboxes -->
+            <div style="margin-bottom:14px;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                    <span style="font-size:0.82rem;color:#cbd5e1;font-weight:600;"><i class="fas fa-check-square" style="color:#60a5fa;"></i> เลือก Label ที่ต้องการนำมารวมใน LabelAll:</span>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:0.75rem;color:#94a3b8;">ตัวคั่น:</span>
+                        <select id="labelAllSeparatorSelect" onchange="buildLabelAllPatternFromCheckboxes()" style="padding:2px 6px;font-size:0.78rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;cursor:pointer;">
+                            <option value=" | ">" | " (ขีดตรง)</option>
+                            <option value=" - ">" - " (ขีดกลาง)</option>
+                            <option value=" • ">" • " (จุดกลม)</option>
+                            <option value=" / ">" / " (ทับ)</option>
+                            <option value=" ">" " (เว้นวรรค)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+                    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;">
+                        <input type="checkbox" id="labelAllInclude1" checked onchange="buildLabelAllPatternFromCheckboxes()" style="accent-color:#3b82f6;">
+                        <span><strong>Label 1</strong> (รอบแข่ง)</span>
+                    </label>
+                    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;">
+                        <input type="checkbox" id="labelAllInclude2" checked onchange="buildLabelAllPatternFromCheckboxes()" style="accent-color:#3b82f6;">
+                        <span><strong>Label 2</strong> (คู่ที่)</span>
+                    </label>
+                    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;">
+                        <input type="checkbox" id="labelAllInclude3" checked onchange="buildLabelAllPatternFromCheckboxes()" style="accent-color:#3b82f6;">
+                        <span><strong>Label 3</strong> (สนาม)</span>
+                    </label>
+                    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;">
+                        <input type="checkbox" id="labelAllInclude4" onchange="buildLabelAllPatternFromCheckboxes()" style="accent-color:#3b82f6;">
+                        <span><strong>Label 4</strong> (รุ่น)</span>
+                    </label>
+                    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;">
+                        <input type="checkbox" id="labelAllInclude5" onchange="buildLabelAllPatternFromCheckboxes()" style="accent-color:#3b82f6;">
+                        <span><strong>Label 5</strong> (เวลา)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Current Loaded Match Data Columns Display -->
+            <div style="margin-bottom:14px;background:rgba(15,23,42,0.85);padding:12px;border-radius:8px;border:1px solid rgba(59,130,246,0.25);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:0.8rem;color:#60a5fa;font-weight:600;"><i class="fas fa-database"></i> ข้อมูลที่ดึงมาจากคอลัมน์ของ Match ID <span id="labelAllActiveMatchId">1</span>:</span>
+                    <span style="font-size:0.72rem;color:#94a3b8;">* ดึงจากคอลัมน์ใน Excel / Google Sheet โดยตรง</span>
+                </div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:8px;">
-                    <div>
-                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 1 (รอบแข่งขัน)</label>
-                        <input type="text" id="labelAllInput1" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    <div style="background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:0.72rem;color:#94a3b8;display:block;">Label 1 &lt;label1&gt; (รอบ)</span>
+                        <strong id="labelAllVal1" style="font-size:0.85rem;color:#38bdf8;word-break:break-word;">(ว่าง)</strong>
                     </div>
-                    <div>
-                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 2 (คู่ที่)</label>
-                        <input type="text" id="labelAllInput2" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    <div style="background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:0.72rem;color:#94a3b8;display:block;">Label 2 &lt;label2&gt; (คู่ที่)</span>
+                        <strong id="labelAllVal2" style="font-size:0.85rem;color:#38bdf8;word-break:break-word;">(ว่าง)</strong>
                     </div>
-                    <div>
-                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 3 (สนามแข่งขัน)</label>
-                        <input type="text" id="labelAllInput3" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    <div style="background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:0.72rem;color:#94a3b8;display:block;">Label 3 &lt;label3&gt; (สนาม)</span>
+                        <strong id="labelAllVal3" style="font-size:0.85rem;color:#38bdf8;word-break:break-word;">(ว่าง)</strong>
                     </div>
-                    <div>
-                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 4 (รุ่นการแข่งขัน)</label>
-                        <input type="text" id="labelAllInput4" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    <div style="background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:0.72rem;color:#94a3b8;display:block;">Label 4 &lt;label4&gt; (รุ่น)</span>
+                        <strong id="labelAllVal4" style="font-size:0.85rem;color:#38bdf8;word-break:break-word;">(ว่าง)</strong>
                     </div>
-                    <div>
-                        <label style="font-size:0.75rem;color:#cbd5e1;">Label 5 (เวลาแข่งขัน)</label>
-                        <input type="text" id="labelAllInput5" class="label-all-field" style="width:100%;padding:5px 8px;font-size:0.82rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#fff;">
+                    <div style="background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:0.72rem;color:#94a3b8;display:block;">Label 5 &lt;label5&gt; (เวลา)</span>
+                        <strong id="labelAllVal5" style="font-size:0.85rem;color:#38bdf8;word-break:break-word;">(ว่าง)</strong>
                     </div>
+                </div>
+
+                <!-- Extra Columns from Data Table if any -->
+                <div id="labelAllExtraColumnsWrapper" style="display:none;margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1);">
+                    <span style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:5px;"><i class="fas fa-columns"></i> คอลัมน์อื่น ๆ ที่ตรวจพบในตารางข้อมูล (คลิกเพื่อแทรกเป็นแท็ก):</span>
+                    <div id="labelAllExtraColumnsContainer" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
                 </div>
             </div>
 

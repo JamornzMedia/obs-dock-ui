@@ -67,6 +67,8 @@ const elements = [
 
 // --- STATE VARIABLES ---
 let sheetData = [];
+let currentLoadedMatch = null;
+let currentLoadedHeaders = null;
 let timer = 0, interval = null, half = '1st';
 let injuryTime = 0;
 let isCountdown = false;
@@ -1368,7 +1370,27 @@ const applyMatch = () => {
         half = '1st';
         updateTimerDisplay();
     }
-    const get = key => match[header.indexOf(key)] || '';
+    currentLoadedMatch = match;
+    currentLoadedHeaders = header;
+
+    const findHeaderCol = (...names) => {
+        if (!header || !Array.isArray(header)) return -1;
+        for (const n of names) {
+            const idx = header.indexOf(n);
+            if (idx !== -1) return idx;
+        }
+        const cleanNames = names.map(n => String(n).toLowerCase().replace(/[\s_\-]+/g, ''));
+        for (let i = 0; i < header.length; i++) {
+            const hClean = String(header[i] || '').toLowerCase().replace(/[\s_\-]+/g, '');
+            if (cleanNames.includes(hClean)) return i;
+        }
+        return -1;
+    };
+    const get = (key, ...aliases) => {
+        const idx = findHeaderCol(key, ...aliases);
+        return idx !== -1 ? (match[idx] !== undefined && match[idx] !== null ? String(match[idx]).trim() : '') : '';
+    };
+
     let teamAName = get('TeamA') || translations[currentLang].teamA;
     let teamBName = get('TeamB') || translations[currentLang].teamB;
     let colorA1 = get('ColorA') || '#ffffff';
@@ -1383,17 +1405,20 @@ const applyMatch = () => {
     if (savedColorB) { colorB1 = savedColorB.color1; colorB2 = savedColorB.color2; }
     const logoAUpdate = updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
     const logoBUpdate = updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
-    elements.label1.textContent = get('label1');
-    elements.label2.textContent = get('label2');
-    elements.label3.textContent = get('label3');
-    elements.label4.textContent = get('label4');
-    elements.label5.textContent = get('label5');
-    setText('label_1', get('label1'));
-    setText('label_2', get('label2'));
-    setText('label_3', get('label3'));
-    setText('label_4', get('label4'));
-    setText('label_5', get('label5'));
+
+    elements.label1.textContent = get('label1', 'Label 1', 'Round', 'รอบ', 'รอบการแข่งขัน');
+    elements.label2.textContent = get('label2', 'Label 2', 'MatchNo', 'MatchOrder', 'Order', 'คู่ที่');
+    elements.label3.textContent = get('label3', 'Label 3', 'Field', 'Court', 'Pitch', 'สนาม', 'สนามแข่งขัน');
+    elements.label4.textContent = get('label4', 'Label 4', 'Category', 'Division', 'Class', 'รุ่น', 'รุ่นการแข่งขัน');
+    elements.label5.textContent = get('label5', 'Label 5', 'Time', 'MatchTime', 'เวลา', 'เวลาแข่งขัน');
+
+    setText('label_1', elements.label1.textContent);
+    setText('label_2', elements.label2.textContent);
+    setText('label_3', elements.label3.textContent);
+    setText('label_4', elements.label4.textContent);
+    setText('label_5', elements.label5.textContent);
     updateObsLabelAll();
+    if (typeof renderLabelAllDataColumns === 'function') renderLabelAllDataColumns();
     if (jamornzConnection) syncJamornzMatch('live', true);
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
     return Promise.allSettled([logoAUpdate, logoBUpdate]).finally(() => {
@@ -2553,10 +2578,6 @@ const copyDetails = () => {
 const DEFAULT_LABEL_ALL_TEMPLATE = '<label1> | <label2> | <label3>';
 
 function getLabelValue(num) {
-    const inp = document.getElementById(`labelAllInput${num}`);
-    if (inp && inp.value !== undefined && inp.value !== '') {
-        return inp.value.trim();
-    }
     const el = elements[`label${num}`];
     return el ? (el.textContent || '').trim() : '';
 }
@@ -2588,12 +2609,22 @@ function formatLabelAllText() {
         .replace(/<time_counter>/gi, timeVal)
         .replace(/<half_text>/gi, halfVal);
 
+    // Dynamic extraction for any column header in sheetData
+    if (currentLoadedHeaders && currentLoadedMatch && Array.isArray(currentLoadedHeaders)) {
+        currentLoadedHeaders.forEach((colName, idx) => {
+            if (!colName) return;
+            const val = (currentLoadedMatch[idx] !== undefined && currentLoadedMatch[idx] !== null) ? String(currentLoadedMatch[idx]).trim() : '';
+            const escaped = String(colName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp(`<${escaped}>`, 'gi'), val);
+        });
+    }
+
     if (autoClean) {
         // 1. Remove empty brackets/parentheses left over from empty tags
         res = res.replace(/\(\s*\)/g, ' ').replace(/\[\s*\]/g, ' ');
 
         // 2. Collapse consecutive separator sequences, e.g. " |  | " -> " | "
-        res = res.replace(/(\s*([\|\-•·/,\:—–])\s*)+/g, (match, p1, lastSep) => ` ${lastSep} `);
+        res = res.replace(/(\s*([\|\-•·/—–])\s*)+/g, (match, p1, lastSep) => ` ${lastSep} `);
 
         // 3. Trim leading separators and whitespace
         res = res.replace(/^[\s\|\-•·/,\:—–]+/, '');
@@ -2623,6 +2654,77 @@ function updateObsLabelAll() {
     return formatted;
 }
 
+function renderLabelAllDataColumns() {
+    const activeMatchIdEl = document.getElementById('labelAllActiveMatchId');
+    if (activeMatchIdEl) {
+        activeMatchIdEl.textContent = elements.matchID ? elements.matchID.value : '1';
+    }
+    for (let i = 1; i <= 5; i++) {
+        const valEl = document.getElementById(`labelAllVal${i}`);
+        const el = elements[`label${i}`];
+        if (valEl) {
+            valEl.textContent = el ? (el.textContent || '(ว่าง)') : '(ว่าง)';
+        }
+    }
+
+    // Render other data columns from sheetData[0] if available
+    const extraColsContainer = document.getElementById('labelAllExtraColumnsContainer');
+    if (extraColsContainer && sheetData && sheetData.length > 0 && Array.isArray(sheetData[0])) {
+        const headers = sheetData[0];
+        const standardCols = ['matchid', 'match id', 'id', 'teama', 'teamb', 'colora', 'colorb', 'colora2', 'colorb2', 'logoa', 'logob', 'label1', 'label2', 'label3', 'label4', 'label5'];
+        const extraHeaders = headers.filter(h => h && !standardCols.includes(String(h).toLowerCase().trim()));
+
+        if (extraHeaders.length > 0) {
+            extraColsContainer.innerHTML = '';
+            extraHeaders.forEach(col => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-secondary';
+                btn.style.cssText = 'padding: 3px 8px; font-size: 0.76rem; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7;';
+                btn.textContent = `+ <${col}>`;
+                btn.title = `แทรกแท็กคอลัมน์ <${col}> จากตารางข้อมูล`;
+                btn.onclick = () => insertLabelAllTag(`<${col}>`);
+                extraColsContainer.appendChild(btn);
+            });
+            const wrap = document.getElementById('labelAllExtraColumnsWrapper');
+            if (wrap) wrap.style.display = 'block';
+        } else {
+            const wrap = document.getElementById('labelAllExtraColumnsWrapper');
+            if (wrap) wrap.style.display = 'none';
+        }
+    }
+}
+
+function syncLabelAllCheckboxesFromPattern() {
+    const pattern = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    for (let i = 1; i <= 5; i++) {
+        const chk = document.getElementById(`labelAllInclude${i}`);
+        if (chk) {
+            chk.checked = pattern.includes(`<label${i}>`);
+        }
+    }
+}
+
+function buildLabelAllPatternFromCheckboxes() {
+    const selected = [];
+    for (let i = 1; i <= 5; i++) {
+        const chk = document.getElementById(`labelAllInclude${i}`);
+        if (chk && chk.checked) {
+            selected.push(`<label${i}>`);
+        }
+    }
+    const sepSelect = document.getElementById('labelAllSeparatorSelect');
+    const sep = sepSelect ? sepSelect.value : ' | ';
+    const pattern = selected.join(sep);
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        patternInput.value = pattern;
+        localStorage.setItem('labelAllTemplate', pattern);
+        updateLabelAllPreview();
+    }
+}
+window.buildLabelAllPatternFromCheckboxes = buildLabelAllPatternFromCheckboxes;
+
 function loadLabelAllSettings() {
     const patternInput = document.getElementById('labelAllPatternInput');
     if (patternInput) {
@@ -2632,13 +2734,8 @@ function loadLabelAllSettings() {
     if (cleanCheck) {
         cleanCheck.checked = localStorage.getItem('labelAllAutoClean') !== 'false';
     }
-    for (let i = 1; i <= 5; i++) {
-        const inp = document.getElementById(`labelAllInput${i}`);
-        const el = elements[`label${i}`];
-        if (inp && el) {
-            inp.value = el.textContent || '';
-        }
-    }
+    syncLabelAllCheckboxesFromPattern();
+    renderLabelAllDataColumns();
     updateLabelAllPreview();
 }
 
@@ -2650,14 +2747,6 @@ function saveLabelAllSettings() {
     const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
     if (cleanCheck) {
         localStorage.setItem('labelAllAutoClean', cleanCheck.checked ? 'true' : 'false');
-    }
-    for (let i = 1; i <= 5; i++) {
-        const inp = document.getElementById(`labelAllInput${i}`);
-        const el = elements[`label${i}`];
-        if (inp && el) {
-            el.textContent = inp.value;
-            setText(`label_${i}`, inp.value);
-        }
     }
     const formatted = updateObsLabelAll();
     const trans = translations[currentLang] || translations.en;
@@ -3509,16 +3598,7 @@ const setupEventListeners = () => {
         });
     }
 
-    for (let i = 1; i <= 5; i++) {
-        const inp = document.getElementById(`labelAllInput${i}`);
-        if (inp) {
-            inp.addEventListener('input', () => {
-                const el = elements[`label${i}`];
-                if (el) el.textContent = inp.value;
-                updateLabelAllPreview();
-            });
-        }
-    }
+
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     // V2.9.3: Changelog removed
