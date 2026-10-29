@@ -1,2 +1,2 @@
-export const VERSION = '2.9.5.7';
-export const UPDATE_DATE = '26 ตุลาคม 2569';
+export const VERSION = '2.9.5.8';
+export const UPDATE_DATE = '29 ตุลาคม 2569';

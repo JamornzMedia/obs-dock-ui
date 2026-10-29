@@ -294,6 +294,17 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
+                    <h5>Version 2.9.5.8</h5>
+                    <ul>
+                        <li><strong>Account PIN:</strong> Your name is protected by a 4-digit PIN, so you can sign in from any computer or after clearing the cache.</li>
+                        <li><strong>Bib colors:</strong> The bib color picker opens as a popup with 8 preset colors and a custom color.</li>
+                        <li><strong>Swap score sides:</strong> The swap button now shows whether the score panel is normal (A | B) or swapped (B | A).</li>
+                        <li><strong>Reset:</strong> Full reset updates OBS step by step, so time and half are always reset in OBS too.</li>
+                        <li><strong>PlayGroup:</strong> Action buttons can control a specific PlayGroup group by name.</li>
+                        <li>The Confirm Score button only appears when Tournament Manager (Local) is selected. The LabelAll button is smaller and its settings tab moved to the 3rd position.</li>
+                    </ul>
+                </li>
+                <li>
                     <h5>Version 2.9.5.7</h5>
                     <ul>
                         <li><strong>Schedule & Logo Path Flexibility:</strong> Enhanced logo resolver to seamlessly support both relative filenames and absolute file paths.</li>
@@ -709,6 +720,17 @@ export const translations = {
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>เวอร์ชัน 2.9.5.8</h5>
+                    <ul>
+                        <li><strong>รหัส 4 หลัก:</strong> ชื่อผู้ใช้ป้องกันด้วยรหัส 4 หลัก เข้าจากเครื่องไหนก็ได้ แม้ล้างแคชไปแล้ว</li>
+                        <li><strong>สีเสื้อเอี้ยม:</strong> เลือกสีผ่านหน้าต่าง Popup มีสีให้เลือก 8 สี และเลือกสีเองได้</li>
+                        <li><strong>สลับฝั่งคะแนน:</strong> ปุ่มสลับฝั่งบอกสถานะชัดเจนว่า ปกติ (A | B) หรือ สลับแล้ว (B | A)</li>
+                        <li><strong>รีเซ็ต:</strong> รีเซ็ตทั้งหมดส่งค่าเข้า OBS ทีละขั้น เวลาและครึ่งเวลาใน OBS รีเซ็ตตามแน่นอน</li>
+                        <li><strong>PlayGroup:</strong> ปุ่ม Action สั่ง Group ของ PlayGroup ตามชื่อได้</li>
+                        <li>ปุ่มยืนยันคะแนนแสดงเฉพาะเมื่อเลือก Tournament Manager (Local) ปุ่ม LabelAll เล็กลง และย้าย Tab ตั้งค่า LabelAll เป็นลำดับที่ 3</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>เวอร์ชัน 2.9.5.7</h5>
                     <ul>
