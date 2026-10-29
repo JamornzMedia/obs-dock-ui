@@ -119,14 +119,21 @@ export const translations = {
         keybindsListLabel: "Item",
         clear: "Clear",
         // START: CHANGED FOR SOURCE CONTROL
-        actionSettingsTitle: "Action Button Settings (Source Visibility)",
-        actionSettingsDesc: "Set the Source/Group and an optional Target Scene. Leave it blank for Current Scene, enter * for All Scenes, or enter one scene name.",
+        actionSettingsTitle: "Action Button Settings (OBS and PlayGroup)",
+        actionSettingsDesc: "For Source actions, set a Source/Group and optional Target Scene (blank = Current, * = All). For PlayGroup, choose Show, Hide, or Toggle and pick the ❤️ PlayGroup group this button controls; Source and Scene are not used.",
         actionSettingsName: "Name",
         actionSettingsColor: "Color",
         actionSettingsHeight: "Height (px)",
         actionSettingsSource: "Source/Group Name",
         actionSettingsScene: "Target Scene (blank / * / name)",
         actionSettingsAction: "Action",
+        actionSettingsPlayGroupAction: "PlayGroup Action",
+        actionSettingsPlayGroupUnavailable: "PlayGroup plugin/request is unavailable. Check that PlayGroup is installed and OBS WebSocket is connected.",
+        actionSettingsPlayGroupNamePlaceholder: "PlayGroup group name (required)",
+        actionSettingsPlayGroupNameRequired: "Enter the PlayGroup group name for this button.",
+        actionSettingsPlayGroupAllGroups: "all groups in scene",
+        actionSettingsPlayGroupNotFound: "PlayGroup group not found:",
+        actionSettingsPlayGroupNoGroup: "The current scene has no PlayGroup group.",
         actionSettingsEditSave: "Edit/Save",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
@@ -156,14 +163,28 @@ export const translations = {
             { code: '&lt;label3&gt;', desc: 'Label 3 Text (Field: e.g. สนามที่ 1)' },
             { code: '&lt;label4&gt;', desc: 'Label 4 Text (Category: e.g. รุ่นประชาชน)' },
             { code: '&lt;label5&gt;', desc: 'Label 5 Text (Match Time: e.g. 14:00)' },
+            { code: '&lt;LabelAll&gt;', desc: 'Combined LabelAll Text' },
         ],
         save: "Save",
         // V2.9.2 Settings Tabs
         settingsTabGeneral: "📝 Announce",
+        settingsTabLabelAll: "🏷️ LabelAll",
         settingsTabActions: "🎮 Actions",
         settingsTabKeybinds: "⌨️ Keys",
         settingsTabVisibility: "👁️ Display",
         settingsTabData: "📊 Data",
+        labelAllTitle: "LabelAll Text Format Manager (OBS Text)",
+        labelAllDesc: "Configure custom pattern combining match labels to automatically update OBS Text source 'LabelAll'.",
+        labelAllCreateSource: "Auto-Create in OBS",
+        labelAllPatternTitle: "Message Pattern (Template):",
+        labelAllQuickInsert: "Quick Insert Tags (Click to insert):",
+        labelAllPresets: "Recommended Presets:",
+        labelAllPreview: "OBS Live Preview:",
+        labelAllDirectEdit: "Edit Individual Labels Directly:",
+        labelAllSaveAndSend: "Save & Send to OBS",
+        labelAllResetPattern: "Reset Default Pattern",
+        toastLabelAllSaved: "Saved LabelAll pattern and sent to OBS!",
+        toastLabelAllSourceCreated: "Created 'LabelAll' source in OBS!",
         // V2.9.2 Confirm Dialog
         confirmResetTitle: "Confirm Full Reset",
         confirmResetMsg: "This will reset all scores, timer, half, and injury time. Are you sure?",
@@ -254,6 +275,7 @@ export const translations = {
             { code: 'label_3', type: 'Text (GDI+)', desc: 'Label 3 Text' },
             { code: 'label_4', type: 'Text (GDI+)', desc: 'Label 4 Text' },
             { code: 'label_5', type: 'Text (GDI+)', desc: 'Label 5 Text' },
+            { code: 'LabelAll', type: 'Text (GDI+)', desc: 'Combined LabelAll text from custom pattern' },
             { code: 'half_text', type: 'Text (GDI+)', desc: 'Half (1st/2nd)' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'Timer' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'Added Time (+1)' },
@@ -271,6 +293,33 @@ export const translations = {
         changelogTitle: "Update History",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>Version 2.9.5.8</h5>
+                    <ul>
+                        <li><strong>New Sport theme & narrow Dock layout:</strong> A new sports-broadcast look (switch back under Settings → Display → Theme), and nothing wraps badly or runs past the edge when the OBS Dock is very narrow.</li>
+                        <li><strong>Account PIN:</strong> Your name is protected by a 4-digit PIN, so you can sign in from any computer or after clearing the cache.</li>
+                        <li><strong>Bib colors:</strong> The bib color picker opens as a popup with 8 preset colors and a custom color.</li>
+                        <li><strong>Swap score sides:</strong> The swap button now shows whether the score panel is normal (A | B) or swapped (B | A).</li>
+                        <li><strong>Reset:</strong> Full reset updates OBS step by step, so time and half are always reset in OBS too.</li>
+                        <li><strong>PlayGroup:</strong> Action buttons can control a specific PlayGroup group by name.</li>
+                        <li>The Confirm Score button only appears when Tournament Manager (Local) is selected. The LabelAll button is smaller and its settings tab moved to the 3rd position.</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>Version 2.9.5.7</h5>
+                    <ul>
+                        <li><strong>Schedule & Logo Path Flexibility:</strong> Enhanced logo resolver to seamlessly support both relative filenames and absolute file paths.</li>
+                        <li><strong>CSV Schedule Import:</strong> Added native CSV file support to the file picker alongside Excel (.xlsx, .xls) files.</li>
+                        <li><strong>Multi-field Schedule Support:</strong> Optimized compatibility with Tournament Manager sheets and multi-field schedules.</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>Version 2.9.5.6 Hotfix</h5>
+                    <ul>
+                        <li><strong>OBS Image Stability:</strong> Logo updates are now queued, deduplicated, and spaced apart to reduce OBS/NVIDIA graphics crashes when loading a Match ID.</li>
+                        <li>If you still experience a problem, please contact <a href="https://www.facebook.com/kh.jamorn" target="_blank" rel="noopener noreferrer">Jamornz on Facebook</a>.</li>
+                    </ul>
+                </li>
                 <li>
                     <h5>Version 2.9.5.3</h5>
                     <ul>
@@ -495,14 +544,21 @@ export const translations = {
         keybindsListLabel: "รายการ",
         clear: "ล้างค่า",
         // START: CHANGED FOR SOURCE CONTROL
-        actionSettingsTitle: "ตั้งค่า Action Button (ควบคุม Source Visibility)",
-        actionSettingsDesc: "กำหนด Source/Group และ Target Scene ได้: เว้นว่าง = Scene ที่กำลัง Live แบบเดิม, ใส่ * = ทุก Scene, หรือใส่ชื่อ Scene เดียว",
+        actionSettingsTitle: "ตั้งค่า Action Button (OBS และ PlayGroup)",
+        actionSettingsDesc: "สำหรับ Source ให้กำหนด Source/Group และ Target Scene (ว่าง = Scene ปัจจุบัน, * = ทุก Scene) สำหรับ PlayGroup ให้เลือก Show, Hide หรือ Toggle แล้วเลือก Group ❤️ ของ PlayGroup ที่ปุ่มนี้จะสั่ง โดยไม่ใช้ช่อง Source และ Scene",
         actionSettingsName: "ชื่อปุ่ม",
         actionSettingsColor: "สี",
         actionSettingsHeight: "ความสูง (px)",
         actionSettingsSource: "ชื่อ Source/Group",
         actionSettingsScene: "Target Scene (ว่าง / * / ชื่อ)",
         actionSettingsAction: "Action",
+        actionSettingsPlayGroupAction: "คำสั่ง PlayGroup",
+        actionSettingsPlayGroupUnavailable: "ไม่พบปลั๊กอิน/คำสั่ง PlayGroup โปรดตรวจสอบว่าติดตั้ง PlayGroup และเชื่อมต่อ OBS WebSocket แล้ว",
+        actionSettingsPlayGroupNamePlaceholder: "ชื่อ Group ของ PlayGroup (จำเป็น)",
+        actionSettingsPlayGroupNameRequired: "กรุณาใส่ชื่อ Group ของ PlayGroup ให้ปุ่มนี้",
+        actionSettingsPlayGroupAllGroups: "ทุก Group ใน Scene",
+        actionSettingsPlayGroupNotFound: "ไม่พบ Group ของ PlayGroup:",
+        actionSettingsPlayGroupNoGroup: "Scene ปัจจุบันไม่มี Group ของ PlayGroup",
         actionSettingsEditSave: "แก้ไข/บันทึก",
         // END: CHANGED FOR SOURCE CONTROL
         keybindsList: [
@@ -532,14 +588,28 @@ export const translations = {
             { code: '&lt;label3&gt;', desc: 'ข้อความ Label 3 (สนาม เช่น สนามที่ 1)' },
             { code: '&lt;label4&gt;', desc: 'ข้อความ Label 4 (รุ่นการแข่งขัน เช่น รุ่นประชาชน)' },
             { code: '&lt;label5&gt;', desc: 'ข้อความ Label 5 (เวลาแข่งขัน เช่น 14:00)' },
+            { code: '&lt;LabelAll&gt;', desc: 'ข้อความรวม LabelAll' },
         ],
         save: "บันทึก",
         // V2.9.2 Settings Tabs
         settingsTabGeneral: "📝 ประกาศ",
+        settingsTabLabelAll: "🏷️ LabelAll",
         settingsTabActions: "🎮 ปุ่ม",
         settingsTabKeybinds: "⌨️ คีย์ลัด",
         settingsTabVisibility: "👁️ แสดงผล",
         settingsTabData: "📊 ข้อมูล",
+        labelAllTitle: "จัดการรูปแบบข้อความ LabelAll (OBS Text)",
+        labelAllDesc: "กำหนดแพทเทิร์นรวมข้อความ Label เพื่อส่งไปยัง Text Source ใน OBS ชื่อ LabelAll โดยอัตโนมัติ",
+        labelAllCreateSource: "สร้าง Source ใน OBS",
+        labelAllPatternTitle: "แพทเทิร์นข้อความ (Pattern / Template):",
+        labelAllQuickInsert: "แท็กด่วน (คลิกเพื่อแทรก):",
+        labelAllPresets: "Preset แนะนำ:",
+        labelAllPreview: "ตัวอย่างข้อความที่ออก OBS (Live Preview):",
+        labelAllDirectEdit: "แก้ไขข้อความในแต่ละ Label โดยตรง:",
+        labelAllSaveAndSend: "บันทึกและส่งไป OBS",
+        labelAllResetPattern: "รีเซ็ตแพทเทิร์นเริ่มต้น",
+        toastLabelAllSaved: "บันทึกแพทเทิร์น LabelAll และส่งไปยัง OBS เรียบร้อยแล้ว!",
+        toastLabelAllSourceCreated: "สร้าง Source 'LabelAll' ใน OBS สำเร็จ!",
         // V2.9.2 Confirm Dialog
         confirmResetTitle: "ยืนยันการรีเซ็ตทั้งหมด",
         confirmResetMsg: "จะรีเซ็ตคะแนน, เวลา, ครึ่ง, ทดเวลา ทั้งหมด คุณแน่ใจหรือไม่?",
@@ -633,6 +703,7 @@ export const translations = {
             { code: 'label_3', type: 'Text (GDI+)', desc: 'ข้อความ Label 3' },
             { code: 'label_4', type: 'Text (GDI+)', desc: 'ข้อความ Label 4' },
             { code: 'label_5', type: 'Text (GDI+)', desc: 'ข้อความ Label 5' },
+            { code: 'LabelAll', type: 'Text (GDI+)', desc: 'ข้อความรวม LabelAll ตามแพทเทิร์นที่กำหนด' },
             { code: 'half_text', type: 'Text (GDI+)', desc: 'ครึ่งเวลา' },
             { code: 'time_counter', type: 'Text (GDI+)', desc: 'ตัวนับเวลา' },
             { code: 'injury_time_text', type: 'Text (GDI+)', desc: 'ทดเวลาบาดเจ็บ (+1)' },
@@ -650,6 +721,33 @@ export const translations = {
         changelogTitle: "ประวัติการอัปเดต",
         changelogContent: `
             <ul class="changelog-list">
+                <li>
+                    <h5>เวอร์ชัน 2.9.5.8</h5>
+                    <ul>
+                        <li><strong>ธีม Sport ใหม่ + รองรับ Dock แคบ:</strong> หน้าตาแบบงานถ่ายทอดกีฬา (สลับกลับแบบเดิมได้ที่ ตั้งค่า → แสดงผล → ธีม) และไม่มีปุ่มตกบรรทัดหรือล้นขอบเมื่อบีบ Dock แคบมาก</li>
+                        <li><strong>รหัส 4 หลัก:</strong> ชื่อผู้ใช้ป้องกันด้วยรหัส 4 หลัก เข้าจากเครื่องไหนก็ได้ แม้ล้างแคชไปแล้ว</li>
+                        <li><strong>สีเสื้อเอี้ยม:</strong> เลือกสีผ่านหน้าต่าง Popup มีสีให้เลือก 8 สี และเลือกสีเองได้</li>
+                        <li><strong>สลับฝั่งคะแนน:</strong> ปุ่มสลับฝั่งบอกสถานะชัดเจนว่า ปกติ (A | B) หรือ สลับแล้ว (B | A)</li>
+                        <li><strong>รีเซ็ต:</strong> รีเซ็ตทั้งหมดส่งค่าเข้า OBS ทีละขั้น เวลาและครึ่งเวลาใน OBS รีเซ็ตตามแน่นอน</li>
+                        <li><strong>PlayGroup:</strong> ปุ่ม Action สั่ง Group ของ PlayGroup ตามชื่อได้</li>
+                        <li>ปุ่มยืนยันคะแนนแสดงเฉพาะเมื่อเลือก Tournament Manager (Local) ปุ่ม LabelAll เล็กลง และย้าย Tab ตั้งค่า LabelAll เป็นลำดับที่ 3</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>เวอร์ชัน 2.9.5.7</h5>
+                    <ul>
+                        <li><strong>ยกระดับการตรวจจับเส้นทางโลโก้:</strong> รองรับทั้งชื่อไฟล์แบบสัมพัทธ์ (เช่น 01.png) และเส้นทางเต็ม (Absolute Path) ป้องกันปัญหาพาธซ้ำซ้อน</li>
+                        <li><strong>รองรับไฟล์ตารางแบบ CSV:</strong> เพิ่มตัวเลือกเปิดไฟล์ .csv ได้โดยตรงจากปุ่มโหลดตาราง นอกเหนือจากไฟล์ Excel (.xlsx, .xls)</li>
+                        <li><strong>ความเข้ากันได้กับระบบจัดการแข่งขัน:</strong> รองรับการดึงตารางแข่งแบบแยกสนาม (Field 1 / Field 2) จาก Tournament Manager ได้แม่นยำ 100%</li>
+                    </ul>
+                </li>
+                <li>
+                    <h5>เวอร์ชัน 2.9.5.6 Hotfix</h5>
+                    <ul>
+                        <li><strong>เพิ่มความเสถียรในการโหลดภาพเข้า OBS:</strong> ปรับให้การอัปเดตโลโก้ทำงานทีละรายการ ไม่ส่งภาพเดิมซ้ำ และเว้นช่วงระหว่างภาพ เพื่อลดปัญหา OBS/NVIDIA เด้งขณะโหลด Match ID</li>
+                        <li>หากยังพบปัญหา กรุณาแจ้งมาทาง <a href="https://www.facebook.com/kh.jamorn" target="_blank" rel="noopener noreferrer">Facebook ส่วนตัว Jamornz</a></li>
+                    </ul>
+                </li>
                 <li>
                     <h5>เวอร์ชัน 2.9.5.3</h5>
                     <ul>

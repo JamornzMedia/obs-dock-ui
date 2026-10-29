@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.5-r3';
-import { translations } from './languages.js?v=2.9.5.5-r2';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.8';
+import { translations } from './languages.js?v=2.9.5.8-2';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -67,6 +67,8 @@ const elements = [
 
 // --- STATE VARIABLES ---
 let sheetData = [];
+let currentLoadedMatch = null;
+let currentLoadedHeaders = null;
 let timer = 0, interval = null, half = '1st';
 let injuryTime = 0;
 let isCountdown = false;
@@ -81,6 +83,8 @@ let jamornzTournamentUrl = '';
 let jamornzRound = 'group';
 let jamornzConnection = null;
 let lastDockMatchId = null;
+const syncedManagerMatches = new Map();
+let localManagerFeedData = null;
 let dockSyncTimer = null;
 let currentJamornzData = null;
 let dockMatchStartedAt = null;
@@ -132,6 +136,8 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     targetSource: '',
     targetScene: '',
     actionType: 'Toggle',
+    playGroupAction: 'Toggle',
+    playGroupName: '',
     internalState: false,
 }));
 
@@ -324,7 +330,11 @@ const createObsSource = async (sourceName, sourceType, btnEl) => {
         // Settings: If text source, set 'text' to sourceName so it's not empty
         const settings = {};
         if (inputKind === 'text_gdiplus_v3' || inputKind === 'text_gdiplus_v2') {
-            settings.text = sourceName;
+            if (sourceName === 'LabelAll' || sourceName === 'label_all') {
+                settings.text = (typeof formatLabelAllText === 'function' ? formatLabelAllText() : '') || 'LabelAll';
+            } else {
+                settings.text = sourceName;
+            }
         }
 
         const response = await obs.call('CreateInput', {
@@ -526,6 +536,26 @@ const populateTagsTable = (lang) => {
     });
     tbody += '</tbody>';
     elements.tagsTable.innerHTML = thead + tbody;
+};
+
+const populateLabelAllTagsTable = (lang) => {
+    const trans = translations[lang] || translations.en;
+    const tags = trans.tagsList || [];
+    const table = document.getElementById('labelAllTagsTable');
+    if (!table) return;
+    const thead = `<thead><tr><th style="width:38%;">Tag</th><th>${trans.detailsTitle || 'รายละเอียด'}</th></tr></thead>`;
+    let tbody = '<tbody>';
+    tags.forEach(item => {
+        const cleanTag = item.code.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        tbody += `
+        <tr>
+            <td style="cursor:pointer;color:#38bdf8;font-weight:600;" onclick="insertLabelAllTag('${cleanTag}')" title="คลิกเพื่อแทรก Tag ลงในแพทเทิร์น LabelAll">${item.code}</td>
+            <td>${item.desc}</td>
+        </tr>
+    `;
+    });
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
 }
 
 // --- KEYBINDS LOGIC ---
@@ -675,15 +705,15 @@ const toggleActionEditMode = (index, enable) => {
     const sourceInput = $(`action-source-input-${index}`);
     const sceneInput = $(`action-scene-input-${index}`);
     const actionSelect = $(`action-type-${index}`);
+    const playGroupActionSelect = $(`action-playgroup-action-${index}`);
     const editButton = $(`action-edit-${index}`);
     const saveButton = $(`action-save-${index}`);
 
     if (enable) {
         nameInput.disabled = false;
         heightInput.disabled = false;
-        sourceInput.disabled = false;
-        sceneInput.disabled = false;
         actionSelect.disabled = false;
+        updateActionSettingsRowType(index, true);
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
         nameInput.focus();
@@ -693,10 +723,29 @@ const toggleActionEditMode = (index, enable) => {
         sourceInput.disabled = true;
         sceneInput.disabled = true;
         actionSelect.disabled = true;
+        playGroupActionSelect.disabled = true;
+        $(`action-playgroup-name-${index}`).disabled = true;
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
     }
 }
+
+const updateActionSettingsRowType = (index, editing) => {
+    const sourceInput = $(`action-source-input-${index}`);
+    const sceneInput = $(`action-scene-input-${index}`);
+    const actionSelect = $(`action-type-${index}`);
+    const playGroupActionSelect = $(`action-playgroup-action-${index}`);
+    const isPlayGroup = actionSelect.value === 'PlayGroup';
+
+    sourceInput.disabled = !editing || isPlayGroup;
+    sceneInput.disabled = !editing || isPlayGroup;
+    playGroupActionSelect.disabled = !editing || !isPlayGroup;
+    $(`action-playgroup-name-${index}`).disabled = !editing || !isPlayGroup;
+    if (editing && isPlayGroup) refreshPlayGroupGroups();
+    sourceInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
+    sceneInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
+    playGroupActionSelect.closest('td').classList.toggle('action-setting-inactive', !isPlayGroup);
+};
 
 const saveActionSettingsRow = (index) => {
     const settings = loadActionSettings().map((setting, i) => {
@@ -707,6 +756,7 @@ const saveActionSettingsRow = (index) => {
         const sourceInput = $(`action-source-input-${idx}`);
         const sceneInput = $(`action-scene-input-${idx}`);
         const actionSelect = $(`action-type-${idx}`);
+        const playGroupActionSelect = $(`action-playgroup-action-${idx}`);
 
         return {
             ...setting,
@@ -716,6 +766,8 @@ const saveActionSettingsRow = (index) => {
             targetSource: sourceInput.value.trim(),
             targetScene: sceneInput.value.trim(),
             actionType: actionSelect.value,
+            playGroupAction: playGroupActionSelect.value,
+            playGroupName: $(`action-playgroup-name-${idx}`).value.trim(),
         };
     });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
@@ -732,7 +784,9 @@ const loadActionSettings = () => {
             ...setting,
             targetSource: setting.targetSource || '',
             targetScene: setting.targetScene || '',
-            actionType: setting.actionType || 'Toggle'
+            actionType: setting.actionType || 'Toggle',
+            playGroupAction: setting.playGroupAction || 'Toggle',
+            playGroupName: setting.playGroupName || ''
         }));
     }
     return defaultActionSettings.map(setting => ({ ...setting }));
@@ -741,7 +795,7 @@ const loadActionSettings = () => {
 const addActionButton = () => {
     const settings = loadActionSettings();
     const index = settings.length + 1;
-    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', internalState: false });
+    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', playGroupAction: 'Toggle', playGroupName: '', internalState: false });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
     renderActionButtons();
     populateActionSettingsTable(currentLang);
@@ -767,6 +821,7 @@ const renderActionButtons = () => {
         button.id = setting.id;
         button.textContent = setting.name;
         button.style.backgroundColor = setting.backgroundColor;
+        button.style.color = getContrastColor(setting.backgroundColor); // auto black/white text, same rule as the score
         button.style.height = `${setting.height}px`;
 
         const targetSource = setting.targetSource;
@@ -774,6 +829,15 @@ const renderActionButtons = () => {
         const actionType = setting.actionType;
 
         button.onclick = async () => {
+            if (actionType === 'PlayGroup') {
+                try {
+                    await runPlayGroupAction(setting.playGroupAction, setting.playGroupName);
+                    showToast(playGroupToastText(setting.playGroupAction, setting.playGroupName), 'success');
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+                return;
+            }
             if (!targetSource) {
                 return showToast('Source Name is missing.', 'error');
             }
@@ -806,6 +870,83 @@ const renderActionButtons = () => {
     });
 }
 
+// PlayGroup plugin contract (OBS WebSocket vendor "PlayGroup"):
+//   RunAction  { action: "show" | "hide" | "toggle", group: "<PlayGroup group name (with or without ❤️) or UUID>" }
+//              -> { ok, matched, error? }   (group is required; each button controls one group)
+//   ListGroups {} -> { groups: [{ name, uuid, scene }] }   (only ❤️ PlayGroup groups)
+const playGroupToastText = (action, group) => {
+    return `PlayGroup ${action || 'Toggle'} → ${(group || '').trim()}`;
+};
+
+const runPlayGroupAction = async (action, group = '') => {
+    const normalizedAction = String(action || 'Toggle').toLowerCase();
+    if (!['show', 'hide', 'toggle'].includes(normalizedAction)) {
+        throw new Error(`Unsupported PlayGroup action: ${action}`);
+    }
+    if (!obs || typeof obs.call !== 'function') {
+        throw new Error(translations[currentLang].actionSettingsPlayGroupUnavailable);
+    }
+    const groupName = String(group || '').trim();
+    if (!groupName) {
+        throw new Error(translations[currentLang].actionSettingsPlayGroupNameRequired);
+    }
+
+    let response;
+    try {
+        response = await obs.call('CallVendorRequest', {
+            vendorName: 'PlayGroup',
+            requestType: 'RunAction',
+            requestData: { action: normalizedAction, group: groupName }
+        });
+    } catch (err) {
+        console.error('PlayGroup RunAction failed:', err);
+        const detail = err?.message || err?.error || err?.code;
+        const baseMessage = translations[currentLang].actionSettingsPlayGroupUnavailable;
+        throw new Error(detail ? `${baseMessage} (${detail})` : baseMessage);
+    }
+
+    const data = response?.responseData;
+    if (data && data.ok === false) {
+        const trans = translations[currentLang];
+        if (data.error === 'GROUP_NOT_FOUND') throw new Error(`${trans.actionSettingsPlayGroupNotFound} ${groupName}`);
+        if (data.error === 'GROUP_REQUIRED') throw new Error(trans.actionSettingsPlayGroupNameRequired);
+        throw new Error(`${trans.actionSettingsPlayGroupUnavailable} (${data.error || 'unknown'})`);
+    }
+    return response;
+};
+
+// Fills the shared <datalist> with PlayGroup groups so the Group field can autocomplete.
+const refreshPlayGroupGroups = async () => {
+    let list = document.getElementById('playgroup-groups-list');
+    if (!list) {
+        list = document.createElement('datalist');
+        list.id = 'playgroup-groups-list';
+        document.body.appendChild(list);
+    }
+    if (!obs || typeof obs.call !== 'function') return;
+    try {
+        const response = await obs.call('CallVendorRequest', {
+            vendorName: 'PlayGroup',
+            requestType: 'ListGroups',
+            requestData: {}
+        });
+        const groups = response?.responseData?.groups || [];
+        list.innerHTML = '';
+        groups.forEach(g => {
+            const option = document.createElement('option');
+            option.value = g.name;
+            option.label = g.scene ? `${g.name} — ${g.scene}` : g.name;
+            list.appendChild(option);
+        });
+    } catch (err) {
+        // Older PlayGroup versions have no ListGroups; typing the name still works.
+        console.warn('PlayGroup ListGroups unavailable:', err?.message || err);
+    }
+};
+
+const escapeAttr = value => String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const populateActionSettingsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const settings = loadActionSettings();
@@ -827,7 +968,18 @@ const populateActionSettingsTable = (lang) => {
                     <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
                     <option value="Show" ${setting.actionType === 'Show' ? 'selected' : ''}>Show</option>
                     <option value="Hide" ${setting.actionType === 'Hide' ? 'selected' : ''}>Hide</option>
+                    <option value="Scene" ${setting.actionType === 'Scene' ? 'selected' : ''}>Scene</option>
+                    <option value="PlayGroup" ${setting.actionType === 'PlayGroup' ? 'selected' : ''}>PlayGroup</option>
                 </select>
+            </td>
+            <td>
+                <select id="action-playgroup-action-${index}" disabled>
+                    <option value="Toggle" ${setting.playGroupAction === 'Toggle' ? 'selected' : ''}>Toggle</option>
+                    <option value="Show" ${setting.playGroupAction === 'Show' ? 'selected' : ''}>Show</option>
+                    <option value="Hide" ${setting.playGroupAction === 'Hide' ? 'selected' : ''}>Hide</option>
+                </select>
+                <input type="text" id="action-playgroup-name-${index}" class="action-playgroup-name" list="playgroup-groups-list"
+                    value="${escapeAttr(setting.playGroupName || '')}" placeholder="${escapeAttr(trans.actionSettingsPlayGroupNamePlaceholder)}" disabled>
             </td>
             <td>
                 <div class="action-buttons">
@@ -839,10 +991,13 @@ const populateActionSettingsTable = (lang) => {
         `;
         $(`action-color-${index}`).onchange = (e) => {
             $(`actionBtn${index}`).style.backgroundColor = e.target.value;
+            $(`actionBtn${index}`).style.color = getContrastColor(e.target.value);
         };
         $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
         $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
+        $(`action-type-${index}`).onchange = () => updateActionSettingsRowType(index, true);
         if (index > ACTION_BUTTON_COUNT) $(`action-delete-${index}`).onclick = () => deleteActionButton(index);
+        updateActionSettingsRowType(index, false);
     });
     window.toggleActionEditMode = toggleActionEditMode;
     window.saveActionSettingsRow = saveActionSettingsRow;
@@ -938,6 +1093,7 @@ const saveVisibilitySetting = (key, value) => {
 
 const populateDynamicLists = (lang) => {
     populateTagsTable(lang);
+    populateLabelAllTagsTable(lang);
     populateActionSettingsTable(lang);
     populateKeybindsTable(lang);
     populateHelpTable(lang);
@@ -1270,6 +1426,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
     setText(obsScore2Source, masterTeam.score2);
+    updateObsLabelAll();
     saveTeamColors(masterTeam.name, masterTeam.color1, masterTeam.color2);
     if (window.broadcastToMobile) window.broadcastToMobile();
     return logoUpdatePromise;
@@ -1302,6 +1459,14 @@ const applyMatch = () => {
         elements.matchID.value = lastDockMatchId;
         return;
     }
+    if (dataSourceMode === 'tournamentManager' && lastDockMatchId && lastDockMatchId !== id) {
+        const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+        const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+        const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+        if (hasScore && !alreadySynced) {
+            syncScoreToTournamentManager(lastDockMatchId, true);
+        }
+    }
     const header = sheetData[0];
     const match = sheetData.slice(1).find(r => parseInt(r[0]) === id);
     if (!match) return showToast(`${translations[currentLang].toastMatchNotFound} ${id}`, 'error');
@@ -1317,8 +1482,42 @@ const applyMatch = () => {
         timer = 0;
         half = '1st';
         updateTimerDisplay();
+    } else if (dataSourceMode === 'tournamentManager' && matchChanged) {
+        dockMatchStartedAt = new Date().toISOString();
+        dockTimerStartedAt = null;
+        dockTimerBaseSeconds = 0;
+        const getRowVal = key => match[header.indexOf(key)] || '';
+        const sA = getRowVal('ScoreA');
+        const sB = getRowVal('ScoreB');
+        masterTeamA.score = (sA !== undefined && sA !== null && String(sA).trim() !== '') ? parseInt(sA) : 0;
+        masterTeamB.score = (sB !== undefined && sB !== null && String(sB).trim() !== '') ? parseInt(sB) : 0;
+        masterTeamA.score2 = 0;
+        masterTeamB.score2 = 0;
+        timer = 0;
+        half = '1st';
+        updateTimerDisplay();
     }
-    const get = key => match[header.indexOf(key)] || '';
+    currentLoadedMatch = match;
+    currentLoadedHeaders = header;
+
+    const findHeaderCol = (...names) => {
+        if (!header || !Array.isArray(header)) return -1;
+        for (const n of names) {
+            const idx = header.indexOf(n);
+            if (idx !== -1) return idx;
+        }
+        const cleanNames = names.map(n => String(n).toLowerCase().replace(/[\s_\-]+/g, ''));
+        for (let i = 0; i < header.length; i++) {
+            const hClean = String(header[i] || '').toLowerCase().replace(/[\s_\-]+/g, '');
+            if (cleanNames.includes(hClean)) return i;
+        }
+        return -1;
+    };
+    const get = (key, ...aliases) => {
+        const idx = findHeaderCol(key, ...aliases);
+        return idx !== -1 ? (match[idx] !== undefined && match[idx] !== null ? String(match[idx]).trim() : '') : '';
+    };
+
     let teamAName = get('TeamA') || translations[currentLang].teamA;
     let teamBName = get('TeamB') || translations[currentLang].teamB;
     let colorA1 = get('ColorA') || '#ffffff';
@@ -1333,16 +1532,20 @@ const applyMatch = () => {
     if (savedColorB) { colorB1 = savedColorB.color1; colorB2 = savedColorB.color2; }
     const logoAUpdate = updateTeamUI('A', teamAName, logoAFile, colorA1, colorA2, masterTeamA.score, masterTeamA.score2);
     const logoBUpdate = updateTeamUI('B', teamBName, logoBFile, colorB1, colorB2, masterTeamB.score, masterTeamB.score2);
-    elements.label1.textContent = get('label1');
-    elements.label2.textContent = get('label2');
-    elements.label3.textContent = get('label3');
-    elements.label4.textContent = get('label4');
-    elements.label5.textContent = get('label5');
-    setText('label_1', get('label1'));
-    setText('label_2', get('label2'));
-    setText('label_3', get('label3'));
-    setText('label_4', get('label4'));
-    setText('label_5', get('label5'));
+
+    elements.label1.textContent = get('label1', 'Label 1', 'Round', 'รอบ', 'รอบการแข่งขัน');
+    elements.label2.textContent = get('label2', 'Label 2', 'MatchNo', 'MatchOrder', 'Order', 'คู่ที่');
+    elements.label3.textContent = get('label3', 'Label 3', 'Field', 'Court', 'Pitch', 'สนาม', 'สนามแข่งขัน');
+    elements.label4.textContent = get('label4', 'Label 4', 'Category', 'Division', 'Class', 'รุ่น', 'รุ่นการแข่งขัน');
+    elements.label5.textContent = get('label5', 'Label 5', 'Time', 'MatchTime', 'เวลา', 'เวลาแข่งขัน');
+
+    setText('label_1', elements.label1.textContent);
+    setText('label_2', elements.label2.textContent);
+    setText('label_3', elements.label3.textContent);
+    setText('label_4', elements.label4.textContent);
+    setText('label_5', elements.label5.textContent);
+    updateObsLabelAll();
+    if (typeof renderLabelAllDataColumns === 'function') renderLabelAllDataColumns();
     if (jamornzConnection) syncJamornzMatch('live', true);
     showToast(`${translations[currentLang].toastLoaded} ${id}`, 'success');
     return Promise.allSettled([logoAUpdate, logoBUpdate]).finally(() => {
@@ -1451,6 +1654,14 @@ const changeScore2 = (team, delta) => {
 };
 
 const resetScore = () => {
+    if (dataSourceMode === 'tournamentManager' && lastDockMatchId) {
+        const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+        const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+        const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+        if (hasScore && !alreadySynced) {
+            syncScoreToTournamentManager(lastDockMatchId, true);
+        }
+    }
     pushResetHistory();
     masterTeamA.score = masterTeamB.score = 0;
     updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, masterTeamA.score2);
@@ -1466,31 +1677,71 @@ const resetScore2 = () => {
     showToast(translations[currentLang].toastScore2Reset, 'info');
 };
 
-const fullReset = () => {
-    pushResetHistory();
-    // Uncheck and reset bib overrides on full reset
-    const bibToggleA = document.getElementById('bibOverrideA');
-    if (bibToggleA && bibToggleA.checked) {
-        bibToggleA.checked = false;
-        bibToggleA.dispatchEvent(new Event('change'));
-    }
-    const bibToggleB = document.getElementById('bibOverrideB');
-    if (bibToggleB && bibToggleB.checked) {
-        bibToggleB.checked = false;
-        bibToggleB.dispatchEvent(new Event('change'));
-    }
+// Full reset runs step by step with short pauses so OBS receives every update in order
+// (sending everything at once sometimes left the time or the 2nd-half text unchanged in OBS).
+let fullResetRunning = false;
+const RESET_STEP_DELAY_MS = 180;
+const fullReset = async () => {
+    if (fullResetRunning) return;
+    fullResetRunning = true;
+    if (elements.fullResetBtn) elements.fullResetBtn.disabled = true;
+    try {
+        // 1. Stop the clock first so no timer tick can overwrite the reset.
+        stopTimer();
 
-    masterTeamA.score = masterTeamB.score = 0;
-    masterTeamA.score2 = masterTeamB.score2 = 0;
-    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
-    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, 0);
-    stopTimer();
-    timer = 0;
-    resetHalfToDefault();
-    injuryTime = 0;
-    updateTimerDisplay();
-    updateInjuryTimeDisplay();
-    showToast(translations[currentLang].toastFullReset, 'info');
+        if (dataSourceMode === 'tournamentManager' && lastDockMatchId) {
+            const currentScoreKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+            const hasScore = (masterTeamA.score > 0 || masterTeamB.score > 0 || masterTeamA.score2 > 0 || masterTeamB.score2 > 0);
+            const alreadySynced = syncedManagerMatches.get(lastDockMatchId) === currentScoreKey;
+            if (hasScore && !alreadySynced) {
+                syncScoreToTournamentManager(lastDockMatchId, true);
+            }
+        }
+        pushResetHistory();
+
+        // 2. Bib overrides off.
+        const bibToggleA = document.getElementById('bibOverrideA');
+        if (bibToggleA && bibToggleA.checked) {
+            bibToggleA.checked = false;
+            bibToggleA.dispatchEvent(new Event('change'));
+        }
+        const bibToggleB = document.getElementById('bibOverrideB');
+        if (bibToggleB && bibToggleB.checked) {
+            bibToggleB.checked = false;
+            bibToggleB.dispatchEvent(new Event('change'));
+        }
+        await wait(RESET_STEP_DELAY_MS);
+
+        // 3. Scores.
+        masterTeamA.score = masterTeamB.score = 0;
+        masterTeamA.score2 = masterTeamB.score2 = 0;
+        updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2, 0, 0);
+        updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2, 0, 0);
+        await wait(RESET_STEP_DELAY_MS);
+
+        // 4. Time and injury time.
+        timer = 0;
+        injuryTime = 0;
+        updateTimerDisplay();
+        updateInjuryTimeDisplay();
+        await setText('time_counter', '00:00');
+        await wait(RESET_STEP_DELAY_MS);
+
+        // 5. Half back to the first half.
+        resetHalfToDefault();
+        await setText('half_text', half);
+        await wait(RESET_STEP_DELAY_MS * 2);
+
+        // 6. Send time and half once more, in case OBS dropped an earlier update.
+        if (!interval) {
+            await setText('time_counter', '00:00');
+            await setText('half_text', half);
+        }
+        showToast(translations[currentLang].toastFullReset, 'info');
+    } finally {
+        fullResetRunning = false;
+        if (elements.fullResetBtn) elements.fullResetBtn.disabled = false;
+    }
 };
 
 const updateTimerDisplay = () => {
@@ -2243,11 +2494,174 @@ function syncJamornzMatch(status = 'live', immediate = false) {
 }
 window.syncJamornzMatch = syncJamornzMatch;
 
+
+const fetchTournamentManagerFeed = async () => {
+    const urlInput = document.getElementById('localManagerUrlInput');
+    const dateSelect = document.getElementById('localManagerDateSelect');
+    const fieldSelect = document.getElementById('localManagerFieldSelect');
+    const statusDiv = document.getElementById('localManagerConnectionStatus');
+
+    let rawUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
+    if (rawUrl.includes(':8080')) {
+        rawUrl = rawUrl.replace(':8080', ':8765');
+        if (urlInput) urlInput.value = rawUrl;
+    }
+    const baseUrl = rawUrl || 'http://127.0.0.1:8765';
+    const dateVal = dateSelect?.value || localStorage.getItem('localManagerDate') || 'all';
+    const fieldVal = fieldSelect?.value || localStorage.getItem('localManagerField') || 'all';
+
+    localStorage.setItem('localManagerUrl', baseUrl);
+    localStorage.setItem('localManagerDate', dateVal);
+    localStorage.setItem('localManagerField', fieldVal);
+
+    if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = 'rgba(2, 132, 199, 0.2)';
+        statusDiv.style.border = '1px solid #0284c7';
+        statusDiv.style.color = '#38bdf8';
+        statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเชื่อมต่อ Tournament Manager...';
+    }
+
+    try {
+        const queryParams = new URLSearchParams();
+        if (fieldVal !== 'all') queryParams.set('field', fieldVal);
+        if (dateVal !== 'all') queryParams.set('date', dateVal);
+
+        const feedUrl = `${baseUrl}/api/dock-feed?${queryParams.toString()}`;
+        const res = await fetch(feedUrl);
+        if (!res.ok) throw new Error(`ไม่สามารถเชื่อมต่อได้ (HTTP ${res.status})`);
+        const data = await res.json();
+
+        if (!data.ok || !data.rows) throw new Error('รูปแบบข้อมูลจาก Tournament Manager ไม่ถูกต้อง');
+
+        localManagerFeedData = data;
+
+        // Auto populate date select if available
+        if (data.dates && data.dates.length && dateSelect) {
+            const currentSelected = dateSelect.value;
+            dateSelect.innerHTML = '<option value="all">ทุกวัน (All Dates)</option>' +
+                data.dates.map(d => `<option value="${d}">${d}</option>`).join('');
+            if (data.dates.includes(currentSelected) || currentSelected === 'all') {
+                dateSelect.value = currentSelected;
+            }
+        }
+
+        // Build sheetData: [headers, ...rows]
+        sheetData = [data.headers, ...data.rows];
+
+        // Build in-memory workbook for Display Table
+        if (typeof XLSX !== 'undefined') {
+            const ws = XLSX.utils.aoa_to_sheet(sheetData);
+            window.currentWorkbook = {
+                SheetNames: ['Tournament'],
+                Sheets: { 'Tournament': ws }
+            };
+        }
+
+        if (statusDiv) {
+            statusDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+            statusDiv.style.border = '1px solid #10b981';
+            statusDiv.style.color = '#34d399';
+            statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่`;
+        }
+
+        showToast(`เชื่อมต่อ Tournament Manager สำเร็จ (${data.rows.length} คู่)`, 'success');
+
+        if (sheetData.length > 1) {
+            const firstId = sheetData[1][0];
+            if (elements.matchID) {
+                elements.matchID.value = firstId;
+                elements.matchID.min = 1;
+                elements.matchID.max = sheetData.length - 1;
+            }
+            const pcBtn = document.getElementById('pcMatchIdBtn');
+            if (pcBtn) pcBtn.textContent = firstId;
+            applyMatch();
+        }
+    } catch (err) {
+        console.error('Local Tournament Manager fetch error:', err);
+        if (statusDiv) {
+            statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+            statusDiv.style.border = '1px solid #ef4444';
+            statusDiv.style.color = '#f87171';
+            statusDiv.innerHTML = `<i class="fas fa-times-circle"></i> ข้อผิดพลาด: ${err.message}`;
+        }
+        showToast(`เชื่อมต่อไม่สำเร็จ: ${err.message}`, 'error');
+    }
+};
+window.fetchTournamentManagerFeed = fetchTournamentManagerFeed;
+
+async function syncScoreToTournamentManager(targetMatchId, askConfirm = false) {
+    const id = targetMatchId !== undefined ? targetMatchId : parseInt(elements.matchID.value);
+    if (!id || !sheetData.length) return false;
+
+    const header = sheetData[0] || [];
+    const matchRow = sheetData.slice(1).find(r => parseInt(r[0]) === id);
+    if (!matchRow) return false;
+
+    const get = key => matchRow[header.indexOf(key)] || '';
+    const fieldMatch = String(get('MatchField') || get('label3') || '').match(/\d+/);
+    const fieldVal = fieldMatch ? parseInt(fieldMatch[0]) : 1;
+    const orderMatch = String(get('MatchOrder') || get('label2') || '').match(/\d+/);
+    const orderVal = orderMatch ? parseInt(orderMatch[0]) : id;
+    const dateVal = get('MatchDate') || get('label1') || (document.getElementById('localManagerDateSelect')?.value !== 'all' ? document.getElementById('localManagerDateSelect')?.value : '') || localStorage.getItem('localManagerDate') || '';
+    const uniqueId = get('MatchUID') || '';
+
+    const urlInput = document.getElementById('localManagerUrlInput');
+    let rawUrl = (urlInput?.value || localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765').trim().replace(/\/+$/, '');
+    if (rawUrl.includes(':8080')) rawUrl = rawUrl.replace(':8080', ':8765');
+    const baseUrl = rawUrl || 'http://127.0.0.1:8765';
+
+    const currentKey = `${masterTeamA.score}-${masterTeamB.score}-${masterTeamA.score2}-${masterTeamB.score2}`;
+
+    if (askConfirm) {
+        const ok = confirm(`คู่นี้ยังไม่ได้ส่งคะแนนเข้า Tournament Manager!\n\nต้องการอัปเดตคะแนน (${masterTeamA.name} ${masterTeamA.score} - ${masterTeamB.score} ${masterTeamB.name}) เข้าสู่ระบบหรือไม่?`);
+        if (!ok) return false;
+    }
+
+    try {
+        const payload = {
+            id: id,
+            matchId: id,
+            unique_id: uniqueId,
+            order: orderVal,
+            field: fieldVal,
+            date: dateVal,
+            scoreA: masterTeamA.score,
+            scoreB: masterTeamB.score,
+            penaltyA: masterTeamA.score2,
+            penaltyB: masterTeamB.score2,
+            status: 'finished'
+        };
+
+        const res = await fetch(`${baseUrl}/api/save-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.message || `HTTP ${res.status}`);
+        }
+
+        syncedManagerMatches.set(id, currentKey);
+        showToast(`⚡ บันทึกคะแนนคู่ที่ ${orderVal} เข้า Tournament Manager เรียบร้อย!`, 'success');
+        return true;
+    } catch (err) {
+        console.error('Failed to sync score to Tournament Manager:', err);
+        showToast(`ส่งคะแนนไม่สำเร็จ: ${err.message}`, 'error');
+        return false;
+    }
+}
+window.syncScoreToTournamentManager = syncScoreToTournamentManager;
 const handleDataSourceAction = () => {
     if (dataSourceMode === 'gsheet') {
         fetchGoogleSheet();
     } else if (dataSourceMode === 'jamornz') {
         fetchJamornzTournament();
+    } else if (dataSourceMode === 'tournamentManager') {
+        fetchTournamentManagerFeed();
     } else {
         handleExcel();
     }
@@ -2259,17 +2673,25 @@ const setDataSourceMode = (mode) => {
 
     const isGSheet = mode === 'gsheet';
     const isJamornz = mode === 'jamornz';
+    const isTournamentManager = mode === 'tournamentManager';
     const gsheetSettings = document.getElementById('gsheetSettings');
     const jamornzSettings = document.getElementById('jamornzSettings');
+    const tournamentManagerSettings = document.getElementById('tournamentManagerSettings');
     const excelSettings = document.getElementById('excelSettings'); // V2.9.2
 
     if (gsheetSettings) gsheetSettings.style.display = isGSheet ? 'block' : 'none';
     if (jamornzSettings) jamornzSettings.style.display = isJamornz ? 'block' : 'none';
-    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz) ? 'none' : 'block';
+    if (tournamentManagerSettings) tournamentManagerSettings.style.display = isTournamentManager ? 'block' : 'none';
+    // "Confirm score" only applies to Tournament Manager (Local).
+    const syncScoreButton = document.getElementById('syncScoreBtn');
+    if (syncScoreButton) syncScoreButton.style.display = isTournamentManager ? 'inline-flex' : 'none';
+    if (excelSettings) excelSettings.style.display = (isGSheet || isJamornz || isTournamentManager) ? 'none' : 'block';
 
     const trans = translations[currentLang];
 
-    if (isJamornz) {
+    if (isTournamentManager) {
+        elements.excelBtn.innerHTML = `<i class="fas fa-desktop" style="color: #10b981;"></i> <span>โหลด Tournament Manager</span>`;
+    } else if (isJamornz) {
         elements.excelBtn.innerHTML = `<i class="fas fa-globe" style="color: #38bdf8;"></i> <span>โหลด Jamornz</span>`;
     } else if (isGSheet) {
         elements.excelBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-lang="loadFromGoogleSheet">${trans.loadFromGoogleSheet || "Fetch GS"}</span>`;
@@ -2313,6 +2735,232 @@ const copyDetails = () => {
         .replace(/<half_text>/gi, elements.halfText.textContent);
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
+
+// ─── LabelAll (OBS Text Source Pattern Manager) ───────────────────────────
+const DEFAULT_LABEL_ALL_TEMPLATE = '<label1> | <label2> | <label3>';
+
+function getLabelValue(num) {
+    const el = elements[`label${num}`];
+    return el ? (el.textContent || '').trim() : '';
+}
+
+function formatLabelAllText() {
+    const template = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    const autoClean = localStorage.getItem('labelAllAutoClean') !== 'false';
+    const teamAName = (masterTeamA && masterTeamA.name) ? masterTeamA.name.replace(/\//g, ' ') : '';
+    const teamBName = (masterTeamB && masterTeamB.name) ? masterTeamB.name.replace(/\//g, ' ') : '';
+    const scoreA = (masterTeamA && masterTeamA.score !== undefined) ? masterTeamA.score : 0;
+    const scoreB = (masterTeamB && masterTeamB.score !== undefined) ? masterTeamB.score : 0;
+    const score2A = (masterTeamA && masterTeamA.score2 !== undefined) ? masterTeamA.score2 : 0;
+    const score2B = (masterTeamB && masterTeamB.score2 !== undefined) ? masterTeamB.score2 : 0;
+    const timeVal = elements.timerText ? (elements.timerText.textContent || '') : '';
+    const halfVal = elements.halfText ? (elements.halfText.textContent || '') : '';
+
+    let res = template
+        .replace(/<TeamA>/gi, teamAName)
+        .replace(/<TeamB>/gi, teamBName)
+        .replace(/<label1>/gi, getLabelValue(1))
+        .replace(/<label2>/gi, getLabelValue(2))
+        .replace(/<label3>/gi, getLabelValue(3))
+        .replace(/<label4>/gi, getLabelValue(4))
+        .replace(/<label5>/gi, getLabelValue(5))
+        .replace(/<score_team_a>/gi, scoreA)
+        .replace(/<score_team_b>/gi, scoreB)
+        .replace(/<score2_team_a>/gi, score2A)
+        .replace(/<score2_team_b>/gi, score2B)
+        .replace(/<time_counter>/gi, timeVal)
+        .replace(/<half_text>/gi, halfVal);
+
+    // Dynamic extraction for any column header in sheetData
+    if (currentLoadedHeaders && currentLoadedMatch && Array.isArray(currentLoadedHeaders)) {
+        currentLoadedHeaders.forEach((colName, idx) => {
+            if (!colName) return;
+            const val = (currentLoadedMatch[idx] !== undefined && currentLoadedMatch[idx] !== null) ? String(currentLoadedMatch[idx]).trim() : '';
+            const escaped = String(colName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp(`<${escaped}>`, 'gi'), val);
+        });
+    }
+
+    if (autoClean) {
+        // 1. Remove empty brackets/parentheses left over from empty tags
+        res = res.replace(/\(\s*\)/g, ' ').replace(/\[\s*\]/g, ' ');
+
+        // 2. Collapse consecutive separator sequences, e.g. " |  | " -> " | "
+        res = res.replace(/(\s*([\|\-•·/—–])\s*)+/g, (match, p1, lastSep) => ` ${lastSep} `);
+
+        // 3. Trim leading separators and whitespace
+        res = res.replace(/^[\s\|\-•·/,\:—–]+/, '');
+
+        // 4. Trim trailing separators and whitespace
+        res = res.replace(/[\s\|\-•·/,\:—–]+$/, '');
+
+        // 5. Clean duplicate spaces
+        res = res.replace(/[ \t]+/g, ' ').trim();
+    }
+
+    return res;
+}
+
+function updateLabelAllPreview() {
+    const preview = document.getElementById('labelAllLivePreview');
+    if (!preview) return;
+    const formatted = formatLabelAllText();
+    preview.textContent = formatted || '(ว่าง / Empty)';
+}
+
+function updateObsLabelAll() {
+    const formatted = formatLabelAllText();
+    setText('LabelAll', formatted);
+    setText('label_all', formatted);
+    updateLabelAllPreview();
+    return formatted;
+}
+
+function renderLabelAllDataColumns() {
+    const activeMatchIdEl = document.getElementById('labelAllActiveMatchId');
+    if (activeMatchIdEl) {
+        activeMatchIdEl.textContent = elements.matchID ? elements.matchID.value : '1';
+    }
+    for (let i = 1; i <= 5; i++) {
+        const valEl = document.getElementById(`labelAllVal${i}`);
+        const el = elements[`label${i}`];
+        if (valEl) {
+            valEl.textContent = el ? (el.textContent || '(ว่าง)') : '(ว่าง)';
+        }
+    }
+
+    // Render other data columns from sheetData[0] if available
+    const extraColsContainer = document.getElementById('labelAllExtraColumnsContainer');
+    if (extraColsContainer && sheetData && sheetData.length > 0 && Array.isArray(sheetData[0])) {
+        const headers = sheetData[0];
+        const standardCols = ['matchid', 'match id', 'id', 'teama', 'teamb', 'colora', 'colorb', 'colora2', 'colorb2', 'logoa', 'logob', 'label1', 'label2', 'label3', 'label4', 'label5'];
+        const extraHeaders = headers.filter(h => h && !standardCols.includes(String(h).toLowerCase().trim()));
+
+        if (extraHeaders.length > 0) {
+            extraColsContainer.innerHTML = '';
+            extraHeaders.forEach(col => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-secondary';
+                btn.style.cssText = 'padding: 3px 8px; font-size: 0.76rem; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7;';
+                btn.textContent = `+ <${col}>`;
+                btn.title = `แทรกแท็กคอลัมน์ <${col}> จากตารางข้อมูล`;
+                btn.onclick = () => insertLabelAllTag(`<${col}>`);
+                extraColsContainer.appendChild(btn);
+            });
+            const wrap = document.getElementById('labelAllExtraColumnsWrapper');
+            if (wrap) wrap.style.display = 'block';
+        } else {
+            const wrap = document.getElementById('labelAllExtraColumnsWrapper');
+            if (wrap) wrap.style.display = 'none';
+        }
+    }
+}
+
+function syncLabelAllCheckboxesFromPattern() {
+    const pattern = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    for (let i = 1; i <= 5; i++) {
+        const chk = document.getElementById(`labelAllInclude${i}`);
+        if (chk) {
+            chk.checked = pattern.includes(`<label${i}>`);
+        }
+    }
+}
+
+function buildLabelAllPatternFromCheckboxes() {
+    const selected = [];
+    for (let i = 1; i <= 5; i++) {
+        const chk = document.getElementById(`labelAllInclude${i}`);
+        if (chk && chk.checked) {
+            selected.push(`<label${i}>`);
+        }
+    }
+    const sepSelect = document.getElementById('labelAllSeparatorSelect');
+    const sep = sepSelect ? sepSelect.value : ' | ';
+    const pattern = selected.join(sep);
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        patternInput.value = pattern;
+        localStorage.setItem('labelAllTemplate', pattern);
+        updateLabelAllPreview();
+    }
+}
+window.buildLabelAllPatternFromCheckboxes = buildLabelAllPatternFromCheckboxes;
+
+function loadLabelAllSettings() {
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        patternInput.value = localStorage.getItem('labelAllTemplate') || DEFAULT_LABEL_ALL_TEMPLATE;
+    }
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        cleanCheck.checked = localStorage.getItem('labelAllAutoClean') !== 'false';
+    }
+    syncLabelAllCheckboxesFromPattern();
+    renderLabelAllDataColumns();
+    updateLabelAllPreview();
+}
+
+function saveLabelAllSettings() {
+    const patternInput = document.getElementById('labelAllPatternInput');
+    if (patternInput) {
+        localStorage.setItem('labelAllTemplate', patternInput.value);
+    }
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        localStorage.setItem('labelAllAutoClean', cleanCheck.checked ? 'true' : 'false');
+    }
+    const formatted = updateObsLabelAll();
+    const trans = translations[currentLang] || translations.en;
+    showToast(trans.toastLabelAllSaved || 'บันทึกแพทเทิร์น LabelAll และส่งไปยัง OBS แล้ว!', 'success');
+}
+
+function copyLabelAllText() {
+    const text = formatLabelAllText();
+    if (!text.trim()) {
+        const trans = translations[currentLang] || translations.en;
+        return showToast(trans.toastNoTextToCopy || 'ไม่มีข้อความที่จะคัดลอก', 'error');
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        const trans = translations[currentLang] || translations.en;
+        showToast(trans.toastCopied || 'คัดลอกสำเร็จ', 'info');
+    }).catch(() => {
+        const trans = translations[currentLang] || translations.en;
+        showToast(trans.toastCopyFailed || 'คัดลอกไม่สำเร็จ', 'error');
+    });
+}
+
+window.insertLabelAllTag = (tagCode) => {
+    const textarea = document.getElementById('labelAllPatternInput');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+
+    textarea.value = before + tagCode + after;
+    textarea.selectionStart = textarea.selectionEnd = start + tagCode.length;
+    textarea.focus();
+
+    localStorage.setItem('labelAllTemplate', textarea.value);
+    updateLabelAllPreview();
+};
+
+window.applyLabelAllPreset = (presetText) => {
+    const textarea = document.getElementById('labelAllPatternInput');
+    if (!textarea) return;
+    textarea.value = presetText;
+    localStorage.setItem('labelAllTemplate', presetText);
+    updateLabelAllPreview();
+};
+
+window.formatLabelAllText = formatLabelAllText;
+window.updateObsLabelAll = updateObsLabelAll;
+window.copyLabelAllText = copyLabelAllText;
+window.saveLabelAllSettings = saveLabelAllSettings;
+window.loadLabelAllSettings = loadLabelAllSettings;
 
 // ─── YouTube long-live timestamps / description builder ────────────────────
 let youtubeTimerInterval = null;
@@ -2797,6 +3445,30 @@ const setupEventListeners = () => {
         });
     }
 
+    const fetchLocalManagerBtn = document.getElementById('fetchLocalManagerBtn');
+    if (fetchLocalManagerBtn) {
+        fetchLocalManagerBtn.addEventListener('click', fetchTournamentManagerFeed);
+    }
+
+    const localManagerDateSelect = document.getElementById('localManagerDateSelect');
+    if (localManagerDateSelect) {
+        localManagerDateSelect.addEventListener('change', () => {
+            if (dataSourceMode === 'tournamentManager') fetchTournamentManagerFeed();
+        });
+    }
+
+    const localManagerFieldSelect = document.getElementById('localManagerFieldSelect');
+    if (localManagerFieldSelect) {
+        localManagerFieldSelect.addEventListener('change', () => {
+            if (dataSourceMode === 'tournamentManager') fetchTournamentManagerFeed();
+        });
+    }
+
+    const syncScoreBtn = document.getElementById('syncScoreBtn');
+    if (syncScoreBtn) {
+        syncScoreBtn.addEventListener('click', () => syncScoreToTournamentManager());
+    }
+
 
     elements.loadBtn.addEventListener('click', applyMatch);
     elements.fullResetBtn.addEventListener('click', showConfirmReset);
@@ -2829,15 +3501,29 @@ const setupEventListeners = () => {
     if (undoBtn) undoBtn.addEventListener('click', () => window.undoLastScore());
 
     if (elements.swapScoreBtn) {
-        elements.swapScoreBtn.addEventListener('click', () => {
+        // Shows whether the score panel is swapped (B | A) or normal (A | B), and remembers it.
+        const swapState = document.createElement('div');
+        swapState.id = 'swapScoreState';
+        swapState.style.cssText = 'font-size:10px;font-weight:700;line-height:1.15;text-align:center;margin-top:-4px;white-space:nowrap;';
+        elements.swapScoreBtn.insertAdjacentElement('afterend', swapState);
+        const applyScoreSwap = (swapped) => {
             const panel = document.querySelector('.score-panel-clean');
-            if (panel) {
-                if (panel.style.flexDirection === 'row-reverse') {
-                    panel.style.flexDirection = 'row';
-                } else {
-                    panel.style.flexDirection = 'row-reverse';
-                }
-            }
+            if (panel) panel.style.flexDirection = swapped ? 'row-reverse' : 'row';
+            swapState.innerHTML = swapped
+                ? '<span style="color:#fbbf24;">สลับแล้ว</span><br><span style="color:#fde68a;">B | A</span>'
+                : '<span style="color:#94a3b8;">ปกติ</span><br><span style="color:#cbd5e1;">A | B</span>';
+            elements.swapScoreBtn.style.boxShadow = swapped ? '0 0 0 3px rgba(251,191,36,.55), 0 0 12px rgba(251,191,36,.6)' : 'none';
+            elements.swapScoreBtn.style.opacity = swapped ? '1' : '0.75';
+            elements.swapScoreBtn.title = swapped ? 'สลับฝั่งคะแนนอยู่ (B | A) — กดเพื่อกลับเป็นปกติ' : 'ฝั่งคะแนนปกติ (A | B) — กดเพื่อสลับ';
+            try { localStorage.setItem('scorePanelSwapped', swapped ? '1' : '0'); } catch (e) {}
+        };
+        let scoreSwapped = false;
+        try { scoreSwapped = localStorage.getItem('scorePanelSwapped') === '1'; } catch (e) {}
+        applyScoreSwap(scoreSwapped);
+        elements.swapScoreBtn.addEventListener('click', () => {
+            scoreSwapped = !scoreSwapped;
+            applyScoreSwap(scoreSwapped);
+            showToast(scoreSwapped ? 'สลับฝั่งคะแนนแล้ว (B | A)' : 'ฝั่งคะแนนกลับเป็นปกติ (A | B)', 'info');
         });
     }
 
@@ -2968,6 +3654,8 @@ const setupEventListeners = () => {
         applyVisibilitySettings();
         applyColorCount();
         loadIndicatorSettings();
+        loadLabelAllSettings();
+        updateObsLabelAll();
         const savedSettingsTab = localStorage.getItem('activeSettingsTab') || 'settingsTabGeneral';
         switchSettingsTab(document.getElementById(savedSettingsTab) ? savedSettingsTab : 'settingsTabGeneral');
         openPopup(elements.detailsPopup);
@@ -3044,6 +3732,49 @@ const setupEventListeners = () => {
     };
     if (mainAnnounceBtn) mainAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(false));
     if (youtubeAnnounceBtn) youtubeAnnounceBtn.addEventListener('click', () => switchAnnouncePanel(true));
+
+    // LabelAll Event Listeners
+    const saveLabelAllBtn = document.getElementById('saveLabelAllBtn');
+    if (saveLabelAllBtn) saveLabelAllBtn.addEventListener('click', saveLabelAllSettings);
+
+    const resetLabelAllBtn = document.getElementById('resetLabelAllPatternBtn');
+    if (resetLabelAllBtn) resetLabelAllBtn.addEventListener('click', () => {
+        applyLabelAllPreset(DEFAULT_LABEL_ALL_TEMPLATE);
+        showToast('รีเซ็ตแพทเทิร์น LabelAll เรียบร้อยแล้ว', 'info');
+    });
+
+    const copyLabelAllBtn = document.getElementById('copyLabelAllBtn');
+    if (copyLabelAllBtn) copyLabelAllBtn.addEventListener('click', copyLabelAllText);
+
+    const createObsLabelAllBtn = document.getElementById('createObsLabelAllBtn');
+    if (createObsLabelAllBtn) createObsLabelAllBtn.addEventListener('click', () => {
+        createObsSource('LabelAll', 'Text (GDI+)', createObsLabelAllBtn);
+    });
+
+    const openLabelAllBtn = document.getElementById('openLabelAllBtn');
+    if (openLabelAllBtn) openLabelAllBtn.addEventListener('click', () => {
+        loadLabelAllSettings();
+        openPopup(elements.detailsPopup);
+        switchSettingsTab('settingsTabLabelAll');
+    });
+
+    const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
+    if (cleanCheck) {
+        cleanCheck.addEventListener('change', () => {
+            localStorage.setItem('labelAllAutoClean', cleanCheck.checked ? 'true' : 'false');
+            updateObsLabelAll();
+        });
+    }
+
+    const labelAllPatternInput = document.getElementById('labelAllPatternInput');
+    if (labelAllPatternInput) {
+        labelAllPatternInput.addEventListener('input', () => {
+            localStorage.setItem('labelAllTemplate', labelAllPatternInput.value);
+            updateLabelAllPreview();
+        });
+    }
+
+
     elements.helpBtn.addEventListener('click', () => openPopup(elements.helpPopup));
     elements.donateBtn.addEventListener('click', () => openPopup(elements.donatePopup));
     // V2.9.3: Changelog removed
@@ -3065,6 +3796,10 @@ const setupEventListeners = () => {
 
     elements.copyShopeeLinkBtn.addEventListener('click', () => copyLink(elements.copyShopeeLinkBtn.getAttribute('data-link')));
     elements.copyEasyDonateLinkBtn.addEventListener('click', () => copyLink(elements.copyEasyDonateLinkBtn.getAttribute('data-link')));
+    const copyFacebookLinkBtn = document.getElementById('copyFacebookLinkBtn');
+    if (copyFacebookLinkBtn) {
+        copyFacebookLinkBtn.addEventListener('click', () => copyLink(copyFacebookLinkBtn.getAttribute('data-link')));
+    }
 
     if (elements.copyExcelColumnsBtn) {
         elements.copyExcelColumnsBtn.addEventListener('click', () => {
@@ -3318,7 +4053,26 @@ document.addEventListener('DOMContentLoaded', () => {
         jamornzRound = savedJamornzRound;
     }
 
+    let savedLocalManagerUrl = localStorage.getItem('localManagerUrl') || 'http://127.0.0.1:8765';
+    if (savedLocalManagerUrl.includes(':8080')) {
+        savedLocalManagerUrl = savedLocalManagerUrl.replace(':8080', ':8765');
+        localStorage.setItem('localManagerUrl', savedLocalManagerUrl);
+    }
+    const localManagerInput = document.getElementById('localManagerUrlInput');
+    if (localManagerInput) localManagerInput.value = savedLocalManagerUrl;
+
+    const savedLocalManagerDate = localStorage.getItem('localManagerDate');
+    const localManagerDateEl = document.getElementById('localManagerDateSelect');
+    if (savedLocalManagerDate && localManagerDateEl) localManagerDateEl.value = savedLocalManagerDate;
+
+    const savedLocalManagerField = localStorage.getItem('localManagerField');
+    const localManagerFieldEl = document.getElementById('localManagerFieldSelect');
+    if (savedLocalManagerField && localManagerFieldEl) localManagerFieldEl.value = savedLocalManagerField;
+
     setDataSourceMode(dataSourceMode);
+    if (dataSourceMode === 'tournamentManager') {
+        fetchTournamentManagerFeed();
+    }
 
     loadLogoCache();
     masterTeamA = createDefaultTeam('A');
@@ -3336,6 +4090,8 @@ document.addEventListener('DOMContentLoaded', () => {
     resetToZero();
     resetHalfToDefault();
     loadIndicatorSettings();
+    loadLabelAllSettings();
+    updateObsLabelAll();
 
     window.copyTag = copyTag;
 
@@ -3385,206 +4141,9 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.style.cursor = 'pointer';
             // DO NOT change innerHTML to "Close" - keep "Start Control Panel"
 
-            // Attach Save & Enter Logic
+            // Attach Save & Enter Logic (single implementation: window.saveAndEnterApp)
             startBtn.addEventListener('click', async () => {
-                const nameInput = document.getElementById('visitorName');
-                const provInput = document.getElementById('visitorProvince');
-                const provOtherInput = document.getElementById('visitorProvinceOther');
-                const loadingStatus = document.getElementById('welcomeLoadingStatus');
-
-                const setStatus = (msg, color = '#94a3b8') => {
-                    if (loadingStatus) loadingStatus.innerHTML = `<span style="color:${color}">${msg}</span>`;
-                };
-
-                // --- CASE 1: Empty fields → Temporary User ---
-                if (!nameInput || !nameInput.value.trim() || (provInput && !provInput.value)) {
-                    const confirmTemp = await window.customConfirm(
-                        'คุณยังไม่ได้กรอกข้อมูล\n\n' +
-                        'ต้องการเข้าแบบผู้ใช้ชั่วคราวหรือไม่?\n' +
-                        '(จะไม่มีการเก็บข้อมูลการใช้งาน)\n\n' +
-                        'You haven\'t filled in the information.\n' +
-                        'Enter as temporary user?\n' +
-                        '(No usage data will be saved)',
-                        'เข้าสู่ระบบแบบผู้เยี่ยมชม',
-                        'fa-user-secret'
-                    );
-                    if (!confirmTemp) return;
-
-                    // Enter as temporary user
-                    const tempIdentity = {
-                        name: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
-                        province: 'Unknown',
-                        platform: 'PC',
-                        ID: 'TEMP' + Math.floor(10000 + Math.random() * 90000),
-                        isTemporary: true
-                    };
-
-                    localStorage.setItem('userIdentity', JSON.stringify(tempIdentity));
-                    userIdentity = tempIdentity;
-                    window.userIdentity = tempIdentity;
-
-                    setStatus('⚡ เข้าแบบผู้ใช้ชั่วคราว...', '#f59e0b');
-
-                    const welcomeScreen = document.getElementById('welcomeScreen');
-                    if (welcomeScreen) {
-                        welcomeScreen.style.opacity = '0';
-                        setTimeout(() => welcomeScreen.style.display = 'none', 500);
-                    }
-                    return;
-                }
-
-                // --- CASE 2: Full login flow ---
-                const enteredName = nameInput.value.trim();
-
-                // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
-                const storedMachineId = localStorage.getItem('machineIdentityName');
-                if (storedMachineId && storedMachineId !== enteredName) {
-                    // Check cooldown
-                    const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
-                    const now = Date.now();
-                    const cooldownMs = 30 * 60 * 1000; // 30 minutes
-                    const elapsed = now - (changeLog.lastChanged || 0);
-                    const remaining = cooldownMs - elapsed;
-
-                    if (remaining > 0) {
-                        // Still in cooldown
-                        const mins = Math.ceil(remaining / 60000);
-                        setStatus(`⏳ เปลี่ยนชื่อได้อีก ${mins} นาที (ชื่อปัจจุบัน: ${storedMachineId})`, '#f59e0b');
-                        nameInput.value = storedMachineId;
-                        return;
-                    }
-
-                    // Cooldown passed — confirm change
-                    const confirmChange = await window.customConfirm(
-                        `คุณกำลังเปลี่ยนชื่อจาก "${storedMachineId}" เป็น "${enteredName}"\n\n` +
-                        `ยืนยันเปลี่ยนชื่อหรือไม่?\n` +
-                        `(จะต้องรอ 30 นาทีก่อนเปลี่ยนครั้งถัดไป)`,
-                        'ยืนยันเปลี่ยนชื่อ',
-                        'fa-exclamation-triangle'
-                    );
-                    if (!confirmChange) {
-                        nameInput.value = storedMachineId;
-                        return;
-                    }
-
-                    // Update change log
-                    const newCount = (changeLog.count || 0) + 1;
-                    localStorage.setItem('nameChangeLog', JSON.stringify({
-                        count: newCount,
-                        lastChanged: now,
-                        previousName: storedMachineId
-                    }));
-
-                    // If changed >= 3 times → log to Firebase as suspicious
-                    if (newCount >= 3) {
-                        try {
-                            if (typeof firebase !== 'undefined' && firebase.database) {
-                                await firebase.database().ref('obs_id_spam/' + Date.now()).set({
-                                    originalName: storedMachineId,
-                                    attemptedName: enteredName,
-                                    changeCount: newCount,
-                                    timestamp: new Date().toISOString(),
-                                    userAgent: navigator.userAgent.substring(0, 100)
-                                });
-                                console.warn(`Suspicious name change #${newCount}: ${storedMachineId} → ${enteredName}`);
-                            }
-                        } catch (e) { console.error('Spam log error:', e); }
-                    }
-
-                    setStatus(`🔄 เปลี่ยนชื่อเป็น "${enteredName}" สำเร็จ`, '#60a5fa');
-                }
-
-                // Province validation
-                let province = '';
-                if (provInput) {
-                    province = provInput.value;
-                    if (province === 'Other' && provOtherInput) {
-                        province = provOtherInput.value.trim();
-                        if (!province) {
-                            provOtherInput.style.border = '2px solid #ef4444';
-                            provOtherInput.focus();
-                            setTimeout(() => { provOtherInput.style.border = ''; }, 2000);
-                            await window.customAlert('กรุณาระบุจังหวัด / Please specify your province', 'ข้อมูลไม่ครบ', 'fa-map-marker-alt');
-                            return;
-                        }
-                    }
-                }
-
-                // Reuse existing ID or Generate 6-digit ID
-                let userID = Math.floor(100000 + Math.random() * 900000).toString();
-                try {
-                    const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-                    if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-                        userID = existingIdentity.ID;
-                    }
-                } catch(e) {}
-
-                // V2.9.3: Restore usage data from Firebase
-                try {
-                    startBtn.disabled = true;
-                    setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
-
-                    const existingData = await fetchFirebaseUserData(enteredName, userID);
-                    // Check if it's a true duplicate (name taken by another ID)
-                    if (existingData && existingData.ID && existingData.ID !== userID) {
-                        setStatus(`⚠️ ชื่อ "${enteredName}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
-                        startBtn.disabled = false;
-                        startBtn.textContent = 'Start';
-                        return;
-                    }
-
-                    if (existingData && existingData.totalMinutes) {
-                        // V2.9.3: Always trust Firebase as the single source of truth for time
-                        const restoredMinutes = existingData.totalMinutes;
-                        localStorage.setItem('usageTracker', JSON.stringify({
-                            totalMinutes: restoredMinutes,
-                            lastUpdated: new Date().toISOString()
-                        }));
-                        const restoredRank = getRank(restoredMinutes);
-                        setStatus(`✅ พบข้อมูลเดิม: ${restoredRank.icon} ${restoredRank.nameTh} (${Math.floor(restoredMinutes/60)}h)`, '#4ade80');
-                        console.log(`Restored ${restoredMinutes} minutes from Firebase for ${enteredName}`);
-                    } else {
-                        setStatus('✅ ผู้ใช้ใหม่ — ยินดีต้อนรับ!', '#4ade80');
-                    }
-
-                    startBtn.disabled = false;
-                    startBtn.textContent = 'Start';
-                } catch (err) {
-                    console.error('Firebase user check error:', err);
-                    setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
-                    startBtn.disabled = false;
-                    startBtn.textContent = 'Start';
-                }
-
-                const identity = {
-                    name: enteredName,
-                    province: province || 'Unknown',
-                    platform: 'PC',
-                    ID: userID
-                };
-
-                localStorage.setItem('userIdentity', JSON.stringify(identity));
-                // V2.9.3: Lock this machine to this name (anti-spam)
-                localStorage.setItem('machineIdentityName', enteredName);
-                userIdentity = identity;
-                window.userIdentity = identity;
-
-                // Create com_ room in Firebase
-                if (window.initOnlinePresenceSystem) {
-                    window.initOnlinePresenceSystem();
-                }
-
-                // V2.9.3: Start usage tracking
-                startUsageTracking(identity);
-
-                // V2.9.4: Increment visitor counter on every start
-                if (window.incrementVisitorCounter) window.incrementVisitorCounter();
-
-                const welcomeScreen = document.getElementById('welcomeScreen');
-                if (welcomeScreen) {
-                    welcomeScreen.style.opacity = '0';
-                    setTimeout(() => welcomeScreen.style.display = 'none', 500);
-                }
+                await window.saveAndEnterApp();
             });
         }
     };
@@ -3858,6 +4417,7 @@ window.initWelcomeScreen = () => {
                         try {
                             if (typeof firebase !== 'undefined' && firebase.database) {
                                 await firebase.database().ref('obs_id/' + userIdentity.ID).remove();
+                                if (userIdentity.name) await firebase.database().ref(`obs_names/${nameIndexKey(userIdentity.name)}`).remove().catch(() => {});
                             }
                         } catch(e) { console.error("Error deleting ID from DB:", e); }
                         
@@ -3891,6 +4451,215 @@ window.initWelcomeScreen = () => {
             nameInput.value = lockedName;
         }
     }
+};
+
+// ---------------------------------------------------------------------------------------------
+// Account = name + 4-digit PIN (works on any machine; no machine memory needed).
+// Firebase obs_id/<ID> keeps a salted SHA-256 of the PIN, never the PIN itself.
+// Legacy accounts without a PIN get one the next time their name is used.
+const PIN_HASH_VERSION = 'v1';
+
+const sha256Hex = async (text) => {
+    const bytes = new TextEncoder().encode(text);
+    if (window.crypto && window.crypto.subtle) {
+        const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback for environments without SubtleCrypto (compact SHA-256).
+    const K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+    const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6;
+    const m = new Uint8Array(total); m.set(bytes); m[len] = 0x80;
+    const view = new DataView(m.buffer); view.setUint32(total - 4, len * 8); view.setUint32(total - 8, Math.floor(len / 0x20000000));
+    const w = new Uint32Array(64), rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < total; o += 64) {
+        for (let i = 0; i < 16; i++) w[i] = view.getUint32(o + i * 4);
+        for (let i = 16; i < 64; i++) {
+            const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+            const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, h] = H;
+        for (let i = 0; i < 64; i++) {
+            const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+            const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+            h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        }
+        [a, b, c, d, e, f, g, h].forEach((v, i) => { H[i] = (H[i] + v) >>> 0; });
+    }
+    return H.map(v => v.toString(16).padStart(8, '0')).join('');
+};
+
+const hashAccountPin = (name, pin) =>
+    sha256Hex(`obsscore-pin-${PIN_HASH_VERSION}|${String(name).trim().toLowerCase()}|${pin}`);
+
+// Name index: obs_names/<name key> -> { ID }. Lets a login read one small record instead of
+// downloading every user. Older accounts are found by a full scan once and then indexed.
+const nameIndexKey = (name) => String(name).trim().toLowerCase().replace(/[.#$\[\]\/]/g, '_').substring(0, 60);
+const writeNameIndex = async (name, id) => {
+    try {
+        await firebase.database().ref(`obs_names/${nameIndexKey(name)}`).set({ ID: id, name: String(name).substring(0, 30) });
+    } catch (e) { console.warn('Name index write skipped:', e?.message || e); }
+};
+
+// Finds the Firebase account that owns this name (case-insensitive), including this machine's own.
+const findAccountByName = async (name) => {
+    if (typeof firebase === 'undefined' || !firebase.database) throw new Error('Firebase unavailable');
+    const wanted = String(name).trim().toLowerCase();
+    const db = firebase.database();
+
+    // 1. Fast path through the name index.
+    try {
+        const indexSnap = await db.ref(`obs_names/${nameIndexKey(name)}`).once('value');
+        const entry = indexSnap.val();
+        if (entry && entry.ID) {
+            const userSnap = await db.ref(`obs_id/${entry.ID}`).once('value');
+            const user = userSnap.val();
+            if (user && user.name && String(user.name).trim().toLowerCase() === wanted) {
+                return { id: String(entry.ID), data: user };
+            }
+        }
+    } catch (e) {
+        console.warn('Name index read skipped:', e?.message || e);
+    }
+
+    // 2. Fallback: scan all accounts (older accounts without an index entry), then index the result.
+    const snapshot = await db.ref('obs_id').once('value');
+    const all = snapshot.val() || {};
+    for (const key of Object.keys(all)) {
+        const user = all[key];
+        if (user && user.name && String(user.name).trim().toLowerCase() === wanted) {
+            writeNameIndex(user.name, key);
+            return { id: key, data: user };
+        }
+    }
+    return null;
+};
+
+// PIN dialog built on the shared generic modal. Returns the 4-digit PIN, or null when cancelled.
+window.customPin = ({ title, message, confirm = false, validate = null }) => new Promise((resolve) => {
+    const overlay = document.getElementById('genericModalOverlay');
+    const modal = document.getElementById('genericModal');
+    const inputStyle = 'width:100%;box-sizing:border-box;margin-top:8px;padding:10px 12px;font-size:22px;letter-spacing:10px;text-align:center;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.35);color:#fff;';
+    document.getElementById('genericModalTitle').innerHTML = `<i class="fas fa-key"></i> ${title}`;
+    document.getElementById('genericModalMsg').innerHTML = `
+        <div>${message.replace(/\n/g, '<br>')}</div>
+        <input id="pinInput1" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" style="${inputStyle}">
+        ${confirm ? `<div style="margin-top:10px;font-size:13px;color:#cbd5e1;">ยืนยันรหัสอีกครั้ง</div><input id="pinInput2" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" style="${inputStyle}">` : ''}
+        <div id="pinError" style="color:#f87171;margin-top:8px;min-height:18px;font-size:13px;"></div>`;
+    document.getElementById('genericModalBtnContainer').innerHTML = `
+        <button id="pinOkBtn" class="btn-success" style="flex: 1;"><i class="fas fa-check"></i> ตกลง</button>
+        <button id="pinCancelBtn" class="btn-secondary" style="flex: 1;"><i class="fas fa-times"></i> ยกเลิก</button>`;
+    overlay.style.display = 'block';
+    modal.style.display = 'block';
+
+    const first = document.getElementById('pinInput1');
+    const second = document.getElementById('pinInput2');
+    const error = document.getElementById('pinError');
+    [first, second].forEach(input => {
+        if (!input) return;
+        input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); error.textContent = ''; });
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pinOkBtn').click(); });
+    });
+    setTimeout(() => first.focus(), 50);
+
+    const close = (value) => { overlay.style.display = 'none'; modal.style.display = 'none'; resolve(value); };
+    document.getElementById('pinCancelBtn').onclick = () => close(null);
+    document.getElementById('pinOkBtn').onclick = async () => {
+        const pin = first.value;
+        if (!/^\d{4}$/.test(pin)) { error.textContent = 'รหัสต้องเป็นตัวเลข 4 หลัก'; first.focus(); return; }
+        if (confirm && second.value !== pin) { error.textContent = 'รหัสทั้งสองช่องไม่ตรงกัน'; second.focus(); return; }
+        if (validate) {
+            const problem = await validate(pin);
+            if (problem) { error.textContent = problem; first.value = ''; first.focus(); return; }
+        }
+        close(pin);
+    };
+});
+
+const PIN_LOCK_KEY = 'pinLock';
+const pinLockRemainingSec = () => {
+    try {
+        const lock = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}');
+        return Math.max(0, Math.ceil(((lock.until || 0) - Date.now()) / 1000));
+    } catch (e) { return 0; }
+};
+
+// Resolves which account (ID) this name belongs to.
+// Returns { userID, data } on success, { cancelled: true } when the user cancels,
+// or throws when Firebase cannot be reached (caller falls back to offline mode).
+const resolveAccount = async (name, setStatus) => {
+    let localId = null;
+    try {
+        const local = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+        if (local && local.ID && !local.isTemporary) localId = local.ID;
+    } catch (e) {}
+
+    const account = await findAccountByName(name);
+
+    // New name: create the account with a PIN.
+    if (!account) {
+        const pin = await window.customPin({
+            title: 'ตั้งรหัส 4 หลัก',
+            message: `ตั้งรหัส 4 หลักให้ชื่อ "${name}"\nครั้งหน้าใช้ชื่อนี้กับรหัสนี้เข้าจากเครื่องไหนก็ได้ แม้จะล้างแคชไปแล้ว`,
+            confirm: true
+        });
+        if (!pin) return { cancelled: true };
+        const userID = localId || Math.floor(100000 + Math.random() * 900000).toString();
+        await firebase.database().ref(`obs_id/${userID}`).update({
+            name: name.substring(0, 30), ID: userID, pinHash: await hashAccountPin(name, pin),
+            pinUpdated: new Date().toISOString()
+        });
+        await writeNameIndex(name, userID);
+        return { userID, data: null };
+    }
+
+    // Existing account without a PIN (created before PINs existed): the owner sets one now.
+    if (!account.data.pinHash) {
+        const pin = await window.customPin({
+            title: 'ตั้งรหัส 4 หลัก',
+            message: `ชื่อ "${name}" ยังไม่มีรหัส\nตั้งรหัส 4 หลักเพื่อยืนยันว่าเป็นเจ้าของชื่อนี้ และใช้เข้าจากเครื่องไหนก็ได้`,
+            confirm: true
+        });
+        if (!pin) return { cancelled: true };
+        await firebase.database().ref(`obs_id/${account.id}`).update({
+            pinHash: await hashAccountPin(name, pin), pinUpdated: new Date().toISOString()
+        });
+        setStatus('🔐 ตั้งรหัสเรียบร้อย', '#4ade80');
+        return { userID: account.id, data: account.data };
+    }
+
+    // Same account already signed in on this machine.
+    if (localId && account.id === localId) return { userID: account.id, data: account.data };
+
+    // Account with a PIN: ask for it (5 wrong tries → wait 1 minute).
+    const locked = pinLockRemainingSec();
+    if (locked > 0) {
+        setStatus(`⏳ ใส่รหัสผิดหลายครั้ง ลองใหม่ได้ใน ${locked} วินาที`, '#f59e0b');
+        return { cancelled: true };
+    }
+    const pin = await window.customPin({
+        title: 'ใส่รหัส 4 หลัก',
+        message: `ใส่รหัส 4 หลักของชื่อ "${name}"\nลืมรหัส? ติดต่อผู้ดูแลผ่านปุ่ม "สนับสนุน"`,
+        validate: async (candidate) => {
+            if (pinLockRemainingSec() > 0) return `ใส่รหัสผิดหลายครั้ง ลองใหม่ได้ใน ${pinLockRemainingSec()} วินาที`;
+            if (await hashAccountPin(name, candidate) === account.data.pinHash) {
+                localStorage.removeItem(PIN_LOCK_KEY);
+                return null;
+            }
+            let lock = {};
+            try { lock = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}'); } catch (e) {}
+            const fails = (lock.fails || 0) + 1;
+            if (fails >= 5) {
+                localStorage.setItem(PIN_LOCK_KEY, JSON.stringify({ fails: 0, until: Date.now() + 60000 }));
+                return 'ใส่รหัสผิด 5 ครั้ง กรุณารอ 1 นาที';
+            }
+            localStorage.setItem(PIN_LOCK_KEY, JSON.stringify({ fails, until: 0 }));
+            return `รหัสไม่ถูกต้อง (เหลืออีก ${5 - fails} ครั้ง)`;
+        }
+    });
+    if (!pin) return { cancelled: true };
+    return { userID: account.id, data: account.data };
 };
 
 window.saveAndEnterApp = async () => {
@@ -3938,7 +4707,7 @@ window.saveAndEnterApp = async () => {
 
     // CASE 2: Soft anti-spam — cooldown timer + warn
     const storedMachineId = localStorage.getItem('machineIdentityName');
-    if (storedMachineId && storedMachineId !== name) {
+    if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== name) {
         const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
         const now = Date.now();
         const cooldownMs = 30 * 60 * 1000;
@@ -3991,27 +4760,20 @@ window.saveAndEnterApp = async () => {
         }
     }
 
-    // Reuse existing ID or Generate 6-digit ID
-    let userID = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-            userID = existingIdentity.ID;
-        }
-    } catch(e) {}
-
-    // CASE 3: Full login — Restore from Firebase
+    // Account = name + 4-digit PIN (see resolveAccount)
+    let userID = null;
     try {
         if (startBtn) startBtn.disabled = true;
         setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-        const existingData = await fetchFirebaseUserData(name, userID);
-        // Check if it's a true duplicate (name taken by another ID)
-        if (existingData && existingData.ID && existingData.ID !== userID) {
-            setStatus(`⚠️ ชื่อ "${name}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
+        const account = await resolveAccount(name, setStatus);
+        if (account.cancelled) {
+            if (!loadingStatus || !loadingStatus.textContent.includes('⏳')) setStatus('ยกเลิกแล้ว — กด Start อีกครั้งเมื่อพร้อม', '#94a3b8');
             if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
             return;
         }
+        userID = account.userID;
+        const existingData = account.data;
 
         if (existingData && existingData.totalMinutes) {
             // V2.9.3: Always trust Firebase as the single source of truth for time
@@ -4031,6 +4793,13 @@ window.saveAndEnterApp = async () => {
         console.error('Firebase user check error:', err);
         setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
+    }
+    if (!userID) {
+        try {
+            const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+            if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) userID = existingIdentity.ID;
+        } catch (e) {}
+        if (!userID) userID = Math.floor(100000 + Math.random() * 900000).toString();
     }
 
     userIdentity = { name: name, province: province, platform: 'PC', ID: userID };
@@ -4103,7 +4872,8 @@ window.copyDetails = () => {
         .replace(/<score2_team_b>/gi, masterTeamB.score2)
         .replace(/<time_counter>/gi, elements.timerText.textContent)
         // Remove half_text logic or keep it but it's not in the list
-        .replace(/<half_text>/gi, elements.halfText.textContent);
+        .replace(/<half_text>/gi, elements.halfText.textContent)
+        .replace(/<LabelAll>/gi, formatLabelAllText());
 
     navigator.clipboard.writeText(filled).then(() => showToast(translations[currentLang].toastCopied, 'info')).catch(err => showToast(translations[currentLang].toastCopyFailed, 'error'));
 };
@@ -4493,6 +5263,10 @@ window.triggerAction = async (index) => {
             await obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
         }
+        else if (actionType === 'playgroup') {
+            await runPlayGroupAction(btn.playGroupAction, btn.playGroupName);
+            showToast(playGroupToastText(btn.playGroupAction, btn.playGroupName), 'success');
+        }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
             try {
                 let enabled = true;
@@ -4583,6 +5357,105 @@ const initBibOverride = (team) => {
 
 initBibOverride('A');
 initBibOverride('B');
+
+// Centered bib popup. The original hidden checkboxes and color keys remain the
+// source of truth so OBS, swap-team, half-change and volleyball behavior stay intact.
+let activeBibPopupTeam = null;
+// The popup markup and CSS are also created here, so the bib picker still works when OBS shows
+// a cached copy of the HTML page that does not contain them yet.
+const ensureBibPopup = () => {
+    if (!document.getElementById('bibPopupStyle')) {
+        const style = document.createElement('style');
+        style.id = 'bibPopupStyle';
+        style.textContent = `
+            #bibColorsA, #bibColorsB { display: none !important; }
+            .bib-popup-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.68); z-index:10005; box-sizing:border-box; }
+            .bib-popup-modal.is-open { display:flex; }
+            .bib-popup-card { width:min(350px,100%); max-height:calc(100vh - 24px); overflow:auto; background:#1e293b; border:1px solid rgba(255,255,255,.15); border-radius:16px; padding:18px; box-shadow:0 20px 50px rgba(0,0,0,.65); color:#f8fafc; box-sizing:border-box; }
+            .bib-color-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+            .bib-modal-preset-btn { height:40px; min-height:40px; border-radius:8px; border:3px solid transparent; cursor:pointer; font-weight:800; }
+            .bib-modal-preset-btn.is-selected { border-color:#fff; box-shadow:0 0 0 2px #38bdf8; }`;
+        document.head.appendChild(style);
+    }
+    if (document.getElementById('bibOverridePopup')) return;
+    const presets = [['#84cc16', 'เขียว', '#172033'], ['#f97316', 'ส้ม', '#fff'], ['#ffffff', 'ขาว', '#172033'], ['#eab308', 'เหลือง', '#172033'],
+        ['#06b6d4', 'ฟ้า', '#fff'], ['#ef4444', 'แดง', '#fff'], ['#ec4899', 'ชมพู', '#fff'], ['#3b82f6', 'น้ำเงิน', '#fff']];
+    const popup = document.createElement('div');
+    popup.id = 'bibOverridePopup';
+    popup.className = 'bib-popup-modal';
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-modal', 'true');
+    popup.innerHTML = `
+        <div class="bib-popup-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)">
+                <div><h3 id="bibModalTitle" style="margin:0;font-size:1rem">🎽 เสื้อเอี้ยม - ทีม A</h3><span style="font-size:.75rem;color:#94a3b8">ใช้สีชั่วคราวแทนสีเสื้อหลัก</span></div>
+                <button type="button" id="bibModalCloseBtn" class="btn-secondary" aria-label="ปิด">✕</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(15,23,42,.7);padding:12px;border-radius:10px;margin-bottom:14px">
+                <div><strong style="font-size:.85rem">สถานะเสื้อเอี้ยม</strong><div id="bibModalStatusText" style="font-size:.75rem;color:#94a3b8;margin-top:2px">ปิดใช้งาน</div></div>
+                <button type="button" id="bibModalToggleBtn" class="btn-success">เปิดเอี้ยม</button>
+            </div>
+            <div class="bib-color-grid">${presets.map(([c, n, t]) => `<button type="button" class="bib-modal-preset-btn" data-color="${c}" style="background:${c};color:${t}">${n}</button>`).join('')}</div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);padding:9px;border-radius:9px;margin-top:12px">
+                <span style="font-size:.8rem;color:#94a3b8;flex:1">สีอื่น:</span><input type="color" id="bibModalCustomColor" value="#84cc16" style="width:42px;height:34px;border:0;background:transparent"><code id="bibModalHexCode">#84CC16</code>
+            </div>
+            <button type="button" id="bibModalDoneBtn" class="btn-secondary" style="width:100%;margin-top:14px">เสร็จสิ้น</button>
+        </div>`;
+    document.body.appendChild(popup);
+};
+ensureBibPopup();
+const popupBibDefault = team => team === 'A' ? '#84cc16' : '#f97316';
+const popupBibColor = team => localStorage.getItem(`bib_active_color_${team.toLowerCase()}`) || popupBibDefault(team);
+const refreshBibPopup = () => {
+    if (!activeBibPopupTeam) return;
+    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
+    const color = popupBibColor(activeBibPopupTeam);
+    document.getElementById('bibModalTitle').textContent = `🎽 เสื้อเอี้ยม - ทีม ${activeBibPopupTeam}`;
+    document.getElementById('bibModalStatusText').textContent = toggle.checked ? 'เปิดใช้งาน (ใช้สีเสื้อเอี้ยม)' : 'ปิดใช้งาน (ใช้สีเสื้อทีมปกติ)';
+    const button = document.getElementById('bibModalToggleBtn');
+    button.textContent = toggle.checked ? 'ปิดเอี้ยม' : 'เปิดเอี้ยม';
+    button.className = toggle.checked ? 'btn-danger' : 'btn-success';
+    document.getElementById('bibModalCustomColor').value = color;
+    document.getElementById('bibModalHexCode').textContent = color.toUpperCase();
+    document.querySelectorAll('.bib-modal-preset-btn').forEach(item => item.classList.toggle('is-selected', item.dataset.color.toLowerCase() === color.toLowerCase()));
+};
+const closeBibPopup = () => {
+    document.getElementById('bibOverridePopup')?.classList.remove('is-open');
+    activeBibPopupTeam = null;
+};
+const openBibPopup = team => {
+    activeBibPopupTeam = team;
+    refreshBibPopup();
+    document.getElementById('bibOverridePopup')?.classList.add('is-open');
+};
+const setPopupBibColor = color => {
+    if (!activeBibPopupTeam || !/^#[0-9a-f]{6}$/i.test(color)) return;
+    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
+    localStorage.setItem(`bib_active_color_${activeBibPopupTeam.toLowerCase()}`, color);
+    const hiddenPicker = document.getElementById(`bibCustomColor${activeBibPopupTeam}`);
+    if (hiddenPicker) hiddenPicker.value = color;
+    if (!toggle.checked) toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    refreshBibPopup();
+};
+['A','B'].forEach(team => {
+    const toggle = document.getElementById(`bibOverride${team}`);
+    const label = toggle?.closest('label');
+    label?.addEventListener('click', event => { event.preventDefault(); openBibPopup(team); });
+    toggle?.addEventListener('change', () => { if (activeBibPopupTeam === team) refreshBibPopup(); });
+});
+document.getElementById('bibModalToggleBtn')?.addEventListener('click', () => {
+    if (!activeBibPopupTeam) return;
+    const toggle = document.getElementById(`bibOverride${activeBibPopupTeam}`);
+    toggle.checked = !toggle.checked;
+    toggle.dispatchEvent(new Event('change'));
+});
+document.querySelectorAll('.bib-modal-preset-btn').forEach(item => item.addEventListener('click', () => setPopupBibColor(item.dataset.color)));
+document.getElementById('bibModalCustomColor')?.addEventListener('input', event => setPopupBibColor(event.target.value));
+document.getElementById('bibModalCloseBtn')?.addEventListener('click', closeBibPopup);
+document.getElementById('bibModalDoneBtn')?.addEventListener('click', closeBibPopup);
+document.getElementById('bibOverridePopup')?.addEventListener('click', event => { if (event.target.id === 'bibOverridePopup') closeBibPopup(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && activeBibPopupTeam) closeBibPopup(); });
 
 // --- Global helper actions for welcome screen guest & reset ---
 window.enterAsGuest = () => {

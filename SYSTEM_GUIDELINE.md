@@ -1,4 +1,4 @@
-# 📖 OBSScore Control Panel — System Guideline V2.9.5.2
+# 📖 OBSScore Control Panel — System Guideline V2.9.5.8
 
 > เอกสารสำหรับนักพัฒนา อธิบายโครงสร้างระบบ, Data Flow, และการทำงานของทุกส่วน  
 > อัพเดทล่าสุด: 16 พ.ค. 2026
@@ -314,6 +314,19 @@ obs_rooms_score/
 | `Mobile: "on"` | `OBSScorePhone.html` → `setupPresence()` | มือถือเชื่อมต่อสำเร็จ |
 | `Mobile: "off"` | `OBSScorePhone.html` → onDisconnect | มือถือ disconnect |
 
+### บัญชีผู้ใช้ (ชื่อ + รหัส 4 หลัก) — V2.9.5.8
+
+```
+obs_id/{ID}/          # บัญชี: name, province, totalMinutes, ID, lastUpdated, pinHash, pinUpdated
+obs_names/{nameKey}/  # ดัชนีชื่อ → { ID, name }  (nameKey = ชื่อตัวเล็ก แทน . # $ [ ] / ด้วย _)
+```
+
+- ล็อกอินมีทางเดียว: `window.saveAndEnterApp()` → `resolveAccount()` (ปุ่ม Start ก็เรียกฟังก์ชันนี้) ห้ามเขียนโค้ดล็อกอินซ้ำที่อื่น
+- ค้นชื่อจาก `obs_names` ก่อน ถ้าไม่เจอค่อยสแกน `obs_id` ทั้งหมด (บัญชีเก่า) แล้วเขียนดัชนีให้
+- ชื่อใหม่ / บัญชีเก่าที่ยังไม่มีรหัส → ตั้งรหัส 4 หลัก, บัญชีที่มีรหัส → ต้องใส่รหัส (ผิด 5 ครั้ง รอ 1 นาที), เครื่องเดิมที่ ID ตรงกัน → เข้าได้เลย
+- เก็บเฉพาะ `pinHash` (SHA-256 ใส่ salt) ห้ามเก็บรหัสจริง เป็นการป้องกันระดับเบาเท่านั้น ห้ามใช้ผูกสิทธิ์ VIP หรือเงิน
+- Firebase Rules ต้องอนุญาตให้เขียน `pinHash`, `pinUpdated` และ path `obs_names`
+
 ---
 
 ## 💾 localStorage Keys
@@ -352,10 +365,15 @@ obs_rooms_score/
 
 - 6 ปุ่ม (configurable)
 - เก็บใน localStorage key `actionButtonSettings`
-- ทุกปุ่มมี: `name`, `backgroundColor`, `height`, `targetSource`, `actionType`
-- **Action Types**: `Toggle`, `Show`, `Hide`, `Scene`
+- ทุกปุ่มมี: `name`, `backgroundColor`, `height`, `targetSource`, `targetScene`, `actionType`, `playGroupAction`, `playGroupName`
+- **Action Types**: `Toggle`, `Show`, `Hide`, `Scene`, `PlayGroup`
   - `Toggle/Show/Hide` → เปลี่ยน visibility ของ OBS Source ใน current scene
   - `Scene` → เปลี่ยน OBS Scene ทั้งหมด
+  - `PlayGroup` → ส่ง `Show`, `Hide` หรือ `Toggle` ตามค่า `playGroupAction` ไปยังปลั๊กอิน PlayGroup โดยระบุ Group ❤️ ของ PlayGroup ด้วย `playGroupName` (จำเป็นต้องใส่ ใส่ชื่อมีหรือไม่มี ❤️ ก็ได้)
+- **PlayGroup OBS WebSocket contract** (`CallVendorRequest`, `vendorName: "PlayGroup"`, ต้องใช้ PlayGroup v1.0.0 ขึ้นไป):
+  - `requestType: "RunAction"`, `requestData: { action: "show" | "hide" | "toggle", group: "<ชื่อ Group หรือ UUID>" }` → `responseData: { ok, matched, error? }` โดย `error` เป็น `GROUP_REQUIRED`, `GROUP_NOT_FOUND` หรือ `INVALID_ACTION`
+  - `requestType: "ListGroups"` → `responseData: { groups: [{ name, uuid, scene }] }` (เฉพาะ Group ❤️ ของ PlayGroup) ใช้เติม autocomplete ของช่อง Group (`<datalist id="playgroup-groups-list">`)
+- Action แบบ PlayGroup ไม่ใช้ `targetSource` หรือ `targetScene`; 1 ปุ่มสั่ง 1 Group (ไม่มีการสั่งรวมทุก Group)
 - ฟังก์ชัน: `triggerAction(index)` (line 2585) — index เป็น 1-based
 
 ---
@@ -396,6 +414,11 @@ obs_rooms_score/
 ---
 
 ## ⚠️ จุดที่ต้องระวังในการพัฒนา
+
+- **รีเซ็ตทั้งหมด (`fullReset`)** ส่งค่าเข้า OBS ทีละขั้น (หยุดเวลา → เอี้ยม → คะแนน → เวลา → ครึ่ง) เว้นช่วง `RESET_STEP_DELAY_MS` และส่งเวลา/ครึ่งซ้ำอีกรอบตอนท้าย ห้ามเปลี่ยนกลับเป็นส่งพร้อมกันทั้งหมด
+- **ธีมและ Dock แคบ** อยู่ใน `fcp_v2_assets/theme-sport.css` (ต้องอัปโหลดไฟล์นี้ด้วย) ส่วนบนของไฟล์คือการแก้ layout แคบที่ใช้กับทุกธีม ส่วนล่างคือธีม Sport ที่ทำงานเมื่อ `<html>` มี class `theme-sport` (ตั้งค่า → แสดงผล → ธีม, เก็บใน localStorage `uiTheme`) แก้หน้าตาให้ทำผ่าน CSS ไฟล์นี้ ห้ามเปลี่ยน id/class ที่ JavaScript ใช้ และต้องเช็คที่ความกว้าง 260, 320, 420px ว่าไม่มีอะไรล้นขอบ
+- **Popup เสื้อเอี้ยม** สร้างจาก JS (`ensureBibPopup`) ด้วย เพื่อให้ทำงานแม้ OBS โหลด HTML เก่าจากแคช อย่าลบออก
+- **เลขเวอร์ชันใน `?v=`** ของ `main.js`, `languages.js`, `version.js` ต้องตรงกับ `version.js` ทุกครั้งที่ปล่อยเวอร์ชันใหม่ เพื่อบังคับให้ OBS โหลดไฟล์ใหม่
 
 ### 1. Module Scope vs Window Scope
 - `main.js` ถูกโหลดเป็น ES Module (`type="module"`)
