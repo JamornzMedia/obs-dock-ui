@@ -2298,6 +2298,27 @@
         .bib-modal-preset-btn { height:40px; border-radius:8px; border:3px solid transparent; cursor:pointer; font-weight:800; }
         .bib-modal-preset-btn.is-selected { border-color:#fff; box-shadow:0 0 0 2px #38bdf8; }
     </style>
+    <!-- V2.9.5.8: Sport theme + narrow dock fixes (Settings > Display > Theme) -->
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="fcp_v2_assets/theme-sport.css?v=2.9.5.8">
+    <script>
+        window.setUiTheme = function (theme) {
+            var sport = theme !== 'classic';
+            document.documentElement.classList.toggle('theme-sport', sport);
+            try { localStorage.setItem('uiTheme', sport ? 'sport' : 'classic'); } catch (e) {}
+            var select = document.getElementById('uiThemeSelect');
+            if (select) select.value = sport ? 'sport' : 'classic';
+        };
+        (function () {
+            var theme = 'sport';
+            try { theme = localStorage.getItem('uiTheme') || 'sport'; } catch (e) {}
+            document.documentElement.classList.toggle('theme-sport', theme !== 'classic');
+            document.addEventListener('DOMContentLoaded', function () {
+                var select = document.getElementById('uiThemeSelect');
+                if (select) select.value = theme === 'classic' ? 'classic' : 'sport';
+            });
+        })();
+    </script>
 </head>
 
 <body>
@@ -3568,6 +3589,13 @@
         <div class="settings-tab-content" id="settingsTabVisibility">
             <h4 style="margin: 0;"><i class="fas fa-eye"></i> <span data-lang="visibilityTitle"></span></h4>
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+                <label style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                    <span><i class="fas fa-palette"></i> ธีมหน้าตา / Theme</span>
+                    <select id="uiThemeSelect" onchange="window.setUiTheme(this.value)" style="flex: 0 0 auto; padding: 6px 8px;">
+                        <option value="sport">Sport (ใหม่)</option>
+                        <option value="classic">Classic (แบบเดิม)</option>
+                    </select>
+                </label>
                 <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
                     <div class="toggle-switch">
                         <input type="checkbox" id="score2VisibilityCheck">
@@ -4424,7 +4452,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-1"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-2"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"

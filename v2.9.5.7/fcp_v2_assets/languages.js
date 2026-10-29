@@ -296,6 +296,7 @@ export const translations = {
                 <li>
                     <h5>Version 2.9.5.8</h5>
                     <ul>
+                        <li><strong>New Sport theme & narrow Dock layout:</strong> A new sports-broadcast look (switch back under Settings → Display → Theme), and nothing wraps badly or runs past the edge when the OBS Dock is very narrow.</li>
                         <li><strong>Account PIN:</strong> Your name is protected by a 4-digit PIN, so you can sign in from any computer or after clearing the cache.</li>
                         <li><strong>Bib colors:</strong> The bib color picker opens as a popup with 8 preset colors and a custom color.</li>
                         <li><strong>Swap score sides:</strong> The swap button now shows whether the score panel is normal (A | B) or swapped (B | A).</li>
@@ -723,6 +724,7 @@ export const translations = {
                 <li>
                     <h5>เวอร์ชัน 2.9.5.8</h5>
                     <ul>
+                        <li><strong>ธีม Sport ใหม่ + รองรับ Dock แคบ:</strong> หน้าตาแบบงานถ่ายทอดกีฬา (สลับกลับแบบเดิมได้ที่ ตั้งค่า → แสดงผล → ธีม) และไม่มีปุ่มตกบรรทัดหรือล้นขอบเมื่อบีบ Dock แคบมาก</li>
                         <li><strong>รหัส 4 หลัก:</strong> ชื่อผู้ใช้ป้องกันด้วยรหัส 4 หลัก เข้าจากเครื่องไหนก็ได้ แม้ล้างแคชไปแล้ว</li>
                         <li><strong>สีเสื้อเอี้ยม:</strong> เลือกสีผ่านหน้าต่าง Popup มีสีให้เลือก 8 สี และเลือกสีเองได้</li>
                         <li><strong>สลับฝั่งคะแนน:</strong> ปุ่มสลับฝั่งบอกสถานะชัดเจนว่า ปกติ (A | B) หรือ สลับแล้ว (B | A)</li>
