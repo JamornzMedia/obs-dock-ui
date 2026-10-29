@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.7';
-import { translations } from './languages.js?v=2.9.5.7';
+import { translations } from './languages.js?v=2.9.5.7-playgroup-group2';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -136,6 +136,8 @@ const defaultActionSettings = Array.from({ length: ACTION_BUTTON_COUNT }, (_, i)
     targetSource: '',
     targetScene: '',
     actionType: 'Toggle',
+    playGroupAction: 'Toggle',
+    playGroupName: '',
     internalState: false,
 }));
 
@@ -703,15 +705,15 @@ const toggleActionEditMode = (index, enable) => {
     const sourceInput = $(`action-source-input-${index}`);
     const sceneInput = $(`action-scene-input-${index}`);
     const actionSelect = $(`action-type-${index}`);
+    const playGroupActionSelect = $(`action-playgroup-action-${index}`);
     const editButton = $(`action-edit-${index}`);
     const saveButton = $(`action-save-${index}`);
 
     if (enable) {
         nameInput.disabled = false;
         heightInput.disabled = false;
-        sourceInput.disabled = false;
-        sceneInput.disabled = false;
         actionSelect.disabled = false;
+        updateActionSettingsRowType(index, true);
         editButton.style.display = 'none';
         saveButton.style.display = 'inline-flex';
         nameInput.focus();
@@ -721,10 +723,29 @@ const toggleActionEditMode = (index, enable) => {
         sourceInput.disabled = true;
         sceneInput.disabled = true;
         actionSelect.disabled = true;
+        playGroupActionSelect.disabled = true;
+        $(`action-playgroup-name-${index}`).disabled = true;
         editButton.style.display = 'inline-flex';
         saveButton.style.display = 'none';
     }
 }
+
+const updateActionSettingsRowType = (index, editing) => {
+    const sourceInput = $(`action-source-input-${index}`);
+    const sceneInput = $(`action-scene-input-${index}`);
+    const actionSelect = $(`action-type-${index}`);
+    const playGroupActionSelect = $(`action-playgroup-action-${index}`);
+    const isPlayGroup = actionSelect.value === 'PlayGroup';
+
+    sourceInput.disabled = !editing || isPlayGroup;
+    sceneInput.disabled = !editing || isPlayGroup;
+    playGroupActionSelect.disabled = !editing || !isPlayGroup;
+    $(`action-playgroup-name-${index}`).disabled = !editing || !isPlayGroup;
+    if (editing && isPlayGroup) refreshPlayGroupGroups();
+    sourceInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
+    sceneInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
+    playGroupActionSelect.closest('td').classList.toggle('action-setting-inactive', !isPlayGroup);
+};
 
 const saveActionSettingsRow = (index) => {
     const settings = loadActionSettings().map((setting, i) => {
@@ -735,6 +756,7 @@ const saveActionSettingsRow = (index) => {
         const sourceInput = $(`action-source-input-${idx}`);
         const sceneInput = $(`action-scene-input-${idx}`);
         const actionSelect = $(`action-type-${idx}`);
+        const playGroupActionSelect = $(`action-playgroup-action-${idx}`);
 
         return {
             ...setting,
@@ -744,6 +766,8 @@ const saveActionSettingsRow = (index) => {
             targetSource: sourceInput.value.trim(),
             targetScene: sceneInput.value.trim(),
             actionType: actionSelect.value,
+            playGroupAction: playGroupActionSelect.value,
+            playGroupName: $(`action-playgroup-name-${idx}`).value.trim(),
         };
     });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
@@ -760,7 +784,9 @@ const loadActionSettings = () => {
             ...setting,
             targetSource: setting.targetSource || '',
             targetScene: setting.targetScene || '',
-            actionType: setting.actionType || 'Toggle'
+            actionType: setting.actionType || 'Toggle',
+            playGroupAction: setting.playGroupAction || 'Toggle',
+            playGroupName: setting.playGroupName || ''
         }));
     }
     return defaultActionSettings.map(setting => ({ ...setting }));
@@ -769,7 +795,7 @@ const loadActionSettings = () => {
 const addActionButton = () => {
     const settings = loadActionSettings();
     const index = settings.length + 1;
-    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', internalState: false });
+    settings.push({ id: `actionBtn${index}`, name: `Action ${index}`, backgroundColor: '#3b82f6', height: 35, targetSource: '', targetScene: '', actionType: 'Toggle', playGroupAction: 'Toggle', playGroupName: '', internalState: false });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
     renderActionButtons();
     populateActionSettingsTable(currentLang);
@@ -802,6 +828,15 @@ const renderActionButtons = () => {
         const actionType = setting.actionType;
 
         button.onclick = async () => {
+            if (actionType === 'PlayGroup') {
+                try {
+                    await runPlayGroupAction(setting.playGroupAction, setting.playGroupName);
+                    showToast(playGroupToastText(setting.playGroupAction, setting.playGroupName), 'success');
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+                return;
+            }
             if (!targetSource) {
                 return showToast('Source Name is missing.', 'error');
             }
@@ -834,6 +869,83 @@ const renderActionButtons = () => {
     });
 }
 
+// PlayGroup plugin contract (OBS WebSocket vendor "PlayGroup"):
+//   RunAction  { action: "show" | "hide" | "toggle", group: "<PlayGroup group name (with or without ❤️) or UUID>" }
+//              -> { ok, matched, error? }   (group is required; each button controls one group)
+//   ListGroups {} -> { groups: [{ name, uuid, scene }] }   (only ❤️ PlayGroup groups)
+const playGroupToastText = (action, group) => {
+    return `PlayGroup ${action || 'Toggle'} → ${(group || '').trim()}`;
+};
+
+const runPlayGroupAction = async (action, group = '') => {
+    const normalizedAction = String(action || 'Toggle').toLowerCase();
+    if (!['show', 'hide', 'toggle'].includes(normalizedAction)) {
+        throw new Error(`Unsupported PlayGroup action: ${action}`);
+    }
+    if (!obs || typeof obs.call !== 'function') {
+        throw new Error(translations[currentLang].actionSettingsPlayGroupUnavailable);
+    }
+    const groupName = String(group || '').trim();
+    if (!groupName) {
+        throw new Error(translations[currentLang].actionSettingsPlayGroupNameRequired);
+    }
+
+    let response;
+    try {
+        response = await obs.call('CallVendorRequest', {
+            vendorName: 'PlayGroup',
+            requestType: 'RunAction',
+            requestData: { action: normalizedAction, group: groupName }
+        });
+    } catch (err) {
+        console.error('PlayGroup RunAction failed:', err);
+        const detail = err?.message || err?.error || err?.code;
+        const baseMessage = translations[currentLang].actionSettingsPlayGroupUnavailable;
+        throw new Error(detail ? `${baseMessage} (${detail})` : baseMessage);
+    }
+
+    const data = response?.responseData;
+    if (data && data.ok === false) {
+        const trans = translations[currentLang];
+        if (data.error === 'GROUP_NOT_FOUND') throw new Error(`${trans.actionSettingsPlayGroupNotFound} ${groupName}`);
+        if (data.error === 'GROUP_REQUIRED') throw new Error(trans.actionSettingsPlayGroupNameRequired);
+        throw new Error(`${trans.actionSettingsPlayGroupUnavailable} (${data.error || 'unknown'})`);
+    }
+    return response;
+};
+
+// Fills the shared <datalist> with PlayGroup groups so the Group field can autocomplete.
+const refreshPlayGroupGroups = async () => {
+    let list = document.getElementById('playgroup-groups-list');
+    if (!list) {
+        list = document.createElement('datalist');
+        list.id = 'playgroup-groups-list';
+        document.body.appendChild(list);
+    }
+    if (!obs || typeof obs.call !== 'function') return;
+    try {
+        const response = await obs.call('CallVendorRequest', {
+            vendorName: 'PlayGroup',
+            requestType: 'ListGroups',
+            requestData: {}
+        });
+        const groups = response?.responseData?.groups || [];
+        list.innerHTML = '';
+        groups.forEach(g => {
+            const option = document.createElement('option');
+            option.value = g.name;
+            option.label = g.scene ? `${g.name} — ${g.scene}` : g.name;
+            list.appendChild(option);
+        });
+    } catch (err) {
+        // Older PlayGroup versions have no ListGroups; typing the name still works.
+        console.warn('PlayGroup ListGroups unavailable:', err?.message || err);
+    }
+};
+
+const escapeAttr = value => String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const populateActionSettingsTable = (lang) => {
     const trans = translations[lang] || translations.en;
     const settings = loadActionSettings();
@@ -855,7 +967,18 @@ const populateActionSettingsTable = (lang) => {
                     <option value="Toggle" ${setting.actionType === 'Toggle' ? 'selected' : ''}>Toggle</option>
                     <option value="Show" ${setting.actionType === 'Show' ? 'selected' : ''}>Show</option>
                     <option value="Hide" ${setting.actionType === 'Hide' ? 'selected' : ''}>Hide</option>
+                    <option value="Scene" ${setting.actionType === 'Scene' ? 'selected' : ''}>Scene</option>
+                    <option value="PlayGroup" ${setting.actionType === 'PlayGroup' ? 'selected' : ''}>PlayGroup</option>
                 </select>
+            </td>
+            <td>
+                <select id="action-playgroup-action-${index}" disabled>
+                    <option value="Toggle" ${setting.playGroupAction === 'Toggle' ? 'selected' : ''}>Toggle</option>
+                    <option value="Show" ${setting.playGroupAction === 'Show' ? 'selected' : ''}>Show</option>
+                    <option value="Hide" ${setting.playGroupAction === 'Hide' ? 'selected' : ''}>Hide</option>
+                </select>
+                <input type="text" id="action-playgroup-name-${index}" class="action-playgroup-name" list="playgroup-groups-list"
+                    value="${escapeAttr(setting.playGroupName || '')}" placeholder="${escapeAttr(trans.actionSettingsPlayGroupNamePlaceholder)}" disabled>
             </td>
             <td>
                 <div class="action-buttons">
@@ -870,7 +993,9 @@ const populateActionSettingsTable = (lang) => {
         };
         $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
         $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
+        $(`action-type-${index}`).onchange = () => updateActionSettingsRowType(index, true);
         if (index > ACTION_BUTTON_COUNT) $(`action-delete-${index}`).onclick = () => deleteActionButton(index);
+        updateActionSettingsRowType(index, false);
     });
     window.toggleActionEditMode = toggleActionEditMode;
     window.saveActionSettingsRow = saveActionSettingsRow;
@@ -4018,7 +4143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // V2.9.3: Soft anti-spam — cooldown timer + warn on name change
                 const storedMachineId = localStorage.getItem('machineIdentityName');
-                if (storedMachineId && storedMachineId !== enteredName) {
+                if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== enteredName) {
                     // Check cooldown
                     const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
                     const now = Date.now();
@@ -4090,28 +4215,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Reuse existing ID or Generate 6-digit ID
-                let userID = Math.floor(100000 + Math.random() * 900000).toString();
-                try {
-                    const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-                    if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-                        userID = existingIdentity.ID;
-                    }
-                } catch(e) {}
-
-                // V2.9.3: Restore usage data from Firebase
+                // Account = name + 4-digit PIN (see resolveAccount)
+                let userID = null;
                 try {
                     startBtn.disabled = true;
                     setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-                    const existingData = await fetchFirebaseUserData(enteredName, userID);
-                    // Check if it's a true duplicate (name taken by another ID)
-                    if (existingData && existingData.ID && existingData.ID !== userID) {
-                        setStatus(`⚠️ ชื่อ "${enteredName}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
+                    const account = await resolveAccount(enteredName, setStatus);
+                    if (account.cancelled) {
+                        if (!loadingStatus || !loadingStatus.textContent.includes('⏳')) setStatus('ยกเลิกแล้ว — กด Start อีกครั้งเมื่อพร้อม', '#94a3b8');
                         startBtn.disabled = false;
                         startBtn.textContent = 'Start';
                         return;
                     }
+                    userID = account.userID;
+                    const existingData = account.data;
 
                     if (existingData && existingData.totalMinutes) {
                         // V2.9.3: Always trust Firebase as the single source of truth for time
@@ -4134,6 +4252,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
                     startBtn.disabled = false;
                     startBtn.textContent = 'Start';
+                }
+                if (!userID) {
+                    try {
+                        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+                        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) userID = existingIdentity.ID;
+                    } catch (e) {}
+                    if (!userID) userID = Math.floor(100000 + Math.random() * 900000).toString();
                 }
 
                 const identity = {
@@ -4473,6 +4598,186 @@ window.initWelcomeScreen = () => {
     }
 };
 
+// ---------------------------------------------------------------------------------------------
+// Account = name + 4-digit PIN (works on any machine; no machine memory needed).
+// Firebase obs_id/<ID> keeps a salted SHA-256 of the PIN, never the PIN itself.
+// Legacy accounts without a PIN get one the next time their name is used.
+const PIN_HASH_VERSION = 'v1';
+
+const sha256Hex = async (text) => {
+    const bytes = new TextEncoder().encode(text);
+    if (window.crypto && window.crypto.subtle) {
+        const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback for environments without SubtleCrypto (compact SHA-256).
+    const K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+    const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6;
+    const m = new Uint8Array(total); m.set(bytes); m[len] = 0x80;
+    const view = new DataView(m.buffer); view.setUint32(total - 4, len * 8); view.setUint32(total - 8, Math.floor(len / 0x20000000));
+    const w = new Uint32Array(64), rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < total; o += 64) {
+        for (let i = 0; i < 16; i++) w[i] = view.getUint32(o + i * 4);
+        for (let i = 16; i < 64; i++) {
+            const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+            const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, h] = H;
+        for (let i = 0; i < 64; i++) {
+            const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+            const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+            h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        }
+        [a, b, c, d, e, f, g, h].forEach((v, i) => { H[i] = (H[i] + v) >>> 0; });
+    }
+    return H.map(v => v.toString(16).padStart(8, '0')).join('');
+};
+
+const hashAccountPin = (name, pin) =>
+    sha256Hex(`obsscore-pin-${PIN_HASH_VERSION}|${String(name).trim().toLowerCase()}|${pin}`);
+
+// Finds the Firebase account that owns this name (case-insensitive), including this machine's own.
+const findAccountByName = async (name) => {
+    if (typeof firebase === 'undefined' || !firebase.database) throw new Error('Firebase unavailable');
+    const wanted = String(name).trim().toLowerCase();
+    const snapshot = await firebase.database().ref('obs_id').once('value');
+    const all = snapshot.val() || {};
+    for (const key of Object.keys(all)) {
+        const user = all[key];
+        if (user && user.name && String(user.name).trim().toLowerCase() === wanted) {
+            return { id: key, data: user };
+        }
+    }
+    return null;
+};
+
+// PIN dialog built on the shared generic modal. Returns the 4-digit PIN, or null when cancelled.
+window.customPin = ({ title, message, confirm = false, validate = null }) => new Promise((resolve) => {
+    const overlay = document.getElementById('genericModalOverlay');
+    const modal = document.getElementById('genericModal');
+    const inputStyle = 'width:100%;box-sizing:border-box;margin-top:8px;padding:10px 12px;font-size:22px;letter-spacing:10px;text-align:center;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.35);color:#fff;';
+    document.getElementById('genericModalTitle').innerHTML = `<i class="fas fa-key"></i> ${title}`;
+    document.getElementById('genericModalMsg').innerHTML = `
+        <div>${message.replace(/\n/g, '<br>')}</div>
+        <input id="pinInput1" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" style="${inputStyle}">
+        ${confirm ? `<input id="pinInput2" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="ยืนยันรหัสอีกครั้ง" style="${inputStyle}font-size:16px;letter-spacing:2px;">` : ''}
+        <div id="pinError" style="color:#f87171;margin-top:8px;min-height:18px;font-size:13px;"></div>`;
+    document.getElementById('genericModalBtnContainer').innerHTML = `
+        <button id="pinOkBtn" class="btn-success" style="flex: 1;"><i class="fas fa-check"></i> ตกลง</button>
+        <button id="pinCancelBtn" class="btn-secondary" style="flex: 1;"><i class="fas fa-times"></i> ยกเลิก</button>`;
+    overlay.style.display = 'block';
+    modal.style.display = 'block';
+
+    const first = document.getElementById('pinInput1');
+    const second = document.getElementById('pinInput2');
+    const error = document.getElementById('pinError');
+    [first, second].forEach(input => {
+        if (!input) return;
+        input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); error.textContent = ''; });
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pinOkBtn').click(); });
+    });
+    setTimeout(() => first.focus(), 50);
+
+    const close = (value) => { overlay.style.display = 'none'; modal.style.display = 'none'; resolve(value); };
+    document.getElementById('pinCancelBtn').onclick = () => close(null);
+    document.getElementById('pinOkBtn').onclick = async () => {
+        const pin = first.value;
+        if (!/^\d{4}$/.test(pin)) { error.textContent = 'รหัสต้องเป็นตัวเลข 4 หลัก'; first.focus(); return; }
+        if (confirm && second.value !== pin) { error.textContent = 'รหัสทั้งสองช่องไม่ตรงกัน'; second.focus(); return; }
+        if (validate) {
+            const problem = await validate(pin);
+            if (problem) { error.textContent = problem; first.value = ''; first.focus(); return; }
+        }
+        close(pin);
+    };
+});
+
+const PIN_LOCK_KEY = 'pinLock';
+const pinLockRemainingSec = () => {
+    try {
+        const lock = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}');
+        return Math.max(0, Math.ceil(((lock.until || 0) - Date.now()) / 1000));
+    } catch (e) { return 0; }
+};
+
+// Resolves which account (ID) this name belongs to.
+// Returns { userID, data } on success, { cancelled: true } when the user cancels,
+// or throws when Firebase cannot be reached (caller falls back to offline mode).
+const resolveAccount = async (name, setStatus) => {
+    let localId = null;
+    try {
+        const local = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+        if (local && local.ID && !local.isTemporary) localId = local.ID;
+    } catch (e) {}
+
+    const account = await findAccountByName(name);
+
+    // New name: create the account with a PIN.
+    if (!account) {
+        const pin = await window.customPin({
+            title: 'ตั้งรหัส 4 หลัก',
+            message: `ตั้งรหัส 4 หลักให้ชื่อ "${name}"\nครั้งหน้าใช้ชื่อนี้กับรหัสนี้เข้าจากเครื่องไหนก็ได้ แม้จะล้างแคชไปแล้ว`,
+            confirm: true
+        });
+        if (!pin) return { cancelled: true };
+        const userID = localId || Math.floor(100000 + Math.random() * 900000).toString();
+        await firebase.database().ref(`obs_id/${userID}`).update({
+            name: name.substring(0, 30), ID: userID, pinHash: await hashAccountPin(name, pin),
+            pinUpdated: new Date().toISOString()
+        });
+        return { userID, data: null };
+    }
+
+    // Existing account without a PIN (created before PINs existed): the owner sets one now.
+    if (!account.data.pinHash) {
+        const pin = await window.customPin({
+            title: 'ตั้งรหัส 4 หลัก',
+            message: `ชื่อ "${name}" ยังไม่มีรหัส\nตั้งรหัส 4 หลักเพื่อยืนยันว่าเป็นเจ้าของชื่อนี้ และใช้เข้าจากเครื่องไหนก็ได้`,
+            confirm: true
+        });
+        if (!pin) return { cancelled: true };
+        await firebase.database().ref(`obs_id/${account.id}`).update({
+            pinHash: await hashAccountPin(name, pin), pinUpdated: new Date().toISOString()
+        });
+        setStatus('🔐 ตั้งรหัสเรียบร้อย', '#4ade80');
+        return { userID: account.id, data: account.data };
+    }
+
+    // Same account already signed in on this machine.
+    if (localId && account.id === localId) return { userID: account.id, data: account.data };
+
+    // Account with a PIN: ask for it (5 wrong tries → wait 1 minute).
+    const locked = pinLockRemainingSec();
+    if (locked > 0) {
+        setStatus(`⏳ ใส่รหัสผิดหลายครั้ง ลองใหม่ได้ใน ${locked} วินาที`, '#f59e0b');
+        return { cancelled: true };
+    }
+    const pin = await window.customPin({
+        title: 'ใส่รหัส 4 หลัก',
+        message: `ใส่รหัส 4 หลักของชื่อ "${name}"\nลืมรหัส? ติดต่อผู้ดูแลผ่านปุ่ม "สนับสนุน"`,
+        validate: async (candidate) => {
+            if (pinLockRemainingSec() > 0) return `ใส่รหัสผิดหลายครั้ง ลองใหม่ได้ใน ${pinLockRemainingSec()} วินาที`;
+            if (await hashAccountPin(name, candidate) === account.data.pinHash) {
+                localStorage.removeItem(PIN_LOCK_KEY);
+                return null;
+            }
+            let lock = {};
+            try { lock = JSON.parse(localStorage.getItem(PIN_LOCK_KEY) || '{}'); } catch (e) {}
+            const fails = (lock.fails || 0) + 1;
+            if (fails >= 5) {
+                localStorage.setItem(PIN_LOCK_KEY, JSON.stringify({ fails: 0, until: Date.now() + 60000 }));
+                return 'ใส่รหัสผิด 5 ครั้ง กรุณารอ 1 นาที';
+            }
+            localStorage.setItem(PIN_LOCK_KEY, JSON.stringify({ fails, until: 0 }));
+            return `รหัสไม่ถูกต้อง (เหลืออีก ${5 - fails} ครั้ง)`;
+        }
+    });
+    if (!pin) return { cancelled: true };
+    return { userID: account.id, data: account.data };
+};
+
 window.saveAndEnterApp = async () => {
     const nameInput = $('visitorName');
     const provinceSelect = $('visitorProvince');
@@ -4518,7 +4823,7 @@ window.saveAndEnterApp = async () => {
 
     // CASE 2: Soft anti-spam — cooldown timer + warn
     const storedMachineId = localStorage.getItem('machineIdentityName');
-    if (storedMachineId && storedMachineId !== name) {
+    if (storedMachineId && !storedMachineId.startsWith('Guest_') && storedMachineId !== name) {
         const changeLog = JSON.parse(localStorage.getItem('nameChangeLog') || '{"count":0,"lastChanged":0}');
         const now = Date.now();
         const cooldownMs = 30 * 60 * 1000;
@@ -4571,27 +4876,20 @@ window.saveAndEnterApp = async () => {
         }
     }
 
-    // Reuse existing ID or Generate 6-digit ID
-    let userID = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-        if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) {
-            userID = existingIdentity.ID;
-        }
-    } catch(e) {}
-
-    // CASE 3: Full login — Restore from Firebase
+    // Account = name + 4-digit PIN (see resolveAccount)
+    let userID = null;
     try {
         if (startBtn) startBtn.disabled = true;
         setStatus('<i class="fas fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...', '#60a5fa');
 
-        const existingData = await fetchFirebaseUserData(name, userID);
-        // Check if it's a true duplicate (name taken by another ID)
-        if (existingData && existingData.ID && existingData.ID !== userID) {
-            setStatus(`⚠️ ชื่อ "${name}" มีผู้ใช้งานอื่นแล้ว`, '#ef4444');
+        const account = await resolveAccount(name, setStatus);
+        if (account.cancelled) {
+            if (!loadingStatus || !loadingStatus.textContent.includes('⏳')) setStatus('ยกเลิกแล้ว — กด Start อีกครั้งเมื่อพร้อม', '#94a3b8');
             if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
             return;
         }
+        userID = account.userID;
+        const existingData = account.data;
 
         if (existingData && existingData.totalMinutes) {
             // V2.9.3: Always trust Firebase as the single source of truth for time
@@ -4611,6 +4909,13 @@ window.saveAndEnterApp = async () => {
         console.error('Firebase user check error:', err);
         setStatus('⚠️ ไม่สามารถเชื่อมต่อ Firebase ได้ — เข้าแบบออฟไลน์', '#f59e0b');
         if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start'; }
+    }
+    if (!userID) {
+        try {
+            const existingIdentity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
+            if (existingIdentity && existingIdentity.ID && !existingIdentity.isTemporary) userID = existingIdentity.ID;
+        } catch (e) {}
+        if (!userID) userID = Math.floor(100000 + Math.random() * 900000).toString();
     }
 
     userIdentity = { name: name, province: province, platform: 'PC', ID: userID };
@@ -5073,6 +5378,10 @@ window.triggerAction = async (index) => {
         if (actionType === 'scene') {
             await obs.call('SetCurrentProgramScene', { sceneName: btn.targetSource });
             showToast(`Switched to scene: ${btn.targetSource}`, 'success');
+        }
+        else if (actionType === 'playgroup') {
+            await runPlayGroupAction(btn.playGroupAction, btn.playGroupName);
+            showToast(playGroupToastText(btn.playGroupAction, btn.playGroupName), 'success');
         }
         else if (actionType === 'toggle' || actionType === 'show' || actionType === 'hide') {
             try {

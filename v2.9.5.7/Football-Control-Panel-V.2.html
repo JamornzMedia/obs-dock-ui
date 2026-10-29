@@ -1419,6 +1419,17 @@
             color: var(--text-muted-color);
         }
 
+        .action-settings-table td.action-setting-inactive {
+            opacity: 0.45;
+        }
+
+        .action-settings-table .action-playgroup-name {
+            display: block;
+            width: 100%;
+            min-width: 150px;
+            margin-top: 4px;
+        }
+
         #sourcesTableBody td:nth-child(1) {
             font-weight: bold;
             cursor: pointer;
@@ -2278,6 +2289,14 @@
             font-size: 0.8rem;
             font-weight: 500;
         }
+        /* V2.9.5.7: keep bib controls inside a centered Dock popup on narrow layouts. */
+        #bibColorsA, #bibColorsB { display: none !important; }
+        .bib-popup-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.68); z-index:10005; box-sizing:border-box; }
+        .bib-popup-modal.is-open { display:flex; }
+        .bib-popup-card { width:min(350px,100%); max-height:calc(100vh - 24px); overflow:auto; background:#1e293b; border:1px solid rgba(255,255,255,.15); border-radius:16px; padding:18px; box-shadow:0 20px 50px rgba(0,0,0,.65); color:#f8fafc; box-sizing:border-box; }
+        .bib-color-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+        .bib-modal-preset-btn { height:40px; border-radius:8px; border:3px solid transparent; cursor:pointer; font-weight:800; }
+        .bib-modal-preset-btn.is-selected { border-color:#fff; box-shadow:0 0 0 2px #38bdf8; }
     </style>
 </head>
 
@@ -2531,6 +2550,33 @@
 
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
+
+    <div id="bibOverridePopup" class="bib-popup-modal" role="dialog" aria-modal="true" aria-labelledby="bibModalTitle">
+        <div class="bib-popup-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)">
+                <div><h3 id="bibModalTitle" style="margin:0;font-size:1rem">🎽 เสื้อเอี้ยม - ทีม A</h3><span style="font-size:.75rem;color:#94a3b8">ใช้สีชั่วคราวแทนสีเสื้อหลัก</span></div>
+                <button type="button" id="bibModalCloseBtn" class="btn-secondary" aria-label="ปิด">✕</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(15,23,42,.7);padding:12px;border-radius:10px;margin-bottom:14px">
+                <div><strong style="font-size:.85rem">สถานะเสื้อเอี้ยม</strong><div id="bibModalStatusText" style="font-size:.75rem;color:#94a3b8;margin-top:2px">ปิดใช้งาน</div></div>
+                <button type="button" id="bibModalToggleBtn" class="btn-success">เปิดเอี้ยม</button>
+            </div>
+            <div class="bib-color-grid">
+                <button type="button" class="bib-modal-preset-btn" data-color="#84cc16" style="background:#84cc16;color:#172033">เขียว</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#f97316" style="background:#f97316;color:#fff">ส้ม</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#ffffff" style="background:#fff;color:#172033">ขาว</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#eab308" style="background:#eab308;color:#172033">เหลือง</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#06b6d4" style="background:#06b6d4;color:#fff">ฟ้า</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#ef4444" style="background:#ef4444;color:#fff">แดง</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#ec4899" style="background:#ec4899;color:#fff">ชมพู</button>
+                <button type="button" class="bib-modal-preset-btn" data-color="#3b82f6" style="background:#3b82f6;color:#fff">น้ำเงิน</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.25);padding:9px;border-radius:9px;margin-top:12px">
+                <span style="font-size:.8rem;color:#94a3b8;flex:1">สีอื่น:</span><input type="color" id="bibModalCustomColor" value="#84cc16" style="width:42px;height:34px;border:0;background:transparent"><code id="bibModalHexCode">#84CC16</code>
+            </div>
+            <button type="button" id="bibModalDoneBtn" class="btn-secondary" style="width:100%;margin-top:14px">เสร็จสิ้น</button>
+        </div>
+    </div>
 
     <!-- Mobile Control Popup -->
     <div id="mobileControlPopup"
@@ -2950,8 +2996,8 @@
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;margin-bottom:6px;padding:0 2px;">
             <span style="font-size:0.75rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;"><i class="fas fa-tags" style="color:#60a5fa;"></i> Match Labels</span>
-            <button type="button" id="openLabelAllBtn" class="btn-secondary" style="font-size:0.72rem;padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.35);color:#93c5fd;cursor:pointer;" title="จัดการและกำหนดแพทเทิร์น LabelAll (OBS Text)">
-                <i class="fas fa-cog"></i> <span>จัดการ LabelAll</span>
+            <button type="button" id="openLabelAllBtn" class="btn-secondary" style="font-size:0.62rem;line-height:1;min-height:0;height:20px;padding:0 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.35);color:#93c5fd;cursor:pointer;" title="จัดการและกำหนดแพทเทิร์น LabelAll (OBS Text)">
+                <i class="fas fa-cog"></i> <span>LabelAll</span>
             </button>
         </div>
         <div class="labels-row">
@@ -3190,8 +3236,8 @@
             <div class="settings-tabs" id="settingsTabs">
             <button type="button" class="settings-tab-btn active" data-tab="settingsTabGeneral" data-lang="settingsTabGeneral">ðŸ“
                 Announce</button>
-            <button type="button" class="settings-tab-btn" data-tab="settingsTabLabelAll" data-lang="settingsTabLabelAll">🏷️ LabelAll</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabData" data-lang="settingsTabData">ðŸ“Š Data</button>
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabLabelAll" data-lang="settingsTabLabelAll">🏷️ LabelAll</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">ðŸŽ®
                 Actions</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">âŒ¨ï¸
@@ -3487,6 +3533,7 @@
                         <th data-lang="actionSettingsSource"></th>
                         <th data-lang="actionSettingsScene"></th>
                         <th data-lang="actionSettingsAction"></th>
+                        <th data-lang="actionSettingsPlayGroupAction"></th>
                         <th><span data-lang="actionSettingsEditSave"></span></th>
                     </tr>
                 </thead>
@@ -4381,7 +4428,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.7-labelall"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.7-bib-popup"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"

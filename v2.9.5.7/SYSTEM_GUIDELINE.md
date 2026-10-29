@@ -352,10 +352,15 @@ obs_rooms_score/
 
 - 6 ปุ่ม (configurable)
 - เก็บใน localStorage key `actionButtonSettings`
-- ทุกปุ่มมี: `name`, `backgroundColor`, `height`, `targetSource`, `actionType`
-- **Action Types**: `Toggle`, `Show`, `Hide`, `Scene`
+- ทุกปุ่มมี: `name`, `backgroundColor`, `height`, `targetSource`, `targetScene`, `actionType`, `playGroupAction`, `playGroupName`
+- **Action Types**: `Toggle`, `Show`, `Hide`, `Scene`, `PlayGroup`
   - `Toggle/Show/Hide` → เปลี่ยน visibility ของ OBS Source ใน current scene
   - `Scene` → เปลี่ยน OBS Scene ทั้งหมด
+  - `PlayGroup` → ส่ง `Show`, `Hide` หรือ `Toggle` ตามค่า `playGroupAction` ไปยังปลั๊กอิน PlayGroup โดยระบุ Group ❤️ ของ PlayGroup ด้วย `playGroupName` (จำเป็นต้องใส่ ใส่ชื่อมีหรือไม่มี ❤️ ก็ได้)
+- **PlayGroup OBS WebSocket contract** (`CallVendorRequest`, `vendorName: "PlayGroup"`, ต้องใช้ PlayGroup v1.0.0 ขึ้นไป):
+  - `requestType: "RunAction"`, `requestData: { action: "show" | "hide" | "toggle", group: "<ชื่อ Group หรือ UUID>" }` → `responseData: { ok, matched, error? }` โดย `error` เป็น `GROUP_REQUIRED`, `GROUP_NOT_FOUND` หรือ `INVALID_ACTION`
+  - `requestType: "ListGroups"` → `responseData: { groups: [{ name, uuid, scene }] }` (เฉพาะ Group ❤️ ของ PlayGroup) ใช้เติม autocomplete ของช่อง Group (`<datalist id="playgroup-groups-list">`)
+- Action แบบ PlayGroup ไม่ใช้ `targetSource` หรือ `targetScene`; 1 ปุ่มสั่ง 1 Group (ไม่มีการสั่งรวมทุก Group)
 - ฟังก์ชัน: `triggerAction(index)` (line 2585) — index เป็น 1-based
 
 ---
