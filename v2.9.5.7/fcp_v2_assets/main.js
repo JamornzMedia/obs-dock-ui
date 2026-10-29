@@ -821,6 +821,7 @@ const renderActionButtons = () => {
         button.id = setting.id;
         button.textContent = setting.name;
         button.style.backgroundColor = setting.backgroundColor;
+        button.style.color = getContrastColor(setting.backgroundColor); // auto black/white text, same rule as the score
         button.style.height = `${setting.height}px`;
 
         const targetSource = setting.targetSource;
@@ -990,6 +991,7 @@ const populateActionSettingsTable = (lang) => {
         `;
         $(`action-color-${index}`).onchange = (e) => {
             $(`actionBtn${index}`).style.backgroundColor = e.target.value;
+            $(`actionBtn${index}`).style.color = getContrastColor(e.target.value);
         };
         $(`action-edit-${index}`).onclick = () => toggleActionEditMode(index, true);
         $(`action-save-${index}`).onclick = () => saveActionSettingsRow(index);
