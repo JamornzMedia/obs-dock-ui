@@ -1,0 +1,208 @@
+/* =============================================================================================
+   OBSScore Dock — layout fixes for narrow OBS docks + "Sport" theme (V2.9.5.8)
+   - Part 1 applies to every theme: nothing may wrap badly or run past the dock edge.
+   - Part 2 is the Sport look, active when <html> has the class "theme-sport"
+     (Settings → Display → Theme). "Classic" removes the class and keeps the old look.
+   - Only CSS: element ids, classes and JavaScript behavior are unchanged.
+   ============================================================================================= */
+
+/* ---------- Part 1: narrow dock fixes (all themes) ---------- */
+#mainPanelContainer { overflow-x: hidden; max-width: 900px; }
+#mainPanelContainer .row > *,
+#mainPanelContainer .score-col-team,
+#mainPanelContainer .team-header > *,
+#mainPanelContainer .name-control-area { min-width: 0; }
+#mainPanelContainer button { min-width: 0; }
+
+/* Top bar: online count + rank pill shrink instead of pushing past the edge */
+#mainPanelContainer [data-panel-id="panelTopBar"] > div { min-width: 0; flex: 1 1 auto; }
+#onlineUserCount { flex: 0 0 auto; }
+#userRankDisplay { min-width: 0; overflow: hidden; }
+#userRankDisplay #rankUserName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Match labels stay on one line and are cut with "…" (full text is in the tooltip) */
+.labels-row div { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Buttons keep their text on one line */
+#mainPanelContainer [data-panel-id="panelExcelLoad"] button,
+.action-buttons-grid button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Timer: let the clock take its own row instead of squeezing the side controls */
+@media (max-width: 420px) {
+    .timer-area-container { flex-wrap: wrap !important; gap: 8px !important; padding: 8px !important; }
+    .timer-display-area { order: -1; flex: 1 1 100% !important; min-width: 0 !important; border: none !important; padding: 2px 0 !important; }
+    #halfBtnContainer, .timer-right-controls { flex: 1 1 0; min-width: 0; }
+}
+
+@media (max-width: 360px) {
+    .container { padding: 5px !important; }
+    .card { padding: 8px !important; }
+    #userRankDisplay .rank-time { display: none; }
+    #mainPanelContainer [data-panel-id="panelExcelLoad"] .row { gap: 5px; }
+    #mainPanelContainer [data-panel-id="panelExcelLoad"] button { padding: 7px 9px; font-size: 0.78rem; gap: 5px; }
+    .labels-row { gap: 4px !important; }
+    .labels-row div { font-size: 0.66rem !important; padding: 6px 3px !important; }
+    .score-col-center { flex: 0 0 46px !important; }
+    .team-header { gap: 8px !important; }
+    .team-row .color-picker { width: 34px !important; height: 34px !important; }
+    .action-buttons-grid { gap: 6px !important; }
+    .action-buttons-grid button { font-size: 0.8rem; padding: 8px 4px; }
+}
+
+@media (max-width: 300px) {
+    #userRankDisplay .rank-name { display: none; }
+    /* Icon-only for the data buttons; the full name stays in the tooltip */
+    #excelBtn span, #loadBtn span, #copyBtn span, #fullResetBtn span, #syncScoreBtn span { display: none; }
+    .score-col-center { flex: 0 0 40px !important; }
+    .score-col-center button { width: 34px !important; height: 34px !important; }
+}
+
+/* ---------- Part 2: Sport theme ---------- */
+html.theme-sport {
+    --sp-bg: #07090d;
+    --sp-panel: #10151c;
+    --sp-panel-2: #171e28;
+    --sp-line: #253041;
+    --sp-text: #eef2f7;
+    --sp-muted: #8b97a8;
+    --sp-lime: #b6f23a;      /* pitch-light accent */
+    --sp-cyan: #22d3ee;
+    --sp-amber: #fbbf24;
+    --sp-red: #f43f5e;
+    --sp-green: #22c55e;
+    --sp-blue: #3b82f6;
+    --sp-font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', 'Segoe UI', sans-serif;
+    --accent-color: #3b82f6;
+    --card-bg-color: var(--sp-panel);
+    --text-muted-color: var(--sp-muted);
+    --border-radius: 10px;
+}
+
+html.theme-sport body {
+    background:
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.018) 0 2px, transparent 2px 14px),
+        radial-gradient(ellipse at 50% -10%, rgba(182,242,58,0.10), transparent 55%),
+        var(--sp-bg);
+    background-attachment: fixed;
+    color: var(--sp-text);
+}
+
+/* Panels: solid, crisp, with a coloured edge per section */
+html.theme-sport .card {
+    position: relative;
+    background: linear-gradient(180deg, var(--sp-panel-2), var(--sp-panel)) !important;
+    border: 1px solid var(--sp-line) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    margin-bottom: 6px !important;
+    border-left: 3px solid var(--sp-edge, var(--sp-line)) !important;
+}
+html.theme-sport [data-panel-id="panelTopBar"]      { --sp-edge: var(--sp-lime); }
+html.theme-sport [data-panel-id="panelExcelLoad"]   { --sp-edge: var(--sp-blue); }
+html.theme-sport [data-panel-id="panelTeamEditor"]  { --sp-edge: #e2e8f0; }
+html.theme-sport [data-panel-id="panelSwap"]        { --sp-edge: var(--sp-amber); }
+html.theme-sport [data-panel-id="panelActionButtons"] { --sp-edge: var(--sp-cyan); }
+html.theme-sport [data-panel-id="panelScore"]       { --sp-edge: var(--sp-lime); }
+html.theme-sport #score2Card                        { --sp-edge: var(--sp-amber); }
+html.theme-sport [data-panel-id="panelTimer"]       { --sp-edge: var(--sp-red); }
+
+/* Top bar pills */
+html.theme-sport #onlineUserCount,
+html.theme-sport #userRankDisplay {
+    background: #0b0f15 !important;
+    border: 1px solid var(--sp-line) !important;
+    border-radius: 999px !important;
+}
+html.theme-sport #userRankDisplay #rankUserName { color: #fff !important; }
+
+/* Buttons: flatter, condensed, with a pressable bottom edge */
+html.theme-sport button {
+    font-family: var(--sp-font-display);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border-radius: 7px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.28) !important;
+    transform: none;
+}
+html.theme-sport button:hover { filter: brightness(1.12); transform: none !important; }
+html.theme-sport button:active { box-shadow: inset 0 2px 4px rgba(0,0,0,0.4) !important; transform: translateY(1px) !important; }
+html.theme-sport .btn-primary   { background: var(--sp-blue) !important; border: none !important; }
+html.theme-sport .btn-success   { background: var(--sp-green) !important; border: none !important; }
+html.theme-sport .btn-danger    { background: var(--sp-red) !important; border: none !important; }
+html.theme-sport .btn-warning   { background: var(--sp-amber) !important; color: #1a1300 !important; border: none !important; }
+html.theme-sport .btn-secondary { background: #1f2834 !important; border: 1px solid var(--sp-line) !important; color: #dbe3ee !important; }
+
+/* Section titles in condensed caps */
+html.theme-sport h3, html.theme-sport h4, html.theme-sport h5 { font-family: var(--sp-font-display); letter-spacing: 0.5px; }
+
+/* Teams */
+html.theme-sport .team-row { background: #0b0f15 !important; border: 1px solid var(--sp-line); border-radius: 8px !important; }
+html.theme-sport .team-row .name { font-family: var(--sp-font-display); font-size: 1.35rem !important; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+html.theme-sport .team-row .color-picker { border-radius: 6px !important; border: 2px solid #2d3848 !important; }
+html.theme-sport .labels-row div {
+    background: #0b0f15 !important;
+    border: 1px solid var(--sp-line) !important;
+    color: #c2ccd8 !important;
+    border-radius: 6px !important;
+}
+
+/* Action buttons: bigger condensed labels (their colours/text colours stay per button) */
+html.theme-sport .action-buttons-grid button { font-size: 1.02rem; letter-spacing: 0.6px; }
+
+/* Swap sides: broadcast-style bar */
+html.theme-sport #swapBtn { font-size: 1.05rem; letter-spacing: 1px; text-transform: uppercase; }
+
+/* Score: scoreboard digits */
+html.theme-sport .clean-score-display {
+    font-family: var(--sp-font-display);
+    font-weight: 800;
+    -webkit-text-stroke: 0 !important;
+    letter-spacing: 1px;
+    border-radius: 8px !important;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.35);
+    font-variant-numeric: tabular-nums;
+}
+html.theme-sport .btn-score-plus  { background: var(--sp-green) !important; border-radius: 8px 8px 3px 3px !important; }
+html.theme-sport .btn-score-minus { background: var(--sp-red) !important; border-radius: 3px 3px 8px 8px !important; }
+html.theme-sport .score-col-center button { border-radius: 50% !important; }
+
+/* Timer: stadium clock */
+html.theme-sport .timer-area-container {
+    background: #05070a !important;
+    border: 1px solid var(--sp-line) !important;
+    border-radius: 10px !important;
+}
+html.theme-sport .timer-display {
+    font-family: var(--sp-font-display) !important;
+    font-weight: 800 !important;
+    font-size: clamp(2.6rem, 16vw, 4.2rem) !important;
+    letter-spacing: 3px !important;
+    color: #e5e7eb;
+    text-shadow: 0 0 14px rgba(255,255,255,0.12);
+}
+html.theme-sport .timer-display.timer-running { color: var(--sp-lime) !important; text-shadow: 0 0 18px rgba(182,242,58,0.45) !important; }
+html.theme-sport .timer-display.timer-paused  { color: var(--sp-amber) !important; text-shadow: 0 0 12px rgba(251,191,36,0.25) !important; }
+html.theme-sport #halfText { font-family: var(--sp-font-display); font-weight: 800; letter-spacing: 1px; }
+
+/* Inputs */
+html.theme-sport input[type="text"], html.theme-sport input[type="number"], html.theme-sport select, html.theme-sport textarea {
+    background: #0b0f15;
+    border: 1px solid var(--sp-line);
+    border-radius: 6px;
+    color: var(--sp-text);
+}
+html.theme-sport input:focus, html.theme-sport select:focus, html.theme-sport textarea:focus {
+    outline: none;
+    border-color: var(--sp-lime);
+    box-shadow: 0 0 0 2px rgba(182,242,58,0.25);
+}
+
+/* Settings and popups share the panel look */
+html.theme-sport .popup-modal, html.theme-sport #genericModal, html.theme-sport .bib-popup-card {
+    background: var(--sp-panel-2) !important;
+    border: 1px solid var(--sp-line) !important;
+}
+html.theme-sport .settings-tab-btn.active { background: var(--sp-lime) !important; color: #0b1200 !important; }
+html.theme-sport ::-webkit-scrollbar-thumb { background: #2b3646; }
