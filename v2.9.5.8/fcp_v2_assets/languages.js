@@ -305,6 +305,8 @@ export const translations = {
                         <li>The Confirm Score button only appears when Tournament Manager (Local) is selected. The LabelAll button is smaller and its settings tab moved to the 3rd position.</li>
                         <li><strong>Team logos from jamornz.com:</strong> When connected, the Dock saves every team logo (including logos from the team portal) on this computer and shows them in OBS through the Browser Sources <code>logo_team_a_web</code> / <code>logo_team_b_web</code>. Create them with one click in the jamornz.com settings or the Logo window.</li>
                         <li><strong>New team &amp; score board:</strong> Logo, team name and main score are now one card per team (team-coloured). The <strong>+</strong> button is tall on top, <strong>−</strong> is small below. The ⚙️ button on each card sets the primary/secondary colour and the bib (temporary shirt colour). Swap / Undo / Reset are the small buttons between the teams.</li>
+                        <li><strong>19 kit patterns:</strong> pick each team's kit pattern in the ⚙️ dialog (stripes, hoops, sash, halves, checkered, chevron, camo …) drawn in the secondary colour and remembered per team name. The secondary colour also shows as bands on the card; bigger, clearer VS.</li>
+                        <li><strong>Snooker graphics:</strong> choose Snooker in Sport Graphics Settings for ball buttons 1–7, fouls +4…+7, break, highest break, reds left, points remaining and frame end (points = main score, frames = score 2). The OBS graphic (<code>Snooker_Main_Score</code>) has editable colours and display options.</li>
                     </ul>
                 </li>
                 <li>
@@ -735,6 +737,8 @@ export const translations = {
                         <li>ปุ่มยืนยันคะแนนแสดงเฉพาะเมื่อเลือก Tournament Manager (Local) ปุ่ม LabelAll เล็กลง และย้าย Tab ตั้งค่า LabelAll เป็นลำดับที่ 3</li>
                         <li><strong>โลโก้ทีมจาก jamornz.com:</strong> เมื่อเชื่อมต่อ Dock จะเก็บโลโก้ทุกทีม (รวมโลโก้ที่ทีมอัปโหลดผ่านพอร์ทัล) ไว้ในเครื่อง และแสดงใน OBS ผ่าน Browser Source <code>logo_team_a_web</code> / <code>logo_team_b_web</code> สร้างได้ในคลิกเดียวที่หน้าตั้งค่า jamornz.com หรือหน้าต่างโลโก้</li>
                         <li><strong>หน้าทีม + คะแนนแบบใหม่:</strong> โลโก้ ชื่อทีม และคะแนนหลักรวมอยู่ในการ์ดเดียวของแต่ละทีม (สีตามสีทีม) ปุ่ม <strong>+</strong> อยู่บนและสูงกว่า ปุ่ม <strong>−</strong> เล็กอยู่ล่าง ปุ่ม ⚙️ มุมขวาบนของการ์ดใช้ตั้งสีหลัก สีรอง และเปิดสีเสื้อเอี้ยม ปุ่มสลับ / ย้อนกลับ / รีเซ็ต เป็นปุ่มเล็กอยู่ตรงกลางระหว่างสองทีม</li>
+                        <li><strong>ลายเสื้อ 19 แบบ:</strong> ในหน้าต่าง ⚙️ เลือกลายเสื้อของแต่ละทีมได้ (ลายทางตั้ง ลายขวาง แถบเฉียง ครึ่งซีก ตาราง บั้ง V ลายพราง ฯลฯ) ใช้สีรองเป็นลาย และจำตามชื่อทีม สีรองแสดงเป็นแถบบน/ล่างของการ์ด ตัว VS ใหญ่และชัดขึ้น</li>
+                        <li><strong>กราฟิกสนุกเกอร์:</strong> เลือก Snooker ในหน้าตั้งค่ากราฟิกกีฬา จะมีปุ่มลูก 1–7 ฟาวล์ +4 ถึง +7 นับเบรก เบรกสูงสุด แดงที่เหลือ และแต้มที่เหลือบนโต๊ะ กดจบเฟรมได้ (แต้ม = คะแนนหลัก, เฟรม = คะแนนรอง) กราฟิกใน OBS (<code>Snooker_Main_Score</code>) ปรับสีและการแสดงผลได้ทั้งหมด</li>
                     </ul>
                 </li>
                 <li>

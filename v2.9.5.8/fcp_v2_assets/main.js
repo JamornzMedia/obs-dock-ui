@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.8';
-import { translations } from './languages.js?v=2.9.5.8-4';
+import { translations } from './languages.js?v=2.9.5.8-6';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -1496,6 +1496,44 @@ const getContrastColor = (hexColor) => {
     return brightness > 128 ? '#000000' : '#ffffff';
 };
 
+// V2.9.5.8: kit patterns (ลายเสื้อ) for the team cards. Saved per team name so the
+// pattern follows the team when sides are swapped or the match is reloaded.
+function kitPatternList() {
+    return [
+        ['solid', 'สีเรียบ'], ['stripes', 'ลายทางตั้ง'], ['hoops', 'ลายขวาง'], ['sash', 'แถบเฉียง'],
+        ['halves', 'ครึ่งซีก'], ['centre', 'แถบกลาง'], ['pinstripes', 'เส้นบาง'], ['checkered', 'ตาราง'],
+        ['quarters', 'สี่ส่วน'], ['chevron', 'บั้ง V'], ['yoke', 'บ่า/ไหล่'], ['sides', 'ข้างลำตัว'],
+        ['fade', 'ไล่สี'], ['twinbars', 'แถบคู่'], ['diamond', 'ตาข่ายเพชร'], ['zigzag', 'ซิกแซก'],
+        ['dots', 'จุด'], ['camo', 'ลายพราง'], ['pixel', 'พิกเซล'],
+    ];
+}
+function kitPatternKey(name) {
+    return String(name || '').replace(/\s+/g, '').toLowerCase();
+}
+function getKitPattern(team, name) {
+    try {
+        const map = JSON.parse(localStorage.getItem('teamKitPatterns') || '{}');
+        const byName = map[kitPatternKey(name)];
+        if (byName) return byName;
+    } catch (e) {}
+    return 'solid';
+}
+function setKitPattern(team, name, id) {
+    try {
+        const map = JSON.parse(localStorage.getItem('teamKitPatterns') || '{}');
+        const key = kitPatternKey(name);
+        if (key) map[key] = id;
+        localStorage.setItem('teamKitPatterns', JSON.stringify(map));
+    } catch (e) {}
+    applyKitPattern(team, id);
+}
+function applyKitPattern(team, id) {
+    const el = document.getElementById(`mbPattern${team}`);
+    if (!el) return;
+    const valid = kitPatternList().some(([key]) => key === id) ? id : 'solid';
+    el.className = `mb-pattern kit-pat pat-${valid}`;
+}
+
 const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isA = team === 'A';
     const masterTeam = isA ? masterTeamA : masterTeamB;
@@ -1547,6 +1585,8 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     if (boardCard) {
         boardCard.style.setProperty('--team-color', effectiveColor1);
         boardCard.style.setProperty('--team-ink', contrastColor);
+        boardCard.style.setProperty('--team-color2', masterTeam.color2 || '#000000');
+        applyKitPattern(team, getKitPattern(team, masterTeam.name));
         boardCard.classList.toggle('bib-on', !!isBibActive);
     }
 
@@ -2417,8 +2457,12 @@ function parseJamornzInput(input) {
     const formulaMatch = raw.match(/IMPORTDATA\s*\(\s*["']([^"']+)["']\s*\)/i);
     if (formulaMatch) raw = formulaMatch[1];
 
-    // Handle public view: https://jamornz.com/tournament/view/:slug/:id
-    const viewMatch = raw.match(/tournament\/view\/([^/?#]+)\/([^/?#]+)/i);
+    // Handle tournament page links: public view, organizer portal and team portal
+    //   https://jamornz.com/tournament/view/:slug/:id
+    //   https://jamornz.com/tournament/organizer/:slug/:id
+    //   https://jamornz.com/tournament/team-portal/:slug/:id
+    // (:slug may be the profile name or the user ID; the API accepts both)
+    const viewMatch = raw.match(/tournament\/(?:view|organizer|team-portal)\/([^/?#]+)\/([^/?#]+)/i);
     if (viewMatch) {
         let dockPin = '';
         try { dockPin = new URL(raw).searchParams.get('dockPin') || ''; } catch(e) {}
@@ -5453,11 +5497,16 @@ window.triggerAction = async (index) => {
 // Expose the module-scoped obs instance so volleyball_module_v2.js can
 // call obs.call() via window.fcpOBS (avoids window.obs which doesn't exist).
 window.fcpOBS = obs;
+// V2.9.5.8: score helpers for sport add-ons (snooker_module.js). Same path as the +/- buttons (undo, OBS, sync).
+window.fcpChangeScore = changeScore;
+window.fcpChangeScore2 = changeScore2;
+if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.2';
+import './volleyball_module_v2.js?v=2.9.5.8';
 import './display_table_module.js?v=2.9.5.2';
+import './snooker_module.js?v=2.9.5.8';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {
@@ -5622,6 +5671,7 @@ document.addEventListener('keydown', event => { if (event.key === 'Escape' && ac
 // The original hidden inputs (#colorA, #colorA2, #bibOverrideA, #bibCustomColorA ...)
 // stay the source of truth, so OBS, swap-team and saved team colors work unchanged.
 let activeTeamSettings = null;
+const tsColorTimers = {};
 const tsModal = document.getElementById('teamSettingsModal');
 const tsEl = id => document.getElementById(id);
 const refreshTeamSettings = () => {
@@ -5639,6 +5689,26 @@ const refreshTeamSettings = () => {
     tsEl('tsBibColors').classList.toggle('is-on', bibOn);
     tsEl('tsBibCustom').value = bibColor;
     tsModal.querySelectorAll('#tsBibColors button').forEach(b => b.classList.toggle('is-selected', b.dataset.color.toLowerCase() === bibColor.toLowerCase()));
+    // Kit pattern tiles, previewed with this team's colours
+    const grid = tsEl('tsPatternGrid');
+    if (grid) {
+        const card = tsEl(`mbCard${team}`);
+        const shown = card ? getComputedStyle(card).getPropertyValue('--team-color').trim() : color1;
+        grid.style.setProperty('--team-color', shown || color1);
+        grid.style.setProperty('--team-color2', color2);
+        const current = getKitPattern(team, master?.name);
+        if (!grid.childElementCount) {
+            grid.innerHTML = kitPatternList().map(([id, label]) =>
+                `<button type="button" class="ts-pat-tile" data-pattern="${id}" title="${label}"><div class="sw"><div class="kit-pat pat-${id}"></div></div><span>${label}</span></button>`).join('');
+            grid.querySelectorAll('.ts-pat-tile').forEach(tile => tile.addEventListener('click', () => {
+                if (!activeTeamSettings) return;
+                const m = activeTeamSettings === 'A' ? masterTeamA : masterTeamB;
+                setKitPattern(activeTeamSettings, m?.name, tile.dataset.pattern);
+                refreshTeamSettings();
+            }));
+        }
+        grid.querySelectorAll('.ts-pat-tile').forEach(tile => tile.classList.toggle('is-selected', tile.dataset.pattern === current));
+    }
 };
 const openTeamSettings = team => {
     if (!tsModal) return;
@@ -5655,8 +5725,20 @@ const setTeamColorFromSettings = (which, value) => {
     const input = tsEl(which === 1 ? `color${activeTeamSettings}` : `color${activeTeamSettings}2`);
     if (!input) return;
     input.value = value;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // Update directly (not through the debounced input handlers, which could
+    // overwrite the other colour when both are changed quickly).
+    // Both pickers are read when the short timer fires, so OBS gets one update per pause.
+    const team = activeTeamSettings;
+    clearTimeout(tsColorTimers[team]);
+    tsColorTimers[team] = setTimeout(() => {
+        const master = team === 'A' ? masterTeamA : masterTeamB;
+        const c1 = tsEl(`color${team}`)?.value || master.color1;
+        const c2 = tsEl(`color${team}2`)?.value || master.color2;
+        updateTeamUI(team, master.name, master.logoFile, c1, c2);
+    }, 150);
     tsEl(which === 1 ? 'tsColor1Hex' : 'tsColor2Hex').textContent = value.toUpperCase();
+    const grid = tsEl('tsPatternGrid');
+    if (grid) grid.style.setProperty(which === 1 ? '--team-color' : '--team-color2', value);
 };
 const setBibColorFromSettings = color => {
     if (!activeTeamSettings || !/^#[0-9a-f]{6}$/i.test(color)) return;

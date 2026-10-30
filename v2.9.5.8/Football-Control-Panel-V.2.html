@@ -2328,12 +2328,63 @@
             display: flex; flex-direction: column; gap: 8px; padding: 8px;
             border-radius: 14px; overflow: hidden;
             border: 1px solid rgba(255,255,255,0.10);
-            background:
-                linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.30) 42%, rgba(5,9,18,0.94) 66%),
-                var(--team-color);
+            background: var(--team-color);
             box-shadow: 0 6px 18px rgba(0,0,0,0.35);
         }
         .mb-logo-area { position: relative; display: flex; justify-content: center; padding: 6px 0 0; }
+        /* Secondary colour: diagonal stripe in the top corner + band under the card */
+        .mb-card { --team-color2: #000000; border-bottom: 5px solid var(--team-color2); }
+        .mb-card::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: var(--team-color2); box-shadow: 0 1px 0 rgba(255,255,255,0.15); pointer-events: none;
+        }
+        .mb-card::before { z-index: 2; }
+        .mb-card > *:not(.mb-pattern) { position: relative; z-index: 1; }
+        .mb-card > .mb-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .mb-card > .mb-pattern::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.30) 42%, rgba(5,9,18,0.94) 66%);
+        }
+        /* Kit patterns (ลายเสื้อ) — drawn with the secondary colour over the primary colour */
+        .kit-pat { --c2: var(--team-color2, #000); }
+        .pat-solid { background: none; }
+        .pat-stripes { background: repeating-linear-gradient(90deg, var(--c2) 0 14px, transparent 14px 28px); }
+        .pat-hoops { background: repeating-linear-gradient(180deg, var(--c2) 0 12px, transparent 12px 24px); }
+        .pat-sash { background: linear-gradient(135deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
+        .pat-halves { background: linear-gradient(90deg, transparent 0 50%, var(--c2) 50% 100%); }
+        .pat-centre { background: linear-gradient(90deg, transparent 0 38%, var(--c2) 38% 62%, transparent 62%); }
+        .pat-pinstripes { background: repeating-linear-gradient(90deg, var(--c2) 0 2px, transparent 2px 11px); }
+        .pat-checkered { background: conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 26px 26px; }
+        .pat-quarters { background: conic-gradient(from 0deg at 50% 50%, transparent 0 90deg, var(--c2) 90deg 180deg, transparent 180deg 270deg, var(--c2) 270deg); }
+        .pat-chevron { background:
+            linear-gradient(32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) left top / 50% 70% no-repeat,
+            linear-gradient(-32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) right top / 50% 70% no-repeat; }
+        .pat-yoke { background: linear-gradient(180deg, var(--c2) 0 20%, transparent 20%); }
+        .pat-sides { background: linear-gradient(90deg, var(--c2) 0 13%, transparent 13% 87%, var(--c2) 87%); }
+        .pat-fade { background: linear-gradient(155deg, var(--c2) 0%, transparent 62%); }
+        .pat-twinbars { background: linear-gradient(90deg, transparent 0 36%, var(--c2) 36% 45%, transparent 45% 55%, var(--c2) 55% 64%, transparent 64%); }
+        .pat-diamond { background:
+            repeating-linear-gradient(45deg, var(--c2) 0 2px, transparent 2px 15px),
+            repeating-linear-gradient(-45deg, var(--c2) 0 2px, transparent 2px 15px); }
+        .pat-zigzag { background:
+            linear-gradient(135deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+            linear-gradient(225deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+            linear-gradient(315deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px,
+            linear-gradient(45deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px; }
+        .pat-dots { background: radial-gradient(circle, var(--c2) 0 3px, transparent 3.5px) 0 0 / 14px 14px; }
+        .pat-camo { background:
+            radial-gradient(ellipse 22% 14% at 20% 30%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 16% 11% at 72% 18%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 24% 13% at 58% 62%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 14% 12% at 16% 80%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 13% 9% at 88% 78%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 11% 8% at 42% 12%, var(--c2) 98%, transparent 100%); background-size: 110px 110px; }
+        .pat-pixel { background:
+            conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 10px 10px; }
+        .mb-swatches { position: absolute; top: 34px; right: 3px; display: flex; flex-direction: column; gap: 3px; }
+        .mb-swatches i { display: block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.7); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .mb-swatches .c1 { background: var(--team-color); }
+        .mb-swatches .c2 { background: var(--team-color2); }
         .mb-card .mb-logo {
             width: 84px; height: 84px; display: flex; align-items: center; justify-content: center;
             border-radius: 12px; background: rgba(0,0,0,0.18); overflow: hidden;
@@ -2384,9 +2435,16 @@
         .mb-minus:hover { filter: brightness(0.85); }
         .mb-plus:active, .mb-minus:active { transform: scale(0.97); }
         .mb-center {
-            flex: 0 0 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            flex: 0 0 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
         }
-        .mb-vs { font-weight: 900; font-size: 1.05rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 2px; }
+        .mb-vs {
+            font-family: 'Barlow Condensed', 'Inter', sans-serif; font-weight: 800; font-style: italic;
+            font-size: 2.1rem; line-height: 1; letter-spacing: 0; margin: 0 0 6px;
+            transform: scaleY(1.35); transform-origin: center;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 55%, #64748b 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7));
+        }
         .mb-center .mb-mini {
             width: 30px !important; height: 30px !important; min-height: 0 !important; padding: 0 !important;
             border-radius: 50% !important; font-size: 0.72rem;
@@ -2407,6 +2465,14 @@
         .ts-row code { font-size: 0.75rem; color: #94a3b8; min-width: 64px; text-align: right; }
         .ts-bib-colors { display: none; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: -2px 0 10px; }
         .ts-bib-colors.is-on { display: grid; }
+        .ts-pat-title { font-size: 0.85rem; font-weight: 700; margin: 4px 0 6px; }
+        .ts-pat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin-bottom: 12px; max-height: 236px; overflow-y: auto; padding: 2px; }
+        .ts-pat-tile { min-height: 0; padding: 0; border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; background: #0f172a; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; }
+        .ts-pat-tile { align-items: stretch; width: 100%; }
+        .ts-pat-tile .sw { position: relative; display: block; width: 100%; height: 38px; background: var(--team-color, #2563eb); }
+        .ts-pat-tile .sw > div { position: absolute; inset: 0; }
+        .ts-pat-tile span { font-size: 0.6rem; font-weight: 700; color: #cbd5e1; padding: 3px 2px; line-height: 1.15; text-align: center; }
+        .ts-pat-tile.is-selected { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.45); }
         .ts-bib-colors button { height: 34px; min-height: 0; border-radius: 8px; border: 3px solid transparent; cursor: pointer; font-weight: 800; font-size: 0.72rem; }
         .ts-bib-colors button.is-selected { border-color: #fff; box-shadow: 0 0 0 2px #38bdf8; }
     </style>
@@ -2672,6 +2738,8 @@
             </div>
             <div class="ts-row"><label for="tsColor1">สีหลัก (เสื้อ)</label><input type="color" id="tsColor1" value="#ffffff"><code id="tsColor1Hex">#FFFFFF</code></div>
             <div class="ts-row"><label for="tsColor2">สีรอง</label><input type="color" id="tsColor2" value="#000000"><code id="tsColor2Hex">#000000</code></div>
+            <div class="ts-pat-title">👕 ลายเสื้อ (ใช้สีรองเป็นลาย)</div>
+            <div class="ts-pat-grid" id="tsPatternGrid"></div>
             <div class="ts-row"><label for="tsBibToggle">🎽 ใช้สีเสื้อเอี้ยม (ชั่วคราว)</label><input type="checkbox" id="tsBibToggle" style="width:20px;height:20px;cursor:pointer"></div>
             <div class="ts-bib-colors" id="tsBibColors">
                 <button type="button" data-color="#84cc16" style="background:#84cc16;color:#172033">เขียว</button>
@@ -3065,9 +3133,10 @@
         <!-- V2.9.5.8: Match board (logo + name + main score in one card per team) -->
         <div class="mb-board" id="matchBoard">
             <div class="mb-card" id="mbCardA" data-team="A">
+                <div class="mb-pattern kit-pat pat-solid" id="mbPatternA"></div>
                 <div class="mb-logo-area">
                     <button type="button" class="mb-gear" data-team="A" title="ตั้งค่าสีทีม / เสื้อเอี้ยม"><i class="fas fa-cog"></i></button>
-                    <span class="mb-bib-badge" id="mbBibBadgeA" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span>
+                    <span class="mb-bib-badge" id="mbBibBadgeA" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span><span class="mb-swatches" title="สีหลัก / สีรอง"><i class="c1"></i><i class="c2"></i></span>
                     <div class="logo-container mb-logo"><img id="logoA" src="" alt="">
                         <div class="logo-initials" id="initialsA">A</div>
                     </div>
@@ -3120,9 +3189,10 @@
             </div>
 
             <div class="mb-card" id="mbCardB" data-team="B">
+                <div class="mb-pattern kit-pat pat-solid" id="mbPatternB"></div>
                 <div class="mb-logo-area">
                     <button type="button" class="mb-gear" data-team="B" title="ตั้งค่าสีทีม / เสื้อเอี้ยม"><i class="fas fa-cog"></i></button>
-                    <span class="mb-bib-badge" id="mbBibBadgeB" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span>
+                    <span class="mb-bib-badge" id="mbBibBadgeB" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span><span class="mb-swatches" title="สีหลัก / สีรอง"><i class="c1"></i><i class="c2"></i></span>
                     <div class="logo-container mb-logo"><img id="logoB" src="" alt="">
                         <div class="logo-initials" id="initialsB">B</div>
                     </div>
@@ -4057,7 +4127,7 @@
                         3. วางลงในช่องด้านล่าง แล้วกด <strong>ยืนยัน / โหลดข้อมูล</strong>
                     </p>
                     <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Jamornz Tournament URL หรือ ID:</label>
-                    <input type="text" id="jamornzUrlInput" placeholder="https://jamornz.com/tournament/view/username/uuid..."
+                    <input type="text" id="jamornzUrlInput" placeholder="ลิงก์ทัวร์นาเมนต์ (หน้าเว็บ หรือ ลิงก์พอร์ทัลฝ่ายจัดรายการ)"
                         style="width: 100%; margin-bottom: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 0.85rem;">
 
                     <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Password สำหรับ VIP (รหัสเชื่อมต่อ 5 หลัก):</label>
@@ -4574,7 +4644,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-4"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-8"></script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"

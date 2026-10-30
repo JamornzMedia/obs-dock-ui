@@ -422,9 +422,11 @@ function updateMainPanelUI(state) {
     document.getElementById('vb-toggle-hist').onclick = function() { toggleVbSource('Volleyball_History', this); };
   }
   
+  const sport = state.sport || 'volleyball';
+  // Snooker uses its own control card (snooker_module.js)
+  if (sport === 'snooker') { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
 
-  const sport = state.sport || 'volleyball';
   const showServeBall = (state.showServeBall !== false);
   const serveSupport = showServeBall && (sport !== 'boxing');
   const timeoutSupport = (sport !== 'badminton') && (sport !== 'boxing');
@@ -634,6 +636,8 @@ function getSportEmoji(sport) {
       return '⚽';
     case 'badminton':
       return '🏸';
+    case 'snooker':
+      return '🎱';
     case 'volleyball':
     default:
       return '🏐';
@@ -671,7 +675,8 @@ function updateSportUI() {
   
   const isBoxing = vbEnabled && sport === 'boxing';
   const isFootball = vbEnabled && sport === 'football';
-  const hideVbSettings = isBoxing || isFootball;
+  const isSnooker = vbEnabled && sport === 'snooker';
+  const hideVbSettings = isBoxing || isFootball || isSnooker;
   
   if (bxSettings) bxSettings.style.display = isBoxing ? 'block' : 'none';
   
@@ -686,8 +691,10 @@ function updateSportUI() {
   if (vbShowServe) vbShowServe.style.display = hideVbSettings ? 'none' : 'flex';
   if (vbFonts) vbFonts.style.display = vbEnabled ? 'block' : 'none';
   if (vbWidthServe) vbWidthServe.style.display = hideVbSettings ? 'none' : 'block';
-  if (vbColors) vbColors.style.display = isBoxing ? 'none' : 'block';
-  if (vbObs) vbObs.style.display = isBoxing ? 'none' : 'grid';
+  if (vbColors) vbColors.style.display = (isBoxing || isSnooker) ? 'none' : 'block';
+  if (vbObs) vbObs.style.display = (isBoxing || isSnooker) ? 'none' : 'grid';
+  // Snooker has its own settings, Dock card and overlay (snooker_module.js)
+  if (window.snookerModule) window.snookerModule.refresh();
   if (bxObs) bxObs.style.display = isBoxing ? 'block' : 'none';
   
   if (maxSetsLabel) {
@@ -781,6 +788,7 @@ function injectSettingsTab() {
         <option value="streetball"${getVbState('vb_sport', 'volleyball') === 'streetball' ? ' selected' : ''}>Streetball / สตรีทบอล</option>
         <option value="badminton"${getVbState('vb_sport', 'volleyball') === 'badminton' ? ' selected' : ''}>Badminton / แบดมินตัน</option>
         <option value="boxing"${getVbState('vb_sport', 'volleyball') === 'boxing' ? ' selected' : ''}>Boxing / มวย</option>
+        <option value="snooker"${getVbState('vb_sport', 'volleyball') === 'snooker' ? ' selected' : ''}>Snooker / สนุกเกอร์</option>
       </select>
     </div>
     

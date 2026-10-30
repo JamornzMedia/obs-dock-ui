@@ -342,6 +342,15 @@ obs_names/{nameKey}/  # ดัชนีชื่อ → { ID, name }  (nameKey =
 - ปุ่ม + สูงอยู่บน ปุ่ม − เตี้ยอยู่ล่าง ID เดิม (`scoreAPlusBtn`, `scoreAMinusBtn`, ...) ไม่เปลี่ยน
 - ปุ่ม ⚙️ (`.mb-gear`) เปิด `#teamSettingsModal` ตั้งสีหลัก สีรอง และเปิด/เลือกสีเสื้อเอี้ยม โดยเขียนกลับไปที่ input เดิมที่ซ่อนอยู่ (`#colorA`, `#colorA2`, `#bibOverrideA`, `#bibCustomColorA`) ซึ่งยังเป็นแหล่งข้อมูลหลัก
 - ปุ่มสลับฝั่ง / ย้อนกลับ / รีเซ็ตคะแนน เป็นปุ่มเล็กตรงกลาง (`.mb-center`) การสลับฝั่งใช้ `flex-direction` ของ `#matchBoard`
+- สีรอง (`--team-color2`) แสดงเป็นแถบบน/ล่างและจุดสีใต้ปุ่ม ⚙️ ลายเสื้อ 19 แบบอยู่ใน `.mb-pattern` (คลาส `pat-<id>`, รายการใน `kitPatternList()`) เลือกในหน้าต่าง ⚙️ และเก็บตามชื่อทีมใน localStorage `teamKitPatterns`
+
+### สนุกเกอร์ (Snooker) — V2.9.5.8
+
+- ไฟล์ `fcp_v2_assets/snooker_module.js` (import จาก `main.js`) และกราฟิก `snooker_score.html` (Browser Source `Snooker_Main_Score`, 1280×160)
+- เปิดจาก Sport Graphics Settings → Active Sport = `snooker` (`vb_sport`) แล้วจะมีการ์ดควบคุมใต้ Score 2 และหัวข้อตั้งค่าสนุกเกอร์ (กติกา / การแสดงผล / สี)
+- แต้มในเฟรม = คะแนนหลัก (`window.fcpChangeScore`), เฟรมที่ชนะ = คะแนนรอง (`window.fcpChangeScore2`) จึงใช้ OBS text, jamornz.com sync และ undo หลักได้เหมือนเดิม
+- ค่าเฉพาะสนุกเกอร์เก็บใน localStorage `sn_*` (เช่น `sn_best_of`, `sn_reds_total`, `sn_reds_left`, `sn_break`, `sn_at_table`, `sn_c_*` สี) และส่งให้กราฟิกผ่าน BroadcastChannel `sn_score_channel` + key `sn_state`
+- แต้มที่เหลือ: มีแดง → แดง×8 + 27 (+7 ถ้าต้องแทงสีหลังแดง), หมดแดง → ผลรวมลูกสีที่ยังไม่ลง
 
 
 ---
