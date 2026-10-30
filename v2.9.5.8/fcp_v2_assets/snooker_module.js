@@ -269,6 +269,15 @@ function buildPayload() {
 
 function publish(force = false) {
   const payload = buildPayload();
+  // PlayScore plugin graphics (snooker-pack) read these keys.
+  if (typeof window.pushPlayScore === 'function' && isActive()) {
+    window.pushPlayScore({
+      'snooker.bestOf': payload.bestOf, 'snooker.frameNo': payload.frameNo, 'snooker.atTable': payload.atTable,
+      'snooker.break': payload.break, 'snooker.breakA': payload.atTable === 'A' ? payload.break : 0,
+      'snooker.breakB': payload.atTable === 'B' ? payload.break : 0, 'snooker.remaining': payload.remaining,
+      'snooker.redsLeft': payload.redsLeft, 'snooker.highA': payload.highA, 'snooker.highB': payload.highB,
+    });
+  }
   const json = JSON.stringify(payload);
   if (force || json !== lastPayloadJson) {
     lastPayloadJson = json;
