@@ -2319,6 +2319,207 @@
             });
         })();
     </script>
+    <!-- V2.9.5.8: Match board styles (logo + name + score card per team) -->
+    <style id="matchBoardStyle">
+        .mb-board { display: flex; flex-direction: row; gap: 8px; align-items: stretch; }
+        .mb-card {
+            --team-color: #2563eb; --team-ink: #ffffff;
+            position: relative; flex: 1 1 0; min-width: 0;
+            display: flex; flex-direction: column; gap: 8px; padding: 8px;
+            border-radius: 14px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: var(--team-color);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        }
+        .mb-logo-area { position: relative; display: flex; justify-content: center; padding: 6px 0 0; }
+        /* Secondary colour: diagonal stripe in the top corner + band under the card */
+        .mb-card { --team-color2: #000000; border-bottom: 5px solid var(--team-color2); }
+        .mb-card::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: var(--team-color2); box-shadow: 0 1px 0 rgba(255,255,255,0.15); pointer-events: none;
+        }
+        .mb-card::before { z-index: 2; }
+        .mb-card > *:not(.mb-pattern) { position: relative; z-index: 1; }
+        .mb-card > .mb-pattern { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+        .mb-card > .mb-pattern::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.30) 42%, rgba(5,9,18,0.94) 66%);
+        }
+        /* Kit patterns (ลายเสื้อ) — drawn with the secondary colour over the primary colour */
+        .kit-pat { --c2: var(--team-color2, #000); }
+        .pat-solid { background: none; }
+        .pat-stripes { background: repeating-linear-gradient(90deg, var(--c2) 0 14px, transparent 14px 28px); }
+        .pat-hoops { background: repeating-linear-gradient(180deg, var(--c2) 0 12px, transparent 12px 24px); }
+        .pat-sash { background: linear-gradient(135deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
+        .pat-halves { background: linear-gradient(90deg, transparent 0 50%, var(--c2) 50% 100%); }
+        .pat-centre { background: linear-gradient(90deg, transparent 0 38%, var(--c2) 38% 62%, transparent 62%); }
+        .pat-pinstripes { background: repeating-linear-gradient(90deg, var(--c2) 0 2px, transparent 2px 11px); }
+        .pat-checkered { background: conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 26px 26px; }
+        .pat-quarters { background: conic-gradient(from 0deg at 50% 50%, transparent 0 90deg, var(--c2) 90deg 180deg, transparent 180deg 270deg, var(--c2) 270deg); }
+        .pat-chevron { background:
+            linear-gradient(32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) left top / 50% 70% no-repeat,
+            linear-gradient(-32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) right top / 50% 70% no-repeat; }
+        .pat-yoke { background: linear-gradient(180deg, var(--c2) 0 20%, transparent 20%); }
+        .pat-sides { background: linear-gradient(90deg, var(--c2) 0 13%, transparent 13% 87%, var(--c2) 87%); }
+        .pat-fade { background: linear-gradient(155deg, var(--c2) 0%, transparent 62%); }
+        .pat-twinbars { background: linear-gradient(90deg, transparent 0 36%, var(--c2) 36% 45%, transparent 45% 55%, var(--c2) 55% 64%, transparent 64%); }
+        .pat-diamond { background:
+            repeating-linear-gradient(45deg, var(--c2) 0 2px, transparent 2px 15px),
+            repeating-linear-gradient(-45deg, var(--c2) 0 2px, transparent 2px 15px); }
+        .pat-zigzag { background:
+            linear-gradient(135deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+            linear-gradient(225deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+            linear-gradient(315deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px,
+            linear-gradient(45deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px; }
+        .pat-dots { background: radial-gradient(circle, var(--c2) 0 3px, transparent 3.5px) 0 0 / 14px 14px; }
+        .pat-camo { background:
+            radial-gradient(ellipse 22% 14% at 20% 30%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 16% 11% at 72% 18%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 24% 13% at 58% 62%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 14% 12% at 16% 80%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 13% 9% at 88% 78%, var(--c2) 98%, transparent 100%),
+            radial-gradient(ellipse 11% 8% at 42% 12%, var(--c2) 98%, transparent 100%); background-size: 110px 110px; }
+        .pat-pixel { background:
+            conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 10px 10px; }
+        /* V2.9.5.9: big centre bands + horizontal versions (bands sit in the upper, visible part of the card) */
+        .pat-bigcentre { background: linear-gradient(90deg, transparent 0 25%, var(--c2) 25% 75%, transparent 75%); }
+        .pat-bigtwin { background: linear-gradient(90deg, transparent 0 16%, var(--c2) 16% 42%, transparent 42% 58%, var(--c2) 58% 84%, transparent 84%); }
+        .pat-centre-h { background: linear-gradient(180deg, transparent 0 22%, var(--c2) 22% 36%, transparent 36%); }
+        .pat-bigcentre-h { background: linear-gradient(180deg, transparent 0 14%, var(--c2) 14% 44%, transparent 44%); }
+        .pat-twinbars-h { background: linear-gradient(180deg, transparent 0 16%, var(--c2) 16% 23%, transparent 23% 30%, var(--c2) 30% 37%, transparent 37%); }
+        .pat-bigtwin-h { background: linear-gradient(180deg, transparent 0 8%, var(--c2) 8% 22%, transparent 22% 30%, var(--c2) 30% 44%, transparent 44%); }
+        .pat-halves-h { background: linear-gradient(180deg, transparent 0 30%, var(--c2) 30% 100%); }
+        .pat-pinstripes-h { background: repeating-linear-gradient(180deg, var(--c2) 0 2px, transparent 2px 11px); }
+        .pat-sash-r { background: linear-gradient(45deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
+        .mb-swatches { position: absolute; top: 34px; right: 3px; display: flex; flex-direction: column; gap: 3px; }
+        .mb-swatches i { display: block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.7); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .mb-swatches .c1 { background: var(--team-color); }
+        .mb-swatches .c2 { background: var(--team-color2); }
+        .mb-card .mb-logo {
+            width: 84px; height: 84px; display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; background: rgba(0,0,0,0.18); overflow: hidden;
+        }
+        .mb-card .mb-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .mb-card .mb-logo .logo-initials {
+            font-size: 1.8rem; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .mb-gear {
+            position: absolute; top: 0; right: 0; width: 30px; height: 30px; min-height: 0; padding: 0;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(0,0,0,0.38); color: #fff; font-size: 0.85rem; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .mb-gear:hover { background: rgba(0,0,0,0.6); }
+        .mb-bib-badge {
+            position: absolute; top: 2px; left: 2px; display: none; font-size: 0.95rem;
+            background: rgba(0,0,0,0.45); border-radius: 8px; padding: 1px 5px;
+        }
+        .mb-card.bib-on .mb-bib-badge { display: block; }
+        .mb-name-row { display: flex; align-items: center; justify-content: center; gap: 4px; height: 40px; min-width: 0; overflow: hidden; }
+        .mb-card .name {
+            flex: 1 1 auto; min-width: 0; text-align: center; color: #fff; font-weight: 800;
+            font-size: 1.02rem; line-height: 1.2; overflow-wrap: anywhere;
+            max-height: 40px; overflow: hidden;
+            -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+        }
+        .mb-card .name:not([style*="none"]) { display: -webkit-box !important; }
+        .mb-card .name-input { display: none; flex: 1 1 auto; min-width: 0; width: 100%; }
+        .mb-card .edit-btn { color: rgba(255,255,255,0.75); width: 26px; height: 26px; }
+        .mb-extra { gap: 6px; width: 100%; }
+        .mb-extra-btn { flex: 1; padding: 10px 0; font-size: 1.1rem; font-weight: 800; border-radius: 8px; }
+        .mb-score-row { display: flex; gap: 6px; align-items: stretch; height: 116px; container-type: size; }
+        .mb-card .mb-score {
+            flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center;
+            background: #05080f !important; color: #ffffff !important; -webkit-text-stroke: 0 !important;
+            border: 1px solid rgba(255,255,255,0.10); border-radius: 10px; overflow: hidden;
+            font-family: 'Barlow Condensed', 'Arial Narrow', 'Inter', sans-serif; line-height: 1; letter-spacing: -1px;
+            font-size: clamp(3.2rem, 14vw, 6rem); font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        /* V2.9.5.9: digits fill the score box (height-bound for 1 digit, width-bound for 2-3 digits) */
+        @supports (font-size: 1cqh) {
+            .mb-card .mb-score { font-size: min(95cqh, calc(86cqw / var(--digits, 1))); }
+        }
+        .mb-steppers { flex: 0 0 44%; display: flex; flex-direction: column; gap: 6px; }
+        .mb-card .mb-plus, .mb-card .mb-minus {
+            min-height: 0; padding: 0; border: none; cursor: pointer; border-radius: 10px;
+            background: var(--team-color); color: var(--team-ink);
+            display: flex; align-items: center; justify-content: center;
+            /* V2.9.5.9: contrasting outline + drop shadow so the buttons never melt into the card colour */
+            border: 2px solid var(--team-ink) !important;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18) !important;
+        }
+        .mb-plus i, .mb-minus i { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
+        .mb-plus { flex: 2.2 1 0; font-size: 1.7rem; }
+        .mb-minus { flex: 1 1 0; font-size: 1rem; filter: brightness(0.72); opacity: 0.9; }
+        .mb-plus:hover { filter: brightness(1.12); }
+        .mb-minus:hover { filter: brightness(0.85); }
+        .mb-plus:active, .mb-minus:active { transform: scale(0.97); }
+        .mb-center {
+            flex: 0 0 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+        }
+        .mb-vs {
+            font-family: 'Barlow Condensed', 'Inter', sans-serif; font-weight: 800; font-style: normal;
+            font-size: 2.1rem; line-height: 1; letter-spacing: 0; margin: 0 0 6px; padding: 0 2px;
+            transform: scaleY(1.35); transform-origin: center;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 55%, #64748b 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7));
+        }
+        .mb-center .mb-mini {
+            width: 30px !important; height: 30px !important; min-height: 0 !important; padding: 0 !important;
+            border-radius: 50% !important; font-size: 0.72rem;
+        }
+        .mb-center #swapScoreState { font-size: 8px !important; margin-top: -3px !important; }
+        .mb-hidden-inputs { display: none !important; }
+        /* V2.9.5.9: Match label cards get their own colour so they stand out from the panel */
+        .labels-row #label1 { background: rgba(59,130,246,0.28) !important; border: 1px solid rgba(59,130,246,0.7) !important; }
+        .labels-row #label2 { background: rgba(168,85,247,0.28) !important; border: 1px solid rgba(168,85,247,0.7) !important; }
+        .labels-row #label3 { background: rgba(34,197,94,0.26) !important; border: 1px solid rgba(34,197,94,0.7) !important; }
+        .labels-row #label4 { background: rgba(245,158,11,0.26) !important; border: 1px solid rgba(245,158,11,0.7) !important; }
+        .labels-row #label5 { background: rgba(236,72,153,0.26) !important; border: 1px solid rgba(236,72,153,0.7) !important; }
+        .labels-row #label1, .labels-row #label2, .labels-row #label3, .labels-row #label4, .labels-row #label5 {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--lbl) 34%, #0b0f15), color-mix(in srgb, var(--lbl) 18%, #0b0f15)) !important;
+            border: 1px solid color-mix(in srgb, var(--lbl) 70%, transparent) !important;
+            border-top: 3px solid var(--lbl) !important;
+            color: #f1f5f9 !important; font-weight: 700 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        }
+        .labels-row #label1 { --lbl: #3b82f6; }
+        .labels-row #label2 { --lbl: #a855f7; }
+        .labels-row #label3 { --lbl: #22c55e; }
+        .labels-row #label4 { --lbl: #f59e0b; }
+        .labels-row #label5 { --lbl: #ec4899; }
+        /* V2.9.5.9: Penalty button in orange */
+        #penaltyShootoutBtn, html.theme-sport #penaltyShootoutBtn {
+            background: linear-gradient(180deg, #fb923c, #ea580c) !important; color: #fff !important;
+            border: 1px solid #fdba74 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+        }
+        @media (max-width: 360px) {
+            .mb-card .mb-logo { width: 64px; height: 64px; }
+            .mb-score-row { height: 100px; }
+        }
+        /* Gear dialog */
+        .team-settings-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 12px; background: rgba(0,0,0,0.68); z-index: 10006; box-sizing: border-box; }
+        .team-settings-modal.is-open { display: flex; }
+        .team-settings-card { width: min(340px, 100%); max-height: calc(100vh - 24px); overflow: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 16px; color: #f8fafc; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.65); }
+        .ts-row { display: flex; align-items: center; gap: 10px; background: rgba(15,23,42,0.7); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; }
+        .ts-row label { flex: 1; font-size: 0.85rem; font-weight: 700; }
+        .ts-row input[type=color] { width: 46px; height: 34px; border: 0; padding: 0; background: transparent; cursor: pointer; }
+        .ts-row code { font-size: 0.75rem; color: #94a3b8; min-width: 64px; text-align: right; }
+        .ts-bib-colors { display: none; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin: -2px 0 10px; }
+        .ts-bib-colors.is-on { display: grid; }
+        .ts-pat-title { font-size: 0.85rem; font-weight: 700; margin: 4px 0 6px; }
+        .ts-pat-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin-bottom: 12px; max-height: 236px; overflow-y: auto; padding: 2px; }
+        .ts-pat-tile { min-height: 0; padding: 0; border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; background: #0f172a; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; }
+        .ts-pat-tile { align-items: stretch; width: 100%; }
+        .ts-pat-tile .sw { position: relative; display: block; width: 100%; height: 38px; background: var(--team-color, #2563eb); }
+        .ts-pat-tile .sw > div { position: absolute; inset: 0; }
+        .ts-pat-tile span { font-size: 0.6rem; font-weight: 700; color: #cbd5e1; padding: 3px 2px; line-height: 1.15; text-align: center; }
+        .ts-pat-tile.is-selected { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.45); }
+        .ts-bib-colors button { height: 34px; min-height: 0; border-radius: 8px; border: 3px solid transparent; cursor: pointer; font-weight: 800; font-size: 0.72rem; }
+        .ts-bib-colors button.is-selected { border-color: #fff; box-shadow: 0 0 0 2px #38bdf8; }
+    </style>
 </head>
 
 <body>
@@ -2571,6 +2772,33 @@
 
     <div id="toast-container"></div>
     <div id="popupOverlay" class="popup-overlay"></div>
+
+    <!-- V2.9.5.8: Team settings (gear) dialog -->
+    <div id="teamSettingsModal" class="team-settings-modal" role="dialog" aria-modal="true" aria-labelledby="tsTitle">
+        <div class="team-settings-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)">
+                <h3 id="tsTitle" style="margin:0;font-size:1rem">⚙️ ตั้งค่าทีม A</h3>
+                <button type="button" id="tsCloseBtn" class="btn-secondary" aria-label="ปิด">✕</button>
+            </div>
+            <div class="ts-row"><label for="tsColor1">สีหลัก (เสื้อ)</label><input type="color" id="tsColor1" value="#ffffff"><code id="tsColor1Hex">#FFFFFF</code></div>
+            <div class="ts-row"><label for="tsColor2">สีรอง</label><input type="color" id="tsColor2" value="#000000"><code id="tsColor2Hex">#000000</code></div>
+            <div class="ts-pat-title">👕 ลายเสื้อ (ใช้สีรองเป็นลาย)</div>
+            <div class="ts-pat-grid" id="tsPatternGrid"></div>
+            <div class="ts-row"><label for="tsBibToggle">🎽 ใช้สีเสื้อเอี้ยม (ชั่วคราว)</label><input type="checkbox" id="tsBibToggle" style="width:20px;height:20px;cursor:pointer"></div>
+            <div class="ts-bib-colors" id="tsBibColors">
+                <button type="button" data-color="#84cc16" style="background:#84cc16;color:#172033">เขียว</button>
+                <button type="button" data-color="#f97316" style="background:#f97316;color:#fff">ส้ม</button>
+                <button type="button" data-color="#ffffff" style="background:#fff;color:#172033">ขาว</button>
+                <button type="button" data-color="#eab308" style="background:#eab308;color:#172033">เหลือง</button>
+                <button type="button" data-color="#06b6d4" style="background:#06b6d4;color:#fff">ฟ้า</button>
+                <button type="button" data-color="#ef4444" style="background:#ef4444;color:#fff">แดง</button>
+                <button type="button" data-color="#ec4899" style="background:#ec4899;color:#fff">ชมพู</button>
+                <button type="button" data-color="#3b82f6" style="background:#3b82f6;color:#fff">น้ำเงิน</button>
+                <input type="color" id="tsBibCustom" value="#84cc16" title="สีอื่น" style="grid-column:span 4;width:100%;height:30px;border:0;background:transparent;cursor:pointer">
+            </div>
+            <button type="button" id="tsDoneBtn" class="btn-success" style="width:100%">เสร็จสิ้น</button>
+        </div>
+    </div>
 
     <div id="bibOverridePopup" class="bib-popup-modal" role="dialog" aria-modal="true" aria-labelledby="bibModalTitle">
         <div class="bib-popup-card">
@@ -2946,72 +3174,106 @@
         </div>
     </div>
     <div class="card" data-panel-id="panelTeamEditor">
-        <div class="team-editor">
-            <div class="team-row">
-                <!-- Row 1: Header (Colors + Logo) -->
-                <div class="team-header">
-                    <div class="color-picker-stack">
-                        <input type="color" class="color-picker" id="colorA" value="#ffffff">
-                        <input type="color" class="color-picker color-picker-2" id="colorA2" value="#000000">
-                    </div>
-                    <div class="logo-container" style="position: relative;"><img id="logoA" src="" alt="">
+        <!-- V2.9.5.8: Match board (logo + name + main score in one card per team) -->
+        <div class="mb-board" id="matchBoard">
+            <div class="mb-card" id="mbCardA" data-team="A">
+                <div class="mb-pattern kit-pat pat-solid" id="mbPatternA"></div>
+                <div class="mb-logo-area">
+                    <button type="button" class="mb-gear" data-team="A" title="ตั้งค่าสีทีม / เสื้อเอี้ยม"><i class="fas fa-cog"></i></button>
+                    <span class="mb-bib-badge" id="mbBibBadgeA" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span><span class="mb-swatches" title="สีหลัก / สีรอง"><i class="c1"></i><i class="c2"></i></span>
+                    <div class="logo-container mb-logo"><img id="logoA" src="" alt="">
                         <div class="logo-initials" id="initialsA">A</div>
                     </div>
-                    <!-- Bib Override A -->
-                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
-                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
-                            <input type="checkbox" id="bibOverrideA" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
-                            🎽
-                        </label>
-                        <div id="bibColorsA" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
-                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
-                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
-                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
-                            <input type="color" id="bibCustomColorA" value="#84cc16" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
-                        </div>
-                    </div>
                 </div>
-                <!-- Row 2: Name + Buttons -->
-                <div class="name-control-area">
+                <div class="name-control-area mb-name-row">
                     <div class="name" id="nameA" data-lang="teamA">Team A</div>
                     <input type="text" class="name-input" id="nameA-input">
                     <button class="edit-btn" id="editBtnA" data-lang-title="editHint"><i
                             class="fas fa-pencil-alt"></i></button>
                     <button class="ok-btn" id="okBtnA" data-lang="ok"></button>
                 </div>
-            </div>
-
-            <div class="team-row">
-                <!-- Row 1: Header (Colors + Logo) -->
-                <div class="team-header">
-                    <div class="color-picker-stack">
-                        <input type="color" class="color-picker" id="colorB" value="#ffffff">
-                        <input type="color" class="color-picker color-picker-2" id="colorB2" value="#000000">
+                <!-- Basketball Extra Buttons A -->
+                <div id="basketballBtnsA" class="mb-extra" style="display: none;">
+                    <button id="scoreAPlus2Btn" class="btn-primary mb-extra-btn">+2</button>
+                    <button id="scoreAPlus3Btn" class="btn-primary mb-extra-btn">+3</button>
+                </div>
+                <div class="mb-score-row">
+                    <div class="mb-score" id="scoreA">0</div>
+                    <div class="mb-steppers">
+                        <button id="scoreAPlusBtn" class="mb-plus" title="+1"><i class="fas fa-plus"></i></button>
+                        <button id="scoreAMinusBtn" class="mb-minus" title="-1"><i class="fas fa-minus"></i></button>
                     </div>
-                    <div class="logo-container" style="position: relative;"><img id="logoB" src="" alt="">
-                        <div class="logo-initials" id="initialsB">B</div>
-                    </div>
-                    <!-- Bib Override B -->
-                    <div class="bib-override-container" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
-                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว" style="display: flex; align-items: center; cursor: pointer; margin: 0; font-size: 11px; color: #cbd5e1; gap: 3px;">
-                            <input type="checkbox" id="bibOverrideB" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
-                            🎽
+                </div>
+                <!-- Original inputs stay the source of truth (edited from the gear dialog) -->
+                <div class="mb-hidden-inputs">
+                    <input type="color" class="color-picker" id="colorA" value="#ffffff">
+                    <input type="color" class="color-picker color-picker-2" id="colorA2" value="#000000">
+                    <div class="bib-override-container">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว">
+                            <input type="checkbox" id="bibOverrideA"> 🎽
                         </label>
-                        <div id="bibColorsB" style="display: none; align-items: center; gap: 3px; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; margin-left: 2px;">
-                            <button type="button" class="bib-color-btn" data-color="#84cc16" style="width: 14px; height: 14px; border-radius: 50%; background: #84cc16; border: 1.5px solid #fff; cursor: pointer;" title="เขียวใบตอง"></button>
-                            <button type="button" class="bib-color-btn" data-color="#f97316" style="width: 14px; height: 14px; border-radius: 50%; background: #f97316; border: 1.5px solid #fff; cursor: pointer;" title="ส้ม"></button>
-                            <button type="button" class="bib-color-btn" data-color="#ffffff" style="width: 14px; height: 14px; border-radius: 50%; background: #ffffff; border: 1.5px solid #ccc; cursor: pointer;" title="ขาว"></button>
-                            <input type="color" id="bibCustomColorB" value="#f97316" style="width: 16px; height: 16px; border: none; border-radius: 3px; cursor: pointer; padding: 0; background: transparent;">
+                        <div id="bibColorsA" style="display: none;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorA" value="#84cc16">
                         </div>
                     </div>
                 </div>
-                <!-- Row 2: Name + Buttons -->
-                <div class="name-control-area">
+            </div>
+
+            <div class="mb-center">
+                <div class="mb-vs">VS</div>
+                <button id="swapScoreBtn" class="btn-warning mb-mini" title="Swap Score Sides"><i
+                        class="fas fa-exchange-alt"></i></button>
+                <button id="undoScoreBtn" class="btn-secondary mb-mini" title="Undo Last Score"><i
+                        class="fas fa-undo"></i></button>
+                <button id="resetScoreBtn" class="btn-secondary mb-mini" title="Reset Scores"><i
+                        class="fas fa-sync-alt"></i></button>
+            </div>
+
+            <div class="mb-card" id="mbCardB" data-team="B">
+                <div class="mb-pattern kit-pat pat-solid" id="mbPatternB"></div>
+                <div class="mb-logo-area">
+                    <button type="button" class="mb-gear" data-team="B" title="ตั้งค่าสีทีม / เสื้อเอี้ยม"><i class="fas fa-cog"></i></button>
+                    <span class="mb-bib-badge" id="mbBibBadgeB" title="กำลังใช้สีเสื้อเอี้ยม">🎽</span><span class="mb-swatches" title="สีหลัก / สีรอง"><i class="c1"></i><i class="c2"></i></span>
+                    <div class="logo-container mb-logo"><img id="logoB" src="" alt="">
+                        <div class="logo-initials" id="initialsB">B</div>
+                    </div>
+                </div>
+                <div class="name-control-area mb-name-row">
                     <div class="name" id="nameB" data-lang="teamB">Team B</div>
                     <input type="text" class="name-input" id="nameB-input">
                     <button class="edit-btn" id="editBtnB" data-lang-title="editHint"><i
                             class="fas fa-pencil-alt"></i></button>
                     <button class="ok-btn" id="okBtnB" data-lang="ok"></button>
+                </div>
+                <!-- Basketball Extra Buttons B -->
+                <div id="basketballBtnsB" class="mb-extra" style="display: none;">
+                    <button id="scoreBPlus2Btn" class="btn-primary mb-extra-btn">+2</button>
+                    <button id="scoreBPlus3Btn" class="btn-primary mb-extra-btn">+3</button>
+                </div>
+                <div class="mb-score-row">
+                    <div class="mb-score" id="scoreB">0</div>
+                    <div class="mb-steppers">
+                        <button id="scoreBPlusBtn" class="mb-plus" title="+1"><i class="fas fa-plus"></i></button>
+                        <button id="scoreBMinusBtn" class="mb-minus" title="-1"><i class="fas fa-minus"></i></button>
+                    </div>
+                </div>
+                <div class="mb-hidden-inputs">
+                    <input type="color" class="color-picker" id="colorB" value="#ffffff">
+                    <input type="color" class="color-picker color-picker-2" id="colorB2" value="#000000">
+                    <div class="bib-override-container">
+                        <label title="Bib Color / สีเสื้อเอี้ยมชั่วคราว">
+                            <input type="checkbox" id="bibOverrideB"> 🎽
+                        </label>
+                        <div id="bibColorsB" style="display: none;">
+                            <button type="button" class="bib-color-btn" data-color="#84cc16" title="เขียวใบตอง"></button>
+                            <button type="button" class="bib-color-btn" data-color="#f97316" title="ส้ม"></button>
+                            <button type="button" class="bib-color-btn" data-color="#ffffff" title="ขาว"></button>
+                            <input type="color" id="bibCustomColorB" value="#f97316">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3035,77 +3297,6 @@
         <div class="row center">
             <button id="swapBtn" class="btn-warning" style="width: 100%;"><i class="fas fa-exchange-alt"></i> <span
                     data-lang="swap"></span></button>
-        </div>
-    </div>
-
-    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
-        <div class="action-buttons-grid" id="actionButtonsGrid">
-        </div>
-    </div>
-    <div class="card" data-panel-id="panelScore">
-        <div class="score-panel-clean">
-            <!-- Team A -->
-            <div class="score-col-team">
-                <!-- Basketball Extra Buttons A -->
-                <div id="basketballBtnsA" style="display: none; gap: 6px; margin-bottom: 8px; width: 100%;">
-                    <button id="scoreAPlus2Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+2</button>
-                    <button id="scoreAPlus3Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #8b5cf6, #5b21b6); color: white; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+3</button>
-                </div>
-                <button id="scoreAPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                <div class="clean-score-display" id="scoreA">0</div>
-                <button id="scoreAMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
-            </div>
-
-            <!-- Center -->
-            <div class="score-col-center" style="flex-direction: column; gap: 8px;">
-                <button id="swapScoreBtn" class="btn-warning"
-                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Swap Score Sides"><i
-                        class="fas fa-exchange-alt"></i></button>
-                <button id="undoScoreBtn" class="btn-secondary"
-                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0; background: #64748b; color: white;" title="Undo Last Score"><i
-                        class="fas fa-undo"></i></button>
-                <button id="resetScoreBtn" class="btn-secondary"
-                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;" title="Reset Scores"><i
-                        class="fas fa-sync-alt"></i></button>
-            </div>
-
-            <!-- Team B -->
-            <div class="score-col-team">
-                <!-- Basketball Extra Buttons B -->
-                <div id="basketballBtnsB" style="display: none; gap: 6px; margin-bottom: 8px; width: 100%;">
-                    <button id="scoreBPlus2Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+2</button>
-                    <button id="scoreBPlus3Btn" class="btn-primary" style="flex: 1; padding: 16px 0; font-size: 1.25rem; font-weight: bold; border-radius: 8px; border: none; background: linear-gradient(135deg, #8b5cf6, #5b21b6); color: white; box-shadow: 0 4px 6px rgba(139, 92, 246, 0.25); cursor: pointer;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">+3</button>
-                </div>
-                <button id="scoreBPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                <div class="clean-score-display" id="scoreB">0</div>
-                <button id="scoreBMinusBtn" class="btn-score-minus" style="margin-top: 4px;"><i class="fas fa-chevron-down"></i></button>
-            </div>
-        </div>
-    </div>
-    <div class="card score2-card" id="score2Card">
-        <div class="score2-control-container">
-            <div class="score-panel-clean">
-                <!-- Team A -->
-                <div class="score-col-team">
-                    <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="score2A">0</div>
-                    <button id="score2AMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
-                </div>
-
-                <!-- Center -->
-                <div class="score-col-center">
-                    <button id="resetScore2Btn" class="btn-warning"
-                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
-                            class="fas fa-redo"></i></button>
-                </div>
-
-                <!-- Team B -->
-                <div class="score-col-team">
-                    <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="score2B">0</div>
-                    <button id="score2BMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -3157,6 +3348,37 @@
         </div>
     </div>
 
+    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
+        <div class="action-buttons-grid" id="actionButtonsGrid">
+        </div>
+    </div>
+    <div class="card score2-card" id="score2Card">
+        <div class="score2-control-container">
+            <div class="score-panel-clean">
+                <!-- Team A -->
+                <div class="score-col-team">
+                    <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2A">0</div>
+                    <button id="score2AMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
+
+                <!-- Center -->
+                <div class="score-col-center">
+                    <button id="resetScore2Btn" class="btn-warning"
+                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                            class="fas fa-redo"></i></button>
+                </div>
+
+                <!-- Team B -->
+                <div class="score-col-team">
+                    <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2B">0</div>
+                    <button id="score2BMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Display Table Control Panel on Main Page -->
     <div id="dt-main-control-card" class="card" data-panel-id="panelDtControl" style="display: none; border: 1.5px solid #22c55e;">
         <div style="font-size: 0.75rem; font-weight: 700; color: #22c55e; text-transform: uppercase; margin-bottom: 8px; text-align: center;">📊 ควบคุมตาราง / Display Table Row Filter</div>
@@ -3175,7 +3397,7 @@
                     class="fas fa-cog"></i></button>
 
             <button id="penaltyShootoutBtn" class="btn-secondary" title="ยิงจุดโทษ / Penalty Shootout"
-                onclick="openPenaltyShootout()" style="color: #fbbf24;">
+                onclick="openPenaltyShootout()">
                 <i class="fas fa-futbol"></i> <span style="font-size:.76rem; margin-left:5px;">จุดโทษ</span>
             </button>
 
@@ -3540,6 +3762,19 @@
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;"
                 data-lang="actionSettingsDesc"></p>
+            <!-- V2.9.5.9: number of columns for the Action buttons grid -->
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin: 4px 0 10px; padding: 8px 10px; background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.3); border-radius: 8px;">
+                <label for="actionGridColsSelect" style="font-size:0.85rem; font-weight:700;"><i class="fas fa-th"></i> จำนวนคอลัมน์ปุ่ม / Columns</label>
+                <select id="actionGridColsSelect" onchange="setActionGridCols(this.value)" style="padding:4px 8px;">
+                    <option value="auto">อัตโนมัติ (3 / จอแคบ 2)</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+            </div>
             <table class="action-settings-table" id="actionSettingsTable">
                 <thead>
                     <tr>
@@ -3949,12 +4184,12 @@
                         3. วางลงในช่องด้านล่าง แล้วกด <strong>ยืนยัน / โหลดข้อมูล</strong>
                     </p>
                     <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Jamornz Tournament URL หรือ ID:</label>
-                    <input type="text" id="jamornzUrlInput" placeholder="https://jamornz.com/tournament/view/username/uuid..."
+                    <input type="text" id="jamornzUrlInput" placeholder="ลิงก์ทัวร์นาเมนต์ (หน้าเว็บ หรือ ลิงก์พอร์ทัลฝ่ายจัดรายการ)"
                         style="width: 100%; margin-bottom: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 0.85rem;">
 
-                    <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">Password สำหรับ VIP (รหัสเชื่อมต่อ 5 หลัก):</label>
+                    <label style="font-size: 0.85rem; color: #fff; display: block; margin-bottom: 5px;">รหัสเชื่อมต่อ 4 หลัก (จากหน้าเว็บ / พอร์ทัลฝ่ายจัดรายการ):</label>
                     <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                        <input type="password" id="jamornzPasswordInput" inputmode="numeric" maxlength="5" placeholder="•••••" disabled
+                        <input type="password" id="jamornzPasswordInput" inputmode="numeric" maxlength="6" placeholder="••••" disabled
                             style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 8px; color: #fff; font-size: 0.95rem; letter-spacing: .2em;">
                         <button type="button" id="editJamornzPasswordBtn" class="btn-secondary" style="padding: 6px 12px; white-space: nowrap;">
                             <i class="fas fa-pen"></i> แก้ไข
@@ -3965,6 +4200,14 @@
                     <div class="row center">
                         <button id="saveJamornzBtn" class="btn-success" style="width: 100%; padding: 6px; font-size: 0.85rem; background: #0284c7; border: none; border-radius: 4px; color: #fff; cursor: pointer;">
                             <i class="fas fa-check-circle"></i> ยืนยันรหัสและเชื่อมต่อ
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 10px; padding: 8px 10px; background: rgba(217, 70, 239, 0.08); border-radius: 6px; border: 1px dashed rgba(217, 70, 239, 0.35); font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">
+                        <div style="font-weight: 600; color: #e879f9; margin-bottom: 4px;"><i class="fas fa-image"></i> โลโก้ทีมจากเว็บ → OBS</div>
+                        <div>เมื่อเชื่อมต่อแล้ว Dock จะเก็บโลโก้ทุกทีมไว้ในเครื่อง และส่งเข้า Browser Source <code>logo_team_a_web</code> / <code>logo_team_b_web</code> อัตโนมัติ</div>
+                        <button type="button" data-action="create-web-logo-sources" class="btn-secondary" style="width: 100%; margin-top: 6px; padding: 6px; font-size: 0.8rem;">
+                            <i class="fas fa-plus-circle"></i> สร้าง Source โลโก้จากเว็บใน OBS (ครั้งเดียว)
                         </button>
                     </div>
 
@@ -4252,6 +4495,13 @@
                 <button id="clearLogoCacheBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> <span
                         data-lang="clearCache"></span></button>
             </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted-color); margin-top: 10px;">
+                OBS Image Source แสดงได้เฉพาะไฟล์ในเครื่อง โลโก้ในแคชนี้ (รวมโลโก้จาก jamornz.com) จะแสดงผ่าน Browser Source
+                <code>logo_team_a_web</code> / <code>logo_team_b_web</code>
+            </p>
+            <div class="row center" style="margin-top: 6px;">
+                <button type="button" data-action="create-web-logo-sources" class="btn-secondary"><i class="fas fa-plus-circle"></i> สร้าง Source โลโก้จากแคชใน OBS</button>
+            </div>
         </div>
         <div class="row center" style="margin-top: 15px;">
             <button id="closeLogoPathBtn" class="btn-secondary"><i class="fas fa-times"></i> <span
@@ -4290,11 +4540,10 @@
         const PANEL_DEFS = [
             { id: 'panelTopBar',        label: '📡 แถบข้อมูล / Info Bar',        defaultHidden: false },
             { id: 'panelExcelLoad',     label: '📂 โหลดข้อมูล / Excel Load',     defaultHidden: false },
-            { id: 'panelTeamEditor',    label: '🎽 แก้ไขทีม / Team Editor',       defaultHidden: false },
+            { id: 'panelTeamEditor',    label: '🏆 ทีม + คะแนน / Teams & Score',  defaultHidden: false },
             { id: 'panelSwap',          label: '🔄 สลับทีม / Swap Teams',         defaultHidden: false },
-            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
-            { id: 'panelScore',         label: '🏆 คะแนน / Score Panel',           defaultHidden: false },
             { id: 'panelTimer',         label: '⏱️ เวลา / Timer Panel',            defaultHidden: false },
+            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
             { id: 'panelDtControl',     label: '📊 ตาราง / Display Table Control', defaultHidden: true  },
         ];
 
@@ -4306,11 +4555,31 @@
         }
 
         function loadLayout() {
+            let layout = null;
             try {
                 const saved = localStorage.getItem(LAYOUT_KEY);
-                if (saved) return JSON.parse(saved);
+                if (saved) layout = JSON.parse(saved);
             } catch(e) {}
-            return getDefaultLayout();
+            if (!layout || !Array.isArray(layout.order)) return getDefaultLayout();
+            if (!Array.isArray(layout.hidden)) layout.hidden = [];
+            // Panels added in later versions go to their default place
+            PANEL_DEFS.forEach((def, i) => {
+                if (!layout.order.includes(def.id)) layout.order.splice(Math.min(i, layout.order.length), 0, def.id);
+            });
+            // V2.9.5.9: Timer now sits before the Action buttons (one-time move for saved layouts)
+            try {
+                if (!localStorage.getItem('layoutMigrated_timerFirst')) {
+                    const ti = layout.order.indexOf('panelTimer');
+                    const ai = layout.order.indexOf('panelActionButtons');
+                    if (ti > ai && ai >= 0) {
+                        layout.order.splice(ti, 1);
+                        layout.order.splice(ai, 0, 'panelTimer');
+                        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+                    }
+                    localStorage.setItem('layoutMigrated_timerFirst', '1');
+                }
+            } catch(e) {}
+            return layout;
         }
 
         function saveLayout(layout) {
@@ -4318,18 +4587,33 @@
         }
 
         function applyLayout(layout) {
-            const container = document.getElementById('mainPanelContainer');
-            if (!container) return;
-
-            // Reorder panels
-            layout.order.forEach(panelId => {
-                const el = container.querySelector(`[data-panel-id="${panelId}"]`);
-                if (el) container.appendChild(el);
-            });
+            // The panels are siblings in <body> (only the top bar lives inside #mainPanelContainer),
+            // so reorder them inside their own parent, starting where the first one is now.
+            const els = layout.order
+                .map(id => document.querySelector(`[data-panel-id="${id}"]`))
+                .filter(el => el && el.parentNode && el.closest('#mainPanelContainer') === null);
+            if (els.length) {
+                const parent = els[0].parentNode;
+                const group = els.filter(el => el.parentNode === parent);
+                const first = group.slice().sort((x, y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)[0];
+                const marker = document.createComment('panels');
+                parent.insertBefore(marker, first);
+                let ref = marker;
+                group.forEach(el => {
+                    parent.insertBefore(el, ref.nextSibling);
+                    ref = el;
+                    // The secondary-score card stays right after the Action buttons
+                    if (el.dataset.panelId === 'panelActionButtons') {
+                        const s2 = document.getElementById('score2Card');
+                        if (s2 && s2.parentNode === parent) { parent.insertBefore(s2, ref.nextSibling); ref = s2; }
+                    }
+                });
+                marker.remove();
+            }
 
             // Show/hide panels
             PANEL_DEFS.forEach(({ id }) => {
-                const el = container.querySelector(`[data-panel-id="${id}"]`);
+                const el = document.querySelector(`[data-panel-id="${id}"]`);
                 if (!el) return;
 
                 // Special case: panelDtControl is managed by its own display table toggle
@@ -4446,13 +4730,84 @@
             renderEditorList();
         };
 
+        // V2.9.5.9: Action buttons column count (saved per PC)
+        window.setActionGridCols = function(value) {
+            const v = /^[1-6]$/.test(String(value)) ? String(value) : 'auto';
+            try { localStorage.setItem('actionGridCols', v); } catch(e) {}
+            const grid = document.getElementById('actionButtonsGrid');
+            if (grid) grid.style.gridTemplateColumns = v === 'auto' ? '' : `repeat(${v}, minmax(0, 1fr))`;
+            const sel = document.getElementById('actionGridColsSelect');
+            if (sel) sel.value = v;
+        };
+
         // Apply saved layout on load
         document.addEventListener('DOMContentLoaded', () => {
             applyLayout(loadLayout());
+            let cols = 'auto';
+            try { cols = localStorage.getItem('actionGridCols') || 'auto'; } catch(e) {}
+            window.setActionGridCols(cols);
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-2"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.9-1"></script>
+
+    <!-- V2.9.5.9: team name auto-shrink (max 2 lines) + score digit count for the big score font -->
+    <script>
+        (function () {
+            const NAME_MAX_H = 41;   // 2 lines inside .mb-name-row (40px)
+            const NAME_MIN_PX = 9;
+            function fitName(el) {
+                if (!el || el.style.display === 'none') return;
+                el.style.fontSize = '';
+                // Measure without the 2-line clamp, then put it back (it only shows "…" at the minimum size)
+                el.style.webkitLineClamp = 'unset';
+                el.style.maxHeight = 'none';
+                let size = parseFloat(getComputedStyle(el).fontSize) || 16;
+                let guard = 40;
+                while (guard-- > 0 && size > NAME_MIN_PX && (el.scrollHeight > Math.min(NAME_MAX_H, size * 1.2 * 2 + 1) || el.scrollWidth > el.clientWidth + 1)) {
+                    size -= 0.5;
+                    el.style.fontSize = size + 'px';
+                }
+                el.style.webkitLineClamp = '';
+                el.style.maxHeight = '';
+                el.title = (el.innerText || '').replace(/\s*\n\s*/g, ' ');
+            }
+            function setDigits(el) {
+                if (!el) return;
+                const len = String(el.textContent || '').trim().length || 1;
+                el.style.setProperty('--digits', Math.max(1, len));
+            }
+            function fitAll() {
+                ['nameA', 'nameB'].forEach(id => fitName(document.getElementById(id)));
+                ['scoreA', 'scoreB'].forEach(id => setDigits(document.getElementById(id)));
+            }
+            let pending = 0;
+            function schedule() {
+                if (pending) return;
+                pending = requestAnimationFrame(() => { pending = 0; fitAll(); });
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                // Our own font-size / --digits writes also change the style attribute, so only react
+                // to text changes or to show/hide (edit mode), never to our own writes.
+                const mo = new MutationObserver(records => {
+                    for (const r of records) {
+                        const t = r.type === 'attributes' ? r.target : null;
+                        if (!t) { schedule(); return; }
+                        if (t.style.display !== t._mbLastDisplay) { t._mbLastDisplay = t.style.display; schedule(); return; }
+                    }
+                });
+                ['nameA', 'nameB', 'scoreA', 'scoreB'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) mo.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+                });
+                const board = document.getElementById('matchBoard');
+                if (board && window.ResizeObserver) new ResizeObserver(schedule).observe(board);
+                window.addEventListener('resize', schedule);
+                if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+                schedule();
+            });
+        })();
+    </script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
@@ -4473,16 +4828,42 @@
                 </div>
             </div>
             <iframe id="penaltyShootoutFrame" title="Penalty Shootout controls"
-                data-src="Penalty-Shootout/Penalty-Shootout.html"
+                data-src="Penalty-Shootout/Penalty-Shootout.html?v=1.4"
                 style="width:100%; flex:1; min-height:0; border:0; background:#020617;" allow="clipboard-read; clipboard-write"></iframe>
         </div>
     </div>
 
     <script>
+        // V2.9.5.9: send the Dock's current team names + colours into the penalty panel
+        function dockTeamInfo(team) {
+            const nameEl = document.getElementById('name' + team);
+            const card = document.getElementById('mbCard' + team);
+            const css = card ? getComputedStyle(card) : null;
+            const name = nameEl ? (nameEl.innerText || nameEl.textContent || '').replace(/\s*\n\s*/g, ' ').trim() : '';
+            return {
+                name: name || ('Team ' + team),
+                color1: (css && css.getPropertyValue('--team-color').trim()) || document.getElementById('color' + team)?.value || '#2563eb',
+                color2: (css && css.getPropertyValue('--team-color2').trim()) || document.getElementById('color' + team + '2')?.value || '#000000',
+                logo: (document.getElementById('logo' + team)?.style.display !== 'none' && document.getElementById('logo' + team)?.src) || ''
+            };
+        }
+        function sendDockTeamsToPenalty() {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (!frame || !frame.contentWindow || !frame.getAttribute('src')) return;
+            try {
+                frame.contentWindow.postMessage({ type: 'dockTeams', A: dockTeamInfo('A'), B: dockTeamInfo('B') }, '*');
+            } catch (e) {}
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (frame) frame.addEventListener('load', sendDockTeamsToPenalty);
+        });
+
         function openPenaltyShootout() {
             const overlay = document.getElementById('penaltyShootoutOverlay');
             const frame = document.getElementById('penaltyShootoutFrame');
             if (!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+            else sendDockTeamsToPenalty();
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
         }

@@ -327,6 +327,32 @@ obs_names/{nameKey}/  # ดัชนีชื่อ → { ID, name }  (nameKey =
 - เก็บเฉพาะ `pinHash` (SHA-256 ใส่ salt) ห้ามเก็บรหัสจริง เป็นการป้องกันระดับเบาเท่านั้น ห้ามใช้ผูกสิทธิ์ VIP หรือเงิน
 - Firebase Rules ต้องอนุญาตให้เขียน `pinHash`, `pinUpdated` และ path `obs_names`
 
+### โลโก้ทีมจาก jamornz.com → OBS — V2.9.5.8
+
+- OBS Image Source แสดงได้เฉพาะไฟล์ในเครื่อง โลโก้จากเว็บ/แคชจึงแสดงผ่าน Browser Source `logo_team_a_web` / `logo_team_b_web` (หรือ `logo_team_a` / `logo_team_b` ถ้าเป็น Browser Source เอง)
+- `cacheJamornzLogos()` เก็บโลโก้จาก `tournament.teamLogos` (key = รหัสทีม ตัวใหญ่) และ `tournament.teams[].logo_url` (key = รหัสทีม หรือชื่อทีมตัวเล็กไม่มีช่องว่าง) เป็น data URL WebP ขนาดไม่เกิน 360px ใน `logoDataCache`
+- `pushWebLogo()` ฝังรูปในหน้า `data:text/html` แล้วส่งเข้า `url` ของ Browser Source (ส่งซ้ำเฉพาะเมื่อเปลี่ยน) ใช้ได้แม้ออฟไลน์
+- `createWebLogoSources()` สร้าง Browser Source ในซีนปัจจุบัน วางตำแหน่ง/ขนาดเท่า Image Source เดิม แล้วซ่อน Image Source เดิม (ไม่ลบ)
+- Image Source เดิม (`setImage`) ทำงานเหมือนเดิมทุกอย่าง ห้ามส่ง URL หรือ data URL เข้า `file`
+
+### หน้าทีม + คะแนน (Match Board) — V2.9.5.8
+
+- Panel `panelTeamEditor` (ชื่อในหน้าจัด Layout: "ทีม + คะแนน") รวมโลโก้ ชื่อทีม และคะแนนหลักเป็นการ์ดละทีม (`#matchBoard`, `#mbCardA`, `#mbCardB`) Panel `panelScore` เดิมถูกรวมเข้ามาแล้ว (คะแนนรอง `score2Card` ยังแยกเหมือนเดิม)
+- สีการ์ดและปุ่ม +/− มาจากสีทีมที่ใช้งานจริง (รวมสีเสื้อเอี้ยม) ผ่าน CSS variable `--team-color` / `--team-ink` ที่ `updateTeamUI` ตั้งให้
+- ปุ่ม + สูงอยู่บน ปุ่ม − เตี้ยอยู่ล่าง ID เดิม (`scoreAPlusBtn`, `scoreAMinusBtn`, ...) ไม่เปลี่ยน
+- ปุ่ม ⚙️ (`.mb-gear`) เปิด `#teamSettingsModal` ตั้งสีหลัก สีรอง และเปิด/เลือกสีเสื้อเอี้ยม โดยเขียนกลับไปที่ input เดิมที่ซ่อนอยู่ (`#colorA`, `#colorA2`, `#bibOverrideA`, `#bibCustomColorA`) ซึ่งยังเป็นแหล่งข้อมูลหลัก
+- ปุ่มสลับฝั่ง / ย้อนกลับ / รีเซ็ตคะแนน เป็นปุ่มเล็กตรงกลาง (`.mb-center`) การสลับฝั่งใช้ `flex-direction` ของ `#matchBoard`
+- สีรอง (`--team-color2`) แสดงเป็นแถบบน/ล่างและจุดสีใต้ปุ่ม ⚙️ ลายเสื้อ 19 แบบอยู่ใน `.mb-pattern` (คลาส `pat-<id>`, รายการใน `kitPatternList()`) เลือกในหน้าต่าง ⚙️ และเก็บตามชื่อทีมใน localStorage `teamKitPatterns`
+
+### สนุกเกอร์ (Snooker) — V2.9.5.8
+
+- ไฟล์ `fcp_v2_assets/snooker_module.js` (import จาก `main.js`) และกราฟิก `snooker_score.html` (Browser Source `Snooker_Main_Score`, 1280×160)
+- เปิดจาก Sport Graphics Settings → Active Sport = `snooker` (`vb_sport`) แล้วจะมีการ์ดควบคุมใต้ Score 2 และหัวข้อตั้งค่าสนุกเกอร์ (กติกา / การแสดงผล / สี)
+- แต้มในเฟรม = คะแนนหลัก (`window.fcpChangeScore`), เฟรมที่ชนะ = คะแนนรอง (`window.fcpChangeScore2`) จึงใช้ OBS text, jamornz.com sync และ undo หลักได้เหมือนเดิม
+- ค่าเฉพาะสนุกเกอร์เก็บใน localStorage `sn_*` (เช่น `sn_best_of`, `sn_reds_total`, `sn_reds_left`, `sn_break`, `sn_at_table`, `sn_c_*` สี) และส่งให้กราฟิกผ่าน BroadcastChannel `sn_score_channel` + key `sn_state`
+- แต้มที่เหลือ: มีแดง → แดง×8 + 27 (+7 ถ้าต้องแทงสีหลังแดง), หมดแดง → ผลรวมลูกสีที่ยังไม่ลง
+
+
 ---
 
 ## 💾 localStorage Keys

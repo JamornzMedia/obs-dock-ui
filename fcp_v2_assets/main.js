@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.8';
-import { translations } from './languages.js?v=2.9.5.8-2';
+import { translations } from './languages.js?v=2.9.5.8-6';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -154,7 +154,63 @@ function debounce(func, wait) {
 
 // --- OBS ---
 const obs = new OBSWebSocket();
-const setText = (source, text) => obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => { });
+// V2.9.5.8: PlayScore plugin (native OBS graphics). Every value the Dock sends to OBS is also
+// pushed to the plugin's data store through the obs-websocket vendor request "SetData".
+// Changed keys are batched; if the plugin is missing the push pauses for 30 s and then
+// resends the whole state.
+const playScoreAll = {};
+const playScoreLast = {};
+const playScorePending = {};
+let playScoreTimer = null;
+let playScorePausedUntil = 0;
+let playScoreNeedsFull = false;
+const flushPlayScore = () => {
+    playScoreTimer = null;
+    const wait = playScorePausedUntil - Date.now();
+    if (wait > 0) { playScoreTimer = setTimeout(flushPlayScore, wait); return; }
+    const batch = playScoreNeedsFull ? { ...playScoreAll } : { ...playScorePending };
+    Object.keys(playScorePending).forEach(k => delete playScorePending[k]);
+    if (!Object.keys(batch).length) return;
+    obs.call('CallVendorRequest', { vendorName: 'PlayScore', requestType: 'SetData', requestData: { data: batch } })
+        .then(() => { Object.assign(playScoreLast, batch); playScoreNeedsFull = false; })
+        .catch(() => { playScorePausedUntil = Date.now() + 30000; playScoreNeedsFull = true; });
+};
+const pushPlayScore = (data) => {
+    for (const [key, value] of Object.entries(data || {})) {
+        const text = value == null ? '' : String(value);
+        playScoreAll[key] = text;
+        if (playScoreLast[key] !== text) playScorePending[key] = text;
+    }
+    if (!playScoreTimer && (Object.keys(playScorePending).length || playScoreNeedsFull)) playScoreTimer = setTimeout(flushPlayScore, 120);
+};
+window.pushPlayScore = pushPlayScore;
+// Logos for the plugin: local files are sent as file paths, web/WebP logos as PNG data URLs
+// (Qt decodes PNG everywhere; WebP support depends on the OBS build).
+const playScoreLogoCache = new Map();
+const pushPlayScoreLogo = (key, src) => {
+    if (!src) return pushPlayScore({ [key]: '' });
+    if (/^file:/i.test(src) || /^data:image\/png/i.test(src)) return pushPlayScore({ [key]: src });
+    if (playScoreLogoCache.has(src)) return pushPlayScore({ [key]: playScoreLogoCache.get(src) });
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        try {
+            const scale = Math.min(1, 400 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            const png = canvas.toDataURL('image/png');
+            playScoreLogoCache.set(src, png);
+            pushPlayScore({ [key]: png });
+        } catch (e) { /* cross-origin image without CORS: the plugin keeps the mirrored logo */ }
+    };
+    img.src = src;
+};
+const setText = (source, text) => {
+    pushPlayScore({ [source]: text });
+    return obs.call('SetInputSettings', { inputName: source, inputSettings: { text: String(text) } }).catch(err => { });
+};
 const IMAGE_UPDATE_DELAY_MS = 250;
 const lastQueuedImagePath = new Map();
 const lastAppliedImagePath = new Map();
@@ -170,9 +226,13 @@ const setImage = (sourceName, filename) => {
     }
 
     const hasExt = /\.(png|jpe?g|gif|webp)$/i.test(normalizedFilename);
-    const filePath = normalizedFilename
-        ? `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`
-        : '';
+    // A full path (e.g. a logo written from the Dock cache) is used as is.
+    const isAbsolutePath = /^([a-z]:[\\/]|\/)/i.test(normalizedFilename);
+    const filePath = !normalizedFilename
+        ? ''
+        : isAbsolutePath
+            ? normalizedFilename.replace(/\\/g, '/')
+            : `${logoFolderPath}/${normalizedFilename}${hasExt ? '' : '.png'}`;
 
     if (lastQueuedImagePath.get(sourceName) === filePath) {
         console.debug(`[OBS Image] Skipped unchanged path for ${sourceName}:`, filePath);
@@ -202,6 +262,7 @@ const setImage = (sourceName, filename) => {
     return imageUpdateQueue;
 };
 const setSourceColor = (sourceName, hexColor) => {
+    pushPlayScore({ [sourceName]: hexColor });
     const hexToObsColor = (hex) => {
         const cleanHex = hex.substring(1);
         const r = cleanHex.substring(0, 2);
@@ -1211,6 +1272,260 @@ const saveLogoCache = () => {
     }
 }
 
+// Finds a logo in the Dock cache by team code / file name / team name (any case, spaces ignored).
+// Returns a data: URL (cached image) or an https URL (not cached yet), or '' when unknown.
+const resolveCachedLogo = (value) => {
+    if (!value) return '';
+    const rawKey = String(value).trim();
+    if (/^(https?:|data:)/i.test(rawKey)) return rawKey;
+    const upperKey = rawKey.toUpperCase();
+    const lowerKey = rawKey.toLowerCase();
+    const logoNameClean = lowerKey.replace(/\s/g, '').replace(/\.(png|jpe?g|gif|webp)$/i, '');
+    let found = logoCache[rawKey] || logoCache[upperKey] || logoCache[lowerKey] || logoCache[logoNameClean];
+    if (!found) {
+        const foundKey = Object.keys(logoCache).find(k => k.toLowerCase() === lowerKey || k.toLowerCase().startsWith(logoNameClean + '.'));
+        if (foundKey) found = logoCache[foundKey];
+    }
+    return found || '';
+};
+
+// --- Web logos → OBS ---------------------------------------------------------------------------
+// OBS "Image" sources can only show files on disk, so logos that come from jamornz.com (or were
+// dropped into the logo cache) are shown through a Browser Source: "logo_team_a_web" / "logo_team_b_web"
+// (created with one click in Settings → Logos), or "logo_team_a" / "logo_team_b" themselves when they are
+// Browser Sources. The image is embedded in the page, so it keeps working offline.
+const WEB_LOGO_MAX_PX = 360;
+const lastWebLogo = new Map();
+
+const webLogoPageUrl = (src) => {
+    if (!src) return 'about:blank';
+    const safeSrc = String(src).replace(/"/g, '%22');
+    const html = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'
+        + 'img{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><img src="' + safeSrc + '"></body></html>';
+    return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+};
+
+const getInputKind = async (inputName) => {
+    try {
+        const res = await obs.call('GetInputSettings', { inputName });
+        return res.inputKind || '';
+    } catch (e) {
+        return ''; // input does not exist
+    }
+};
+
+const pushWebLogo = async (imageSourceName, logoValue, force = false) => {
+    const src = resolveCachedLogo(logoValue);
+    const pageUrl = webLogoPageUrl(src);
+    const targets = [`${imageSourceName}_web`];
+    if ((await getInputKind(imageSourceName)).startsWith('browser_source')) targets.unshift(imageSourceName);
+    for (const inputName of targets) {
+        if (!force && lastWebLogo.get(inputName) === pageUrl) continue;
+        try {
+            await obs.call('SetInputSettings', { inputName, inputSettings: { url: pageUrl, is_local_file: false } });
+            lastWebLogo.set(inputName, pageUrl);
+        } catch (e) {
+            // The web logo source is optional; nothing to do when it does not exist.
+        }
+    }
+};
+
+// Downloads a logo once and keeps a small copy (data URL) in the Dock cache.
+const logoUrlToDataUrl = async (url) => {
+    const response = await fetch(url, { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const bitmap = await createImageBitmap(await response.blob());
+    const scale = Math.min(1, WEB_LOGO_MAX_PX / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const webp = canvas.toDataURL('image/webp', 0.9);
+    return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png');
+};
+
+// Collects team logos from a jamornz.com tournament (generator logos by team code, and logos that teams
+// uploaded in the team portal), stores them in the cache and refreshes the logos on screen and in OBS.
+const cacheJamornzLogos = async (tournament) => {
+    const toFullUrl = (url) => (url && url.startsWith('/') ? `https://jamornz.com${url}` : url);
+    const wanted = new Map(); // cache key -> url
+    const teams = Array.isArray(tournament.teams) ? tournament.teams : [];
+    if (tournament.teamLogos && typeof tournament.teamLogos === 'object') {
+        Object.entries(tournament.teamLogos).forEach(([code, url]) => {
+            if (url) wanted.set(String(code).replace(/\s/g, '').toUpperCase(), toFullUrl(url));
+        });
+    }
+    teams.forEach(team => {
+        const url = toFullUrl(team?.logo_url);
+        if (!url) return;
+        const code = String(team.code || '').replace(/\s/g, '').toUpperCase();
+        const nameKey = String(team.name || '').replace(/\s/g, '').toLowerCase();
+        if (code && !wanted.has(code)) wanted.set(code, url);
+        else if (!code && nameKey && !wanted.has(nameKey)) wanted.set(nameKey, url);
+        if (nameKey && !logoCache[nameKey]) logoCache[nameKey] = url; // name lookups (in memory until cached)
+    });
+    if (!wanted.size) return;
+
+    setJamornzConnectionStatus(`<i class="fas fa-spinner fa-spin"></i> กำลังเก็บโลโก้ ${wanted.size} ทีมลงเครื่อง…`, 'info');
+    const byUrl = new Map();
+    let ok = 0;
+    let failed = 0;
+    for (const [key, url] of wanted) {
+        try {
+            if (!byUrl.has(url)) byUrl.set(url, await logoUrlToDataUrl(url));
+            logoCache[key] = byUrl.get(url);
+            ok += 1;
+        } catch (e) {
+            logoCache[key] = url; // still shows online
+            failed += 1;
+            console.warn('[Logo] Could not cache', url, e);
+        }
+    }
+    saveLogoCache();
+    updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+    updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
+    setJamornzConnectionStatus(`<i class="fas fa-check-circle"></i> เชื่อมต่อแล้ว · เก็บโลโก้ ${ok} ทีมไว้ในเครื่อง${failed ? ` (โหลดไม่ได้ ${failed})` : ''} — แสดงใน OBS ผ่าน logo_team_a_web / logo_team_b_web`, failed && !ok ? 'error' : 'success');
+};
+
+// One click: adds "logo_team_a_web" / "logo_team_b_web" Browser Sources to the current scene at the same
+// place and size as the existing logo_team_a / logo_team_b image sources (which are then hidden, not deleted).
+const createWebLogoSources = async () => {
+    try {
+        const { currentProgramSceneName: sceneName } = await obs.call('GetCurrentProgramScene');
+        const { inputs } = await obs.call('GetInputList');
+        const created = [];
+        for (const team of ['a', 'b']) {
+            const imageName = `logo_team_${team}`;
+            const webName = `${imageName}_web`;
+            if (inputs.some(input => input.inputName === webName)) continue;
+            const { sceneItemId } = await obs.call('CreateInput', {
+                sceneName,
+                inputName: webName,
+                inputKind: 'browser_source',
+                inputSettings: { url: 'about:blank', width: 600, height: 600, is_local_file: false, shutdown: false, restart_when_active: false },
+                sceneItemEnabled: true
+            });
+            try {
+                const { sceneItemId: imageItemId } = await obs.call('GetSceneItemId', { sceneName, sourceName: imageName });
+                const { sceneItemTransform: t } = await obs.call('GetSceneItemTransform', { sceneName, sceneItemId: imageItemId });
+                await obs.call('SetSceneItemTransform', {
+                    sceneName, sceneItemId,
+                    sceneItemTransform: {
+                        positionX: t.positionX, positionY: t.positionY, alignment: t.alignment, rotation: t.rotation,
+                        boundsType: 'OBS_BOUNDS_SCALE_INNER', boundsAlignment: 0,
+                        boundsWidth: Math.max(1, t.width), boundsHeight: Math.max(1, t.height)
+                    }
+                });
+                await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: imageItemId, sceneItemEnabled: false });
+            } catch (e) {
+                // logo_team_x is not in this scene: the new source stays at the top-left; move it in OBS.
+            }
+            created.push(webName);
+        }
+        await pushWebLogo('logo_team_a', masterTeamA.logoFile, true);
+        await pushWebLogo('logo_team_b', masterTeamB.logoFile, true);
+        showToast(created.length ? `สร้าง ${created.join(', ')} ในซีน "${sceneName}" แล้ว` : 'มี logo_team_a_web / logo_team_b_web อยู่แล้ว — อัปเดตโลโก้ให้แล้ว', 'success');
+    } catch (e) {
+        console.error('[Logo] createWebLogoSources failed', e);
+        showToast('สร้าง Source โลโก้ไม่สำเร็จ — ตรวจว่าเชื่อมต่อ OBS แล้ว', 'error');
+    }
+};
+window.createWebLogoSources = createWebLogoSources;
+
+// --- Cached logos → real files for the OBS Image sources ---------------------------------------
+// OBS Image sources need a file on disk, but logos from jamornz.com live in the Dock cache. The
+// logo is shown in a temporary Browser Source (parked outside the canvas), saved as PNG with the
+// obs-websocket "SaveSourceScreenshot" request into the logo folder (or the recording folder),
+// and the Image source then points to that full path. Each logo is written once and remembered.
+const LOGO_FILE_MAP_KEY = 'logoFileMap_v1';
+const LOGO_WRITER_SOURCE = 'jamornz_logo_writer';
+const LOGO_FILE_PX = 360;
+let logoFileMap = {};
+try { logoFileMap = JSON.parse(localStorage.getItem(LOGO_FILE_MAP_KEY) || '{}') || {}; } catch (e) { logoFileMap = {}; }
+let logoWriteQueue = Promise.resolve('');
+let logoWriterCleanupTimer = null;
+
+const logoContentId = (src) => {
+    let h = 5381;
+    const step = Math.max(1, Math.floor(src.length / 8192));
+    for (let i = 0; i < src.length; i += step) h = ((h << 5) + h + src.charCodeAt(i)) | 0;
+    return `${(h >>> 0).toString(36)}${src.length.toString(36)}`;
+};
+const logoFileKey = (key) => String(key || 'logo').replace(/[^a-z0-9\u0E00-\u0E7F_-]+/gi, '_').slice(0, 40) || 'logo';
+
+const scheduleLogoWriterCleanup = () => {
+    clearTimeout(logoWriterCleanupTimer);
+    logoWriterCleanupTimer = setTimeout(() => {
+        obs.call('RemoveInput', { inputName: LOGO_WRITER_SOURCE }).catch(() => {});
+    }, 5000);
+};
+
+const writeLogoFile = async (key, src, id) => {
+    if (logoFileMap[id]) return logoFileMap[id];
+    const url = webLogoPageUrl(src);
+    const { currentProgramSceneName: sceneName } = await obs.call('GetCurrentProgramScene');
+    let sceneItemId = null;
+    if (!(await getInputKind(LOGO_WRITER_SOURCE))) {
+        ({ sceneItemId } = await obs.call('CreateInput', {
+            sceneName, inputName: LOGO_WRITER_SOURCE, inputKind: 'browser_source', sceneItemEnabled: true,
+            inputSettings: { url, width: LOGO_FILE_PX, height: LOGO_FILE_PX, is_local_file: false, shutdown: false, fps: 30 }
+        }));
+    } else {
+        await obs.call('SetInputSettings', { inputName: LOGO_WRITER_SOURCE, inputSettings: { url } });
+        try {
+            ({ sceneItemId } = await obs.call('GetSceneItemId', { sceneName, sourceName: LOGO_WRITER_SOURCE }));
+        } catch (e) {
+            ({ sceneItemId } = await obs.call('CreateSceneItem', { sceneName, sourceName: LOGO_WRITER_SOURCE, sceneItemEnabled: true }));
+        }
+    }
+    // Keep it out of sight but active (a hidden Browser Source does not paint).
+    if (sceneItemId != null) {
+        await obs.call('SetSceneItemTransform', { sceneName, sceneItemId, sceneItemTransform: { positionX: -4000, positionY: -4000 } }).catch(() => {});
+    }
+    await wait(900);
+    const fileName = `jamornz_${logoFileKey(key)}_${id}.png`;
+    const folders = [logoFolderPath];
+    try {
+        const { recordDirectory } = await obs.call('GetRecordDirectory');
+        if (recordDirectory) folders.push(String(recordDirectory).replace(/\\/g, '/'));
+    } catch (e) { /* older obs-websocket */ }
+    let saved = '';
+    for (const folder of folders) {
+        if (!folder) continue;
+        const imageFilePath = `${String(folder).replace(/[\\/]+$/, '')}/${fileName}`;
+        try {
+            await obs.call('SaveSourceScreenshot', {
+                sourceName: LOGO_WRITER_SOURCE, imageFormat: 'png', imageFilePath,
+                imageWidth: LOGO_FILE_PX, imageHeight: LOGO_FILE_PX, imageCompressionQuality: -1
+            });
+            saved = imageFilePath;
+            break;
+        } catch (e) {
+            console.warn('[Logo] Could not save logo file in', folder, e);
+        }
+    }
+    scheduleLogoWriterCleanup();
+    if (saved) {
+        logoFileMap[id] = saved;
+        try { localStorage.setItem(LOGO_FILE_MAP_KEY, JSON.stringify(logoFileMap)); } catch (e) {}
+    }
+    return saved;
+};
+
+const materializeLogoFile = (key, src) => {
+    if (!src) return Promise.resolve('');
+    const id = logoContentId(src);
+    if (logoFileMap[id]) return Promise.resolve(logoFileMap[id]);
+    const job = logoWriteQueue.then(() => writeLogoFile(key, src, id)).catch(e => {
+        console.warn('[Logo] Writing logo file failed', e);
+        return '';
+    });
+    logoWriteQueue = job;
+    return job;
+};
+window.materializeLogoFile = materializeLogoFile; // for support / debugging
+
 const clearLogoCache = () => {
     logoCache = {};
     localStorage.removeItem(LOGO_CACHE_KEY);
@@ -1335,6 +1650,50 @@ const getContrastColor = (hexColor) => {
     return brightness > 128 ? '#000000' : '#ffffff';
 };
 
+// V2.9.5.8: kit patterns (ลายเสื้อ) for the team cards. Saved per team name so the
+// pattern follows the team when sides are swapped or the match is reloaded.
+function kitPatternList() {
+    return [
+        ['solid', 'สีเรียบ'], ['stripes', 'ลายทางตั้ง'], ['hoops', 'ลายขวาง'], ['sash', 'แถบเฉียง'],
+        ['halves', 'ครึ่งซีก'], ['centre', 'แถบกลาง'], ['pinstripes', 'เส้นบาง'], ['checkered', 'ตาราง'],
+        ['quarters', 'สี่ส่วน'], ['chevron', 'บั้ง V'], ['yoke', 'บ่า/ไหล่'], ['sides', 'ข้างลำตัว'],
+        ['fade', 'ไล่สี'], ['twinbars', 'แถบคู่'], ['diamond', 'ตาข่ายเพชร'], ['zigzag', 'ซิกแซก'],
+        ['dots', 'จุด'], ['camo', 'ลายพราง'], ['pixel', 'พิกเซล'],
+        // V2.9.5.9: big centre bands + horizontal (แนวขวาง) versions
+        ['bigcentre', 'แถบกลางใหญ่ (ตั้ง)'], ['bigtwin', 'แถบคู่ใหญ่ (ตั้ง)'],
+        ['centre-h', 'แถบกลาง (ขวาง)'], ['bigcentre-h', 'แถบกลางใหญ่ (ขวาง)'],
+        ['twinbars-h', 'แถบคู่ (ขวาง)'], ['bigtwin-h', 'แถบคู่ใหญ่ (ขวาง)'],
+        ['halves-h', 'ครึ่งบน/ล่าง (ขวาง)'], ['pinstripes-h', 'เส้นบาง (ขวาง)'], ['sash-r', 'แถบเฉียงกลับ'],
+    ];
+}
+function kitPatternKey(name) {
+    return String(name || '').replace(/\s+/g, '').toLowerCase();
+}
+function getKitPattern(team, name) {
+    try {
+        const map = JSON.parse(localStorage.getItem('teamKitPatterns') || '{}');
+        const byName = map[kitPatternKey(name)];
+        if (byName) return byName;
+    } catch (e) {}
+    return 'solid';
+}
+function setKitPattern(team, name, id) {
+    try {
+        const map = JSON.parse(localStorage.getItem('teamKitPatterns') || '{}');
+        const key = kitPatternKey(name);
+        if (key) map[key] = id;
+        localStorage.setItem('teamKitPatterns', JSON.stringify(map));
+    } catch (e) {}
+    applyKitPattern(team, id);
+    if (window.pushPlayScore) window.pushPlayScore({ [`team${team}.pattern`]: id });
+}
+function applyKitPattern(team, id) {
+    const el = document.getElementById(`mbPattern${team}`);
+    if (!el) return;
+    const valid = kitPatternList().some(([key]) => key === id) ? id : 'solid';
+    el.className = `mb-pattern kit-pat pat-${valid}`;
+}
+
 const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isA = team === 'A';
     const masterTeam = isA ? masterTeamA : masterTeamB;
@@ -1381,6 +1740,17 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     scoreEl.style.color = contrastColor;
     scoreEl.style.webkitTextStroke = "0px";
 
+    // V2.9.5.8 match board: card and +/- buttons follow the (effective) team color.
+    const boardCard = document.getElementById(`mbCard${team}`);
+    if (boardCard) {
+        boardCard.style.setProperty('--team-color', effectiveColor1);
+        boardCard.style.setProperty('--team-ink', contrastColor);
+        boardCard.style.setProperty('--team-color2', masterTeam.color2 || '#000000');
+        applyKitPattern(team, getKitPattern(team, masterTeam.name));
+        pushPlayScore({ [`team${team}.pattern`]: getKitPattern(team, masterTeam.name), [`team${team}.bib`]: isBibActive ? '1' : '0' });
+        boardCard.classList.toggle('bib-on', !!isBibActive);
+    }
+
     score2El.textContent = masterTeam.score2;
 
     if (masterTeam.logoFile) {
@@ -1390,18 +1760,7 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
             logoEl.style.display = 'block';
             initialsEl.style.display = 'none';
         } else {
-        const rawKey = String(masterTeam.logoFile).trim();
-        const upperKey = rawKey.toUpperCase();
-        const lowerKey = rawKey.toLowerCase();
-        const logoNameClean = lowerKey.replace(/\s/g, '').replace(/\.(png|jpe?g|gif|webp)$/i, '');
-
-        let foundUrl = logoCache[rawKey] || logoCache[upperKey] || logoCache[lowerKey] || logoCache[logoNameClean];
-        if (!foundUrl) {
-            // Prefix Match Strategy
-            const keys = Object.keys(logoCache);
-            const foundKey = keys.find(k => k.toLowerCase() === lowerKey || k.toLowerCase().startsWith(logoNameClean + '.'));
-            if (foundKey) foundUrl = logoCache[foundKey];
-        }
+        const foundUrl = resolveCachedLogo(masterTeam.logoFile);
 
         if (foundUrl) {
             logoEl.src = foundUrl;
@@ -1420,8 +1779,16 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
         initialsEl.style.display = 'block';
     }
 
+    pushPlayScoreLogo(`team${team}.logo`, logoEl.style.display !== 'none' ? logoEl.src : '');
     setText(obsNameSource, masterTeam.name.replace(/\//g, '\n'));
-    const logoUpdatePromise = setImage(obsLogoSource, masterTeam.logoFile);
+    // Logos that only exist in the Dock cache (jamornz.com / dropped images) are written to a
+    // real PNG file first, then the Image source gets that full path.
+    const cachedLogoSrc = resolveCachedLogo(masterTeam.logoFile);
+    const logoUpdatePromise = (cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc))
+        ? materializeLogoFile(masterTeam.logoFile, cachedLogoSrc)
+            .then(path => setImage(obsLogoSource, path || masterTeam.logoFile))
+        : setImage(obsLogoSource, masterTeam.logoFile);
+    pushWebLogo(obsLogoSource, masterTeam.logoFile).catch(() => {});
     setSourceColor(obsColorSource1, effectiveColor1);
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
@@ -2258,8 +2625,12 @@ function parseJamornzInput(input) {
     const formulaMatch = raw.match(/IMPORTDATA\s*\(\s*["']([^"']+)["']\s*\)/i);
     if (formulaMatch) raw = formulaMatch[1];
 
-    // Handle public view: https://jamornz.com/tournament/view/:slug/:id
-    const viewMatch = raw.match(/tournament\/view\/([^/?#]+)\/([^/?#]+)/i);
+    // Handle tournament page links: public view, organizer portal and team portal
+    //   https://jamornz.com/tournament/view/:slug/:id
+    //   https://jamornz.com/tournament/organizer/:slug/:id
+    //   https://jamornz.com/tournament/team-portal/:slug/:id
+    // (:slug may be the profile name or the user ID; the API accepts both)
+    const viewMatch = raw.match(/tournament\/(?:view|organizer|team-portal)\/([^/?#]+)\/([^/?#]+)/i);
     if (viewMatch) {
         let dockPin = '';
         try { dockPin = new URL(raw).searchParams.get('dockPin') || ''; } catch(e) {}
@@ -2389,9 +2760,10 @@ const fetchJamornzTournament = async () => {
     const id = parsed.id;
     const passwordInput = document.getElementById('jamornzPasswordInput');
     const pin = (passwordInput?.value || parsed.dockPin || '').trim();
-    if (!/^\d{5}$/.test(pin)) {
-        setJamornzConnectionStatus('<i class="fas fa-exclamation-circle"></i> กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
-        return showToast('กรุณากรอกรหัสเชื่อมต่อ VIP ให้ครบ 5 หลัก', 'error');
+    // 4-digit PIN from the website (older tournaments may still have a 5-digit Dock PIN).
+    if (!/^\d{4,6}$/.test(pin)) {
+        setJamornzConnectionStatus('<i class="fas fa-exclamation-circle"></i> กรุณากรอกรหัสเชื่อมต่อ 4 หลัก', 'error');
+        return showToast('กรุณากรอกรหัสเชื่อมต่อ 4 หลัก', 'error');
     }
     const apiUrl = `https://jamornz.com/api/tournament.php?action=public_load&slug=${encodeURIComponent(slug)}&id=${encodeURIComponent(id)}`;
 
@@ -2454,6 +2826,7 @@ const fetchJamornzTournament = async () => {
 
         setJamornzConnectionStatus('<i class="fas fa-check-circle"></i> รหัสถูกต้อง — เชื่อมต่อกับเว็บไซต์แล้ว พร้อมส่งคะแนนกลับสู่ตารางการแข่งขัน', 'success');
         showToast(`เชื่อมต่อสำเร็จ: ${tournament.name || 'ทัวร์นาเมนต์'} (${sheetData.length - 1} คู่)`, 'success');
+        cacheJamornzLogos(tournament).catch(err => console.warn('[Logo] cache failed', err));
     } catch (err) {
         if (loadingToast) loadingToast.remove();
         console.error('Jamornz fetch error:', err);
@@ -3441,7 +3814,7 @@ const setupEventListeners = () => {
             passwordInput.focus();
             passwordInput.select();
             jamornzConnection = null;
-            setJamornzConnectionStatus('<i class="fas fa-pen"></i> กรอกรหัส 5 หลัก แล้วกด “ยืนยันรหัสและเชื่อมต่อ”', 'info');
+            setJamornzConnectionStatus('<i class="fas fa-pen"></i> กรอกรหัส 4 หลัก แล้วกด “ยืนยันรหัสและเชื่อมต่อ”', 'info');
         });
     }
 
@@ -3507,7 +3880,7 @@ const setupEventListeners = () => {
         swapState.style.cssText = 'font-size:10px;font-weight:700;line-height:1.15;text-align:center;margin-top:-4px;white-space:nowrap;';
         elements.swapScoreBtn.insertAdjacentElement('afterend', swapState);
         const applyScoreSwap = (swapped) => {
-            const panel = document.querySelector('.score-panel-clean');
+            const panel = document.getElementById('matchBoard') || document.querySelector('.score-panel-clean');
             if (panel) panel.style.flexDirection = swapped ? 'row-reverse' : 'row';
             swapState.innerHTML = swapped
                 ? '<span style="color:#fbbf24;">สลับแล้ว</span><br><span style="color:#fde68a;">B | A</span>'
@@ -3869,6 +4242,7 @@ const setupEventListeners = () => {
     });
 
     elements.clearLogoCacheBtn.addEventListener('click', clearLogoCache);
+    document.querySelectorAll('[data-action="create-web-logo-sources"]').forEach(btn => btn.addEventListener('click', () => createWebLogoSources()));
 
     // LOGO DROP ONE CLICK & DRAG
     elements.logoDropZone.addEventListener('dragover', handleDragOver);
@@ -5292,11 +5666,16 @@ window.triggerAction = async (index) => {
 // Expose the module-scoped obs instance so volleyball_module_v2.js can
 // call obs.call() via window.fcpOBS (avoids window.obs which doesn't exist).
 window.fcpOBS = obs;
+// V2.9.5.8: score helpers for sport add-ons (snooker_module.js). Same path as the +/- buttons (undo, OBS, sync).
+window.fcpChangeScore = changeScore;
+window.fcpChangeScore2 = changeScore2;
+if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.2';
+import './volleyball_module_v2.js?v=2.9.5.8';
 import './display_table_module.js?v=2.9.5.2';
+import './snooker_module.js?v=2.9.5.8-2';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {
@@ -5456,6 +5835,111 @@ document.getElementById('bibModalCloseBtn')?.addEventListener('click', closeBibP
 document.getElementById('bibModalDoneBtn')?.addEventListener('click', closeBibPopup);
 document.getElementById('bibOverridePopup')?.addEventListener('click', event => { if (event.target.id === 'bibOverridePopup') closeBibPopup(); });
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && activeBibPopupTeam) closeBibPopup(); });
+
+// V2.9.5.8: Gear button on each team card -> primary/secondary color + bib (เสื้อเอี้ยม).
+// The original hidden inputs (#colorA, #colorA2, #bibOverrideA, #bibCustomColorA ...)
+// stay the source of truth, so OBS, swap-team and saved team colors work unchanged.
+let activeTeamSettings = null;
+const tsColorTimers = {};
+const tsModal = document.getElementById('teamSettingsModal');
+const tsEl = id => document.getElementById(id);
+const refreshTeamSettings = () => {
+    if (!activeTeamSettings || !tsModal) return;
+    const team = activeTeamSettings;
+    const master = team === 'A' ? masterTeamA : masterTeamB;
+    const color1 = tsEl(`color${team}`)?.value || '#ffffff';
+    const color2 = tsEl(`color${team}2`)?.value || '#000000';
+    const bibOn = !!tsEl(`bibOverride${team}`)?.checked;
+    const bibColor = popupBibColor(team);
+    tsEl('tsTitle').textContent = `⚙️ ตั้งค่าทีม ${team}${master?.name ? ' — ' + master.name.replace(/\//g, ' ') : ''}`;
+    tsEl('tsColor1').value = color1; tsEl('tsColor1Hex').textContent = color1.toUpperCase();
+    tsEl('tsColor2').value = color2; tsEl('tsColor2Hex').textContent = color2.toUpperCase();
+    tsEl('tsBibToggle').checked = bibOn;
+    tsEl('tsBibColors').classList.toggle('is-on', bibOn);
+    tsEl('tsBibCustom').value = bibColor;
+    tsModal.querySelectorAll('#tsBibColors button').forEach(b => b.classList.toggle('is-selected', b.dataset.color.toLowerCase() === bibColor.toLowerCase()));
+    // Kit pattern tiles, previewed with this team's colours
+    const grid = tsEl('tsPatternGrid');
+    if (grid) {
+        const card = tsEl(`mbCard${team}`);
+        const shown = card ? getComputedStyle(card).getPropertyValue('--team-color').trim() : color1;
+        grid.style.setProperty('--team-color', shown || color1);
+        grid.style.setProperty('--team-color2', color2);
+        const current = getKitPattern(team, master?.name);
+        if (!grid.childElementCount) {
+            grid.innerHTML = kitPatternList().map(([id, label]) =>
+                `<button type="button" class="ts-pat-tile" data-pattern="${id}" title="${label}"><div class="sw"><div class="kit-pat pat-${id}"></div></div><span>${label}</span></button>`).join('');
+            grid.querySelectorAll('.ts-pat-tile').forEach(tile => tile.addEventListener('click', () => {
+                if (!activeTeamSettings) return;
+                const m = activeTeamSettings === 'A' ? masterTeamA : masterTeamB;
+                setKitPattern(activeTeamSettings, m?.name, tile.dataset.pattern);
+                refreshTeamSettings();
+            }));
+        }
+        grid.querySelectorAll('.ts-pat-tile').forEach(tile => tile.classList.toggle('is-selected', tile.dataset.pattern === current));
+    }
+};
+const openTeamSettings = team => {
+    if (!tsModal) return;
+    activeTeamSettings = team;
+    refreshTeamSettings();
+    tsModal.classList.add('is-open');
+};
+const closeTeamSettings = () => {
+    tsModal?.classList.remove('is-open');
+    activeTeamSettings = null;
+};
+const setTeamColorFromSettings = (which, value) => {
+    if (!activeTeamSettings || !/^#[0-9a-f]{6}$/i.test(value)) return;
+    const input = tsEl(which === 1 ? `color${activeTeamSettings}` : `color${activeTeamSettings}2`);
+    if (!input) return;
+    input.value = value;
+    // Update directly (not through the debounced input handlers, which could
+    // overwrite the other colour when both are changed quickly).
+    // Both pickers are read when the short timer fires, so OBS gets one update per pause.
+    const team = activeTeamSettings;
+    clearTimeout(tsColorTimers[team]);
+    tsColorTimers[team] = setTimeout(() => {
+        const master = team === 'A' ? masterTeamA : masterTeamB;
+        const c1 = tsEl(`color${team}`)?.value || master.color1;
+        const c2 = tsEl(`color${team}2`)?.value || master.color2;
+        updateTeamUI(team, master.name, master.logoFile, c1, c2);
+    }, 150);
+    tsEl(which === 1 ? 'tsColor1Hex' : 'tsColor2Hex').textContent = value.toUpperCase();
+    const grid = tsEl('tsPatternGrid');
+    if (grid) grid.style.setProperty(which === 1 ? '--team-color' : '--team-color2', value);
+};
+const setBibColorFromSettings = color => {
+    if (!activeTeamSettings || !/^#[0-9a-f]{6}$/i.test(color)) return;
+    const picker = tsEl(`bibCustomColor${activeTeamSettings}`);
+    if (picker) {
+        picker.value = color;
+        picker.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+        localStorage.setItem(`bib_active_color_${activeTeamSettings.toLowerCase()}`, color);
+    }
+    refreshTeamSettings();
+};
+document.querySelectorAll('.mb-gear').forEach(btn => btn.addEventListener('click', event => {
+    event.stopPropagation();
+    openTeamSettings(btn.dataset.team);
+}));
+tsEl('tsColor1')?.addEventListener('input', e => setTeamColorFromSettings(1, e.target.value));
+tsEl('tsColor2')?.addEventListener('input', e => setTeamColorFromSettings(2, e.target.value));
+tsEl('tsBibToggle')?.addEventListener('change', e => {
+    if (!activeTeamSettings) return;
+    const toggle = tsEl(`bibOverride${activeTeamSettings}`);
+    if (!toggle) return;
+    toggle.checked = e.target.checked;
+    toggle.dispatchEvent(new Event('change'));
+    refreshTeamSettings();
+});
+tsModal?.querySelectorAll('#tsBibColors button').forEach(b => b.addEventListener('click', () => setBibColorFromSettings(b.dataset.color)));
+tsEl('tsBibCustom')?.addEventListener('input', e => setBibColorFromSettings(e.target.value));
+tsEl('tsCloseBtn')?.addEventListener('click', closeTeamSettings);
+tsEl('tsDoneBtn')?.addEventListener('click', closeTeamSettings);
+tsModal?.addEventListener('click', event => { if (event.target === tsModal) closeTeamSettings(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && activeTeamSettings) closeTeamSettings(); });
 
 // --- Global helper actions for welcome screen guest & reset ---
 window.enterAsGuest = () => {
