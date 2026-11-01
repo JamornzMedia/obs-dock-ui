@@ -1659,6 +1659,11 @@ function kitPatternList() {
         ['quarters', 'สี่ส่วน'], ['chevron', 'บั้ง V'], ['yoke', 'บ่า/ไหล่'], ['sides', 'ข้างลำตัว'],
         ['fade', 'ไล่สี'], ['twinbars', 'แถบคู่'], ['diamond', 'ตาข่ายเพชร'], ['zigzag', 'ซิกแซก'],
         ['dots', 'จุด'], ['camo', 'ลายพราง'], ['pixel', 'พิกเซล'],
+        // V2.9.5.9: big centre bands + horizontal (แนวขวาง) versions
+        ['bigcentre', 'แถบกลางใหญ่ (ตั้ง)'], ['bigtwin', 'แถบคู่ใหญ่ (ตั้ง)'],
+        ['centre-h', 'แถบกลาง (ขวาง)'], ['bigcentre-h', 'แถบกลางใหญ่ (ขวาง)'],
+        ['twinbars-h', 'แถบคู่ (ขวาง)'], ['bigtwin-h', 'แถบคู่ใหญ่ (ขวาง)'],
+        ['halves-h', 'ครึ่งบน/ล่าง (ขวาง)'], ['pinstripes-h', 'เส้นบาง (ขวาง)'], ['sash-r', 'แถบเฉียงกลับ'],
     ];
 }
 function kitPatternKey(name) {

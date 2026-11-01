@@ -2381,6 +2381,16 @@
             radial-gradient(ellipse 11% 8% at 42% 12%, var(--c2) 98%, transparent 100%); background-size: 110px 110px; }
         .pat-pixel { background:
             conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 10px 10px; }
+        /* V2.9.5.9: big centre bands + horizontal versions (bands sit in the upper, visible part of the card) */
+        .pat-bigcentre { background: linear-gradient(90deg, transparent 0 25%, var(--c2) 25% 75%, transparent 75%); }
+        .pat-bigtwin { background: linear-gradient(90deg, transparent 0 16%, var(--c2) 16% 42%, transparent 42% 58%, var(--c2) 58% 84%, transparent 84%); }
+        .pat-centre-h { background: linear-gradient(180deg, transparent 0 22%, var(--c2) 22% 36%, transparent 36%); }
+        .pat-bigcentre-h { background: linear-gradient(180deg, transparent 0 14%, var(--c2) 14% 44%, transparent 44%); }
+        .pat-twinbars-h { background: linear-gradient(180deg, transparent 0 16%, var(--c2) 16% 23%, transparent 23% 30%, var(--c2) 30% 37%, transparent 37%); }
+        .pat-bigtwin-h { background: linear-gradient(180deg, transparent 0 8%, var(--c2) 8% 22%, transparent 22% 30%, var(--c2) 30% 44%, transparent 44%); }
+        .pat-halves-h { background: linear-gradient(180deg, transparent 0 30%, var(--c2) 30% 100%); }
+        .pat-pinstripes-h { background: repeating-linear-gradient(180deg, var(--c2) 0 2px, transparent 2px 11px); }
+        .pat-sash-r { background: linear-gradient(45deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
         .mb-swatches { position: absolute; top: 34px; right: 3px; display: flex; flex-direction: column; gap: 3px; }
         .mb-swatches i { display: block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.7); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         .mb-swatches .c1 { background: var(--team-color); }
@@ -2405,30 +2415,41 @@
             background: rgba(0,0,0,0.45); border-radius: 8px; padding: 1px 5px;
         }
         .mb-card.bib-on .mb-bib-badge { display: block; }
-        .mb-name-row { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 34px; min-width: 0; }
+        .mb-name-row { display: flex; align-items: center; justify-content: center; gap: 4px; height: 40px; min-width: 0; overflow: hidden; }
         .mb-card .name {
             flex: 1 1 auto; min-width: 0; text-align: center; color: #fff; font-weight: 800;
             font-size: 1.02rem; line-height: 1.2; overflow-wrap: anywhere;
+            max-height: 40px; overflow: hidden;
+            -webkit-box-orient: vertical; -webkit-line-clamp: 2;
             text-shadow: 0 1px 3px rgba(0,0,0,0.85);
         }
+        .mb-card .name:not([style*="none"]) { display: -webkit-box !important; }
         .mb-card .name-input { display: none; flex: 1 1 auto; min-width: 0; width: 100%; }
         .mb-card .edit-btn { color: rgba(255,255,255,0.75); width: 26px; height: 26px; }
         .mb-extra { gap: 6px; width: 100%; }
         .mb-extra-btn { flex: 1; padding: 10px 0; font-size: 1.1rem; font-weight: 800; border-radius: 8px; }
-        .mb-score-row { display: flex; gap: 6px; align-items: stretch; height: 116px; }
+        .mb-score-row { display: flex; gap: 6px; align-items: stretch; height: 116px; container-type: size; }
         .mb-card .mb-score {
             flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center;
             background: #05080f !important; color: #ffffff !important; -webkit-text-stroke: 0 !important;
-            border: 1px solid rgba(255,255,255,0.10); border-radius: 10px;
-            font-size: clamp(2.6rem, 9vw, 4.4rem); font-weight: 800; font-variant-numeric: tabular-nums;
+            border: 1px solid rgba(255,255,255,0.10); border-radius: 10px; overflow: hidden;
+            font-family: 'Barlow Condensed', 'Arial Narrow', 'Inter', sans-serif; line-height: 1; letter-spacing: -1px;
+            font-size: clamp(3.2rem, 14vw, 6rem); font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        /* V2.9.5.9: digits fill the score box (height-bound for 1 digit, width-bound for 2-3 digits) */
+        @supports (font-size: 1cqh) {
+            .mb-card .mb-score { font-size: min(95cqh, calc(86cqw / var(--digits, 1))); }
         }
         .mb-steppers { flex: 0 0 44%; display: flex; flex-direction: column; gap: 6px; }
-        .mb-plus, .mb-minus {
+        .mb-card .mb-plus, .mb-card .mb-minus {
             min-height: 0; padding: 0; border: none; cursor: pointer; border-radius: 10px;
             background: var(--team-color); color: var(--team-ink);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+            /* V2.9.5.9: contrasting outline + drop shadow so the buttons never melt into the card colour */
+            border: 2px solid var(--team-ink) !important;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18) !important;
         }
+        .mb-plus i, .mb-minus i { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.45)); }
         .mb-plus { flex: 2.2 1 0; font-size: 1.7rem; }
         .mb-minus { flex: 1 1 0; font-size: 1rem; filter: brightness(0.72); opacity: 0.9; }
         .mb-plus:hover { filter: brightness(1.12); }
@@ -2438,8 +2459,8 @@
             flex: 0 0 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
         }
         .mb-vs {
-            font-family: 'Barlow Condensed', 'Inter', sans-serif; font-weight: 800; font-style: italic;
-            font-size: 2.1rem; line-height: 1; letter-spacing: 0; margin: 0 0 6px;
+            font-family: 'Barlow Condensed', 'Inter', sans-serif; font-weight: 800; font-style: normal;
+            font-size: 2.1rem; line-height: 1; letter-spacing: 0; margin: 0 0 6px; padding: 0 2px;
             transform: scaleY(1.35); transform-origin: center;
             background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 55%, #64748b 100%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -2451,6 +2472,29 @@
         }
         .mb-center #swapScoreState { font-size: 8px !important; margin-top: -3px !important; }
         .mb-hidden-inputs { display: none !important; }
+        /* V2.9.5.9: Match label cards get their own colour so they stand out from the panel */
+        .labels-row #label1 { background: rgba(59,130,246,0.28) !important; border: 1px solid rgba(59,130,246,0.7) !important; }
+        .labels-row #label2 { background: rgba(168,85,247,0.28) !important; border: 1px solid rgba(168,85,247,0.7) !important; }
+        .labels-row #label3 { background: rgba(34,197,94,0.26) !important; border: 1px solid rgba(34,197,94,0.7) !important; }
+        .labels-row #label4 { background: rgba(245,158,11,0.26) !important; border: 1px solid rgba(245,158,11,0.7) !important; }
+        .labels-row #label5 { background: rgba(236,72,153,0.26) !important; border: 1px solid rgba(236,72,153,0.7) !important; }
+        .labels-row #label1, .labels-row #label2, .labels-row #label3, .labels-row #label4, .labels-row #label5 {
+            background: linear-gradient(180deg, color-mix(in srgb, var(--lbl) 34%, #0b0f15), color-mix(in srgb, var(--lbl) 18%, #0b0f15)) !important;
+            border: 1px solid color-mix(in srgb, var(--lbl) 70%, transparent) !important;
+            border-top: 3px solid var(--lbl) !important;
+            color: #f1f5f9 !important; font-weight: 700 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        }
+        .labels-row #label1 { --lbl: #3b82f6; }
+        .labels-row #label2 { --lbl: #a855f7; }
+        .labels-row #label3 { --lbl: #22c55e; }
+        .labels-row #label4 { --lbl: #f59e0b; }
+        .labels-row #label5 { --lbl: #ec4899; }
+        /* V2.9.5.9: Penalty button in orange */
+        #penaltyShootoutBtn, html.theme-sport #penaltyShootoutBtn {
+            background: linear-gradient(180deg, #fb923c, #ea580c) !important; color: #fff !important;
+            border: 1px solid #fdba74 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+        }
         @media (max-width: 360px) {
             .mb-card .mb-logo { width: 64px; height: 64px; }
             .mb-score-row { height: 100px; }
@@ -3256,37 +3300,6 @@
         </div>
     </div>
 
-    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
-        <div class="action-buttons-grid" id="actionButtonsGrid">
-        </div>
-    </div>
-    <div class="card score2-card" id="score2Card">
-        <div class="score2-control-container">
-            <div class="score-panel-clean">
-                <!-- Team A -->
-                <div class="score-col-team">
-                    <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="score2A">0</div>
-                    <button id="score2AMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
-                </div>
-
-                <!-- Center -->
-                <div class="score-col-center">
-                    <button id="resetScore2Btn" class="btn-warning"
-                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
-                            class="fas fa-redo"></i></button>
-                </div>
-
-                <!-- Team B -->
-                <div class="score-col-team">
-                    <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
-                    <div class="clean-score-display" id="score2B">0</div>
-                    <button id="score2BMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="card" data-panel-id="panelTimer">
         <div class="row timer-area-container">
             <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
@@ -3335,6 +3348,37 @@
         </div>
     </div>
 
+    <div class="card" data-panel-id="panelActionButtons" id="actionButtonsCard">
+        <div class="action-buttons-grid" id="actionButtonsGrid">
+        </div>
+    </div>
+    <div class="card score2-card" id="score2Card">
+        <div class="score2-control-container">
+            <div class="score-panel-clean">
+                <!-- Team A -->
+                <div class="score-col-team">
+                    <button id="score2APlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2A">0</div>
+                    <button id="score2AMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
+
+                <!-- Center -->
+                <div class="score-col-center">
+                    <button id="resetScore2Btn" class="btn-warning"
+                        style="border-radius: 50%; width: 40px; height: 40px; padding: 0;"><i
+                            class="fas fa-redo"></i></button>
+                </div>
+
+                <!-- Team B -->
+                <div class="score-col-team">
+                    <button id="score2BPlusBtn" class="btn-score-plus"><i class="fas fa-chevron-up"></i></button>
+                    <div class="clean-score-display" id="score2B">0</div>
+                    <button id="score2BMinusBtn" class="btn-score-minus"><i class="fas fa-chevron-down"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Display Table Control Panel on Main Page -->
     <div id="dt-main-control-card" class="card" data-panel-id="panelDtControl" style="display: none; border: 1.5px solid #22c55e;">
         <div style="font-size: 0.75rem; font-weight: 700; color: #22c55e; text-transform: uppercase; margin-bottom: 8px; text-align: center;">📊 ควบคุมตาราง / Display Table Row Filter</div>
@@ -3353,7 +3397,7 @@
                     class="fas fa-cog"></i></button>
 
             <button id="penaltyShootoutBtn" class="btn-secondary" title="ยิงจุดโทษ / Penalty Shootout"
-                onclick="openPenaltyShootout()" style="color: #fbbf24;">
+                onclick="openPenaltyShootout()">
                 <i class="fas fa-futbol"></i> <span style="font-size:.76rem; margin-left:5px;">จุดโทษ</span>
             </button>
 
@@ -3718,6 +3762,19 @@
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted-color); margin-top: 5px;"
                 data-lang="actionSettingsDesc"></p>
+            <!-- V2.9.5.9: number of columns for the Action buttons grid -->
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin: 4px 0 10px; padding: 8px 10px; background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.3); border-radius: 8px;">
+                <label for="actionGridColsSelect" style="font-size:0.85rem; font-weight:700;"><i class="fas fa-th"></i> จำนวนคอลัมน์ปุ่ม / Columns</label>
+                <select id="actionGridColsSelect" onchange="setActionGridCols(this.value)" style="padding:4px 8px;">
+                    <option value="auto">อัตโนมัติ (3 / จอแคบ 2)</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+            </div>
             <table class="action-settings-table" id="actionSettingsTable">
                 <thead>
                     <tr>
@@ -4485,8 +4542,8 @@
             { id: 'panelExcelLoad',     label: '📂 โหลดข้อมูล / Excel Load',     defaultHidden: false },
             { id: 'panelTeamEditor',    label: '🏆 ทีม + คะแนน / Teams & Score',  defaultHidden: false },
             { id: 'panelSwap',          label: '🔄 สลับทีม / Swap Teams',         defaultHidden: false },
-            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
             { id: 'panelTimer',         label: '⏱️ เวลา / Timer Panel',            defaultHidden: false },
+            { id: 'panelActionButtons', label: '⚡ ปุ่ม Action / Action Buttons',  defaultHidden: false },
             { id: 'panelDtControl',     label: '📊 ตาราง / Display Table Control', defaultHidden: true  },
         ];
 
@@ -4498,11 +4555,31 @@
         }
 
         function loadLayout() {
+            let layout = null;
             try {
                 const saved = localStorage.getItem(LAYOUT_KEY);
-                if (saved) return JSON.parse(saved);
+                if (saved) layout = JSON.parse(saved);
             } catch(e) {}
-            return getDefaultLayout();
+            if (!layout || !Array.isArray(layout.order)) return getDefaultLayout();
+            if (!Array.isArray(layout.hidden)) layout.hidden = [];
+            // Panels added in later versions go to their default place
+            PANEL_DEFS.forEach((def, i) => {
+                if (!layout.order.includes(def.id)) layout.order.splice(Math.min(i, layout.order.length), 0, def.id);
+            });
+            // V2.9.5.9: Timer now sits before the Action buttons (one-time move for saved layouts)
+            try {
+                if (!localStorage.getItem('layoutMigrated_timerFirst')) {
+                    const ti = layout.order.indexOf('panelTimer');
+                    const ai = layout.order.indexOf('panelActionButtons');
+                    if (ti > ai && ai >= 0) {
+                        layout.order.splice(ti, 1);
+                        layout.order.splice(ai, 0, 'panelTimer');
+                        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+                    }
+                    localStorage.setItem('layoutMigrated_timerFirst', '1');
+                }
+            } catch(e) {}
+            return layout;
         }
 
         function saveLayout(layout) {
@@ -4510,18 +4587,33 @@
         }
 
         function applyLayout(layout) {
-            const container = document.getElementById('mainPanelContainer');
-            if (!container) return;
-
-            // Reorder panels
-            layout.order.forEach(panelId => {
-                const el = container.querySelector(`[data-panel-id="${panelId}"]`);
-                if (el) container.appendChild(el);
-            });
+            // The panels are siblings in <body> (only the top bar lives inside #mainPanelContainer),
+            // so reorder them inside their own parent, starting where the first one is now.
+            const els = layout.order
+                .map(id => document.querySelector(`[data-panel-id="${id}"]`))
+                .filter(el => el && el.parentNode && el.closest('#mainPanelContainer') === null);
+            if (els.length) {
+                const parent = els[0].parentNode;
+                const group = els.filter(el => el.parentNode === parent);
+                const first = group.slice().sort((x, y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)[0];
+                const marker = document.createComment('panels');
+                parent.insertBefore(marker, first);
+                let ref = marker;
+                group.forEach(el => {
+                    parent.insertBefore(el, ref.nextSibling);
+                    ref = el;
+                    // The secondary-score card stays right after the Action buttons
+                    if (el.dataset.panelId === 'panelActionButtons') {
+                        const s2 = document.getElementById('score2Card');
+                        if (s2 && s2.parentNode === parent) { parent.insertBefore(s2, ref.nextSibling); ref = s2; }
+                    }
+                });
+                marker.remove();
+            }
 
             // Show/hide panels
             PANEL_DEFS.forEach(({ id }) => {
-                const el = container.querySelector(`[data-panel-id="${id}"]`);
+                const el = document.querySelector(`[data-panel-id="${id}"]`);
                 if (!el) return;
 
                 // Special case: panelDtControl is managed by its own display table toggle
@@ -4638,13 +4730,84 @@
             renderEditorList();
         };
 
+        // V2.9.5.9: Action buttons column count (saved per PC)
+        window.setActionGridCols = function(value) {
+            const v = /^[1-6]$/.test(String(value)) ? String(value) : 'auto';
+            try { localStorage.setItem('actionGridCols', v); } catch(e) {}
+            const grid = document.getElementById('actionButtonsGrid');
+            if (grid) grid.style.gridTemplateColumns = v === 'auto' ? '' : `repeat(${v}, minmax(0, 1fr))`;
+            const sel = document.getElementById('actionGridColsSelect');
+            if (sel) sel.value = v;
+        };
+
         // Apply saved layout on load
         document.addEventListener('DOMContentLoaded', () => {
             applyLayout(loadLayout());
+            let cols = 'auto';
+            try { cols = localStorage.getItem('actionGridCols') || 'auto'; } catch(e) {}
+            window.setActionGridCols(cols);
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.8-10"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.5.9-1"></script>
+
+    <!-- V2.9.5.9: team name auto-shrink (max 2 lines) + score digit count for the big score font -->
+    <script>
+        (function () {
+            const NAME_MAX_H = 41;   // 2 lines inside .mb-name-row (40px)
+            const NAME_MIN_PX = 9;
+            function fitName(el) {
+                if (!el || el.style.display === 'none') return;
+                el.style.fontSize = '';
+                // Measure without the 2-line clamp, then put it back (it only shows "…" at the minimum size)
+                el.style.webkitLineClamp = 'unset';
+                el.style.maxHeight = 'none';
+                let size = parseFloat(getComputedStyle(el).fontSize) || 16;
+                let guard = 40;
+                while (guard-- > 0 && size > NAME_MIN_PX && (el.scrollHeight > Math.min(NAME_MAX_H, size * 1.2 * 2 + 1) || el.scrollWidth > el.clientWidth + 1)) {
+                    size -= 0.5;
+                    el.style.fontSize = size + 'px';
+                }
+                el.style.webkitLineClamp = '';
+                el.style.maxHeight = '';
+                el.title = (el.innerText || '').replace(/\s*\n\s*/g, ' ');
+            }
+            function setDigits(el) {
+                if (!el) return;
+                const len = String(el.textContent || '').trim().length || 1;
+                el.style.setProperty('--digits', Math.max(1, len));
+            }
+            function fitAll() {
+                ['nameA', 'nameB'].forEach(id => fitName(document.getElementById(id)));
+                ['scoreA', 'scoreB'].forEach(id => setDigits(document.getElementById(id)));
+            }
+            let pending = 0;
+            function schedule() {
+                if (pending) return;
+                pending = requestAnimationFrame(() => { pending = 0; fitAll(); });
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                // Our own font-size / --digits writes also change the style attribute, so only react
+                // to text changes or to show/hide (edit mode), never to our own writes.
+                const mo = new MutationObserver(records => {
+                    for (const r of records) {
+                        const t = r.type === 'attributes' ? r.target : null;
+                        if (!t) { schedule(); return; }
+                        if (t.style.display !== t._mbLastDisplay) { t._mbLastDisplay = t.style.display; schedule(); return; }
+                    }
+                });
+                ['nameA', 'nameB', 'scoreA', 'scoreB'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) mo.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+                });
+                const board = document.getElementById('matchBoard');
+                if (board && window.ResizeObserver) new ResizeObserver(schedule).observe(board);
+                window.addEventListener('resize', schedule);
+                if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+                schedule();
+            });
+        })();
+    </script>
 
     <!-- Integrated Penalty Shootout Panel -->
     <div id="penaltyShootoutOverlay" role="dialog" aria-modal="true" aria-label="Penalty Shootout"
@@ -4665,16 +4828,42 @@
                 </div>
             </div>
             <iframe id="penaltyShootoutFrame" title="Penalty Shootout controls"
-                data-src="Penalty-Shootout/Penalty-Shootout.html"
+                data-src="Penalty-Shootout/Penalty-Shootout.html?v=1.4"
                 style="width:100%; flex:1; min-height:0; border:0; background:#020617;" allow="clipboard-read; clipboard-write"></iframe>
         </div>
     </div>
 
     <script>
+        // V2.9.5.9: send the Dock's current team names + colours into the penalty panel
+        function dockTeamInfo(team) {
+            const nameEl = document.getElementById('name' + team);
+            const card = document.getElementById('mbCard' + team);
+            const css = card ? getComputedStyle(card) : null;
+            const name = nameEl ? (nameEl.innerText || nameEl.textContent || '').replace(/\s*\n\s*/g, ' ').trim() : '';
+            return {
+                name: name || ('Team ' + team),
+                color1: (css && css.getPropertyValue('--team-color').trim()) || document.getElementById('color' + team)?.value || '#2563eb',
+                color2: (css && css.getPropertyValue('--team-color2').trim()) || document.getElementById('color' + team + '2')?.value || '#000000',
+                logo: (document.getElementById('logo' + team)?.style.display !== 'none' && document.getElementById('logo' + team)?.src) || ''
+            };
+        }
+        function sendDockTeamsToPenalty() {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (!frame || !frame.contentWindow || !frame.getAttribute('src')) return;
+            try {
+                frame.contentWindow.postMessage({ type: 'dockTeams', A: dockTeamInfo('A'), B: dockTeamInfo('B') }, '*');
+            } catch (e) {}
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const frame = document.getElementById('penaltyShootoutFrame');
+            if (frame) frame.addEventListener('load', sendDockTeamsToPenalty);
+        });
+
         function openPenaltyShootout() {
             const overlay = document.getElementById('penaltyShootoutOverlay');
             const frame = document.getElementById('penaltyShootoutFrame');
             if (!frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
+            else sendDockTeamsToPenalty();
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
