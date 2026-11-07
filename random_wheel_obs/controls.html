@@ -500,9 +500,23 @@
 
                 <div class="card">
                     <h2>สร้าง Browser Source ใน OBS</h2>
-                    <p class="hint">สร้าง 4 Source ใน Scene ปัจจุบัน (1920×1080) ผ่าน WebSocket พอร์ต 4455 แบบไม่ใส่รหัส ถ้ามี Source ชื่อเดิมอยู่แล้ว ระบบจะข้าม</p>
+                    <p class="hint">กดแล้วระบบสร้าง Source ขนาด 1920×1080 ใน Scene ที่เปิดอยู่ให้เลย ต้องเปิด OBS และ WebSocket Server พอร์ต 4455 แบบไม่ใส่รหัสไว้ (Tools → WebSocket Server Settings) ถ้ามี Source ชื่อนี้อยู่แล้ว ระบบจะเอา Source เดิมมาใส่ใน Scene นี้แทน ไม่สร้างซ้ำ</p>
+                    <div class="obs-create-grid">
+                        <button type="button" class="btn btn-ghost" data-obs-create="wheels">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>วงล้อ</span>
+                        </button>
+                        <button type="button" class="btn btn-ghost" data-obs-create="winner">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>ป้ายประกาศผล</span>
+                        </button>
+                        <button type="button" class="btn btn-ghost" data-obs-create="groups">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>ตารางสาย</span>
+                        </button>
+                        <button type="button" class="btn btn-ghost" data-obs-create="tour">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>ตารางแข่ง</span>
+                        </button>
+                    </div>
                     <button type="button" class="btn btn-secondary btn-block" id="create-obs-sources-btn">
-                        <svg class="icon" aria-hidden="true"><use href="#i-obs"/></svg><span>สร้าง Browser Source ทั้ง 4 อัน</span>
+                        <svg class="icon" aria-hidden="true"><use href="#i-obs"/></svg><span>สร้างทั้ง 4 อันพร้อมกัน</span>
                     </button>
                     <div id="obs-status" class="obs-status" aria-live="polite"></div>
                 </div>

@@ -545,3 +545,9 @@ p.scale-sub { margin-top: -4px; }
 .seg input:checked + span { background: #1e3a8a; color: #ffffff; font-weight: 700; }
 .seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: -2px; }
 @media (max-width: 640px) { .seg { grid-column: 1 / -1; } }
+
+/* ---------- Create OBS sources one by one ---------- */
+.obs-create-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.obs-create-grid .btn { justify-content: flex-start; text-align: left; }
+.res-ok { font-weight: 700; color: #86efac; }
+.res-bad { font-weight: 700; color: var(--danger-text); }

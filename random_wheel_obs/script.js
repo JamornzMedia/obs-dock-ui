@@ -393,7 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // OBS WebSocket
             const obsBtn = this.inputs['create-obs-sources-btn'];
-            if (obsBtn) obsBtn.addEventListener('click', this.createOBSSources.bind(this));
+            if (obsBtn) obsBtn.addEventListener('click', () => this.createOBSSources());
+            document.querySelectorAll('[data-obs-create]').forEach(b => b.addEventListener('click', () => this.createOBSSources(b.dataset.obsCreate)));
 
             [1, 2].forEach(n => {
                 this.inputs['name-list-' + n].addEventListener('input', () => {
@@ -1832,37 +1833,33 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
-        async createOBSSources() {
-            const statusEl = document.getElementById('obs-status');
-            const btn = this.inputs['create-obs-sources-btn'];
-            if (!statusEl || !btn) return;
+        obsSourceList: [
+            { key: 'wheels', label: 'วงล้อ', name: 'RandomWheel - Wheels', file: 'wheels.html' },
+            { key: 'winner', label: 'ป้ายประกาศผล', name: 'RandomWheel - Winner', file: 'winner.html' },
+            { key: 'groups', label: 'ตารางสาย', name: 'RandomWheel - Groups', file: 'groups.html' },
+            { key: 'tour', label: 'ตารางแข่ง', name: 'RandomWheel - Tournament', file: 'groups.html?view=tournament' },
+        ],
 
-            btn.disabled = true;
-            statusEl.textContent = '⏳ กำลังเชื่อมต่อ OBS...';
+        // Create Browser Sources in the current OBS scene (all four, or one when a key is given)
+        async createOBSSources(onlyKey) {
+            const statusEl = document.getElementById('obs-status');
+            if (!statusEl) return;
+            const sources = typeof onlyKey === 'string' ? this.obsSourceList.filter(s => s.key === onlyKey) : this.obsSourceList;
+            const buttons = Array.from(document.querySelectorAll('#create-obs-sources-btn, [data-obs-create]'));
+            buttons.forEach(b => { b.disabled = true; });
+            statusEl.textContent = 'กำลังเชื่อมต่อ OBS...';
             statusEl.className = 'obs-status connecting';
 
             try {
-                // Check if OBSWebSocket is available
                 if (typeof OBSWebSocket === 'undefined') {
-                    throw new Error('ไม่พบ obs-websocket-js library กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                    throw new Error('โหลดตัวเชื่อม OBS ไม่ได้ ตรวจสอบอินเทอร์เน็ต');
                 }
-
                 const obs = new OBSWebSocket();
                 await obs.connect('ws://127.0.0.1:4455');
-                statusEl.textContent = '✅ เชื่อมต่อ OBS สำเร็จ กำลังสร้าง Source...';
+                statusEl.textContent = 'เชื่อมต่อ OBS แล้ว กำลังสร้าง Source...';
 
-                // Get current scene
                 const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene');
-
-                // Determine base URL for the HTML files
-                const baseUrl = window.location.href.replace(/\/[^/]*$/, '');
-
-                const sources = [
-                    { name: 'RandomWheel - Wheels', file: 'wheels.html' },
-                    { name: 'RandomWheel - Winner', file: 'winner.html' },
-                    { name: 'RandomWheel - Groups', file: 'groups.html' },
-                    { name: 'RandomWheel - Tournament', file: 'groups.html?view=tournament' },
-                ];
+                const baseUrl = window.location.href.split('?')[0].split('#')[0].replace(/\/[^/]*$/, '');
 
                 const results = [];
                 for (const src of sources) {
@@ -1871,34 +1868,40 @@ document.addEventListener('DOMContentLoaded', () => {
                             sceneName: currentProgramSceneName,
                             inputName: src.name,
                             inputKind: 'browser_source',
-                            inputSettings: {
-                                url: `${baseUrl}/${src.file}`,
-                                width: 1920,
-                                height: 1080,
-                                css: '',
-                            },
+                            inputSettings: { url: `${baseUrl}/${src.file}`, width: 1920, height: 1080, css: '' },
                             sceneItemEnabled: true
                         });
-                        results.push(`✅ ${src.name}`);
+                        results.push({ ok: true, text: `${src.name}: สร้างแล้ว` });
                     } catch (err) {
                         if (err.message && err.message.includes('already exists')) {
-                            results.push(`⚠️ ${src.name} (มีอยู่แล้ว)`);
+                            // The source exists (maybe in another scene): add it to this scene if it is not here yet
+                            try {
+                                await obs.call('GetSceneItemId', { sceneName: currentProgramSceneName, sourceName: src.name });
+                                results.push({ ok: true, text: `${src.name}: มีอยู่ใน Scene นี้แล้ว` });
+                            } catch (e2) {
+                                try {
+                                    await obs.call('CreateSceneItem', { sceneName: currentProgramSceneName, sourceName: src.name, sceneItemEnabled: true });
+                                    results.push({ ok: true, text: `${src.name}: มีอยู่แล้ว เพิ่มเข้า Scene นี้ให้แล้ว` });
+                                } catch (e3) {
+                                    results.push({ ok: false, text: `${src.name}: ${e3.message}` });
+                                }
+                            }
                         } else {
-                            results.push(`❌ ${src.name}: ${err.message}`);
+                            results.push({ ok: false, text: `${src.name}: ${err.message}` });
                         }
                     }
                 }
 
                 await obs.disconnect();
-                statusEl.innerHTML = results.join('<br>') + `<br><small>Scene: ${currentProgramSceneName}</small>`;
-                statusEl.className = 'obs-status success';
-
+                statusEl.innerHTML = results.map(r => `<span class="${r.ok ? 'res-ok' : 'res-bad'}">${r.ok ? 'สำเร็จ' : 'ไม่สำเร็จ'}</span> ${Config.esc(r.text)}`).join('<br>')
+                    + `<br><small>Scene: ${Config.esc(currentProgramSceneName)}</small>`;
+                statusEl.className = 'obs-status ' + (results.every(r => r.ok) ? 'success' : 'error');
             } catch (err) {
-                statusEl.textContent = `❌ ${err.message || 'ไม่สามารถเชื่อมต่อ OBS ได้'}`;
+                statusEl.textContent = `ไม่สำเร็จ: ${err.message || 'เชื่อมต่อ OBS ไม่ได้'} (เปิด OBS แล้วเปิด WebSocket Server พอร์ต 4455 แบบไม่ใส่รหัส: Tools → WebSocket Server Settings)`;
                 statusEl.className = 'obs-status error';
                 console.error('OBS WebSocket Error:', err);
             } finally {
-                btn.disabled = false;
+                buttons.forEach(b => { b.disabled = false; });
             }
         },
 
