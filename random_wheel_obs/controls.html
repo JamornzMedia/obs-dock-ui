@@ -12,225 +12,464 @@
 </head>
 
 <body class="dark-mode">
-    <div class="page-container">
-        <header class="main-header">
-            <h1>🎡 Random Wheel</h1>
-            <button class="settings-btn" id="open-settings-btn">⚙ ตั้งค่า</button>
-        </header>
+    <!-- Icon set (drawn icons, no emoji) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <symbol id="i-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M12 3v7M12 14v7M3 12h7M14 12h7M5.6 5.6l5 5M13.4 13.4l5 5M18.4 5.6l-5 5M10.6 13.4l-5 5"/></symbol>
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+            <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+            <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+            <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
+            <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+            <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+            <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+            <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+            <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/></symbol>
+            <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
+            <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+            <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+            <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+            <symbol id="i-obs" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+            <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+            <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
+            <symbol id="i-first" viewBox="0 0 24 24"><path d="M5 4v16M19 5l-9 7 9 7z"/></symbol>
+            <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></symbol>
+            <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-1.4-1.2-1.6-1.2-2.8 0-1 .8-1.6 1.8-1.6H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></symbol>
+        </defs>
+    </svg>
 
-        <!-- Main Action Buttons -->
-        <div class="card actions-card">
-            <button class="action-btn spin" id="spin-button">🎲 สุ่มจับคู่</button>
-            <div class="similar-warning" id="similar-warning" style="display: none;"></div>
-            <button class="action-btn confirm" id="confirm-winner-btn" style="display: none;">✅ อัปเดตคู่ล่าสุด</button>
-            <button class="action-btn respin" id="respin-btn" style="display: none;">🔄 สุ่มใหม่</button>
-            <button class="action-btn hide-wheels" id="hide-wheels-btn" style="display: none;">👁️ ซ่อนวงล้อ</button>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="app-container">
-            <div class="controls-area">
-                <!-- History -->
-                <div class="card">
-                    <h2>📜 ประวัติ</h2>
-                    <div class="history-controls">
-                        <select id="sort-history">
-                            <option value="newest">ใหม่ > เก่า</option>
-                            <option value="oldest">เก่า > ใหม่</option>
-                            <option value="az">A > Z</option>
-                        </select>
-                        <button class="copy-btn" id="copy-history-btn">คัดลอก</button>
-                        <button class="clear-btn" id="clear-history-btn">ล้าง</button>
-                    </div>
-                    <div id="history-list" class="simple-history"></div>
-                </div>
+    <div class="app">
+        <!-- Sidebar navigation -->
+        <nav class="sidebar" aria-label="เมนู">
+            <div class="brand" title="Random Wheel">
+                <svg class="icon brand-icon" aria-hidden="true"><use href="#i-wheel"/></svg>
+                <span class="nav-label">Random Wheel</span>
             </div>
-            <div class="controls-area">
-                <!-- Wheel 1 Names -->
-                <div class="card">
-                    <h2>🎯 วงล้อ 1 (กลุ่ม) <small>(<span id="name-count-1">0</span>)</small></h2>
-                    <textarea id="name-list-1"></textarea>
-                    <button class="update-button" id="update-button-1">อัปเดตกลุ่มหลัก</button>
-                </div>
-                <!-- Wheel 2 Names -->
-                <div class="card">
-                    <h2>🏆 วงล้อ 2 (ทีม) <small>(<span id="name-count-2">0</span>)</small></h2>
-                    <textarea id="name-list-2"></textarea>
-                    <button class="update-button" id="update-button-2">อัปเดต</button>
-                </div>
+            <div class="nav-tabs" role="tablist" aria-orientation="vertical">
+                <button type="button" class="nav-tab" role="tab" data-tab="draw" aria-controls="tab-draw" title="สุ่ม (Alt+1)" aria-label="สุ่ม">
+                    <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="nav-label">สุ่ม</span><span class="nav-short" aria-hidden="true">สุ่ม</span>
+                </button>
+                <button type="button" class="nav-tab" role="tab" data-tab="names" aria-controls="tab-names" title="รายชื่อ (Alt+2)" aria-label="รายชื่อ">
+                    <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span class="nav-label">รายชื่อ</span><span class="nav-short" aria-hidden="true">รายชื่อ</span>
+                </button>
+                <button type="button" class="nav-tab" role="tab" data-tab="rules" aria-controls="tab-rules" title="ทีมเดียวกัน / วิธีสุ่ม (Alt+3)" aria-label="ทีมเดียวกันและวิธีสุ่ม">
+                    <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="nav-label">ทีมเดียวกัน</span><span class="nav-short" aria-hidden="true">ทีม A/B</span>
+                </button>
+                <button type="button" class="nav-tab" role="tab" data-tab="tour" aria-controls="tab-tour" title="ตารางแข่ง (Alt+4)" aria-label="ตารางแข่ง">
+                    <svg class="icon" aria-hidden="true"><use href="#i-table"/></svg><span class="nav-label">ตารางแข่ง</span><span class="nav-short" aria-hidden="true">ตาราง</span>
+                </button>
+                <button type="button" class="nav-tab" role="tab" data-tab="settings" aria-controls="tab-settings" title="ตั้งค่าและธีม (Alt+5)" aria-label="ตั้งค่าและธีม">
+                    <svg class="icon" aria-hidden="true"><use href="#i-gear"/></svg><span class="nav-label">ตั้งค่า / ธีม</span><span class="nav-short" aria-hidden="true">ตั้งค่า</span>
+                </button>
             </div>
-        </div>
-
-        <!-- Soft Reset -->
-        <div class="card soft-reset-card">
-            <button class="action-btn soft-reset" id="soft-reset-btn">🔄 Reset วงล้อ</button>
-            <small class="reset-hint">รีเซ็ทชื่อกลับ, ล้างประวัติ, เริ่มสุ่มใหม่</small>
-        </div>
-
-        <footer>
-            <p>Developer JamornzMedia - Version 2.1</p>
-        </footer>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>⚙ ตั้งค่า</h2>
-                <button class="modal-close-btn" id="close-settings-btn">&times;</button>
+            <div class="nav-foot">
+                <button type="button" class="nav-tab nav-plain" id="obs-links-btn" title="ลิงก์สำหรับใส่ใน OBS" aria-label="ลิงก์ OBS">
+                    <svg class="icon" aria-hidden="true"><use href="#i-obs"/></svg><span class="nav-label">ลิงก์ OBS</span><span class="nav-short" aria-hidden="true">OBS</span>
+                </button>
+                <span class="version nav-label">v2.3.0 web</span>
             </div>
-            <div class="modal-body">
-                <!-- Wheel Settings -->
-                <div class="settings-section">
-                    <h3>ตั้งค่าวงล้อ</h3>
-                    <div class="setting-row">
-                        <div class="input-group"><label>หัวข้อ 1</label><input type="text" id="title-input-1"></div>
-                        <div class="input-group"><label>หัวข้อ 2</label><input type="text" id="title-input-2"></div>
+        </nav>
+
+        <main class="content">
+            <!-- Draw bar: always visible on every tab -->
+            <section class="draw-bar" aria-label="ปุ่มสุ่ม">
+                <div class="draw-status-row">
+                    <div class="draw-status" id="draw-status" aria-live="polite">สายเหลือ 0/0 · ทีมเหลือ 0/0</div>
+                    <button type="button" class="rules-badge" id="rules-badge" data-goto-tab="rules" title="เปลี่ยนวิธีสุ่ม"></button>
+                </div>
+
+                <div class="pending-box" id="pending-box" hidden>
+                    <span class="pending-label">รอยืนยัน</span>
+                    <span class="pending-pair"></span>
+                </div>
+                <div class="spin-progress" id="spin-progress" hidden></div>
+                <div class="similar-warning" id="similar-warning" role="alert" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-warn"/></svg>
+                    <span class="warn-text"></span>
+                </div>
+
+                <div class="draw-actions">
+                    <button type="button" class="btn btn-primary btn-xl" id="spin-button" title="สุ่ม (Ctrl+Enter)">
+                        <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-label">สุ่มจับคู่</span>
+                    </button>
+                    <button type="button" class="btn btn-success btn-xl" id="confirm-winner-btn" title="ยืนยันคู่นี้ (Ctrl+Enter)" hidden>
+                        <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span class="btn-label">ยืนยันคู่นี้</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="respin-btn" hidden>
+                        <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">สุ่มใหม่</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost" id="hide-wheels-btn" aria-pressed="false">
+                        <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><span class="btn-label">ซ่อนวงล้อ</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TAB 1: Draw -->
+            <section class="tab-panel" id="tab-draw" role="tabpanel" aria-label="สุ่ม">
+                <div class="card">
+                    <div class="card-head">
+                        <h2>ประวัติการจับคู่</h2>
+                        <div class="toolbar">
+                            <label class="sr-only" for="sort-history">เรียงประวัติ</label>
+                            <select id="sort-history" class="select-sm">
+                                <option value="newest">ใหม่ → เก่า</option>
+                                <option value="oldest">เก่า → ใหม่</option>
+                                <option value="az">ก → ฮ / A → Z</option>
+                            </select>
+                            <button type="button" class="btn btn-sm btn-ghost" id="copy-history-btn" title="คัดลอกประวัติ (วางลง Excel ได้)">
+                                <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span>คัดลอก</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-ghost" id="undo-last-btn" title="เอาคู่ล่าสุดกลับเข้าวงล้อ">
+                                <svg class="icon" aria-hidden="true"><use href="#i-undo"/></svg><span>ย้อนคู่ล่าสุด</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="setting-row">
-                        <div class="input-group"><label>สไตล์สี 1</label><select id="palette-select-1"
-                                class="palette-select"></select></div>
-                        <div class="input-group"><label>สไตล์สี 2</label><select id="palette-select-2"
-                                class="palette-select"></select></div>
+                    <div id="history-list" class="simple-history" aria-live="polite"></div>
+                </div>
+
+                <div class="card card-danger">
+                    <div class="row-between">
+                        <div>
+                            <h3>เริ่มรอบใหม่</h3>
+                            <p class="hint">คืนชื่อทั้งหมดเข้าวงล้อและล้างประวัติ การตั้งค่าอื่นยังอยู่</p>
+                        </div>
+                        <button type="button" class="btn btn-danger" id="soft-reset-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span>รีเซ็ตวงล้อ</span>
+                        </button>
                     </div>
-                    <div class="setting-row">
-                        <div class="input-group full-width"><label>เวลาหมุน: <span
-                                    id="duration-value">6</span>s</label><input type="range" id="spin-duration-slider"
-                                min="2" max="15" value="6" step="1"></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Names -->
+            <section class="tab-panel" id="tab-names" role="tabpanel" aria-label="รายชื่อ" hidden>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-head">
+                            <h2>วงล้อ 1: สาย/กลุ่ม <span class="count">(<span id="name-count-1">0</span>)</span></h2>
+                            <span class="badge badge-warn" id="dirty-badge-1" hidden>ยังไม่บันทึก</span>
+                        </div>
+                        <label class="field-label" for="name-list-1">หนึ่งบรรทัดต่อหนึ่งช่อง เช่น A1, A2, B1</label>
+                        <textarea id="name-list-1" spellcheck="false"></textarea>
+                        <button type="button" class="btn btn-primary btn-block" id="update-button-1">บันทึกรายชื่อสาย</button>
                     </div>
-                    <div class="setting-row">
-                        <div class="input-group separator-controls"><label>เส้นคั่น:</label><input type="checkbox"
-                                id="separator-toggle" checked><input type="number" id="separator-width" min="1" max="10"
-                                value="1"><span>px</span></div>
+                    <div class="card">
+                        <div class="card-head">
+                            <h2>วงล้อ 2: ทีม <span class="count">(<span id="name-count-2">0</span>)</span></h2>
+                            <span class="badge badge-warn" id="dirty-badge-2" hidden>ยังไม่บันทึก</span>
+                        </div>
+                        <label class="field-label" for="name-list-2">หนึ่งบรรทัดต่อหนึ่งทีม ทีม A/B เช่น "YAI FC A"</label>
+                        <textarea id="name-list-2" spellcheck="false"></textarea>
+                        <button type="button" class="btn btn-primary btn-block" id="update-button-2">บันทึกรายชื่อทีม</button>
                     </div>
-                    <div class="setting-row">
-                        <div class="input-group"><label>การจัดวาง</label>
+                </div>
+                <p class="hint">การบันทึกรายชื่อจะเริ่มวงล้อใหม่ตามรายชื่อนี้ ประวัติเดิมยังอยู่</p>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h2>โลโก้ทีม</h2>
+                        <span class="hint">คลิกช่องโลโก้เพื่ออัปโหลดหรือเปลี่ยนรูป (ย่อเหลือ 128×128 อัตโนมัติ)</span>
+                    </div>
+                    <input type="file" id="logo-file-input" accept="image/*" hidden>
+                    <div class="table-wrap tall">
+                        <table class="data-table">
+                            <thead><tr><th class="cell-logo">โลโก้</th><th>ทีม</th><th class="cell-action">จัดการ</th></tr></thead>
+                            <tbody id="logo-list-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: Same-club rules (simple, step by step) -->
+            <section class="tab-panel" id="tab-rules" role="tabpanel" aria-label="ทีมเดียวกัน" hidden>
+                <div class="card">
+                    <div class="step-head"><span class="step-no">1</span><h2 id="draw-mode-title">เลือกวิธีสุ่ม</h2></div>
+                    <p class="hint">ทุกวิธี คนดูจะเห็นวงล้อหมุนแบบปกติ ต่างกันแค่ว่าระบบเลือกผลยังไง</p>
+                    <div class="mode-grid" id="draw-mode-grid" role="radiogroup" aria-labelledby="draw-mode-title">
+                        <button type="button" class="mode-card" role="radio" aria-checked="false" data-mode="auto">
+                            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg></span>
+                            <span class="mode-title">สุ่มปกติ <span class="mode-rec">แนะนำ</span></span>
+                            <span class="mode-desc">สุ่มทีมไปเรื่อยๆ ตามปกติ ระบบแค่ไม่ให้ทีมเดียวกันตกสายเดียวกัน</span>
+                            <span class="mode-eg">เช่น YAI FC A ได้สาย A แล้ว YAI FC B จะไม่ได้สาย A</span>
+                        </button>
+                        <button type="button" class="mode-card" role="radio" aria-checked="false" data-mode="first">
+                            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-first"/></svg></span>
+                            <span class="mode-title">จับทีมเดียวกันก่อน</span>
+                            <span class="mode-desc">ทีมเดียวกันจะถูกสุ่มออกมาก่อนจนครบ แล้วค่อยสุ่มทีมที่เหลือ</span>
+                            <span class="mode-eg">เหมาะกับงานที่อยากแยกทีมเดียวกันให้เห็นตั้งแต่ต้น</span>
+                        </button>
+                        <button type="button" class="mode-card" role="radio" aria-checked="false" data-mode="lock">
+                            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
+                            <span class="mode-title">วางสายเอง</span>
+                            <span class="mode-desc">กำหนดเองว่าทีมไหนอยู่สายไหน ตอนสุ่มยังดูปกติ แต่ทีมนั้นจะตกสายที่ล็อกไว้</span>
+                            <span class="mode-eg">ล็อกได้แค่สาย ลำดับในสาย (A1, A2, A3) ยังสุ่ม</span>
+                        </button>
+                        <button type="button" class="mode-card" role="radio" aria-checked="false" data-mode="off">
+                            <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#i-dice"/></svg></span>
+                            <span class="mode-title">สุ่มอิสระ</span>
+                            <span class="mode-desc">ไม่มีเงื่อนไข ทีมเดียวกันอาจอยู่สายเดียวกันได้</span>
+                            <span class="mode-eg">&nbsp;</span>
+                        </button>
+                    </div>
+                    <p class="rules-summary" id="rules-summary" aria-live="polite"></p>
+                </div>
+
+                <div class="card" id="step-same">
+                    <div class="step-head"><span class="step-no">2</span><h2>ทีมไหนเป็นทีมเดียวกัน</h2><span class="count" id="club-count"></span></div>
+                    <p class="hint">ทีมที่ชื่อลงท้ายต่างกันแค่ A/B, 1/2, ก/ข ระบบเจอให้เอง ถ้าชื่อไม่เหมือนกัน ให้จับคู่เองด้านล่าง</p>
+                    <div id="club-list" class="club-list"></div>
+
+                    <div class="link-builder">
+                        <div class="field">
+                            <label class="field-label" for="link-team-a">ทีม</label>
+                            <select id="link-team-a"></select>
+                        </div>
+                        <span class="link-eq" aria-hidden="true">กับ</span>
+                        <div class="field">
+                            <label class="field-label" for="link-team-b">ทีม</label>
+                            <select id="link-team-b"></select>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="add-link-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span>เป็นทีมเดียวกัน</span>
+                        </button>
+                    </div>
+                    <p class="hint">มี 3 ทีมขึ้นไป ให้จับคู่ทีละคู่ ระบบรวมเป็นกลุ่มเดียวให้</p>
+                </div>
+
+                <div class="card" id="step-lock" hidden>
+                    <div class="step-head"><span class="step-no" id="step-lock-no">3</span><h2>วางสายให้ทีม</h2></div>
+                    <p class="hint">เลือกสายให้ทีมที่ต้องการล็อก ทีมที่เหลือปล่อยเป็น "สุ่มได้ทุกสาย" ตอนสุ่ม ทีมจะออกมาตามลำดับสุ่มปกติ แต่จะตกสายที่ล็อกไว้</p>
+                    <div id="lock-check"></div>
+                    <div class="table-wrap tall">
+                        <table class="data-table lock-table">
+                            <thead><tr><th>ทีม</th><th>สาย</th><th class="cell-action"><span class="sr-only">สถานะ</span></th></tr></thead>
+                            <tbody id="lock-table-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="row-between">
+                        <span></span>
+                        <button type="button" class="btn btn-sm btn-danger-ghost" id="clear-locks-btn">ยกเลิกการล็อกทั้งหมด</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Tournament -->
+            <section class="tab-panel" id="tab-tour" role="tabpanel" aria-label="ตารางแข่ง" hidden>
+                <div class="card">
+                    <h2>สร้างตารางแข่งขัน</h2>
+                    <div class="grid-2 tight">
+                        <div class="field"><label class="field-label" for="tour-name">ชื่อรายการ</label><input type="text" id="tour-name" placeholder="ชื่อทัวร์นาเมนต์"></div>
+                        <div class="field"><label class="field-label" for="tour-desc">รายละเอียดเพิ่มเติม</label><input type="text" id="tour-desc" placeholder="เช่น สนามแข่ง, วันเวลา"></div>
+                    </div>
+
+                    <div class="field">
+                        <div class="row-between">
+                            <label class="field-label" for="tour-teams-input">รายชื่อทีมและสาย (รูปแบบ: A1 ทีม Alpha)</label>
+                            <button type="button" class="btn btn-sm btn-ghost" id="tour-autofill-btn">
+                                <svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span>ดึงจากผลการสุ่ม</span>
+                            </button>
+                        </div>
+                        <textarea id="tour-teams-input" class="mono" placeholder="A1 ทีม Alpha&#10;A2 ทีม Beta&#10;B1 ทีม Delta"></textarea>
+                    </div>
+
+                    <div class="grid-2 tight">
+                        <div class="field">
+                            <label class="field-label" for="tour-3team-format">สายที่มี 3 ทีม</label>
+                            <select id="tour-3team-format">
+                                <option value="loser_first">เจอทีมแพ้ก่อน</option>
+                                <option value="winner_first">เจอทีมชนะก่อน</option>
+                                <option value="round_robin">เจอกันหมด</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="tour-split-mode">การแบ่งรอบเวลา</label>
+                            <select id="tour-split-mode">
+                                <option value="all">รันต่อเนื่องทั้งหมด</option>
+                                <option value="4_rest">4 สายแรกเช้า / ที่เหลือบ่าย</option>
+                                <option value="custom">กำหนดจำนวนสายรอบเช้าเอง</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field" id="tour-custom-morning-container" style="display: none;">
+                        <label class="field-label" for="tour-custom-morning">จำนวนสายรอบเช้า</label>
+                        <input type="number" id="tour-custom-morning" value="4" min="1" max="12">
+                    </div>
+
+                    <label class="switch-row">
+                        <input type="checkbox" id="tour-use-time" checked>
+                        <span>กำหนดเวลาแข่งขัน</span>
+                    </label>
+                    <div class="grid-2 tight" id="tour-time-settings-container">
+                        <div class="field"><label class="field-label" for="tour-start-time">เวลาเริ่ม</label><input type="time" id="tour-start-time" value="08:00"></div>
+                        <div class="field"><label class="field-label" for="tour-match-mins">นาทีต่อคู่</label><input type="number" id="tour-match-mins" value="30" min="5" max="180"></div>
+                    </div>
+
+                    <div class="row-actions">
+                        <button type="button" class="btn btn-primary btn-grow" id="tour-generate-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-table"/></svg><span>สร้างตารางการแข่งขัน</span>
+                        </button>
+                        <button type="button" class="btn btn-danger-ghost" id="tour-clear-btn" title="ล้างตารางและฟอร์ม" aria-label="ล้างตารางและฟอร์ม">
+                            <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>ล้าง</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: Settings & themes -->
+            <section class="tab-panel" id="tab-settings" role="tabpanel" aria-label="ตั้งค่าและธีม" hidden>
+                <div class="card">
+                    <h2>ธีมหน้าจอใน OBS</h2>
+                    <p class="hint">คลิกเลือกได้เลย หน้าจอใน OBS เปลี่ยนทันที ไม่ต้องแก้ Browser Source เดิม "คลาสสิก" คือหน้าตาแบบเดิม</p>
+
+                    <h3 id="wheel-theme-title">วงล้อ</h3>
+                    <select id="wheel-theme" class="theme-select" tabindex="-1" aria-hidden="true"></select>
+                    <div class="theme-grid" id="wheel-theme-grid" role="radiogroup" aria-labelledby="wheel-theme-title"></div>
+
+                    <h3 id="winner-theme-title">ป้ายประกาศผล</h3>
+                    <select id="winner-theme" class="theme-select" tabindex="-1" aria-hidden="true"></select>
+                    <div class="theme-grid" id="winner-theme-grid" role="radiogroup" aria-labelledby="winner-theme-title"></div>
+
+                    <h3 id="table-theme-title">ตารางสาย / ตารางแข่ง</h3>
+                    <select id="table-theme" class="theme-select" tabindex="-1" aria-hidden="true"></select>
+                    <div class="theme-grid" id="table-theme-grid" role="radiogroup" aria-labelledby="table-theme-title"></div>
+
+                    <p class="hint">สีที่ตั้งเองด้านล่าง (ป้ายประกาศผล และสีกลุ่ม) ใช้กับธีมคลาสสิก</p>
+                </div>
+
+                <div class="card">
+                    <h2>วงล้อ</h2>
+                    <div class="grid-2 tight">
+                        <div class="field"><label class="field-label" for="title-input-1">หัวข้อวงล้อ 1</label><input type="text" id="title-input-1"></div>
+                        <div class="field"><label class="field-label" for="title-input-2">หัวข้อวงล้อ 2</label><input type="text" id="title-input-2"></div>
+                        <div class="field"><label class="field-label" for="palette-select-1">ชุดสีวงล้อ 1</label><select id="palette-select-1" class="palette-select"></select><div class="swatches" id="palette-swatch-1" aria-hidden="true"></div></div>
+                        <div class="field"><label class="field-label" for="palette-select-2">ชุดสีวงล้อ 2</label><select id="palette-select-2" class="palette-select"></select><div class="swatches" id="palette-swatch-2" aria-hidden="true"></div></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="spin-duration-slider">เวลาหมุน: <span id="duration-value">6</span> วินาที</label>
+                        <input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1">
+                    </div>
+                    <div class="grid-2 tight">
+                        <div class="field">
+                            <span class="field-label">เส้นคั่นช่อง</span>
+                            <div class="inline-controls">
+                                <label class="switch-row compact"><input type="checkbox" id="separator-toggle" checked><span>แสดง</span></label>
+                                <label class="sr-only" for="separator-width">ความหนาเส้นคั่น</label>
+                                <input type="number" id="separator-width" min="1" max="10" value="1" class="input-xs"><span>px</span>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="wheel-layout">การจัดวาง</label>
                             <select id="wheel-layout">
                                 <option value="horizontal">แนวนอน (ซ้าย-ขวา)</option>
                                 <option value="vertical">แนวตั้ง (บน-ล่าง)</option>
                             </select>
                         </div>
                     </div>
-                    <div class="setting-row">
-                        <div class="input-group full-width"><label>ระยะห่างวงล้อ: <span
-                                    id="spacing-value">30</span>px</label><input type="range" id="wheel-spacing" min="0"
-                                max="2000" value="30"></div>
+                    <div class="field">
+                        <label class="field-label" for="wheel-spacing">ระยะห่างวงล้อ: <span id="spacing-value">30</span> px</label>
+                        <input type="range" id="wheel-spacing" min="0" max="2000" value="30">
                     </div>
                 </div>
 
-                <!-- Winner Display Settings -->
-                <div class="settings-section">
-                    <h3>ตั้งค่าหน้าผลการจับคู่</h3>
-                    <label class="setting-subheader">สีตัวอักษร</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>ชื่อกลุ่ม (บรรทัด 1)</label><input type="color"
-                                id="winner-line1-color"></div>
-                        <div class="input-group"><label>ชื่อทีม (บรรทัด 2)</label><input type="color"
-                                id="winner-line2-color"></div>
-                    </div>
-                    <label class="setting-subheader">พื้นหลัง</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="winner-bg-color">
-                        </div>
-                        <div class="input-group"><label>ความโปร่งใสพื้นหลัง</label><input type="range"
-                                id="winner-bg-opacity" min="0" max="100" value="90"></div>
+                <div class="card">
+                    <h2>ป้ายประกาศผล (ธีมคลาสสิก)</h2>
+                    <div class="grid-2 tight">
+                        <div class="field"><label class="field-label" for="winner-line1-color">สีชื่อสาย (บรรทัด 1)</label><input type="color" id="winner-line1-color"></div>
+                        <div class="field"><label class="field-label" for="winner-line2-color">สีชื่อทีม (บรรทัด 2)</label><input type="color" id="winner-line2-color"></div>
+                        <div class="field"><label class="field-label" for="winner-bg-color">สีพื้นหลัง</label><input type="color" id="winner-bg-color"></div>
+                        <div class="field"><label class="field-label" for="winner-bg-opacity">ความทึบพื้นหลัง</label><input type="range" id="winner-bg-opacity" min="0" max="100" value="90"></div>
                     </div>
                 </div>
 
-                <!-- Group Display Settings -->
-                <div class="settings-section">
-                    <h3>ตั้งค่ากลุ่มรายชื่อ</h3>
+                <div class="card">
+                    <h2>ตารางสาย / ตารางแข่ง (ธีมคลาสสิก)</h2>
+                    <div class="field">
+                        <label class="field-label" for="group-preset-select">ชุดสีสำเร็จรูป</label>
+                        <select id="group-preset-select"></select>
+                    </div>
+                    <div class="grid-2 tight">
+                        <div class="field"><label class="field-label" for="column-count">คอลัมน์ตารางสาย</label><input type="number" id="column-count" min="1" max="10" value="3"></div>
+                        <div class="field"><label class="field-label" for="tour-column-count">คอลัมน์ตารางแข่ง</label><input type="number" id="tour-column-count" min="1" max="10" value="3"></div>
+                    </div>
+                    <details class="more">
+                        <summary>ปรับสีเอง</summary>
+                        <h3>กรอบนอก</h3>
+                        <div class="grid-2 tight">
+                            <div class="field"><label class="field-label" for="group-card-bg-color">สีพื้นหลัง</label><input type="color" id="group-card-bg-color"></div>
+                            <div class="field"><label class="field-label" for="group-card-bg-opacity">ความทึบ</label><input type="range" id="group-card-bg-opacity" min="0" max="100" value="100"></div>
+                        </div>
+                        <h3>หัวข้อกลุ่ม</h3>
+                        <div class="grid-2 tight">
+                            <div class="field"><label class="field-label" for="group-header-align">จัดแนว</label>
+                                <select id="group-header-align"><option value="left">ซ้าย</option><option value="center">กลาง</option><option value="right">ขวา</option></select></div>
+                            <div class="field"><label class="field-label" for="group-header-color">สีตัวอักษร</label><input type="color" id="group-header-color"></div>
+                            <div class="field"><label class="field-label" for="group-header-bg-color">สีพื้นหลัง</label><input type="color" id="group-header-bg-color"></div>
+                            <div class="field"><label class="field-label" for="group-header-bg-opacity">ความทึบ</label><input type="range" id="group-header-bg-opacity" min="0" max="100" value="100"></div>
+                        </div>
+                        <h3>ช่องชื่อสาย (ซ้าย)</h3>
+                        <div class="grid-2 tight">
+                            <div class="field"><label class="field-label" for="group-prefix-color">สีตัวอักษร</label><input type="color" id="group-prefix-color"></div>
+                            <div class="field"><label class="field-label" for="group-prefix-bg-color">สีพื้นหลัง</label><input type="color" id="group-prefix-bg-color"></div>
+                            <div class="field"><label class="field-label" for="group-prefix-bg-opacity">ความทึบ</label><input type="range" id="group-prefix-bg-opacity" min="0" max="100" value="100"></div>
+                        </div>
+                        <h3>ช่องชื่อทีม (ขวา)</h3>
+                        <div class="grid-2 tight">
+                            <div class="field"><label class="field-label" for="group-name-color">สีตัวอักษร</label><input type="color" id="group-name-color"></div>
+                            <div class="field"><label class="field-label" for="group-name-bg-color">สีพื้นหลัง</label><input type="color" id="group-name-bg-color"></div>
+                            <div class="field"><label class="field-label" for="group-name-bg-opacity">ความทึบ</label><input type="range" id="group-name-bg-opacity" min="0" max="100" value="100"></div>
+                        </div>
+                    </details>
+                </div>
 
-                    <!-- Preset Selector - Prominent -->
-                    <div class="preset-selector-box">
-                        <label for="group-preset-select">🎨 เลือก Preset สี:</label>
-                        <select id="group-preset-select" class="preset-select-large"></select>
-                        <small class="preset-hint">เลือก Preset เพื่อตั้งค่าสีทั้งหมดอัตโนมัติ
-                            หรือปรับแต่งเองด้านล่าง</small>
-                    </div>
-
-                    <div class="setting-row">
-                        <div class="input-group"><label>จำนวนคอลัมน์</label><input type="number" id="column-count"
-                                min="1" max="10" value="3"></div>
-                    </div>
-                    <hr>
-                    <label class="setting-subheader">กรอบนอก (Card)</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-card-bg-color">
-                        </div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
-                                id="group-card-bg-opacity" min="0" max="100" value="100"></div>
-                    </div>
-                    <label class="setting-subheader">หัวข้อกลุ่ม</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>จัดแนว</label><select id="group-header-align">
-                                <option value="left">ซ้าย</option>
-                                <option value="center">กลาง</option>
-                                <option value="right">ขวา</option>
-                            </select></div>
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color"
-                                id="group-header-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
-                                id="group-header-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-header-color">
-                        </div>
-                    </div>
-                    <label class="setting-subheader">ช่องชื่อกลุ่ม (ซ้าย)</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color"
-                                id="group-prefix-bg-color"></div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
-                                id="group-prefix-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-prefix-color">
-                        </div>
-                    </div>
-                    <label class="setting-subheader">ช่องชื่อทีม (ขวา)</label>
-                    <div class="setting-row">
-                        <div class="input-group"><label>สีพื้นหลัง</label><input type="color" id="group-name-bg-color">
-                        </div>
-                        <div class="input-group"><label>ความโปร่งใส</label><input type="range"
-                                id="group-name-bg-opacity" min="0" max="100" value="100"></div>
-                        <div class="input-group"><label>สีตัวอักษร</label><input type="color" id="group-name-color">
-                        </div>
+                <div class="card">
+                    <h2>พื้นหลังหน้าวงล้อ</h2>
+                    <div class="inline-controls wrap">
+                        <label class="switch-row compact"><input type="checkbox" id="transparent-bg"><span>พื้นหลังโปร่งใส (แนะนำสำหรับ OBS)</span></label>
+                        <label class="sr-only" for="bg-color-picker">สีพื้นหลัง</label>
+                        <input type="color" id="bg-color-picker" value="#00ff00">
+                        <button type="button" class="btn btn-sm btn-ghost" id="greenscreen-btn">กรีนสกรีน</button>
                     </div>
                 </div>
 
-                <!-- OBS WebSocket -->
-                <div class="settings-section">
-                    <h3>🔌 OBS Browser Source</h3>
-                    <small class="obs-hint">สร้าง Browser Source อัตโนมัติใน Scene ปัจจุบัน (1920×1080)<br>ผ่าน
-                        WebSocket port 4455 แบบไม่ใส่รหัส</small>
-                    <div class="setting-row" style="margin-top:10px;">
-                        <button class="action-btn obs-create full-width" id="create-obs-sources-btn">🚀 สร้าง Browser
-                            Source ทั้ง 3 อัน</button>
-                    </div>
-                    <div id="obs-status" class="obs-status"></div>
+                <div class="card" id="obs-links-card">
+                    <h2>ลิงก์สำหรับใส่ใน OBS</h2>
+                    <p class="hint">หน้าควบคุมใส่เป็น Custom Browser Dock (OBS: เมนู Docks → Custom Browser Docks) ส่วนที่เหลือใส่เป็น Browser Source ขนาด 1920×1080 ลิงก์เดิมที่ใส่ไว้แล้วใช้ได้ต่อ</p>
+                    <p class="hint hint-strong" id="obs-links-note"></p>
+                    <div class="obs-links" id="obs-links-list"></div>
                 </div>
 
-                <!-- Graphics and Reset -->
-                <div class="settings-section">
-                    <h3>ตั้งค่ากราฟิกและรีเซ็ต</h3>
-                    <div class="setting-row bg-controls">
-                        <div class="input-group bg-settings">
-                            <label>สีพื้นหลัง:</label>
-                            <input type="color" id="bg-color-picker" value="#00ff00">
-                            <button class="greenscreen-btn" id="greenscreen-btn">Green</button>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="transparent-bg">
-                            <label for="transparent-bg">พื้นหลังโปร่งใส</label>
-                        </div>
-                    </div>
-                    <hr>
-                    <button class="action-btn remove full-width" id="reset-all-btn">🗑️ รีเซ็ตการตั้งค่าทั้งหมด</button>
+                <div class="card">
+                    <h2>สร้าง Browser Source ใน OBS</h2>
+                    <p class="hint">สร้าง 4 Source ใน Scene ปัจจุบัน (1920×1080) ผ่าน WebSocket พอร์ต 4455 แบบไม่ใส่รหัส ถ้ามี Source ชื่อเดิมอยู่แล้ว ระบบจะข้าม</p>
+                    <button type="button" class="btn btn-secondary btn-block" id="create-obs-sources-btn">
+                        <svg class="icon" aria-hidden="true"><use href="#i-obs"/></svg><span>สร้าง Browser Source ทั้ง 4 อัน</span>
+                    </button>
+                    <div id="obs-status" class="obs-status" aria-live="polite"></div>
                 </div>
-            </div>
-        </div>
+
+                <div class="card card-danger">
+                    <h2>ล้างข้อมูล</h2>
+                    <div class="row-between">
+                        <p class="hint">ล้างประวัติ และคืนชื่อทั้งหมดเข้าวงล้อ</p>
+                        <button type="button" class="btn btn-danger-ghost" id="clear-history-btn">ล้างประวัติ</button>
+                    </div>
+                    <div class="row-between">
+                        <p class="hint">ลบรายชื่อ การตั้งค่า ธีม และเงื่อนไขทั้งหมด ย้อนกลับไม่ได้</p>
+                        <button type="button" class="btn btn-danger" id="reset-all-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>รีเซ็ตทั้งหมด</span>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="shortcut-hint">คีย์ลัด: Ctrl+Enter = สุ่ม / ยืนยัน · Alt+1–5 = เปลี่ยนแท็บ</p>
+                <footer>Developer JamornzMedia · Version 2.3.0 (web)</footer>
+            </section>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5/dist/obs-ws.min.js"></script>
     <script src="script.js"></script>
 </body>
-
 
 </html>
