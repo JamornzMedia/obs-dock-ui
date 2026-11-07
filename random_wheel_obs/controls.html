@@ -337,6 +337,65 @@
                     <p class="hint">สีที่ตั้งเองด้านล่าง (ป้ายประกาศผล และสีกลุ่ม) ใช้กับธีมคลาสสิก</p>
                 </div>
 
+                <div class="card" id="scale-card">
+                    <h2>ขนาดบนจอ OBS</h2>
+                    <p class="hint">ปรับขนาดได้จากตรงนี้เลย ไม่ต้องไปลากหรือแก้ขนาดใน Browser Source (Source ยังเป็น 1920×1080 เหมือนเดิม) 100% คือขนาดเดิม</p>
+                    <div class="scale-row">
+                        <label class="scale-label" for="scale-wheel">วงล้อ</label>
+                        <input type="range" id="scale-wheel" class="scale-range" min="30" max="250" step="5" value="100">
+                        <div class="scale-num-wrap">
+                            <label class="sr-only" for="scale-wheel-num">วงล้อ (เปอร์เซ็นต์)</label>
+                            <input type="number" id="scale-wheel-num" class="scale-num" min="30" max="250" step="5" value="100"><span>%</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost scale-reset" data-scale-reset="wheel" title="กลับเป็น 100%" aria-label="วงล้อ กลับเป็น 100%">100%</button>
+                    </div>
+                    <div class="scale-row">
+                        <label class="scale-label" for="scale-winner">ป้ายประกาศผล</label>
+                        <input type="range" id="scale-winner" class="scale-range" min="30" max="250" step="5" value="100">
+                        <div class="scale-num-wrap">
+                            <label class="sr-only" for="scale-winner-num">ป้ายประกาศผล (เปอร์เซ็นต์)</label>
+                            <input type="number" id="scale-winner-num" class="scale-num" min="30" max="250" step="5" value="100"><span>%</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost scale-reset" data-scale-reset="winner" title="กลับเป็น 100%" aria-label="ป้ายประกาศผล กลับเป็น 100%">100%</button>
+                    </div>
+                    <div class="scale-row">
+                        <label class="scale-label" for="scale-groups">ตารางสาย</label>
+                        <input type="range" id="scale-groups" class="scale-range" min="30" max="250" step="5" value="100">
+                        <div class="scale-num-wrap">
+                            <label class="sr-only" for="scale-groups-num">ตารางสาย (เปอร์เซ็นต์)</label>
+                            <input type="number" id="scale-groups-num" class="scale-num" min="30" max="250" step="5" value="100"><span>%</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost scale-reset" data-scale-reset="groups" title="กลับเป็น 100%" aria-label="ตารางสาย กลับเป็น 100%">100%</button>
+                    </div>
+                    <div class="scale-row scale-sub">
+                        <label class="scale-label" for="scale-groupsw">ความกว้างตารางสาย</label>
+                        <input type="range" id="scale-groupsw" class="scale-range" min="20" max="100" step="5" value="100">
+                        <div class="scale-num-wrap">
+                            <label class="sr-only" for="scale-groupsw-num">ความกว้างตารางสาย (เปอร์เซ็นต์ของจอ)</label>
+                            <input type="number" id="scale-groupsw-num" class="scale-num" min="20" max="100" step="5" value="100"><span>%</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost scale-reset" data-scale-reset="groupsw" title="กลับเป็นเต็มจอ" aria-label="ความกว้างตารางสาย กลับเป็นเต็มจอ">100%</button>
+                    </div>
+                    <div class="scale-row scale-sub">
+                        <span class="scale-label" id="groups-align-label">ตำแหน่งตารางสาย</span>
+                        <div class="seg" role="radiogroup" aria-labelledby="groups-align-label">
+                            <label><input type="radio" name="groups-align" value="left"><span>ชิดซ้าย</span></label>
+                            <label><input type="radio" name="groups-align" value="center" checked><span>กลาง</span></label>
+                            <label><input type="radio" name="groups-align" value="right"><span>ชิดขวา</span></label>
+                        </div>
+                    </div>
+                    <p class="hint scale-sub">ความกว้าง = ตารางกินพื้นที่กี่ % ของจอ ตัวอักษรไม่เล็กลง ถ้าตารางแคบแล้วชื่อทีมโดนตัด ให้ลดจำนวนคอลัมน์ตารางสายด้านล่าง</p>
+                    <div class="scale-row">
+                        <label class="scale-label" for="scale-tour">ตารางแข่ง</label>
+                        <input type="range" id="scale-tour" class="scale-range" min="30" max="250" step="5" value="100">
+                        <div class="scale-num-wrap">
+                            <label class="sr-only" for="scale-tour-num">ตารางแข่ง (เปอร์เซ็นต์)</label>
+                            <input type="number" id="scale-tour-num" class="scale-num" min="30" max="250" step="5" value="100"><span>%</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost scale-reset" data-scale-reset="tour" title="กลับเป็น 100%" aria-label="ตารางแข่ง กลับเป็น 100%">100%</button>
+                    </div>
+                </div>
+
                 <div class="card">
                     <h2>วงล้อ</h2>
                     <div class="grid-2 tight">

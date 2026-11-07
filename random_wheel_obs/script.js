@@ -327,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.bindLayout();
                 this.bindSiblingUI();
                 this.bindLogoManager();
+                this.bindScaleControls();
                 this.renderObsLinks();
                 this.buildThemeGrids();
                 this.populateSiblingUI();
@@ -408,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if ((el.tagName === 'INPUT' || el.tagName === 'SELECT') && el.type !== 'button' && el.type !== 'submit') {
                     const ownHandlers = ['group-preset-select', 'sort-history', 'sibling-rule-toggle', 'link-team-a', 'link-team-b',
                         'constraint-team-select', 'constraint-team-custom', 'constraint-groups-input', 'name-list-1', 'name-list-2'];
-                    if (!ownHandlers.includes(el.id) && !el.classList.contains('group-checkbox')) {
+                    if (!ownHandlers.includes(el.id) && !el.classList.contains('group-checkbox') && !el.classList.contains('scale-num')) {
                         const handleValueChange = () => {
                             if (el.id === 'spin-duration-slider') document.getElementById('duration-value').textContent = el.value;
                             if (el.id === 'wheel-spacing') document.getElementById('spacing-value').textContent = el.value;
@@ -886,6 +887,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 winnerBgOpacity: getNumValue('winner-bg-opacity', 90) / 100,
 
                 // Display themes ('classic' = original look)
+                // On-screen size (percent), applied by the overlay pages themselves
+                wheelScale: getNumValue('scale-wheel', 100),
+                winnerScale: getNumValue('scale-winner', 100),
+                groupsScale: getNumValue('scale-groups', 100),
+                groupsWidth: getNumValue('scale-groupsw', 100),
+                groupsAlign: (document.querySelector('input[name="groups-align"]:checked') || {}).value || 'center',
+                tourScale: getNumValue('scale-tour', 100),
+
                 wheelTheme: getValue('wheel-theme', 'classic'),
                 winnerTheme: getValue('winner-theme', 'classic'),
                 tableTheme: getValue('table-theme', 'classic'),
@@ -1682,6 +1691,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 wheelTheme: 'wheel-theme',
                 winnerTheme: 'winner-theme',
+                wheelScale: 'scale-wheel',
+                winnerScale: 'scale-winner',
+                groupsScale: 'scale-groups',
+                groupsWidth: 'scale-groupsw',
+                tourScale: 'scale-tour',
                 tableTheme: 'table-theme',
             };
 
@@ -1747,6 +1761,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.populateLogosUI();
             this.populateSiblingUI();
             if (this.syncThemeGrids) { this.syncThemeGrids(); this.drawWheelPreviews(); }
+            if (this.syncScaleNumbers) this.syncScaleNumbers();
 
             // Load Tournament settings
             const tourSettings = JSON.parse(localStorage.getItem('tournamentSettings')) || {};
@@ -2041,6 +2056,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
+        // Size sliders: range + number box + reset, kept in step
+        bindScaleControls() {
+            ['wheel', 'winner', 'groups', 'groupsw', 'tour'].forEach(key => {
+                const range = document.getElementById('scale-' + key);
+                const num = document.getElementById('scale-' + key + '-num');
+                if (!range || !num) return;
+                const lo = Number(range.min), hi = Number(range.max);
+                const clamp = (v) => Math.min(hi, Math.max(lo, Math.round((Number(v) || 100) / 5) * 5));
+                range.addEventListener('input', () => { num.value = range.value; });
+                const fromNum = () => {
+                    if (num.value === '') return;
+                    range.value = clamp(num.value);
+                    this.saveAllSettings();
+                };
+                num.addEventListener('change', () => { num.value = clamp(num.value); fromNum(); });
+                num.addEventListener('keydown', (e) => { if (e.key === 'Enter') { num.value = clamp(num.value); fromNum(); } });
+            });
+            document.querySelectorAll('[data-scale-reset]').forEach(btn => btn.addEventListener('click', () => {
+                const key = btn.dataset.scaleReset;
+                document.getElementById('scale-' + key).value = 100;
+                document.getElementById('scale-' + key + '-num').value = 100;
+                this.saveAllSettings();
+            }));
+            document.querySelectorAll('input[name="groups-align"]').forEach(r => r.addEventListener('change', () => this.saveAllSettings()));
+            this.syncScaleNumbers();
+        },
+
+        syncScaleNumbers() {
+            ['wheel', 'winner', 'groups', 'groupsw', 'tour'].forEach(key => {
+                const range = document.getElementById('scale-' + key);
+                const num = document.getElementById('scale-' + key + '-num');
+                if (range && num && num !== document.activeElement) num.value = range.value;
+            });
+            const align = (StateManager.load('wheelSettings') || {}).groupsAlign || 'center';
+            document.querySelectorAll('input[name="groups-align"]').forEach(r => { r.checked = r.value === align; });
+        },
+
         // Online copy on GitHub Pages (repo JamornzMedia/obs-dock-ui, folder random_wheel_obs)
         onlineBase: 'https://jamornzmedia.github.io/obs-dock-ui/random_wheel_obs',
 
@@ -2325,6 +2377,32 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.style.backgroundColor = settings.bgColor || 'transparent';
 
             // Apply Wheel Layout
+            // On-screen size set from the control panel (100% = original)
+            const pct = (v) => { const n = Number(v); return (isFinite(n) && n >= 30 && n <= 250) ? n / 100 : 1; };
+            const scaleKey = { 'Wheels Display': 'wheelScale', 'Winner Display': 'winnerScale', 'Grouping Display': 'groupsScale', 'Tournament Display': 'tourScale' }[page];
+            if (scaleKey) {
+                const z = pct(settings[scaleKey]);
+                const target = page === 'Wheels Display' ? document.querySelector('.wheels-area')
+                    : page === 'Winner Display' ? document.querySelector('.winner-box')
+                    : document.getElementById('groups-container');
+                if (target) target.style.zoom = z === 1 ? '' : String(z);
+            }
+            if (page === 'Grouping Display') {
+                const box = document.getElementById('groups-container');
+                const w = Number(settings.groupsWidth);
+                if (box) {
+                    if (isFinite(w) && w >= 20 && w < 100) {
+                        box.style.boxSizing = 'border-box';
+                        box.style.maxWidth = w + '%';
+                        const a = settings.groupsAlign;
+                        box.style.marginLeft = a === 'left' ? '0' : 'auto';
+                        box.style.marginRight = a === 'right' ? '0' : 'auto';
+                    } else {
+                        box.style.maxWidth = ''; box.style.marginLeft = ''; box.style.marginRight = ''; box.style.boxSizing = '';
+                    }
+                }
+            }
+
             const wheelsArea = document.querySelector('.wheels-area');
             if (wheelsArea) {
                 if (settings.wheelLayout === 'vertical') {
