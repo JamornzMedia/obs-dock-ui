@@ -32,6 +32,8 @@
             <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
             <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
             <symbol id="i-obs" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+            <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+            <symbol id="i-broom" viewBox="0 0 24 24"><path d="M14 4l6 6M4 20l7-7M10 14l-4 6h8l2-6z"/><path d="M12 12l5-5"/></symbol>
             <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
             <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
             <symbol id="i-first" viewBox="0 0 24 24"><path d="M5 4v16M19 5l-9 7 9 7z"/></symbol>
@@ -51,17 +53,20 @@
                 <button type="button" class="nav-tab" role="tab" data-tab="draw" aria-controls="tab-draw" title="สุ่ม (Alt+1)" aria-label="สุ่ม">
                     <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="nav-label">สุ่ม</span><span class="nav-short" aria-hidden="true">สุ่ม</span>
                 </button>
-                <button type="button" class="nav-tab" role="tab" data-tab="names" aria-controls="tab-names" title="รายชื่อ (Alt+2)" aria-label="รายชื่อ">
-                    <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span class="nav-label">รายชื่อ</span><span class="nav-short" aria-hidden="true">รายชื่อ</span>
+                <button type="button" class="nav-tab" role="tab" data-tab="names" aria-controls="tab-names" title="รุ่นและรายชื่อ (Alt+2)" aria-label="รุ่นและรายชื่อ">
+                    <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span class="nav-label">รุ่น / รายชื่อ</span><span class="nav-short" aria-hidden="true">รุ่น</span>
                 </button>
                 <button type="button" class="nav-tab" role="tab" data-tab="rules" aria-controls="tab-rules" title="ทีมเดียวกัน / วิธีสุ่ม (Alt+3)" aria-label="ทีมเดียวกันและวิธีสุ่ม">
-                    <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="nav-label">ทีมเดียวกัน</span><span class="nav-short" aria-hidden="true">ทีม A/B</span>
+                    <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="nav-label">ทีมเดียวกัน</span><span class="nav-short" aria-hidden="true">ทีม</span>
                 </button>
                 <button type="button" class="nav-tab" role="tab" data-tab="tour" aria-controls="tab-tour" title="ตารางแข่ง (Alt+4)" aria-label="ตารางแข่ง">
                     <svg class="icon" aria-hidden="true"><use href="#i-table"/></svg><span class="nav-label">ตารางแข่ง</span><span class="nav-short" aria-hidden="true">ตาราง</span>
                 </button>
                 <button type="button" class="nav-tab" role="tab" data-tab="settings" aria-controls="tab-settings" title="ตั้งค่าและธีม (Alt+5)" aria-label="ตั้งค่าและธีม">
                     <svg class="icon" aria-hidden="true"><use href="#i-gear"/></svg><span class="nav-label">ตั้งค่า / ธีม</span><span class="nav-short" aria-hidden="true">ตั้งค่า</span>
+                </button>
+                <button type="button" class="nav-tab" role="tab" data-tab="archive" aria-controls="tab-archive" title="ประวัติผลการสุ่ม / ล้างแคช (Alt+6)" aria-label="ประวัติและล้างแคช">
+                    <svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span class="nav-label">ประวัติ / ล้างแคช</span><span class="nav-short" aria-hidden="true">ประวัติ</span>
                 </button>
             </div>
             <div class="nav-foot">
@@ -80,16 +85,6 @@
                     <button type="button" class="rules-badge" id="rules-badge" data-goto-tab="rules" title="เปลี่ยนวิธีสุ่ม"></button>
                 </div>
 
-                <div class="pending-box" id="pending-box" hidden>
-                    <span class="pending-label">รอยืนยัน</span>
-                    <span class="pending-pair"></span>
-                </div>
-                <div class="spin-progress" id="spin-progress" hidden></div>
-                <div class="similar-warning" id="similar-warning" role="alert" hidden>
-                    <svg class="icon" aria-hidden="true"><use href="#i-warn"/></svg>
-                    <span class="warn-text"></span>
-                </div>
-
                 <div class="draw-actions">
                     <button type="button" class="btn btn-primary btn-xl" id="spin-button" title="สุ่ม (Ctrl+Enter)">
                         <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-label">สุ่มจับคู่</span>
@@ -100,10 +95,23 @@
                     <button type="button" class="btn btn-secondary" id="respin-btn" hidden>
                         <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">สุ่มใหม่</span>
                     </button>
+                    <button type="button" class="btn btn-primary btn-xl" id="next-division-btn" hidden>
+                        <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span class="btn-label">เริ่มรุ่นถัดไป</span>
+                    </button>
                     <button type="button" class="btn btn-ghost" id="hide-wheels-btn" aria-pressed="false">
                         <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><span class="btn-label">ซ่อนวงล้อ</span>
                     </button>
                 </div>
+                <div class="pending-box" id="pending-box" hidden>
+                    <span class="pending-label">รอยืนยัน</span>
+                    <span class="pending-pair"></span>
+                </div>
+                <div class="spin-progress" id="spin-progress" hidden></div>
+                <div class="similar-warning" id="similar-warning" role="alert" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-warn"/></svg>
+                    <span class="warn-text"></span>
+                </div>
+
             </section>
 
             <!-- TAB 1: Draw -->
@@ -144,27 +152,46 @@
 
             <!-- TAB 2: Names -->
             <section class="tab-panel" id="tab-names" role="tabpanel" aria-label="รายชื่อ" hidden>
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-head">
-                            <h2>วงล้อ 1: สาย/กลุ่ม <span class="count">(<span id="name-count-1">0</span>)</span></h2>
-                            <span class="badge badge-warn" id="dirty-badge-1" hidden>ยังไม่บันทึก</span>
-                        </div>
-                        <label class="field-label" for="name-list-1">หนึ่งบรรทัดต่อหนึ่งช่อง เช่น A1, A2, B1</label>
-                        <textarea id="name-list-1" spellcheck="false"></textarea>
-                        <button type="button" class="btn btn-primary btn-block" id="update-button-1">บันทึกรายชื่อสาย</button>
+                <div class="card">
+                    <div class="card-head">
+                        <h2>รุ่นการแข่งขัน</h2>
+                        <button type="button" class="btn btn-sm btn-primary" id="add-division-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>เพิ่มรุ่น</span>
+                        </button>
                     </div>
-                    <div class="card">
-                        <div class="card-head">
-                            <h2>วงล้อ 2: ทีม <span class="count">(<span id="name-count-2">0</span>)</span></h2>
-                            <span class="badge badge-warn" id="dirty-badge-2" hidden>ยังไม่บันทึก</span>
+                    <p class="hint">1) กด "เพิ่มรุ่น" ใส่ชื่อรุ่น รายชื่อสาย และทีม แล้วกดยืนยัน  2) ถึงคิวรุ่นไหน กด "เริ่มสุ่มรุ่นนี้"  ผลของแต่ละรุ่นเก็บแยกกัน สลับไปมาได้ไม่หาย</p>
+                    <div id="division-list" class="division-list"></div>
+                </div>
+
+                <div class="card editor-card" id="division-editor" hidden>
+                    <h2 id="division-editor-title">เพิ่มรุ่นใหม่</h2>
+                    <div class="field">
+                        <label class="field-label" for="div-name">ชื่อรุ่น</label>
+                        <input type="text" id="div-name" placeholder="เช่น รุ่นประชาชน, รุ่นอาวุโส">
+                    </div>
+                    <div class="grid-2 tight">
+                        <div class="field">
+                            <div class="row-between">
+                                <label class="field-label" for="name-list-1">วงล้อ 1: สาย/กลุ่ม <span class="count">(<span id="name-count-1">0</span>)</span></label>
+                                <span class="badge badge-warn" id="dirty-badge-1" hidden>ยังไม่บันทึก</span>
+                            </div>
+                            <textarea id="name-list-1" spellcheck="false" placeholder="บรรทัดละ 1 ช่อง&#10;A1&#10;A2&#10;B1&#10;B2"></textarea>
                         </div>
-                        <label class="field-label" for="name-list-2">หนึ่งบรรทัดต่อหนึ่งทีม ทีม A/B เช่น "YAI FC A"</label>
-                        <textarea id="name-list-2" spellcheck="false"></textarea>
-                        <button type="button" class="btn btn-primary btn-block" id="update-button-2">บันทึกรายชื่อทีม</button>
+                        <div class="field">
+                            <div class="row-between">
+                                <label class="field-label" for="name-list-2">วงล้อ 2: ทีม <span class="count">(<span id="name-count-2">0</span>)</span></label>
+                                <span class="badge badge-warn" id="dirty-badge-2" hidden>ยังไม่บันทึก</span>
+                            </div>
+                            <textarea id="name-list-2" spellcheck="false" placeholder="บรรทัดละ 1 ทีม&#10;YAI FC A&#10;YAI FC B"></textarea>
+                        </div>
+                    </div>
+                    <div class="row-actions">
+                        <button type="button" class="btn btn-success btn-grow" id="div-save-btn">
+                            <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span>ยืนยันรายชื่อ</span>
+                        </button>
+                        <button type="button" class="btn btn-ghost" id="div-cancel-btn">ยกเลิก</button>
                     </div>
                 </div>
-                <p class="hint">การบันทึกรายชื่อจะเริ่มวงล้อใหม่ตามรายชื่อนี้ ประวัติเดิมยังอยู่</p>
 
                 <div class="card">
                     <div class="card-head">
@@ -183,6 +210,12 @@
 
             <!-- TAB 3: Same-club rules (simple, step by step) -->
             <section class="tab-panel" id="tab-rules" role="tabpanel" aria-label="ทีมเดียวกัน" hidden>
+                <div class="card rules-div-card" id="rules-division-wrap" hidden>
+                    <label class="field-label" for="rules-division-select">ตั้งค่าของรุ่น</label>
+                    <select id="rules-division-select"></select>
+                    <p class="hint" id="rules-division-note"></p>
+                    <p class="hint">แต่ละรุ่นตั้งแยกกัน รุ่นใหม่เริ่มที่ "สุ่มปกติ" และระบบหาทีมชื่อคล้ายกัน (A/B, 1/2) ให้เอง ไม่ต้องตั้งอะไรเพิ่ม</p>
+                </div>
                 <div class="card">
                     <div class="step-head"><span class="step-no">1</span><h2 id="draw-mode-title">เลือกวิธีสุ่ม</h2></div>
                     <p class="hint">ทุกวิธี คนดูจะเห็นวงล้อหมุนแบบปกติ ต่างกันแค่ว่าระบบเลือกผลยังไง</p>
@@ -256,6 +289,18 @@
 
             <!-- TAB 4: Tournament -->
             <section class="tab-panel" id="tab-tour" role="tabpanel" aria-label="ตารางแข่ง" hidden>
+                <div class="card rules-div-card">
+                    <h2>ดึงจากรุ่น</h2>
+                    <p class="hint">เลือกรุ่น แล้วกดปุ่มเดียว ระบบเอาผลการสุ่มของรุ่นนั้นมาจัดสายและสร้างตารางแข่งให้เลย แก้รายชื่อด้านล่างแล้วกดสร้างใหม่ได้</p>
+                    <div class="field">
+                        <label class="field-label" for="tour-division-select">รุ่น</label>
+                        <select id="tour-division-select"></select>
+                    </div>
+                    <p class="hint" id="tour-division-info"></p>
+                    <button type="button" class="btn btn-primary btn-block" id="tour-from-division-btn">
+                        <svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span>ดึงผลรุ่นนี้ แล้วสร้างตาราง</span>
+                    </button>
+                </div>
                 <div class="card">
                     <h2>สร้างตารางแข่งขัน</h2>
                     <div class="grid-2 tight">
@@ -266,9 +311,6 @@
                     <div class="field">
                         <div class="row-between">
                             <label class="field-label" for="tour-teams-input">รายชื่อทีมและสาย (รูปแบบ: A1 ทีม Alpha)</label>
-                            <button type="button" class="btn btn-sm btn-ghost" id="tour-autofill-btn">
-                                <svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span>ดึงจากผลการสุ่ม</span>
-                            </button>
                         </div>
                         <textarea id="tour-teams-input" class="mono" placeholder="A1 ทีม Alpha&#10;A2 ทีม Beta&#10;B1 ทีม Delta"></textarea>
                     </div>
@@ -316,8 +358,49 @@
                 </div>
             </section>
 
+            <!-- TAB 6: Saved results + clear cache -->
+            <section class="tab-panel" id="tab-archive" role="tabpanel" aria-label="ประวัติและล้างแคช" hidden>
+                <div class="card">
+                    <h2>ผลการสุ่มที่เก็บไว้ <span class="count" id="archive-count"></span></h2>
+                    <p class="hint">ระบบเก็บให้เองเมื่อสุ่มครบ เมื่อเริ่มรุ่นใหม่ และก่อนล้างหรือรีเซ็ตวงล้อ เผลอลบผลไปก็กลับมาคัดลอกหรือนำกลับขึ้นจอได้ (เก็บในเครื่องนี้ 60 รายการล่าสุด)</p>
+                    <div id="archive-list" class="archive-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>ล้างแคช / แก้ค้าง</h2>
+                    <p class="hint">ใช้เมื่อวงล้อค้าง ผลไม่ขึ้น หรือจอใน OBS ไม่อัปเดต ระบบจะล้างสถานะที่ค้างและสั่งรีโหลดทุกหน้าจอ (หน้าควบคุม วงล้อ ป้ายประกาศผล ตาราง) รายชื่อ ผลที่ยืนยันแล้ว การตั้งค่า และประวัติไม่หาย</p>
+                    <button type="button" class="btn btn-secondary btn-block" id="clear-cache-btn">
+                        <svg class="icon" aria-hidden="true"><use href="#i-broom"/></svg><span>ล้างแคชและรีโหลดหน้าจอ</span>
+                    </button>
+                    <p class="hint">ถ้ายังค้าง: ใน OBS คลิกขวาที่ Dock หรือ Source แล้วกด Refresh / ใน Browser Source กด "Refresh cache of current page"</p>
+                </div>
+            </section>
+
             <!-- TAB 5: Settings & themes -->
             <section class="tab-panel" id="tab-settings" role="tabpanel" aria-label="ตั้งค่าและธีม" hidden>
+                <div class="card time-card">
+                    <div class="time-head">
+                        <span class="time-icon" aria-hidden="true"><svg class="icon"><use href="#i-clock"/></svg></span>
+                        <div>
+                            <h2><label for="spin-duration-slider">เวลาหมุนวงล้อ</label></h2>
+                            <p class="hint">วงล้อหมุนกี่วินาทีก่อนหยุด</p>
+                        </div>
+                    </div>
+                    <div class="time-ctrl">
+                        <button type="button" class="btn btn-ghost time-step" data-time-step="-1" aria-label="ลดเวลาหมุน 1 วินาที" title="ลด 1 วินาที">−</button>
+                        <div class="time-value" aria-live="polite"><span id="duration-value">6</span><small>วินาที</small></div>
+                        <button type="button" class="btn btn-ghost time-step" data-time-step="1" aria-label="เพิ่มเวลาหมุน 1 วินาที" title="เพิ่ม 1 วินาที">+</button>
+                    </div>
+                    <input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1">
+                    <div class="time-presets" role="group" aria-label="เลือกเวลาสำเร็จรูป">
+                        <button type="button" class="btn btn-sm btn-ghost" data-time-set="3">3 วิ</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-time-set="5">5 วิ</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-time-set="8">8 วิ</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-time-set="10">10 วิ</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-time-set="15">15 วิ</button>
+                    </div>
+                </div>
+
                 <div class="card">
                     <h2>ธีมหน้าจอใน OBS</h2>
                     <p class="hint">คลิกเลือกได้เลย หน้าจอใน OBS เปลี่ยนทันที ไม่ต้องแก้ Browser Source เดิม "คลาสสิก" คือหน้าตาแบบเดิม</p>
@@ -403,10 +486,6 @@
                         <div class="field"><label class="field-label" for="title-input-2">หัวข้อวงล้อ 2</label><input type="text" id="title-input-2"></div>
                         <div class="field"><label class="field-label" for="palette-select-1">ชุดสีวงล้อ 1</label><select id="palette-select-1" class="palette-select"></select><div class="swatches" id="palette-swatch-1" aria-hidden="true"></div></div>
                         <div class="field"><label class="field-label" for="palette-select-2">ชุดสีวงล้อ 2</label><select id="palette-select-2" class="palette-select"></select><div class="swatches" id="palette-swatch-2" aria-hidden="true"></div></div>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="spin-duration-slider">เวลาหมุน: <span id="duration-value">6</span> วินาที</label>
-                        <input type="range" id="spin-duration-slider" min="2" max="15" value="6" step="1">
                     </div>
                     <div class="grid-2 tight">
                         <div class="field">
@@ -535,7 +614,7 @@
                     </div>
                 </div>
 
-                <p class="shortcut-hint">คีย์ลัด: Ctrl+Enter = สุ่ม / ยืนยัน · Alt+1–5 = เปลี่ยนแท็บ</p>
+                <p class="shortcut-hint">คีย์ลัด: Ctrl+Enter = สุ่ม / ยืนยัน · Alt+1–6 = เปลี่ยนแท็บ</p>
                 <footer>Developer JamornzMedia · Version 2.3.0 (web)</footer>
             </section>
         </main>

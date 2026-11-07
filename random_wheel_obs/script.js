@@ -328,6 +328,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.bindSiblingUI();
                 this.bindLogoManager();
                 this.bindScaleControls();
+                this.bindArchive();
+                this.bindSpinTime();
+                const tourSel = document.getElementById('tour-division-select');
+                if (tourSel) tourSel.addEventListener('change', () => this.renderTourDivisionSelect());
+                const tourBtn = document.getElementById('tour-from-division-btn');
+                if (tourBtn) tourBtn.addEventListener('click', () => this.buildTourFromDivision());
+                this.renderTourDivisionSelect();
+                this.bindDivisions();
                 this.renderObsLinks();
                 this.buildThemeGrids();
                 this.populateSiblingUI();
@@ -351,8 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         bindEventListeners() {
-            this.inputs['update-button-1'].addEventListener('click', () => this.updateNames(1));
-            this.inputs['update-button-2'].addEventListener('click', () => this.updateNames(2));
+            if (this.inputs['update-button-1']) this.inputs['update-button-1'].addEventListener('click', () => this.updateNames(1));
+            if (this.inputs['update-button-2']) this.inputs['update-button-2'].addEventListener('click', () => this.updateNames(2));
             this.inputs['spin-button'].addEventListener('click', this.handleSpinClick.bind(this));
             this.inputs['confirm-winner-btn'].addEventListener('click', () => this.confirmWinner());
             this.inputs['respin-btn'].addEventListener('click', this.handleRespinClick.bind(this));
@@ -408,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             Object.values(this.inputs).forEach(el => {
                 if ((el.tagName === 'INPUT' || el.tagName === 'SELECT') && el.type !== 'button' && el.type !== 'submit') {
-                    const ownHandlers = ['group-preset-select', 'sort-history', 'sibling-rule-toggle', 'link-team-a', 'link-team-b',
+                    const ownHandlers = ['tour-division-select', 'rules-division-select', 'draw-title', 'group-preset-select', 'sort-history', 'sibling-rule-toggle', 'link-team-a', 'link-team-b',
                         'constraint-team-select', 'constraint-team-custom', 'constraint-groups-input', 'name-list-1', 'name-list-2'];
                     if (!ownHandlers.includes(el.id) && !el.classList.contains('group-checkbox') && !el.classList.contains('scale-num')) {
                         const handleValueChange = () => {
@@ -534,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const autofillBtn = document.getElementById('tour-autofill-btn');
             if (autofillBtn) {
                 autofillBtn.addEventListener('click', () => {
-                    const masterNames = (StateManager.loadText('wheel1Names') || '').split('\n').filter(Boolean);
+                    const masterNames = (StateManager.loadText('wheel1MasterNames') || '').split('\n').filter(Boolean);
                     const history = StateManager.load('wheelHistory') || [];
                     const pairedResults = new Map(history.map(item => [item.val1.trim().toLowerCase(), item.val2]));
                     
@@ -614,6 +622,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'updateGraphics') {
                     this.loadDataIntoControls();
                     this.updateButtonState();
+                } else if (e.key === 'drawArchive') {
+                    this.renderArchive();
+                } else if (e.key === 'divisions' || e.key === 'activeDivisionId') {
+                    this.renderDivisions();
+                    this.populateSiblingUI();
                 } else if (e.key === 'siblingSettings' || e.key === 'wheelHistory' || e.key === 'pendingWinner') {
                     this.populateSiblingUI();
                     this.renderHistory();
@@ -927,6 +940,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         updateNames(wheelNum) {
+            // Results already on screen: saving new names would mix old pairs with the new list
+            const history = StateManager.load('wheelHistory') || [];
+            if (history.length > 0) { this.askSaveNames(wheelNum, history); return; }
             // Clear any pending winner when names are updated to prevent stale data
             StateManager.remove('pendingWinner');
             this.dirty[wheelNum] = false;
@@ -953,6 +969,556 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateDirtyBadges();
             this.updateButtonState();
             StateManager.triggerUpdate();
+        },
+
+        // ---------- Divisions (รุ่น) and the saved-results archive ----------
+        listOf(key) {
+            return (StateManager.loadText(key) || '').split('\n').map(t => t.trim()).filter(Boolean);
+        },
+
+        divisionTitle() {
+            return (StateManager.loadText('drawTitle') || '').trim();
+        },
+
+        loadArchive() {
+            const a = StateManager.load('drawArchive');
+            return Array.isArray(a) ? a : [];
+        },
+
+        // Save the current results into the archive. Returns true when something was saved.
+        archiveCurrent(reason) {
+            const history = StateManager.load('wheelHistory') || [];
+            if (history.length === 0) return false;
+            const slots = this.listOf('wheel1MasterNames');
+            const teams = this.listOf('wheel2MasterNames');
+            const pairs = history.slice().sort((a, b) => a.timestamp - b.timestamp).map(h => ({ slot: h.val1, team: h.val2 }));
+            const total = Math.min(slots.length, teams.length) || pairs.length;
+            const entry = {
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                // The name the results were drawn under (the box may already hold the next division's name)
+                title: (StateManager.loadText('resultsTitle') || '').trim() || this.divisionTitle(),
+                savedAt: Date.now(),
+                reason,
+                complete: pairs.length >= total,
+                total,
+                pairs,
+                slots,
+                teams
+            };
+            const sig = (e) => JSON.stringify(e.pairs);
+            const archive = this.loadArchive();
+            if (archive.some(e => sig(e) === sig(entry))) return true; // already saved: keep the first copy
+            archive.unshift(entry);
+            try {
+                StateManager.save('drawArchive', archive.slice(0, 60));
+            } catch (e) {
+                this.toast('พื้นที่เก็บข้อมูลเต็ม ลบประวัติเก่าบางรายการก่อน', 'error');
+                return false;
+            }
+            this.renderArchive();
+            return true;
+        },
+
+        // Clear results from the screen and put both wheels back to their full lists
+        clearResults() {
+            StateManager.save('wheelHistory', []);
+            StateManager.remove('pendingWinner');
+            StateManager.remove('resultsTitle');
+            StateManager.saveText('wheel1Names', StateManager.loadText('wheel1MasterNames') || '');
+            StateManager.saveText('wheel2Names', StateManager.loadText('wheel2MasterNames') || '');
+            localStorage.setItem('isSpinning', 'false');
+        },
+
+        saveListsFromBoxes(which) {
+            which.forEach(n => {
+                const list = this.inputs['name-list-' + n].value.split('\n').map(x => x.trim()).filter(Boolean).join('\n');
+                StateManager.saveText(n === 1 ? 'wheel1MasterNames' : 'wheel2MasterNames', list);
+                StateManager.saveText(n === 1 ? 'wheel1Names' : 'wheel2Names', list);
+                this.dirty[n] = false;
+                this.regenerateColorMap(n);
+            });
+        },
+
+        afterNamesChanged() {
+            this.renderDivisions();
+            this.populateConstraintsUI();
+            this.populateLogosUI();
+            this.populateSiblingUI();
+            this.updateDirtyBadges();
+            this.renderHistory();
+            this.updateButtonState();
+            StateManager.triggerUpdate();
+        },
+
+        // Simple 3-button question (native confirm() only has OK/Cancel)
+        ask(title, text, choices) {
+            return new Promise(resolve => {
+                const wrap = document.createElement('div');
+                wrap.className = 'ask-overlay';
+                wrap.innerHTML = `<div class="ask-box" role="dialog" aria-modal="true" aria-labelledby="ask-title">
+                    <h2 id="ask-title">${Config.esc(title)}</h2>
+                    <p class="ask-text">${Config.esc(text)}</p>
+                    <div class="ask-actions">${choices.map((c, i) => `<button type="button" class="btn ${c.cls || 'btn-ghost'}" data-ask="${i}">${Config.esc(c.label)}</button>`).join('')}</div>
+                </div>`;
+                const done = (v) => { wrap.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); };
+                const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); done(null); } };
+                wrap.addEventListener('click', (e) => {
+                    const b = e.target.closest('[data-ask]');
+                    if (b) done(choices[parseInt(b.dataset.ask, 10)].value);
+                    else if (e.target === wrap) done(null);
+                });
+                document.addEventListener('keydown', onKey, true);
+                document.body.appendChild(wrap);
+                const first = wrap.querySelector('[data-ask]');
+                if (first) first.focus();
+            });
+        },
+
+        // Start the next division: keep the old results in the archive, clear the screen
+        async startNewDivision() {
+            const history = StateManager.load('wheelHistory') || [];
+            if (history.length > 0) {
+                const ok = await this.ask('เริ่มรุ่นใหม่?',
+                    `ผลสุ่ม${this.divisionTitle() ? ' "' + this.divisionTitle() + '"' : ''} (${history.length} คู่) จะถูกเก็บไว้ในแท็บประวัติ แล้วล้างออกจากจอ OBS`,
+                    [{ label: 'เริ่มรุ่นใหม่', value: true, cls: 'btn-primary' }, { label: 'ยกเลิก', value: false }]);
+                if (!ok) return;
+                this.archiveCurrent('new');
+            }
+            this.clearResults();
+            StateManager.saveText('drawTitle', '');
+            const t = document.getElementById('draw-title');
+            if (t) t.value = '';
+            this.afterNamesChanged();
+            this.switchTab('names');
+            if (t) t.focus();
+            this.toast('พิมพ์ชื่อรุ่น แล้วแก้รายชื่อสายและทีม แล้วกดบันทึก', 'ok');
+        },
+
+        renderArchive() {
+            const list = document.getElementById('archive-list');
+            if (!list) return;
+            const archive = this.loadArchive();
+            const count = document.getElementById('archive-count');
+            if (count) count.textContent = archive.length ? `(${archive.length})` : '';
+            if (archive.length === 0) {
+                list.innerHTML = '<p class="empty-note">ยังไม่มีผลที่เก็บไว้ ระบบเก็บให้เองเมื่อสุ่มครบ เมื่อกดเริ่มรุ่นใหม่ และก่อนล้างหรือรีเซ็ตวงล้อ</p>';
+                return;
+            }
+            const natural = (a, b) => a.slot.localeCompare(b.slot, undefined, { numeric: true });
+            const reasonText = { complete: 'สุ่มครบ', new: 'ก่อนเริ่มรุ่นใหม่', reset: 'ก่อนรีเซ็ต/ล้าง', restore: 'ก่อนนำผลอื่นขึ้นจอ', delete: 'ตอนลบรุ่น' };
+            list.innerHTML = archive.map((e, i) => {
+                const when = new Date(e.savedAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+                const rows = e.pairs.slice().sort(natural).map(p => `<tr><td class="cell-strong">${Config.esc(p.slot)}</td><td>${Config.esc(p.team)}</td></tr>`).join('');
+                return `<div class="archive-item">
+                    <div class="archive-head">
+                        <div class="archive-title">
+                            <strong>${Config.esc(e.title || 'ไม่ได้ตั้งชื่อรุ่น')}</strong>
+                            <span class="badge ${e.complete ? 'badge-ok' : 'badge-warn'}">${e.complete ? 'ครบ' : 'ยังไม่ครบ'} ${e.pairs.length}/${e.total}</span>
+                        </div>
+                        <span class="archive-meta">${Config.esc(when)} · ${Config.esc(reasonText[e.reason] || '')}</span>
+                    </div>
+                    <details class="archive-detail">
+                        <summary>ดูรายชื่อ</summary>
+                        <div class="table-wrap"><table class="data-table"><thead><tr><th>สาย</th><th>ทีม</th></tr></thead><tbody>${rows}</tbody></table></div>
+                    </details>
+                    <div class="archive-actions">
+                        <button type="button" class="btn btn-sm btn-primary" data-arch-copy="${i}"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><span>คัดลอก</span></button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-arch-restore="${i}"><svg class="icon" aria-hidden="true"><use href="#i-undo"/></svg><span>นำกลับขึ้นจอ</span></button>
+                        <button type="button" class="btn btn-sm btn-danger-ghost" data-arch-delete="${i}" aria-label="ลบรายการ ${Config.esc(e.title || '')}">ลบ</button>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        bindArchive() {
+            const list = document.getElementById('archive-list');
+            if (list) list.addEventListener('click', async (ev) => {
+                const archive = this.loadArchive();
+                const copy = ev.target.closest('[data-arch-copy]');
+                const restore = ev.target.closest('[data-arch-restore]');
+                const del = ev.target.closest('[data-arch-delete]');
+                if (copy) {
+                    const e = archive[parseInt(copy.dataset.archCopy, 10)];
+                    if (!e) return;
+                    const text = (e.title ? e.title + '\n' : '') + e.pairs.slice()
+                        .sort((a, b) => a.slot.localeCompare(b.slot, undefined, { numeric: true }))
+                        .map(p => `${p.slot}\t${p.team}`).join('\n');
+                    const done = () => this.toast('คัดลอกแล้ว วางลง Excel หรือช่องตารางแข่งได้เลย', 'ok');
+                    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done).catch(() => this.copyFallback(text, done));
+                    else this.copyFallback(text, done);
+                } else if (restore) {
+                    const e = archive[parseInt(restore.dataset.archRestore, 10)];
+                    if (!e) return;
+                    const ok = await this.ask('นำผลนี้กลับขึ้นจอ?',
+                        `"${e.title || 'ไม่ได้ตั้งชื่อรุ่น'}" จะกลับมาเป็นรุ่นในรายการรุ่น และขึ้นจอ OBS รุ่นที่สุ่มอยู่ตอนนี้ยังเก็บผลไว้ในรายการรุ่นเหมือนเดิม`,
+                        [{ label: 'นำกลับขึ้นจอ', value: true, cls: 'btn-primary' }, { label: 'ยกเลิก', value: false }]);
+                    if (!ok) return;
+                    if ((StateManager.load('pendingWinner') || {}).val1) { this.toast('มีผลรอยืนยันอยู่ ยืนยันหรือสุ่มใหม่ก่อน', 'warn'); return; }
+                    // Bring it back as a division (re-use one with the same name and lists, else add one)
+                    this.snapshotActive();
+                    const divs = this.loadDivisions();
+                    let rec = divs.find(d => d.name === (e.title || '') && d.slots.join('\n') === e.slots.join('\n') && d.teams.join('\n') === e.teams.join('\n'));
+                    const base = Date.now() - e.pairs.length * 1000;
+                    const results = e.pairs.map((p, k) => ({ val1: p.slot, val2: p.team, timestamp: base + k * 1000 }));
+                    if (rec) rec.results = results;
+                    else { rec = { id: this.newId(), name: e.title || 'รุ่นที่กู้คืน', slots: e.slots.slice(), teams: e.teams.slice(), results, createdAt: Date.now() }; divs.push(rec); }
+                    this.saveDivisions(divs);
+                    this.loadDivisionLive(rec);
+                    this.closeDivisionEditor();
+                    this.loadDataIntoControls();
+                    this.afterNamesChanged();
+                    this.toast('นำผลกลับขึ้นจอแล้ว', 'ok');
+                } else if (del) {
+                    const i = parseInt(del.dataset.archDelete, 10);
+                    const e = archive[i];
+                    if (!e) return;
+                    if (!confirm(`ลบผล "${e.title || 'ไม่ได้ตั้งชื่อรุ่น'}" ออกจากประวัติ? ลบแล้วกู้คืนไม่ได้`)) return;
+                    archive.splice(i, 1);
+                    StateManager.save('drawArchive', archive);
+                    this.renderArchive();
+                }
+            });
+
+            const title = document.getElementById('draw-title');
+            if (title) {
+                title.addEventListener('input', () => { StateManager.saveText('drawTitle', title.value); this.updateButtonState(); });
+            }
+            const nextBtn = document.getElementById('next-division-btn');
+            if (nextBtn) nextBtn.addEventListener('click', () => {
+                this.switchTab('names');
+                this.toast('เลือกรุ่นถัดไปแล้วกด "เริ่มสุ่มรุ่นนี้" หรือกด "เพิ่มรุ่น"', 'ok');
+            });
+            const newBtn = document.getElementById('new-division-btn');
+            if (newBtn) newBtn.addEventListener('click', () => this.startNewDivision());
+
+            const cacheBtn = document.getElementById('clear-cache-btn');
+            if (cacheBtn) cacheBtn.addEventListener('click', async () => {
+                const pending = (StateManager.load('pendingWinner') || {}).val1;
+                const ok = await this.ask('ล้างแคชและรีโหลด?',
+                    'ใช้เมื่อวงล้อค้าง ผลไม่ขึ้น หรือจอ OBS ไม่อัปเดต รายชื่อ ผลที่ยืนยันแล้ว การตั้งค่า และประวัติจะไม่หาย' + (pending ? ' ผลที่รอยืนยันอยู่ตอนนี้จะถูกยกเลิก' : ''),
+                    [{ label: 'ล้างแคชและรีโหลด', value: true, cls: 'btn-primary' }, { label: 'ยกเลิก', value: false }]);
+                if (!ok) return;
+                ['pendingWinner', 'spinCommand', 'respinCommand', 'confirmWinnerCommand', 'hideWheelsCommand', 'showWheelsCommand', 'controlsActiveTab'].forEach(k => localStorage.removeItem(k));
+                localStorage.setItem('isSpinning', 'false');
+                try { sessionStorage.clear(); } catch (e) {}
+                // Rebuild colour maps from the current lists
+                this.regenerateColorMap(1); this.regenerateColorMap(2);
+                // Ask every open overlay (wheel, winner, tables) to reload itself
+                localStorage.setItem('reloadOverlaysCommand', Date.now());
+                this.toast('ล้างแคชแล้ว กำลังรีโหลด...', 'ok');
+                setTimeout(() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('r', Date.now().toString(36));
+                    window.location.replace(url.toString());
+                }, 600);
+            });
+            this.renderArchive();
+        },
+
+        async askSaveNames(wheelNum, history) {
+            const choice = await this.ask('มีผลสุ่มอยู่บนจอ ' + history.length + ' คู่',
+                'ถ้าจะสุ่มรุ่นใหม่ (เช่น รุ่นอาวุโส) เลือก "เริ่มรุ่นใหม่" ผลเดิมจะถูกเก็บในแท็บประวัติ แล้วจอจะเริ่มใหม่ ถ้าแค่แก้ชื่อผิด เลือก "แก้ชื่อ สุ่มต่อ"',
+                [{ label: 'เริ่มรุ่นใหม่ด้วยรายชื่อนี้', value: 'new', cls: 'btn-primary' },
+                 { label: 'แก้ชื่อ สุ่มต่อจากเดิม', value: 'continue' },
+                 { label: 'ยกเลิก', value: null }]);
+            if (!choice) return;
+            if (choice === 'new') {
+                this.archiveCurrent('new');
+                this.clearResults();
+                this.saveListsFromBoxes([1, 2]);
+                this.afterNamesChanged();
+                this.toast('เริ่มรุ่นใหม่แล้ว ผลเดิมอยู่ในแท็บประวัติ', 'ok');
+                return;
+            }
+            // Continue: new full list, but names already drawn stay out of the wheel
+            const isWheel1 = wheelNum === 1;
+            const list = this.inputs['name-list-' + wheelNum].value.split('\n').map(x => x.trim()).filter(Boolean);
+            const drawn = new Set(history.map(h => isWheel1 ? h.val1 : h.val2));
+            StateManager.saveText(isWheel1 ? 'wheel1MasterNames' : 'wheel2MasterNames', list.join('\n'));
+            StateManager.saveText(isWheel1 ? 'wheel1Names' : 'wheel2Names', list.filter(n => !drawn.has(n)).join('\n'));
+            StateManager.remove('pendingWinner');
+            this.dirty[wheelNum] = false;
+            this.regenerateColorMap(wheelNum);
+            this.afterNamesChanged();
+        },
+
+        // ---------- Division manager: many divisions, one drawn at a time ----------
+        // divisions = [{ id, name, slots: [], teams: [], results: [{val1,val2,timestamp}], createdAt }]
+        // The active division lives in the wheels (wheel1/2 lists + wheelHistory); its record holds
+        // the lists, and its results are copied into the record when another division is started.
+        newId() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); },
+
+        loadDivisions() {
+            const d = StateManager.load('divisions');
+            return Array.isArray(d) ? d : [];
+        },
+
+        saveDivisions(list) { StateManager.save('divisions', list); },
+
+        activeDivisionId() { return StateManager.loadText('activeDivisionId') || ''; },
+
+        // First run with this version: turn the current lists into the first division
+        initDivisions() {
+            if (StateManager.load('divisions')) return;
+            const slots = this.listOf('wheel1MasterNames');
+            const teams = this.listOf('wheel2MasterNames');
+            if (slots.length === 0 && teams.length === 0) { this.saveDivisions([]); return; }
+            const id = this.newId();
+            this.saveDivisions([{ id, name: this.divisionTitle() || 'รุ่นที่ 1', slots, teams, results: [], createdAt: Date.now() }]);
+            StateManager.saveText('activeDivisionId', id);
+            if (!this.divisionTitle()) StateManager.saveText('drawTitle', 'รุ่นที่ 1');
+        },
+
+        // Copy the live results of the active division into its record
+        snapshotActive() {
+            const id = this.activeDivisionId();
+            const list = this.loadDivisions();
+            const rec = list.find(d => d.id === id);
+            if (!rec) return;
+            rec.slots = this.listOf('wheel1MasterNames');
+            rec.teams = this.listOf('wheel2MasterNames');
+            rec.results = StateManager.load('wheelHistory') || [];
+            const st = DrawRules.loadSettings();
+            rec.rules = { settings: { mode: st.mode, ignored: st.ignored, links: st.links }, constraints: DrawRules.loadConstraints() };
+            this.saveDivisions(list);
+        },
+
+        // Put a division into the wheels and on screen
+        loadDivisionLive(rec) {
+            // Switching to another division: bring in its own same-team / lock rules (default for a new one)
+            if (rec.id !== this.activeDivisionId()) {
+                const r = this.normRules(rec.rules);
+                DrawRules.saveSettings(r.settings);
+                StateManager.save('teamConstraints', r.constraints);
+                this.rulesDivisionId = null;
+            }
+            const results = Array.isArray(rec.results) ? rec.results : [];
+            const drawnSlots = new Set(results.map(r => r.val1));
+            const drawnTeams = new Set(results.map(r => r.val2));
+            StateManager.saveText('wheel1MasterNames', rec.slots.join('\n'));
+            StateManager.saveText('wheel2MasterNames', rec.teams.join('\n'));
+            StateManager.saveText('wheel1Names', rec.slots.filter(s => !drawnSlots.has(s)).join('\n'));
+            StateManager.saveText('wheel2Names', rec.teams.filter(t => !drawnTeams.has(t)).join('\n'));
+            StateManager.save('wheelHistory', results);
+            StateManager.remove('pendingWinner');
+            localStorage.setItem('isSpinning', 'false');
+            StateManager.saveText('drawTitle', rec.name);
+            StateManager.saveText('resultsTitle', rec.name);
+            StateManager.saveText('activeDivisionId', rec.id);
+            this.dirty[1] = false; this.dirty[2] = false;
+            this.regenerateColorMap(1); this.regenerateColorMap(2);
+        },
+
+        startDivision(id) {
+            if (id === this.activeDivisionId()) { this.switchTab('draw'); return; }
+            if ((StateManager.load('pendingWinner') || {}).val1) {
+                this.toast('มีผลรอยืนยันอยู่ กด "ยืนยันคู่นี้" หรือ "สุ่มใหม่" ก่อนเปลี่ยนรุ่น', 'warn');
+                return;
+            }
+            const target = this.loadDivisions().find(d => d.id === id);
+            if (!target) return;
+            if (target.slots.length === 0 || target.teams.length === 0) {
+                this.toast('รุ่นนี้ยังไม่มีรายชื่อสายหรือทีม กด "แก้ไข" เพื่อใส่ก่อน', 'warn');
+                return;
+            }
+            this.snapshotActive();
+            this.loadDivisionLive(this.loadDivisions().find(d => d.id === id));
+            this.closeDivisionEditor();
+            this.loadDataIntoControls();
+            this.afterNamesChanged();
+            this.switchTab('draw');
+            this.toast(`เปิดรุ่น "${target.name}" แล้ว กดสุ่มได้เลย`, 'ok');
+        },
+
+        divisionProgress(rec) {
+            const active = rec.id === this.activeDivisionId();
+            const done = active ? (StateManager.load('wheelHistory') || []).length : (rec.results || []).length;
+            const slots = active ? this.listOf('wheel1MasterNames') : rec.slots;
+            const teams = active ? this.listOf('wheel2MasterNames') : rec.teams;
+            const total = Math.min(slots.length, teams.length);
+            return { active, done, total, slots: slots.length, teams: teams.length };
+        },
+
+        renderDivisions() {
+            if (this.renderTourDivisionSelect) this.renderTourDivisionSelect();
+            const box = document.getElementById('division-list');
+            if (!box) return;
+            const list = this.loadDivisions();
+            if (list.length === 0) {
+                box.innerHTML = '<p class="empty-note">ยังไม่มีรุ่น กด "เพิ่มรุ่น" แล้วใส่รายชื่อสายกับทีม</p>';
+                return;
+            }
+            box.innerHTML = list.map(rec => {
+                const p = this.divisionProgress(rec);
+                const state = p.active ? (p.done >= p.total && p.total > 0 ? ['สุ่มครบแล้ว', 'badge-ok'] : ['กำลังสุ่ม', 'badge-live'])
+                    : p.done === 0 ? ['ยังไม่เริ่ม', 'badge-idle']
+                    : p.done >= p.total ? ['สุ่มครบแล้ว', 'badge-ok'] : ['สุ่มค้างไว้', 'badge-warn'];
+                const warn = p.slots !== p.teams && p.slots > 0 && p.teams > 0
+                    ? `<span class="div-warn">จำนวนสาย (${p.slots}) กับทีม (${p.teams}) ไม่เท่ากัน</span>` : '';
+                return `<div class="div-card ${p.active ? 'is-active' : ''}">
+                    <div class="div-head">
+                        <strong class="div-name">${Config.esc(rec.name)}</strong>
+                        <span class="badge ${state[1]}">${state[0]}</span>
+                    </div>
+                    <div class="div-meta">สาย ${p.slots} · ทีม ${p.teams} · สุ่มแล้ว ${p.done}/${p.total}</div>
+                    <div class="div-meta">วิธีสุ่ม: ${{ auto: 'สุ่มปกติ กันทีมเดียวกัน', first: 'จับทีมเดียวกันก่อน', lock: 'วางสายเอง', off: 'สุ่มอิสระ' }[p.active ? DrawRules.loadSettings().mode : this.normRules(rec.rules).settings.mode]}
+                        <button type="button" class="link-btn" data-div-rules="${rec.id}">ตั้งค่า</button></div>
+                    ${warn}
+                    <div class="div-actions">
+                        ${p.active
+                            ? `<button type="button" class="btn btn-sm btn-success" data-div-start="${rec.id}"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>ไปหน้าสุ่ม</span></button>`
+                            : `<button type="button" class="btn btn-sm btn-primary" data-div-start="${rec.id}"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>${p.done > 0 && p.done < p.total ? 'สุ่มรุ่นนี้ต่อ' : 'เริ่มสุ่มรุ่นนี้'}</span></button>`}
+                        <button type="button" class="btn btn-sm btn-ghost" data-div-edit="${rec.id}">แก้ไข</button>
+                        <button type="button" class="btn btn-sm btn-danger-ghost" data-div-delete="${rec.id}" ${p.active ? 'disabled title="กำลังสุ่มรุ่นนี้อยู่ เปลี่ยนไปรุ่นอื่นก่อนจึงลบได้"' : ''} aria-label="ลบรุ่น ${Config.esc(rec.name)}">ลบ</button>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        openDivisionEditor(id) {
+            const ed = document.getElementById('division-editor');
+            if (!ed) return;
+            const rec = id ? this.loadDivisions().find(d => d.id === id) : null;
+            this.editingId = rec ? rec.id : 'new';
+            const active = rec && rec.id === this.activeDivisionId();
+            document.getElementById('division-editor-title').textContent = rec ? `แก้ไขรุ่น: ${rec.name}` : 'เพิ่มรุ่นใหม่';
+            document.getElementById('div-name').value = rec ? rec.name : `รุ่นที่ ${this.loadDivisions().length + 1}`;
+            this.inputs['name-list-1'].value = rec ? (active ? this.listOf('wheel1MasterNames') : rec.slots).join('\n') : '';
+            this.inputs['name-list-2'].value = rec ? (active ? this.listOf('wheel2MasterNames') : rec.teams).join('\n') : '';
+            this.dirty[1] = false; this.dirty[2] = false;
+            this.updateNameCounts(); this.updateDirtyBadges();
+            ed.hidden = false;
+            document.getElementById('add-division-btn').hidden = true;
+            ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const focusEl = rec ? this.inputs['name-list-1'] : document.getElementById('div-name');
+            setTimeout(() => { focusEl.focus(); if (!rec) focusEl.select(); }, 250);
+        },
+
+        closeDivisionEditor() {
+            const ed = document.getElementById('division-editor');
+            if (ed) ed.hidden = true;
+            const add = document.getElementById('add-division-btn');
+            if (add) add.hidden = false;
+            this.editingId = null;
+            this.dirty[1] = false; this.dirty[2] = false;
+            this.updateDirtyBadges();
+        },
+
+        async saveDivisionEditor() {
+            const name = document.getElementById('div-name').value.trim();
+            const slots = this.inputs['name-list-1'].value.split('\n').map(x => x.trim()).filter(Boolean);
+            const teams = this.inputs['name-list-2'].value.split('\n').map(x => x.trim()).filter(Boolean);
+            if (!name) { this.toast('ใส่ชื่อรุ่นก่อน', 'warn'); document.getElementById('div-name').focus(); return; }
+            if (slots.length === 0 || teams.length === 0) { this.toast('ใส่รายชื่อสายและทีมอย่างน้อยอย่างละ 1 บรรทัด', 'warn'); return; }
+            const dupe = (arr) => arr.find((x, i) => arr.indexOf(x) !== i);
+            if (dupe(slots)) { this.toast(`ชื่อสาย "${dupe(slots)}" ซ้ำกัน`, 'warn'); return; }
+            if (dupe(teams)) { this.toast(`ชื่อทีม "${dupe(teams)}" ซ้ำกัน`, 'warn'); return; }
+
+            const list = this.loadDivisions();
+            if (this.editingId === 'new') {
+                const rec = { id: this.newId(), name, slots, teams, results: [], createdAt: Date.now() };
+                list.push(rec);
+                this.saveDivisions(list);
+                this.closeDivisionEditor();
+                if (!this.activeDivisionId() || !list.some(d => d.id === this.activeDivisionId())) {
+                    // Nothing is being drawn yet: open this one right away
+                    this.loadDivisionLive(rec);
+                    this.loadDataIntoControls();
+                    this.afterNamesChanged();
+                    this.toast(`บันทึกรุ่น "${name}" แล้ว พร้อมสุ่ม`, 'ok');
+                } else {
+                    this.renderDivisions();
+                    this.toast(`บันทึกรุ่น "${name}" แล้ว กด "เริ่มสุ่มรุ่นนี้" เมื่อถึงคิว`, 'ok');
+                }
+                return;
+            }
+
+            const rec = list.find(d => d.id === this.editingId);
+            if (!rec) { this.closeDivisionEditor(); return; }
+            const isActive = rec.id === this.activeDivisionId();
+            const results = isActive ? (StateManager.load('wheelHistory') || []) : (rec.results || []);
+            const listsChanged = rec.slots.join('\n') !== slots.join('\n') || rec.teams.join('\n') !== teams.join('\n')
+                || (isActive && (this.listOf('wheel1MasterNames').join('\n') !== slots.join('\n') || this.listOf('wheel2MasterNames').join('\n') !== teams.join('\n')));
+            let keep = results;
+            if (listsChanged && results.length > 0) {
+                const choice = await this.ask(`รุ่นนี้สุ่มไปแล้ว ${results.length} คู่`,
+                    'แก้ชื่อผิดแล้วสุ่มต่อ เลือก "เก็บผลเดิม สุ่มต่อ" ถ้าจะสุ่มรุ่นนี้ใหม่ทั้งหมด เลือก "ล้างผล สุ่มใหม่" (ผลเดิมเก็บไว้ในแท็บประวัติ)',
+                    [{ label: 'เก็บผลเดิม สุ่มต่อ', value: 'keep', cls: 'btn-primary' },
+                     { label: 'ล้างผล สุ่มใหม่', value: 'clear' },
+                     { label: 'ยกเลิก', value: null }]);
+                if (!choice) return;
+                if (choice === 'clear') {
+                    if (isActive) this.archiveCurrent('reset');
+                    keep = [];
+                } else {
+                    // Keep results; a renamed name (typo fix) is matched by its line position
+                    const oldSlots = isActive ? this.listOf('wheel1MasterNames') : rec.slots;
+                    const oldTeams = isActive ? this.listOf('wheel2MasterNames') : rec.teams;
+                    const remap = (value, oldList, newList) => {
+                        if (newList.includes(value)) return value;
+                        const i = oldList.indexOf(value);
+                        return (i !== -1 && newList[i] && !oldList.includes(newList[i])) ? newList[i] : null;
+                    };
+                    keep = results.map(r => Object.assign({}, r, { val1: remap(r.val1, oldSlots, slots), val2: remap(r.val2, oldTeams, teams) }))
+                        .filter(r => r.val1 && r.val2);
+                    const lost = results.length - keep.length;
+                    if (lost > 0) this.toast(`ผล ${lost} คู่ถูกเอาออก เพราะชื่อสายหรือทีมไม่อยู่ในรายชื่อแล้ว`, 'warn');
+                }
+            }
+            rec.name = name; rec.slots = slots; rec.teams = teams; rec.results = keep;
+            this.saveDivisions(list);
+            if (isActive) {
+                this.loadDivisionLive(rec);
+                this.loadDataIntoControls();
+                this.afterNamesChanged();
+            }
+            this.closeDivisionEditor();
+            this.renderDivisions();
+            this.toast(`บันทึกรุ่น "${name}" แล้ว`, 'ok');
+        },
+
+        bindDivisions() {
+            const box = document.getElementById('division-list');
+            if (box) box.addEventListener('click', (e) => {
+                const rulesBtn = e.target.closest('[data-div-rules]');
+                if (rulesBtn) { this.rulesDivisionId = rulesBtn.dataset.divRules; this.switchTab('rules'); this.populateSiblingUI(); return; }
+                const start = e.target.closest('[data-div-start]');
+                const edit = e.target.closest('[data-div-edit]');
+                const del = e.target.closest('[data-div-delete]');
+                if (start) this.startDivision(start.dataset.divStart);
+                else if (edit) this.openDivisionEditor(edit.dataset.divEdit);
+                else if (del) {
+                    const list = this.loadDivisions();
+                    const i = list.findIndex(d => d.id === del.dataset.divDelete);
+                    if (i === -1 || list[i].id === this.activeDivisionId()) return;
+                    const rec = list[i];
+                    if (!confirm(`ลบรุ่น "${rec.name}"?` + ((rec.results || []).length ? '\n\nผลที่สุ่มไว้จะเก็บไว้ในแท็บประวัติ' : ''))) return;
+                    const recPairs = JSON.stringify((rec.results || []).map(r => ({ slot: r.val1, team: r.val2 })));
+                    if ((rec.results || []).length && !this.loadArchive().some(a => JSON.stringify(a.pairs) === recPairs)) {
+                        // keep a copy of its results in the archive (unless the same results are already there)
+                        const archive = this.loadArchive();
+                        archive.unshift({ id: this.newId(), title: rec.name, savedAt: Date.now(), reason: 'delete',
+                            complete: rec.results.length >= Math.min(rec.slots.length, rec.teams.length), total: Math.min(rec.slots.length, rec.teams.length),
+                            pairs: rec.results.map(r => ({ slot: r.val1, team: r.val2 })), slots: rec.slots, teams: rec.teams });
+                        StateManager.save('drawArchive', archive.slice(0, 60));
+                        this.renderArchive();
+                    }
+                    list.splice(i, 1);
+                    this.saveDivisions(list);
+                    this.renderDivisions();
+                }
+            });
+            const add = document.getElementById('add-division-btn');
+            if (add) add.addEventListener('click', () => this.openDivisionEditor(null));
+            const save = document.getElementById('div-save-btn');
+            if (save) save.addEventListener('click', () => this.saveDivisionEditor());
+            const cancel = document.getElementById('div-cancel-btn');
+            if (cancel) cancel.addEventListener('click', () => {
+                if ((this.dirty[1] || this.dirty[2]) && !confirm('ยกเลิกการแก้ไข? รายชื่อที่พิมพ์ไว้จะไม่ถูกบันทึก')) return;
+                this.closeDivisionEditor();
+            });
+            this.initDivisions();
+            this.renderDivisions();
         },
 
         updateDirtyBadges() {
@@ -1110,6 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.isSpinningLocal) { this.toast('รอให้วงล้อหยุดก่อน', 'warn'); return; }
 
             const history = StateManager.load('wheelHistory') || [];
+            if (history.length === 0) StateManager.saveText('resultsTitle', this.divisionTitle());
             history.push(pendingWinner);
             StateManager.save('wheelHistory', history);
 
@@ -1123,6 +1690,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.renderHistory();
             this.updateButtonState();
             StateManager.triggerUpdate();
+
+            // Draw finished: keep a copy in the archive
+            if (this.listOf('wheel1Names').length === 0 || this.listOf('wheel2Names').length === 0) {
+                if (this.archiveCurrent('complete')) this.toast('สุ่มครบแล้ว เก็บผลไว้ในแท็บประวัติแล้ว', 'ok');
+            }
         },
 
         // Put the last confirmed pair back into both wheels
@@ -1271,9 +1843,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         softReset() {
-            if (!confirm('รีเซ็ทการสุ่มทั้งหมด?\n\n• ชื่อในวงล้อจะกลับไปเป็นชื่อต้นฉบับ\n• ประวัติจะถูกล้าง\n• เริ่มสุ่มใหม่ตั้งแต่ต้น\n\n(การตั้งค่าอื่นๆ จะยังคงอยู่)')) {
+            if (!confirm('รีเซ็ตวงล้อ?\n\n• ชื่อทั้งหมดกลับเข้าวงล้อ\n• ผลบนจอจะถูกล้าง (เก็บสำเนาไว้ในแท็บประวัติ)\n• การตั้งค่าอื่นยังอยู่')) {
                 return;
             }
+            this.archiveCurrent('reset');
 
             // Copy master names back to wheel names
             const master1 = StateManager.loadText('wheel1MasterNames') || '';
@@ -1291,6 +1864,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Clear history and pending winner
             StateManager.save('wheelHistory', []);
+            StateManager.remove('resultsTitle');
             StateManager.remove('pendingWinner');
 
             // Reload UI
@@ -1359,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pending) this.confirmWinner(); else this.handleSpinClick();
                     return;
                 }
-                if (e.altKey && /^[1-5]$/.test(e.key)) {
+                if (e.altKey && /^[1-6]$/.test(e.key)) {
                     const tab = tabs[parseInt(e.key, 10) - 1];
                     if (tab) { e.preventDefault(); this.switchTab(tab.dataset.tab); tab.focus(); }
                 }
@@ -1387,10 +1961,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const settings = StateManager.load('wheelSettings') || {};
             const isHidden = settings.wheelsHidden || false;
 
+            const historyCount = (StateManager.load('wheelHistory') || []).length;
+            const nextBtn = document.getElementById('next-division-btn');
+            if (nextBtn) nextBtn.hidden = !(cannotSpin && !hasPending && historyCount > 0);
             if (statusEl) {
                 const parts = [`สายเหลือ ${left1}/${total1}`, `ทีมเหลือ ${left2}/${total2}`];
+                if (this.divisionTitle()) parts.push(this.divisionTitle()); // last, so a long name is the part that gets cut
                 if (cannotSpin && !hasPending) parts.push(total1 + total2 > 0 ? 'สุ่มครบแล้ว' : 'ยังไม่มีรายชื่อ');
                 statusEl.textContent = parts.join('  ·  ');
+                statusEl.title = statusEl.textContent;
             }
 
             if (hasPending) {
@@ -1412,7 +1991,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     warningEl.querySelector('.warn-text').textContent = msgs.join(' · ') + (msgs.length ? ' — กดสุ่มใหม่ได้' : '');
                 }
             } else {
-                spinBtn.hidden = false;
+                // When a division is finished, "เริ่มรุ่นถัดไป" replaces the spin button
+                spinBtn.hidden = cannotSpin && historyCount > 0;
                 spinBtn.disabled = cannotSpin || spinning;
                 spinBtn.querySelector('.btn-label').textContent = cannotSpin ? (total1 + total2 > 0 ? 'สุ่มครบแล้ว' : 'ใส่รายชื่อก่อน') : 'สุ่มจับคู่';
                 confirmBtn.hidden = true;
@@ -1427,14 +2007,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideWheelsBtn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
                 hideWheelsBtn.classList.toggle('show-wheels', isHidden);
             }
+            if (this.renderDivisions) this.renderDivisions();
             const undoBtn = document.getElementById('undo-last-btn');
             if (undoBtn) undoBtn.disabled = hasPending || (StateManager.load('wheelHistory') || []).length === 0;
         },
 
         // --- "ทีมเดียวกัน" tab: step 1 method, step 2 same-club teams, step 3 group locks ---
+        // ---- Which division the "ทีมเดียวกัน" tab is editing (default: the one being drawn) ----
+        rulesTargetId() {
+            const ids = this.loadDivisions().map(d => d.id);
+            return (this.rulesDivisionId && ids.includes(this.rulesDivisionId)) ? this.rulesDivisionId : this.activeDivisionId();
+        },
+        rulesTargetIsActive() { return this.rulesTargetId() === this.activeDivisionId(); },
+        rulesTargetRecord() { return this.loadDivisions().find(d => d.id === this.rulesTargetId()) || null; },
+        // Saved rules of a division that is not being drawn; new divisions start with the default
+        normRules(r) {
+            const st = (r && r.settings) || {};
+            return {
+                settings: { mode: DrawRules.modes.includes(st.mode) ? st.mode : 'auto', ignored: Array.isArray(st.ignored) ? st.ignored : [], links: Array.isArray(st.links) ? st.links : [], enabled: st.mode !== 'off' },
+                constraints: Array.isArray(r && r.constraints) ? r.constraints : []
+            };
+        },
+        tSettings() {
+            if (this.rulesTargetIsActive()) return DrawRules.loadSettings();
+            return this.normRules(this.rulesTargetRecord() && this.rulesTargetRecord().rules).settings;
+        },
+        tConstraints() {
+            if (this.rulesTargetIsActive()) return DrawRules.loadConstraints();
+            return this.normRules(this.rulesTargetRecord() && this.rulesTargetRecord().rules).constraints;
+        },
+        tSaveSettings(st) {
+            if (this.rulesTargetIsActive()) { DrawRules.saveSettings(st); return; }
+            const list = this.loadDivisions(); const rec = list.find(d => d.id === this.rulesTargetId());
+            if (!rec) return;
+            const r = this.normRules(rec.rules);
+            r.settings = { mode: st.mode, ignored: st.ignored || [], links: st.links || [] };
+            rec.rules = r; this.saveDivisions(list);
+        },
+        tSaveConstraints(cons) {
+            if (this.rulesTargetIsActive()) { StateManager.save('teamConstraints', cons); return; }
+            const list = this.loadDivisions(); const rec = list.find(d => d.id === this.rulesTargetId());
+            if (!rec) return;
+            const r = this.normRules(rec.rules);
+            r.constraints = cons;
+            rec.rules = r; this.saveDivisions(list);
+        },
+
         rulesData() {
-            const teams = (StateManager.loadText('wheel2MasterNames') || '').split('\n').map(t => t.trim()).filter(Boolean);
-            const slots = (StateManager.loadText('wheel1MasterNames') || '').split('\n').map(t => t.trim()).filter(Boolean);
+            const rec = this.rulesTargetIsActive() ? null : this.rulesTargetRecord();
+            const teams = rec ? rec.teams.slice() : (StateManager.loadText('wheel2MasterNames') || '').split('\n').map(t => t.trim()).filter(Boolean);
+            const slots = rec ? rec.slots.slice() : (StateManager.loadText('wheel1MasterNames') || '').split('\n').map(t => t.trim()).filter(Boolean);
             const groups = {};
             slots.forEach(sl => { const p = Config.groupPrefix(sl); groups[p] = (groups[p] || 0) + 1; });
             return { teams, slots, groups };
@@ -1443,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', () => {
         populateSiblingUI() {
             const modeGrid = document.getElementById('draw-mode-grid');
             if (!modeGrid) return;
-            const settings = DrawRules.loadSettings();
+            const settings = this.tSettings();
             const { teams, groups } = this.rulesData();
             const mode = settings.mode;
 
@@ -1505,17 +2127,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // One-line summary, also shown in the draw bar
             const summary = document.getElementById('rules-summary');
-            const text = this.rulesSummaryText();
-            if (summary) summary.textContent = text;
-            const badge = document.getElementById('rules-badge');
-            if (badge) badge.textContent = text;
+            if (summary) summary.textContent = this.rulesSummaryText(this.tSettings(), this.tConstraints(), teams);
+            this.updateRulesBadge();
+            this.renderRulesDivisionSelect();
         },
 
-        rulesSummaryText() {
-            const settings = DrawRules.loadSettings();
-            const { teams } = this.rulesData();
+        updateRulesBadge() {
+            const badge = document.getElementById('rules-badge');
+            if (!badge) return;
+            const name = this.divisionTitle();
+            badge.textContent = (name ? name + ' · ' : '') + this.rulesSummaryText(DrawRules.loadSettings(), DrawRules.loadConstraints(), this.listOf('wheel2MasterNames'));
+        },
+
+        renderRulesDivisionSelect() {
+            const wrap = document.getElementById('rules-division-wrap');
+            const sel = document.getElementById('rules-division-select');
+            if (!wrap || !sel) return;
+            const divs = this.loadDivisions();
+            wrap.hidden = divs.length === 0;
+            const target = this.rulesTargetId();
+            const active = this.activeDivisionId();
+            sel.innerHTML = divs.map(d => `<option value="${Config.esc(d.id)}" ${d.id === target ? 'selected' : ''}>${Config.esc(d.name)}${d.id === active ? ' (กำลังสุ่ม)' : ''}</option>`).join('');
+            const note = document.getElementById('rules-division-note');
+            if (note) note.textContent = target === active
+                ? 'กำลังตั้งค่ารุ่นที่สุ่มอยู่ เปลี่ยนแล้วมีผลกับการสุ่มครั้งถัดไปทันที'
+                : 'รุ่นนี้ยังไม่ได้สุ่มอยู่ ค่าที่ตั้งจะถูกใช้เมื่อกด "เริ่มสุ่มรุ่นนี้"';
+        },
+
+        rulesSummaryText(settings, constraints, teams) {
             const sib = DrawRules.buildSiblingMap(teams, settings).size;
-            const locks = DrawRules.loadConstraints().length;
+            const locks = constraints.length;
             if (settings.mode === 'off') return 'วิธีสุ่ม: สุ่มอิสระ (ไม่กันทีมเดียวกัน)';
             const sibText = sib ? `กันทีมเดียวกัน ${sib} ทีม` : 'ยังไม่มีทีมเดียวกัน';
             if (settings.mode === 'first') return `วิธีสุ่ม: จับทีมเดียวกันก่อน · ${sibText}`;
@@ -1528,7 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const check = document.getElementById('lock-check');
             if (!tbody) return;
             const groupKeys = Object.keys(groups).sort();
-            const constraints = DrawRules.loadConstraints();
+            const constraints = this.tConstraints();
             const lockOf = (team) => constraints.find(c => c.team.trim().toLowerCase() === team.trim().toLowerCase());
 
             if (teams.length === 0 || groupKeys.length === 0) {
@@ -1581,14 +2222,20 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         setDrawMode(mode) {
-            const s = DrawRules.loadSettings();
+            const s = this.tSettings();
             s.mode = mode;
-            DrawRules.saveSettings(s);
+            this.tSaveSettings(s);
             this.populateSiblingUI();
             this.updateButtonState();
+            this.renderDivisions();
         },
 
         bindSiblingUI() {
+            const divSel = document.getElementById('rules-division-select');
+            if (divSel) divSel.addEventListener('change', () => {
+                this.rulesDivisionId = divSel.value;
+                this.populateSiblingUI();
+            });
             const modeGrid = document.getElementById('draw-mode-grid');
             if (modeGrid) {
                 const cards = Array.from(modeGrid.querySelectorAll('.mode-card'));
@@ -1609,14 +2256,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const t = e.target.closest('[data-sib-toggle]');
                 const r = e.target.closest('[data-link-remove]');
                 if (!t && !r) return;
-                const s = DrawRules.loadSettings();
+                const s = this.tSettings();
                 if (t) {
                     const key = t.getAttribute('data-sib-toggle');
                     s.ignored = s.ignored.includes(key) ? s.ignored.filter(k => k !== key) : s.ignored.concat([key]);
                 } else {
                     s.links.splice(parseInt(r.getAttribute('data-link-remove'), 10), 1);
                 }
-                DrawRules.saveSettings(s);
+                this.tSaveSettings(s);
                 this.populateSiblingUI();
             });
 
@@ -1626,10 +2273,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const b = document.getElementById('link-team-b').value;
                 if (!a || !b) { this.toast('เลือกทีมให้ครบทั้ง 2 ช่อง', 'warn'); return; }
                 if (a === b) { this.toast('เลือกคนละทีมกัน', 'warn'); return; }
-                const s = DrawRules.loadSettings();
+                const s = this.tSettings();
                 if (s.links.some(l => (l[0] === a && l[1] === b) || (l[0] === b && l[1] === a))) { this.toast('จับคู่นี้ไว้แล้ว', 'warn'); return; }
                 s.links.push([a, b]);
-                DrawRules.saveSettings(s);
+                this.tSaveSettings(s);
                 document.getElementById('link-team-b').value = '';
                 this.populateSiblingUI();
                 this.toast(`บันทึกแล้ว: ${a} กับ ${b} เป็นทีมเดียวกัน`, 'ok');
@@ -1641,18 +2288,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!sel || sel.value === 'multi') return;
                 const team = this.rulesData().teams[parseInt(sel.dataset.lockTeam, 10)];
                 if (!team) return;
-                const list = DrawRules.loadConstraints().filter(c => c.team.trim().toLowerCase() !== team.trim().toLowerCase());
+                const list = this.tConstraints().filter(c => c.team.trim().toLowerCase() !== team.trim().toLowerCase());
                 if (sel.value) list.push({ team, groups: [sel.value] });
-                StateManager.save('teamConstraints', list);
+                this.tSaveConstraints(list);
                 this.populateSiblingUI();
                 StateManager.triggerUpdate();
             });
 
             const clearLocks = document.getElementById('clear-locks-btn');
             if (clearLocks) clearLocks.addEventListener('click', () => {
-                if (DrawRules.loadConstraints().length === 0) return;
+                if (this.tConstraints().length === 0) return;
                 if (!confirm('ยกเลิกการล็อกสายทั้งหมด?')) return;
-                StateManager.save('teamConstraints', []);
+                this.tSaveConstraints([]);
                 this.populateSiblingUI();
             });
         },
@@ -1745,8 +2392,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Keep unsaved edits in the name boxes when another page triggers a refresh
-            if (!this.dirty[1]) this.inputs['name-list-1'].value = StateManager.loadText('wheel1MasterNames') || '';
-            if (!this.dirty[2]) this.inputs['name-list-2'].value = StateManager.loadText('wheel2MasterNames') || '';
+            // The name boxes belong to the division editor: leave them alone while it is open
+            if (!this.editingId) {
+                if (!this.dirty[1]) this.inputs['name-list-1'].value = StateManager.loadText('wheel1MasterNames') || '';
+                if (!this.dirty[2]) this.inputs['name-list-2'].value = StateManager.loadText('wheel2MasterNames') || '';
+            }
             this.updateDirtyBadges();
 
             if (this.inputs['spin-duration-slider']) {
@@ -1763,6 +2413,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.populateSiblingUI();
             if (this.syncThemeGrids) { this.syncThemeGrids(); this.drawWheelPreviews(); }
             if (this.syncScaleNumbers) this.syncScaleNumbers();
+            if (this.syncSpinTime) this.syncSpinTime();
+            const titleEl = document.getElementById('draw-title');
+            if (titleEl && titleEl !== document.activeElement) titleEl.value = this.divisionTitle();
 
             // Load Tournament settings
             const tourSettings = JSON.parse(localStorage.getItem('tournamentSettings')) || {};
@@ -1795,21 +2448,27 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         clearHistory() {
-            if (confirm('คุณต้องการล้างข้อมูลประวัติทั้งหมดใช่หรือไม่? (รายชื่อในวงล้อจะถูกรีเซ็ตกลับไปเป็นค่าเริ่มต้น)')) {
+            if (confirm('ล้างผลการสุ่มบนจอ? รายชื่อทั้งหมดจะกลับเข้าวงล้อ (เก็บสำเนาไว้ในแท็บประวัติ)')) {
+                this.archiveCurrent('reset');
                 const masterList1 = StateManager.loadText('wheel1MasterNames') || '';
                 const masterList2 = StateManager.loadText('wheel2MasterNames') || '';
                 StateManager.saveText('wheel1Names', masterList1);
                 StateManager.saveText('wheel2Names', masterList2);
                 StateManager.save('wheelHistory', []);
+                StateManager.remove('resultsTitle');
                 StateManager.remove('pendingWinner');
                 this.renderHistory();
+                this.updateButtonState();
                 StateManager.triggerUpdate();
             }
         },
 
         resetAll() {
-            if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตการตั้งค่าและข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้')) return;
+            if (!confirm('รีเซ็ตทั้งหมด? รายชื่อ การตั้งค่า ธีม และเงื่อนไขจะถูกลบ ย้อนกลับไม่ได้\n\n(ผลที่เก็บในแท็บประวัติยังอยู่)')) return;
+            this.archiveCurrent('reset');
+            const keep = localStorage.getItem('drawArchive');
             localStorage.clear();
+            if (keep) localStorage.setItem('drawArchive', keep);
             window.location.reload();
         },
 
@@ -2059,6 +2718,95 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
+        // ---- Match table from a division's results ----
+        divisionResults(id) {
+            const rec = this.loadDivisions().find(d => d.id === id);
+            if (!rec) return null;
+            const active = id === this.activeDivisionId();
+            return {
+                rec,
+                results: active ? (StateManager.load('wheelHistory') || []) : (rec.results || []),
+                slots: active ? this.listOf('wheel1MasterNames') : rec.slots,
+                teams: active ? this.listOf('wheel2MasterNames') : rec.teams
+            };
+        },
+
+        renderTourDivisionSelect() {
+            const sel = document.getElementById('tour-division-select');
+            if (!sel) return;
+            const divs = this.loadDivisions();
+            const keep = sel.value || this.activeDivisionId();
+            const active = this.activeDivisionId();
+            sel.innerHTML = divs.length
+                ? divs.map(d => `<option value="${Config.esc(d.id)}">${Config.esc(d.name)}${d.id === active ? ' (กำลังสุ่ม)' : ''}</option>`).join('')
+                : '<option value="">ยังไม่มีรุ่น</option>';
+            if (divs.some(d => d.id === keep)) sel.value = keep;
+            const info = document.getElementById('tour-division-info');
+            const data = this.divisionResults(sel.value);
+            if (info) {
+                if (!data) info.textContent = '';
+                else {
+                    const total = Math.min(data.slots.length, data.teams.length);
+                    info.textContent = data.results.length === 0 ? 'รุ่นนี้ยังไม่ได้สุ่ม'
+                        : data.results.length < total ? `สุ่มแล้ว ${data.results.length}/${total} ช่อง (ยังไม่ครบ ตารางจะมีเฉพาะทีมที่สุ่มแล้ว)`
+                        : `สุ่มครบแล้ว ${data.results.length}/${total} ช่อง`;
+                }
+            }
+            const btn = document.getElementById('tour-from-division-btn');
+            if (btn) btn.disabled = !data || data.results.length === 0;
+        },
+
+        buildTourFromDivision() {
+            const sel = document.getElementById('tour-division-select');
+            const data = sel && this.divisionResults(sel.value);
+            if (!data || data.results.length === 0) { this.toast('รุ่นนี้ยังไม่มีผลการสุ่ม', 'warn'); return; }
+            const lines = data.results.slice()
+                .sort((a, b) => a.val1.localeCompare(b.val1, undefined, { numeric: true }))
+                .map(r => `${r.val1}\t${r.val2}`);
+            const input = document.getElementById('tour-teams-input');
+            input.value = lines.join('\n');
+            const nameEl = document.getElementById('tour-name');
+            // Use the division name unless the user typed their own title
+            if (nameEl && (!nameEl.value.trim() || nameEl.value === this.lastTourAutoName)) {
+                nameEl.value = data.rec.name;
+                this.lastTourAutoName = data.rec.name;
+            }
+            this.saveTournamentInputSettings();
+            const total = Math.min(data.slots.length, data.teams.length);
+            if (data.results.length < total) this.toast(`รุ่นนี้ยังสุ่มไม่ครบ (${data.results.length}/${total}) ตารางมีเฉพาะทีมที่สุ่มแล้ว`, 'warn');
+            this.buildTournamentSchedule();
+        },
+
+        // Spin time box: − / + buttons and presets drive the slider (which saves the setting)
+        bindSpinTime() {
+            const range = document.getElementById('spin-duration-slider');
+            if (!range) return;
+            const setTo = (v) => {
+                range.value = Math.min(Number(range.max), Math.max(Number(range.min), v));
+                range.dispatchEvent(new Event('input'));
+                range.dispatchEvent(new Event('change'));
+                this.syncSpinTime();
+            };
+            document.querySelectorAll('[data-time-step]').forEach(b => b.addEventListener('click', () => setTo(Number(range.value) + Number(b.dataset.timeStep))));
+            document.querySelectorAll('[data-time-set]').forEach(b => b.addEventListener('click', () => setTo(Number(b.dataset.timeSet))));
+            range.addEventListener('input', () => this.syncSpinTime());
+            this.syncSpinTime();
+        },
+
+        syncSpinTime() {
+            const range = document.getElementById('spin-duration-slider');
+            if (!range) return;
+            const v = Number(range.value);
+            document.querySelectorAll('[data-time-set]').forEach(b => {
+                const on = Number(b.dataset.timeSet) === v;
+                b.classList.toggle('selected', on);
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('[data-time-step]').forEach(b => {
+                b.disabled = (Number(b.dataset.timeStep) < 0 && v <= Number(range.min)) || (Number(b.dataset.timeStep) > 0 && v >= Number(range.max));
+            });
+        },
+
         // Size sliders: range + number box + reset, kept in step
         bindScaleControls() {
             ['wheel', 'winner', 'groups', 'groupsw', 'tour'].forEach(key => {
@@ -2276,6 +3024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.updateNames(1);
                 this.updateNames(2);
                 StateManager.save('wheelHistory', []);
+                StateManager.remove('resultsTitle');
                 StateManager.remove('pendingWinner');
                 this.saveAllSettings();
             }
@@ -2343,6 +3092,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'hideWheelsCommand': if (page === 'Wheels Display') this.hideWheels(); break;
                     case 'showWheelsCommand': if (page === 'Wheels Display') this.showWheels(); break;
                     case 'updateGraphics': this.syncState(); break;
+                    case 'reloadOverlaysCommand': {
+                        // "ล้างแคช" from the control panel: reload this overlay (keeps ?view=…)
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('r', Date.now().toString(36));
+                        window.location.replace(url.toString());
+                        break;
+                    }
                 }
             }
         },
