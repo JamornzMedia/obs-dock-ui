@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            const tourInputs = ['tour-name', 'tour-desc', 'tour-teams-input', 'tour-3team-format', 'tour-custom-morning', 'tour-start-time', 'tour-match-mins'];
+            const tourInputs = ['tour-name', 'tour-desc', 'tour-teams-input', 'tour-3team-format', 'tour-4team-format', 'tour-custom-morning', 'tour-start-time', 'tour-match-mins'];
             tourInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -648,6 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tourDesc: getVal('tour-desc', ''),
                 tourTeamsInput: getVal('tour-teams-input', ''),
                 tour3TeamFormat: getVal('tour-3team-format', 'loser_first'),
+                tour4TeamFormat: getVal('tour-4team-format', 'gsl'),
                 tourSplitMode: getVal('tour-split-mode', 'all'),
                 tourCustomMorning: parseInt(getVal('tour-custom-morning', '4'), 10) || 4,
                 tourUseTime: getVal('tour-use-time', true),
@@ -669,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const desc = getVal('tour-desc', '');
             const teamsInput = getVal('tour-teams-input', '');
             const threeTeamFormat = getVal('tour-3team-format', 'loser_first');
+            const fourTeamFormat = getVal('tour-4team-format', 'gsl') === 'round_robin' ? 'round_robin' : 'gsl';
             const splitMode = getVal('tour-split-mode', 'all');
             const customMorning = parseInt(getVal('tour-custom-morning', '4'), 10) || 4;
             const useTime = getVal('tour-use-time', true);
@@ -764,6 +766,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (groups.length === 0) return;
                 const matches = [];
                 const matchNumMap = {};
+                const gslMap = {};
+                const pushMatch = (g, team1, code1, team2, code2) => {
+                    matches.push({ num: matchCounter, code: g, time: currentTime, team1, code1, team2, code2 });
+                    const num = matchCounter;
+                    matchCounter++;
+                    if (currentTime) currentTime = addMinutes(currentTime, matchMins);
+                    return num;
+                };
 
                 for (let roundIdx = 0; roundIdx < 3; roundIdx++) {
                     for (const g of groups) {
@@ -776,7 +786,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const isStandard3 = (n === 3 && (threeTeamFormat === 'loser_first' || threeTeamFormat === 'winner_first'));
 
-                        if (isStandard3) {
+                        // 4-team group, winners/losers (GSL, same as jamornz.com Tournament):
+                        // R1: 1v2, 3v4 · R2: winners match, losers match · R3: loser of winners match v winner of losers match
+                        const isGsl4 = (n === 4 && fourTeamFormat === 'gsl');
+
+                        if (isGsl4) {
+                            const t = (i) => teamMap[g + i] || '-';
+                            const gm = gslMap[g] = gslMap[g] || {};
+                            if (roundIdx === 0) {
+                                gm.m1 = pushMatch(g, t(1), g + '1', t(2), g + '2');
+                                gm.m2 = pushMatch(g, t(3), g + '3', t(4), g + '4');
+                            } else if (roundIdx === 1) {
+                                gm.m3 = pushMatch(g, `ทีมชนะ คู่ที่ ${gm.m1}`, '-', `ทีมชนะ คู่ที่ ${gm.m2}`, '-');
+                                gm.m4 = pushMatch(g, `ทีมแพ้ คู่ที่ ${gm.m1}`, '-', `ทีมแพ้ คู่ที่ ${gm.m2}`, '-');
+                            } else if (roundIdx === 2) {
+                                pushMatch(g, `ทีมแพ้ คู่ที่ ${gm.m3}`, '-', `ทีมชนะ คู่ที่ ${gm.m4}`, '-');
+                            }
+                        } else if (isStandard3) {
                             if (roundIdx === 0) {
                                 const c1 = g + '1', c2 = g + '2';
                                 matchNumMap[g] = matchCounter;
@@ -2430,6 +2456,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setTourVal('tour-desc', 'tourDesc', '');
             setTourVal('tour-teams-input', 'tourTeamsInput', '');
             setTourVal('tour-3team-format', 'tour3TeamFormat', 'loser_first');
+            // Saved settings from before v2.3.1 had no 4-team option and always built round robin; keep that for them
+            setTourVal('tour-4team-format', 'tour4TeamFormat', Object.keys(tourSettings).length ? 'round_robin' : 'gsl');
             setTourVal('tour-split-mode', 'tourSplitMode', 'all');
             setTourVal('tour-custom-morning', 'tourCustomMorning', 4);
             setTourVal('tour-use-time', 'tourUseTime', true);
@@ -3843,7 +3871,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     location: cachedLoc.province,
                     gps: cachedLoc.gps,
                     usage_minutes: 1,
-                    version: '2.3.0'
+                    version: '2.3.1'
                 };
 
                 fetch('https://jamornz.com/api/check_auth.php', {

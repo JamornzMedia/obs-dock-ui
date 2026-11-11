@@ -73,7 +73,7 @@
                 <button type="button" class="nav-tab nav-plain" id="obs-links-btn" title="ลิงก์สำหรับใส่ใน OBS" aria-label="ลิงก์ OBS">
                     <svg class="icon" aria-hidden="true"><use href="#i-obs"/></svg><span class="nav-label">ลิงก์ OBS</span><span class="nav-short" aria-hidden="true">OBS</span>
                 </button>
-                <span class="version nav-label">v2.3.0 web</span>
+                <span class="version nav-label">v2.3.1 web</span>
             </div>
         </nav>
 
@@ -324,6 +324,16 @@
                                 <option value="round_robin">เจอกันหมด</option>
                             </select>
                         </div>
+                        <div class="field">
+                            <label class="field-label" for="tour-4team-format">สายที่มี 4 ทีม</label>
+                            <select id="tour-4team-format">
+                                <option value="gsl">ชนะเจอชนะ แพ้เจอแพ้ (5 คู่)</option>
+                                <option value="round_robin">เจอกันหมด (6 คู่)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="hint">สาย 4 ทีม แบบชนะเจอชนะ: ชนะ 2 นัดรวดได้ที่ 1 · ชนะคู่เพลย์ออฟได้ที่ 2 · แพ้ 2 นัดตกรอบ</p>
+                    <div class="grid-2 tight">
                         <div class="field">
                             <label class="field-label" for="tour-split-mode">การแบ่งรอบเวลา</label>
                             <select id="tour-split-mode">
@@ -615,7 +625,7 @@
                 </div>
 
                 <p class="shortcut-hint">คีย์ลัด: Ctrl+Enter = สุ่ม / ยืนยัน · Alt+1–6 = เปลี่ยนแท็บ</p>
-                <footer>Developer JamornzMedia · Version 2.3.0 (web)</footer>
+                <footer>Developer JamornzMedia · Version 2.3.1 (web)</footer>
             </section>
         </main>
     </div>
