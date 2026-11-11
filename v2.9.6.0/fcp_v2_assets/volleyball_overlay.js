@@ -91,7 +91,9 @@ function injectCustomFont(customFontDataTeam, customFontFamilyTeam, customFontDa
       }
     `;
   }
-  style.textContent = css;
+  // Re-parsing a base64 font on every update (every second while the clock runs) is heavy for OBS:
+  // only touch the stylesheet when the font really changed.
+  if (style.textContent !== css) style.textContent = css;
 }
 
 function renderScoreboard(newState, prevState) {
@@ -359,14 +361,18 @@ function applyState(newState, isInitial = false) {
 
 // ──────────────────────────────────────── BROADCAST CHANNEL
 const channel = new BroadcastChannel(VB_CHANNEL);
+let lastChannelAt = 0;
 channel.onmessage = (e) => {
   if (e.data && e.data.type === 'vb_update') {
+    lastChannelAt = Date.now();
     applyState(e.data.payload);
   }
 };
 
 // ──────────────────────────────────────── ALSO WATCH LOCALSTORAGE (fallback)
 window.addEventListener('storage', (e) => {
+  // The Dock sends every update twice (BroadcastChannel + localStorage): use this copy only as a fallback.
+  if (Date.now() - lastChannelAt < 3000) return;
   if (e.key === VB_STATE_KEY && e.newValue) {
     try {
       applyState(JSON.parse(e.newValue));
