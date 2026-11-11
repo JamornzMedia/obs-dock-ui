@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  source_catalog.js — every OBS source the Dock can create (OBSScore V3.0.0)
+//  source_catalog.js — every OBS source the Dock can create (OBSScore V2.9.6.0)
 //
 //  Add a source here and it appears in "สร้าง Source" under its category.
 //  kind

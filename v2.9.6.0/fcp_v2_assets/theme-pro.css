@@ -1,5 +1,5 @@
 /* =============================================================================================
-   OBSScore Dock V3.0.0 — "Pro" look + app bar, sport picker and source manager
+   OBSScore Dock V2.9.6.0 — "Pro" look + app bar, sport picker and source manager
    - Part 1 (all themes): the new app bar and sheets from dock_shell.js.
    - Part 2 (html.theme-pro, on top of theme-sport.css): calmer surfaces, one accent colour
      per sport, named sections, 12px minimum text, visible keyboard focus.
@@ -250,3 +250,179 @@ html.theme-pro .footer, html.theme-pro .footer * { font-size: 12px !important; }
 .fcp-sport-info { align-items: flex-start; text-align: left; }
 .fcp-src-name { min-height: 0 !important; height: auto !important; line-height: 1.35 !important; display: block !important; }
 .fcp-src-row { min-height: 44px; }
+
+/* ---------- Online & Ranking (all themes) ---------- */
+#onlineUsersPopup .cu-panel {
+    background: var(--pro-surface); color: var(--pro-text); font-family: var(--pro-font);
+    border: 1px solid var(--pro-line); border-radius: 16px; padding: 12px;
+    width: 440px; max-width: calc(100% - 20px); max-height: 86vh; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 8px; box-shadow: 0 18px 48px rgba(0,0,0,0.55);
+}
+@media (max-width: 480px) {
+    #onlineUsersPopup .cu-panel { width: 100%; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; border: none; }
+}
+#onlineUsersPopup .cu-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#onlineUsersPopup .cu-head h3 { margin: 0; font-size: 16px; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+#onlineUsersPopup .cu-head h3 .fas { color: var(--pro-accent); }
+#onlineUsersPopup .cu-close { min-width: 44px; min-height: 44px; padding: 0 !important; background: var(--pro-surface-2) !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; border-radius: 12px !important; box-shadow: none !important; }
+#onlineUsersPopup .cu-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+#onlineUsersPopup .cu-summary span { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--pro-surface-2); border: 1px solid var(--pro-line); }
+#onlineUsersPopup .cu-summary span:first-child .fas { color: var(--pro-ok); }
+#onlineUsersPopup .cu-summary span:last-child .fas { color: #60a5fa; }
+#onlineUsersPopup .cu-summary:empty { display: none; }
+#onlineUsersPopup .cu-my { align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: #13263f; border: 1px solid #1e3a5f; }
+#onlineUsersPopup .cu-my-pos { font: 800 22px var(--pro-font-num); color: #bfdbfe; min-width: 44px; text-align: center; }
+#onlineUsersPopup .cu-my-text { display: flex; flex-direction: column; min-width: 0; }
+#onlineUsersPopup .cu-my-text b { font-size: 14px; }
+#onlineUsersPopup .cu-my-text small { font-size: 12px; color: #c9d2de; }
+#onlineUsersPopup .cu-search { display: flex; align-items: center; gap: 8px; padding: 0 10px; min-height: 40px; border-radius: 10px; background: #0e131b; border: 1px solid var(--pro-line); }
+#onlineUsersPopup .cu-search .fas { color: var(--pro-muted); font-size: 13px; }
+#onlineUsersPopup .cu-search input { flex: 1; min-width: 0; background: transparent !important; border: none !important; color: var(--pro-text) !important; font: 500 14px var(--pro-font); outline: none; padding: 8px 0 !important; }
+#onlineUsersPopup .cu-tabs { display: flex !important; gap: 3px; padding: 3px; margin: 0 !important; background: #0e131b; border: 1px solid var(--pro-line); border-radius: 12px; }
+#onlineUsersPopup .cu-tabs .tab-button {
+    flex: 1; min-width: 0; min-height: 38px; padding: 0 6px !important; margin: 0 !important;
+    background: transparent !important; color: var(--pro-muted) !important; border: none !important; border-radius: 9px !important;
+    font: 700 13px var(--pro-font) !important; letter-spacing: 0 !important; box-shadow: none !important; white-space: nowrap;
+}
+#onlineUsersPopup .cu-tabs .tab-button.active { background: var(--pro-surface-2) !important; color: var(--pro-text) !important; }
+#onlineUsersPopup .tab-content { min-height: 0; }
+#onlineUsersPopup table { table-layout: fixed; }
+#onlineUsersPopup thead { display: none; }
+#onlineUsersPopup .cu-tr td { padding: 0 !important; }
+#onlineUsersPopup .cu-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid #1f2836; }
+#onlineUsersPopup .cu-tr.is-me .cu-row { background: #13263f; border-radius: 10px; border-bottom-color: transparent; }
+#onlineUsersPopup .cu-pos { flex: 0 0 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--pro-surface-2); font: 800 15px var(--pro-font-num); color: var(--pro-muted); position: relative; }
+#onlineUsersPopup .cu-pos .fas { font-size: 17px; }
+#onlineUsersPopup .cu-pos b { position: absolute; right: -3px; bottom: -3px; font-size: 11px; line-height: 15px; min-width: 15px; border-radius: 8px; background: #0b0e13; color: #fff; }
+#onlineUsersPopup .cu-gold { background: #3a2f0b; color: #fcd34d; }
+#onlineUsersPopup .cu-silver { background: #26303d; color: #e2e8f0; }
+#onlineUsersPopup .cu-bronze { background: #3a2410; color: #fdba74; }
+#onlineUsersPopup .cu-who { flex: 1; min-width: 0; }
+#onlineUsersPopup .cu-name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+#onlineUsersPopup .cu-sub { font-size: 12px; color: var(--pro-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#onlineUsersPopup .cu-online { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--pro-ok); box-shadow: 0 0 0 3px rgba(74,222,128,0.18); }
+#onlineUsersPopup .cu-me { font-style: normal; font-size: 12px; font-weight: 800; padding: 0 6px; border-radius: 6px; background: #1e3a5f; color: #bfdbfe; }
+#onlineUsersPopup .cu-right { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; }
+#onlineUsersPopup .cu-time { font: 700 15px var(--pro-font-num); color: #e2e8f0; white-space: nowrap; }
+#onlineUsersPopup .cu-dev { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: var(--pro-surface-2); color: #93c5fd; font-size: 13px; }
+#onlineUsersPopup .cu-dev.is-phone { color: var(--pro-ok); }
+#onlineUsersPopup .cu-empty { padding: 18px 8px; text-align: center; font-size: 13px; }
+#onlineUsersPopup .cu-back { min-height: 36px; padding: 0 10px !important; background: var(--pro-surface-2) !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; border-radius: 9px !important; font: 700 13px var(--pro-font) !important; box-shadow: none !important; }
+#onlineUsersPopup #thaiMapContainer { background: #0e131b !important; border-color: var(--pro-line) !important; }
+
+/* ---------- Penalty shootout panel: edge to edge in a narrow Dock ---------- */
+@media (max-width: 480px) {
+    #penaltyShootoutOverlay { padding: 0 !important; }
+    #penaltyShootoutOverlay > div { border-radius: 0 !important; border: none !important; }
+    #penaltyShootoutOverlay > div > div:first-child { padding: 6px 8px !important; }
+    #penaltyShootoutOverlay > div > div:first-child > div:first-child { min-width: 0; font-size: 14px; }
+    #penaltyShootoutOverlay > div > div:first-child > div:first-child span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* ---------- Groups per sport + "จัดหน้า" mode (all themes) ---------- */
+.fcp-hidden { display: none !important; }
+body.fcp-editing .fcp-hidden:not([style*="display: none"]) { display: block !important; opacity: .45; }
+body.fcp-editing [data-panel-id], body.fcp-editing #score2Card, body.fcp-editing #futsalFoulsCard,
+body.fcp-editing #snookerControlCard, body.fcp-editing #vb-main-actions, body.fcp-editing #dt-main-control-card,
+body.fcp-editing .fcp-ptool + * { outline: 2px dashed #3b82f6; outline-offset: -2px; }
+body.fcp-editing { padding-bottom: 120px; }
+.fcp-ptool {
+    position: relative; z-index: 5; display: flex; align-items: center; gap: 6px;
+    margin: -4px -4px 8px; padding: 6px 6px 6px 10px; border-radius: 10px;
+    background: #1e3a8a; color: #fff; font: 700 13px var(--pro-font);
+}
+.fcp-ptool-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fcp-ptool-name em { font-style: normal; color: #bfdbfe; font-weight: 600; }
+.fcp-ptool button {
+    flex: 0 0 auto; width: 40px; min-width: 40px; height: 36px; min-height: 36px; padding: 0 !important;
+    display: grid !important; place-items: center; border-radius: 9px !important; box-shadow: none !important;
+    background: rgba(255,255,255,0.14) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.25) !important;
+}
+.fcp-ptool button:disabled { opacity: .35; cursor: default; }
+.fcp-ptool button.is-off { background: #b91c1c !important; }
+.fcp-ptool button:focus-visible { outline: 2px solid #fde047 !important; outline-offset: 2px; }
+.fcp-editbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10040; display: none; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 10px 12px; background: #0b1530; border-top: 2px solid #3b82f6; color: #e5edff; font: 700 13px var(--pro-font);
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+}
+.fcp-editbar #fcpEditWhat { flex: 1 1 100%; }
+.fcp-edit-auto { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.fcp-edit-auto input { width: 18px; height: 18px; }
+.fcp-editbar-btns { margin-left: auto; display: flex; gap: 6px; }
+.fcp-editbar button {
+    min-height: 40px; padding: 0 12px !important; border-radius: 10px !important; box-shadow: none !important;
+    background: #1e293b !important; color: #fff !important; border: 1px solid #334155 !important; font: 700 13px var(--pro-font) !important;
+}
+.fcp-editbar button.is-main { background: #2563eb !important; border-color: #3b82f6 !important; }
+
+/* ---------- Scoring controls follow the sport (on while "ปรับหน้าตาตามกีฬา" is on) ---------- */
+/* Added time is a football thing */
+html.fcp-auto:not([data-sport="football"]):not([data-sport="football7"]) #injuryTimeContainer { display: none !important; }
+/* 3x3 scores 1 or 2 points: no +3 */
+html.fcp-auto[data-sport="streetball"] #scoreAPlus3Btn,
+html.fcp-auto[data-sport="streetball"] #scoreBPlus3Btn { display: none !important; }
+/* What "score 2" means in each sport (Pro theme section name) */
+html.theme-pro[data-sport="basketball"] #score2Card::before,
+html.theme-pro[data-sport="streetball"] #score2Card::before { content: "ฟาวล์ทีม (คะแนนรอง)"; }
+html.theme-pro[data-sport="volleyball"] #score2Card::before,
+html.theme-pro[data-sport="takraw"] #score2Card::before { content: "เซตที่ชนะ (คะแนนรอง)"; }
+html.theme-pro[data-sport="badminton"] #score2Card::before,
+html.theme-pro[data-sport="tabletennis"] #score2Card::before { content: "เกมที่ชนะ (คะแนนรอง)"; }
+html.theme-pro[data-sport="snooker"] #score2Card::before { content: "เฟรมที่ชนะ (คะแนนรอง)"; }
+html.theme-pro[data-sport="volleyball"] [data-panel-id="panelTeamEditor"]::before,
+html.theme-pro[data-sport="takraw"] [data-panel-id="panelTeamEditor"]::before,
+html.theme-pro[data-sport="badminton"] [data-panel-id="panelTeamEditor"]::before,
+html.theme-pro[data-sport="tabletennis"] [data-panel-id="panelTeamEditor"]::before { content: "ทีมและแต้ม"; }
+html.theme-pro[data-sport="snooker"] [data-panel-id="panelTeamEditor"]::before { content: "ผู้เล่นและแต้มในเฟรม"; }
+html.theme-pro[data-sport="boxing"] [data-panel-id="panelTeamEditor"]::before { content: "นักมวย"; }
+@media (max-width: 420px) { #fcpSourcesBtn span { display: none; } }
+/* In "จัดหน้า" mode the blue bar names the group, so the small section name steps aside */
+body.fcp-editing [data-panel-id]::before, body.fcp-editing #score2Card::before { content: none !important; }
+body.fcp-editing [data-panel-id], body.fcp-editing #score2Card { padding-top: 12px !important; }
+@media (max-width: 340px) {
+    .fcp-appbar { gap: 5px; padding: 8px 6px; }
+    .fcp-icon-btn { min-width: 40px; padding: 0 8px !important; }
+    .fcp-sport-btn { gap: 6px; padding-right: 8px !important; }
+    .fcp-caret { display: none; }
+}
+
+/* ---------- V2.9.6.0: province map (thailand_map.js), all themes ---------- */
+.thm { display: flex; flex-direction: column; gap: 8px; padding: 8px; margin-bottom: 10px; background: #0e131b; border: 1px solid var(--pro-line); border-radius: 12px; }
+.thm-tools { display: flex; gap: 6px; align-items: flex-start; }
+.thm-chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-width: 0; }
+.thm .thm-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 9px !important; margin: 0; width: auto; background: var(--pro-surface-2) !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; border-radius: 999px !important; font: 600 12px var(--pro-font) !important; box-shadow: none !important; }
+.thm .thm-chip b { font: 700 12px var(--pro-font-num); color: var(--pro-muted); }
+.thm .thm-chip.on { background: #38bdf8 !important; color: #06121c !important; border-color: #38bdf8 !important; }
+.thm .thm-chip.on b { color: #06121c; }
+.thm-zoom { display: flex; flex-direction: column; gap: 4px; }
+.thm .thm-zoom button { width: 32px; height: 32px; min-height: 0; padding: 0 !important; margin: 0; display: grid; place-items: center; background: var(--pro-surface-2) !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; border-radius: 8px !important; box-shadow: none !important; font-size: 12px; }
+.thm .thm-chip:focus-visible, .thm .thm-zoom button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+.thm-stage { position: relative; height: min(62vh, 460px); min-height: 260px; border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 35%, #132033, #0b0f16 70%); }
+.thm-svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+.thm-svg:active { cursor: grabbing; }
+.thm-p { fill: #1d2738; stroke: #0b0f16; stroke-width: 0.8; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .15s; }
+.thm-p[data-l="1"] { fill: #164e63; }
+.thm-p[data-l="2"] { fill: #0e7490; }
+.thm-p[data-l="3"] { fill: #0891b2; }
+.thm-p[data-l="4"] { fill: #22d3ee; }
+.thm-svg.has-region .thm-p:not(.in-region) { opacity: .28; }
+.thm-p:hover { fill: #38bdf8; }
+.thm-badge { pointer-events: none; }
+.thm-badge circle { fill: #f8fafc; stroke: #0b0f16; stroke-width: 2; }
+.thm-badge text { fill: #0b0f16; font: 800 12px var(--pro-font-num); text-anchor: middle; }
+.thm-info { font: 500 12px var(--pro-font); color: var(--pro-muted); min-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thm-credit { font: 400 12px var(--pro-font); color: #6b7889; }
+
+/* ---------- V2.9.6.0: extra score buttons (+2 / +3) ----------
+   Dark fill + coloured border + thin white halo: stands out on any kit colour (white, black or bright)
+   and never looks like the +1 / −1 buttons. +2 = amber, +3 = cyan. */
+#scoreAPlus2Btn, #scoreBPlus2Btn, #scoreAPlus3Btn, #scoreBPlus3Btn {
+    background: #0b0e13 !important; color: #fbbf24 !important;
+    border: 2px solid #fbbf24 !important; box-shadow: 0 0 0 1.5px #ffffff, 0 2px 4px rgba(0,0,0,.5) !important;
+    font-family: var(--pro-font-num) !important; font-weight: 800 !important; letter-spacing: .5px; text-shadow: none !important;
+}
+#scoreAPlus3Btn, #scoreBPlus3Btn { color: #22d3ee !important; border-color: #22d3ee !important; }
+#scoreAPlus2Btn:hover, #scoreBPlus2Btn:hover, #scoreAPlus3Btn:hover, #scoreBPlus3Btn:hover { background: #1f2937 !important; }
+#scoreAPlus2Btn:focus-visible, #scoreBPlus2Btn:focus-visible,
+#scoreAPlus3Btn:focus-visible, #scoreBPlus3Btn:focus-visible { outline: 3px solid #a78bfa !important; outline-offset: 3px; }

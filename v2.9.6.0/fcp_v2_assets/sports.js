@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  sports.js — the list of sports (OBSScore V3.0.0)
+//  sports.js — the list of sports (OBSScore V2.9.6.0)
 //
 //  One place to add a sport. Each sport says which existing "engine" runs it
 //  (the value the older modules read from localStorage "vb_sport"), so a new

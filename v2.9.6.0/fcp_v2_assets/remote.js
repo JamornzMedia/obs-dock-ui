@@ -269,230 +269,124 @@ window.openOnlineUsersPopup = () => {
     if (window.renderGlobalRanking) window.renderGlobalRanking();
 };
 
+// --- V2.9.6.0: Online & Ranking list (one row per person, fits a narrow Dock) ---
+const cuEsc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cuMyName = () => {
+    try { const id = JSON.parse(localStorage.getItem('userIdentity') || '{}'); return (id && id.name || '').trim(); } catch (e) { return ''; }
+};
+const cuHours = (minutes) => Math.floor(minutes / 60) + 'h ' + String(minutes % 60).padStart(2, '0') + 'm';
+const cuRank = (minutes) => (typeof window.fcpGetRankInfo === 'function'
+    ? window.fcpGetRankInfo(minutes || 0)
+    : { icon: '🔰', nameTh: 'เด็กฝึกหัด', color: '#94a3b8' });
+// Ranked people from obs_id: no guests, one entry per name (the one with the most time), most time first.
+const cuRankedUsers = (rawUsers) => {
+    const byName = {};
+    Object.values(rawUsers || {}).forEach((user) => {
+        if (!user || !user.name || user.name.startsWith('Guest_')) return;
+        const key = user.name.toLowerCase();
+        if (!byName[key] || (user.totalMinutes || 0) > (byName[key].totalMinutes || 0)) byName[key] = user;
+    });
+    return Object.values(byName).sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
+};
+const cuOnlineIds = () => {
+    const ids = new Set();
+    const rooms = window.onlineUsersSnapshot ? (window.onlineUsersSnapshot.val() || {}) : {};
+    Object.values(rooms).forEach((room) => { if (room && room.ID) ids.add(room.ID); });
+    return ids;
+};
+const cuMessage = (tbody, text, color = '#94a3b8') => {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="cu-empty" style="color:${color}">${text}</div></td></tr>`;
+};
+// pos: number shown on the left (1–3 get a medal); right: html for the right side
+const cuRow = ({ pos, name, rank, province, right, me, online, search, medals = true }) => {
+    const medal = medals && pos <= 3 ? ['gold', 'silver', 'bronze'][pos - 1] : '';
+    const posHtml = medal
+        ? `<span class="cu-pos cu-${medal}" title="อันดับ ${pos}"><i class="fas fa-medal" aria-hidden="true"></i><b>${pos}</b></span>`
+        : `<span class="cu-pos">${pos}</span>`;
+    return `<tr class="cu-tr${me ? ' is-me' : ''}" data-search="${cuEsc(search.toLowerCase())}"><td colspan="5">
+        <div class="cu-row">
+            ${posHtml}
+            <div class="cu-who">
+                <div class="cu-name">${online ? '<i class="cu-online" title="ออนไลน์อยู่"></i>' : ''}${cuEsc(name)}${me ? ' <em class="cu-me">คุณ</em>' : ''}</div>
+                <div class="cu-sub"><span style="color:${rank.color}">${rank.icon} ${cuEsc(rank.nameTh)}</span>${province ? ` · ${cuEsc(province)}` : ''}</div>
+            </div>
+            <div class="cu-right">${right}</div>
+        </div></td></tr>`;
+};
+// Filter rows of the open list by the search box
+window.cuFilterLists = () => {
+    const q = (document.getElementById('cuSearch')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('#onlineUsersPopup tr.cu-tr').forEach((tr) => {
+        tr.style.display = !q || tr.dataset.search.includes(q) ? '' : 'none';
+    });
+};
+
 window.renderGlobalRanking = async () => {
     const tbody = document.getElementById('globalRankingTableBody');
     if (!tbody) return;
-
-    if (typeof firebase === 'undefined' || !firebase.database) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#ef4444">Firebase is offline</td></tr>';
-        return;
-    }
-
+    if (typeof firebase === 'undefined' || !firebase.database) return cuMessage(tbody, 'ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (Firebase offline)', '#f87171');
     try {
         const snapshot = await firebase.database().ref('obs_id').once('value');
-        const rawUsers = snapshot.val() || {};
-        
-        let usersMap = {};
-        Object.keys(rawUsers).forEach(key => {
-            const user = rawUsers[key];
-            if (!user || !user.name || user.name.startsWith('Guest_')) return;
-            
-            const lowerName = user.name.toLowerCase();
-            // Deduplicate by name, keep the one with higher totalMinutes
-            if (!usersMap[lowerName] || (user.totalMinutes || 0) > (usersMap[lowerName].totalMinutes || 0)) {
-                usersMap[lowerName] = user;
+        const users = cuRankedUsers(snapshot.val());
+        window.allRegisteredUsersArray = users;
+        if (!users.length) return cuMessage(tbody, 'ยังไม่มีข้อมูลอันดับ');
+        const myName = cuMyName();
+        const online = cuOnlineIds();
+        tbody.innerHTML = users.map((user, i) => cuRow({
+            pos: i + 1, name: user.name || 'Unknown', rank: cuRank(user.totalMinutes), province: user.province || '',
+            right: `<span class="cu-time">${cuHours(user.totalMinutes || 0)}</span>`,
+            me: user.name === myName, online: online.has(user.ID), search: `${user.name} ${user.province || ''}`,
+        })).join('');
+        const meIndex = users.findIndex((u) => u.name === myName);
+        const card = document.getElementById('cuMyRank');
+        if (card) {
+            if (meIndex >= 0) {
+                const me = users[meIndex];
+                const r = cuRank(me.totalMinutes);
+                card.innerHTML = `<span class="cu-my-pos">#${meIndex + 1}</span><span class="cu-my-text"><b>อันดับของคุณ</b><small>${r.icon} ${cuEsc(r.nameTh)} · ใช้งาน ${cuHours(me.totalMinutes || 0)} · จาก ${users.length} คน</small></span>`;
+                card.style.display = 'flex';
+            } else {
+                card.innerHTML = '<span class="cu-my-text"><b>ยังไม่มีอันดับ</b><small>เข้าแบบ Guest จะไม่ถูกนับอันดับ ใส่ชื่อตอนเข้าใช้งานเพื่อเริ่มสะสมเวลา</small></span>';
+                card.style.display = 'flex';
             }
-        });
-        let usersArray = Object.values(usersMap);
-
-        // Sort descending by totalMinutes
-        usersArray.sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
-
-        let currentUserName = '';
-        try {
-            const identity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-            if (identity && identity.name) currentUserName = identity.name.trim();
-        } catch(e){}
-
-        tbody.innerHTML = '';
-
-        if (usersArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#94a3b8">No ranking data found</td></tr>';
-            return;
         }
-
-        usersArray.forEach((user, index) => {
-            const rankNum = index + 1;
-            const minutes = user.totalMinutes || 0;
-            const hoursDisplay = Math.floor(minutes/60) + 'h ' + String(minutes%60).padStart(2, '0') + 'm';
-            
-            let rankInfo = { icon: '🔰', nameTh: 'เด็กฝึกหัด', color: '#94a3b8' };
-            if (typeof window.fcpGetRankInfo === 'function') {
-                rankInfo = window.fcpGetRankInfo(minutes);
-            }
-
-            const isMe = (user.name === currentUserName);
-
-            const row = document.createElement('tr');
-            row.style.borderBottom = '1px solid #334155';
-            
-            if (isMe) {
-                row.style.background = 'rgba(59, 130, 246, 0.2)';
-            }
-
-            // Medal emojis
-            let medal = rankNum;
-            let numColor = '#94a3b8';
-            if (rankNum === 1) { medal = '🥇'; numColor = '#fbbf24'; row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(251, 191, 36, 0.1)'; }
-            else if (rankNum === 2) { medal = '🥈'; numColor = '#cbd5e1';  row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(203, 213, 225, 0.05)'; }
-            else if (rankNum === 3) { medal = '🥉'; numColor = '#b45309';  row.style.background = isMe ? 'rgba(59, 130, 246, 0.3)' : 'rgba(180, 83, 9, 0.05)'; }
-
-            const cellNum = document.createElement('td');
-            cellNum.style.padding = '8px 6px';
-            cellNum.style.textAlign = 'center';
-            cellNum.style.color = numColor;
-            cellNum.style.fontWeight = 'bold';
-            cellNum.style.fontSize = (rankNum <= 3) ? '1.1rem' : '0.9rem';
-            cellNum.textContent = medal;
-            row.appendChild(cellNum);
-
-            const cellPlayer = document.createElement('td');
-            cellPlayer.style.padding = '8px 6px';
-            
-            const pName = document.createElement('div');
-            pName.textContent = user.name || 'Unknown';
-            if (isMe) {
-                pName.style.color = '#fff';
-                pName.style.fontWeight = 'bold';
-            }
-            
-            const pRank = document.createElement('div');
-            pRank.style.fontSize = '0.75rem';
-            pRank.innerHTML = `<span style="color:${rankInfo.color}">${rankInfo.icon} ${rankInfo.nameTh}</span> <span style="color:#64748b; margin-left:5px;">(${user.province || 'Unknown'})</span>`;
-            
-            cellPlayer.appendChild(pName);
-            cellPlayer.appendChild(pRank);
-            row.appendChild(cellPlayer);
-
-            const cellTime = document.createElement('td');
-            cellTime.style.padding = '8px 6px';
-            cellTime.style.textAlign = 'right';
-            cellTime.style.color = isMe ? '#93c5fd' : '#cbd5e1';
-            cellTime.style.fontFamily = 'monospace';
-            cellTime.style.whiteSpace = 'nowrap';
-            if (isMe) cellTime.style.fontWeight = 'bold';
-            cellTime.textContent = hoursDisplay;
-            row.appendChild(cellTime);
-
-            tbody.appendChild(row);
-
-            if (isMe) {
-                row.style.borderLeft = '3px solid #3b82f6';
-                row.style.borderRight = '3px solid #3b82f6';
-            }
-        });
-
-    } catch(err) {
+        window.cuFilterLists();
+    } catch (err) {
         console.error('Error fetching global ranking:', err);
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#ef4444">Failed to load ranking</td></tr>';
+        cuMessage(tbody, 'โหลดอันดับไม่สำเร็จ ลองใหม่อีกครั้ง', '#f87171');
     }
 };
 
 window.renderOnlineUsersList = () => {
     const tbody = document.getElementById('onlineUsersTableBody');
     if (!tbody || !window.onlineUsersSnapshot) return;
-
-    tbody.innerHTML = '';
     const rawUsers = window.onlineUsersSnapshot.val() || {};
-
-    const comRooms = {};
-    const mobileRooms = {};
-
-    Object.keys(rawUsers).forEach(key => {
-        if (key.startsWith('com_')) {
-            comRooms[key] = rawUsers[key];
-        } else if (key.startsWith('mobile_')) {
-            mobileRooms[key] = rawUsers[key];
-        }
+    const now = Date.now() + (window.serverTimeOffset || 0);
+    const pcs = [];
+    const phones = {};
+    Object.keys(rawUsers).forEach((key) => {
+        const room = rawUsers[key];
+        if (!room) return;
+        if (key.startsWith('mobile_')) { if (room.ID) phones[room.ID] = room; return; }
+        if (!key.startsWith('com_')) return;
+        if (room.lastActive && now - room.lastActive > 60000) return; // stale
+        pcs.push(room);
     });
-
-    let index = 1;
-    Object.keys(comRooms).forEach(key => {
-        const user = comRooms[key];
-
-        // Filter out stale user in the UI display list
-        if (user && user.lastActive) {
-            const now = Date.now() + (window.serverTimeOffset || 0);
-            if (now - user.lastActive > 60000) {
-                return; // skip stale user
-            }
-        }
-
-        let matchedMobile = null;
-        Object.keys(mobileRooms).forEach(mKey => {
-            const mRoom = mobileRooms[mKey];
-            if (mRoom.ID === user.ID) {
-                matchedMobile = mRoom;
-            }
+    pcs.sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
+    const phoneCount = pcs.filter((u) => phones[u.ID] && phones[u.ID].Mobile === 'on').length;
+    const summary = document.getElementById('cuSummary');
+    if (summary) summary.innerHTML = `<span><i class="fas fa-desktop" aria-hidden="true"></i> ออนไลน์ ${pcs.length} คน</span><span><i class="fas fa-mobile-alt" aria-hidden="true"></i> ใช้มือถือคุม ${phoneCount}</span>`;
+    if (!pcs.length) return cuMessage(tbody, 'ตอนนี้ยังไม่มีใครออนไลน์');
+    const myName = cuMyName();
+    tbody.innerHTML = pcs.map((user, i) => {
+        const phone = phones[user.ID] && phones[user.ID].Mobile === 'on';
+        return cuRow({
+            pos: i + 1, name: user.name || 'Unknown', rank: cuRank(user.totalMinutes), province: user.province || '',
+            right: `<span class="cu-dev" title="คอมพิวเตอร์"><i class="fas fa-desktop" aria-hidden="true"></i></span>${phone ? '<span class="cu-dev is-phone" title="ต่อมือถืออยู่"><i class="fas fa-mobile-alt" aria-hidden="true"></i></span>' : ''}`,
+            me: user.name === myName, online: true, medals: false, search: `${user.name} ${user.province || ''}`,
         });
-
-        const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid #334155';
-
-        // Index
-        const cellIndex = document.createElement('td');
-        cellIndex.style.padding = '8px 6px';
-        cellIndex.textContent = index++;
-        row.appendChild(cellIndex);
-
-        // Name
-        const cellName = document.createElement('td');
-        cellName.style.padding = '8px 6px';
-        cellName.textContent = user.name || 'Unknown';
-        row.appendChild(cellName);
-
-        // Province
-        const cellProvince = document.createElement('td');
-        cellProvince.style.padding = '8px 6px';
-        cellProvince.textContent = user.province || '-';
-        row.appendChild(cellProvince);
-
-        // V2.9.3: Rank column (calculated from totalMinutes)
-        const cellRank = document.createElement('td');
-        cellRank.style.padding = '8px 6px';
-        cellRank.style.whiteSpace = 'nowrap';
-        let rankColor = '#94a3b8';
-        let rankDisplay = '🔰 เด็กฝึกหัด';
-        if (typeof window.fcpGetRankInfo === 'function') {
-            const ri = window.fcpGetRankInfo(user.totalMinutes || 0);
-            rankColor = ri.color;
-            rankDisplay = `${ri.icon} ${ri.nameTh}`;
-        }
-        cellRank.innerHTML = `<span style="color: ${rankColor}">${rankDisplay}</span>`;
-        row.appendChild(cellRank);
-
-        // Type (PC icon + Mobile icon if connected)
-        const cellType = document.createElement('td');
-        cellType.style.padding = '8px 6px';
-
-        const pcIcon = document.createElement('i');
-        pcIcon.className = 'fas fa-desktop';
-        pcIcon.style.color = '#60a5fa';
-        pcIcon.style.marginRight = '6px';
-        cellType.appendChild(pcIcon);
-
-        if (matchedMobile && matchedMobile.Mobile === 'on') {
-            const mobileIcon = document.createElement('i');
-            mobileIcon.className = 'fas fa-mobile-alt';
-            mobileIcon.style.color = '#4ade80';
-            cellType.appendChild(mobileIcon);
-        }
-
-        row.appendChild(cellType);
-        tbody.appendChild(row);
-    });
-
-    if (Object.keys(comRooms).length === 0) {
-        const row = document.createElement('tr');
-        const cell = document.createElement('td');
-        cell.colSpan = 5;
-        cell.style.padding = '12px';
-        cell.style.textAlign = 'center';
-        cell.style.color = '#64748b';
-        cell.textContent = 'No users online';
-        row.appendChild(cell);
-        tbody.appendChild(row);
-    }
+    }).join('');
+    window.cuFilterLists();
 };
 
 // --- Stale Entry Cleanup ---
@@ -528,135 +422,84 @@ const thaiRegions = {
     'ใต้': ['ชุมพร', 'ระนอง', 'สุราษฎร์ธานี', 'พังงา', 'นครศรีธรรมราช', 'ภูเก็ต', 'กระบี่', 'ตรัง', 'พัทลุง', 'สตูล', 'สงขลา', 'ปัตตานี', 'ยะลา', 'นราธิวาส']
 };
 
+// Province map (thailand_map.js) is loaded the first time the Map tab opens.
+let cuMapView = null;
+let cuMapLoadedAt = 0;
+let cuMapMod = null;
+
+const cuMapUsers = () => window.allRegisteredUsersArray || [];
+
+const cuMapEnsure = async () => {
+    const host = document.getElementById('thaiMapContainer');
+    if (!host) return null;
+    if (!cuMapMod) cuMapMod = await import('./thailand_map.js?v=2.9.6.0b');
+    if (!cuMapView || !host.querySelector('.thm-svg')) {
+        cuMapView = cuMapMod.mountMap(host, { onProvince: (province) => window.filterOnlineUsersByProvince(province) });
+    }
+    return cuMapView;
+};
+
 window.loadMapData = async () => {
-    if (typeof firebase === 'undefined' || !firebase.database) return;
-    
     try {
-        const snapshot = await firebase.database().ref('obs_id').once('value');
-        const rawUsers = snapshot.val() || {};
-        
-        let usersMap = {};
-        Object.keys(rawUsers).forEach(key => {
-            const user = rawUsers[key];
-            if (!user || !user.name || user.name.startsWith('Guest_')) return;
-            const lowerName = user.name.toLowerCase();
-            if (!usersMap[lowerName] || (user.totalMinutes || 0) > (usersMap[lowerName].totalMinutes || 0)) {
-                usersMap[lowerName] = user;
-            }
-        });
-        
-        window.allRegisteredUsersArray = Object.values(usersMap);
-        
-        // Count users per region
-        const counts = { 'เหนือ': 0, 'อีสาน': 0, 'กลาง': 0, 'ตะวันออก': 0, 'ตะวันตก': 0, 'ใต้': 0 };
-        
-        window.allRegisteredUsersArray.forEach(user => {
-            if (!user.province) return;
-            for (const region in thaiRegions) {
-                if (thaiRegions[region].some(p => user.province.includes(p))) {
-                    counts[region]++;
-                    break;
+        const view = await cuMapEnsure();
+        if (typeof firebase === 'undefined' || !firebase.database) return;
+        // Users change slowly: read the list at most once a minute.
+        if (Date.now() - cuMapLoadedAt > 60000 || !window.allRegisteredUsersArray) {
+            const snapshot = await firebase.database().ref('obs_id').once('value');
+            const rawUsers = snapshot.val() || {};
+            const usersMap = {};
+            Object.keys(rawUsers).forEach(key => {
+                const user = rawUsers[key];
+                if (!user || !user.name || user.name.startsWith('Guest_')) return;
+                const lowerName = user.name.toLowerCase();
+                if (!usersMap[lowerName] || (user.totalMinutes || 0) > (usersMap[lowerName].totalMinutes || 0)) {
+                    usersMap[lowerName] = user;
                 }
-            }
-        });
-        
-        // Update SVG text elements
-        for (const region in counts) {
-            const el = document.getElementById(`count-${region}`);
-            if (el) el.textContent = counts[region];
+            });
+            window.allRegisteredUsersArray = Object.values(usersMap);
+            cuMapLoadedAt = Date.now();
         }
+        const counts = {};
+        cuMapUsers().forEach(user => {
+            const p = cuMapMod ? cuMapMod.provinceOf(user.province) : '';
+            if (p) counts[p] = (counts[p] || 0) + 1;
+        });
+        if (view) view.setCounts(counts);
     } catch (e) {
         console.error("Failed to load map data", e);
     }
 };
 
-window.filterOnlineUsersByRegion = (region) => {
+const cuMapShowList = (title, users, emptyText) => {
     document.getElementById('thaiMapContainer').style.display = 'none';
     document.getElementById('mapUsersContainer').style.display = 'flex';
-    document.getElementById('selectedRegionTitle').textContent = `Ranking ภาค${region}`;
-    
+    document.getElementById('selectedRegionTitle').textContent = title;
     const tbody = document.getElementById('mapUsersTableBody');
-    if (!tbody || !window.allRegisteredUsersArray) return;
-    
-    tbody.innerHTML = '';
-    
-    const regionProvinces = thaiRegions[region] || [];
+    if (!tbody) return;
+    users = users.slice().sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
+    if (!users.length) return cuMessage(tbody, emptyText);
+    const myName = cuMyName();
+    const online = cuOnlineIds();
+    tbody.innerHTML = users.map((user, i) => cuRow({
+        pos: i + 1, name: user.name || 'Unknown', rank: cuRank(user.totalMinutes), province: user.province || '',
+        right: `<span class="cu-time">${cuHours(user.totalMinutes || 0)}</span>`,
+        me: user.name === myName, online: online.has(user.ID), search: `${user.name} ${user.province || ''}`,
+    })).join('');
+};
 
-    // Filter and sort by totalMinutes descending (like Ranking)
-    const filtered = window.allRegisteredUsersArray
-        .filter(user => user.province && regionProvinces.some(p => user.province.includes(p)))
-        .sort((a, b) => (b.totalMinutes || 0) - (a.totalMinutes || 0));
+window.filterOnlineUsersByProvince = (province) => {
+    const users = cuMapUsers().filter((u) => cuMapMod && cuMapMod.provinceOf(u.province) === province);
+    cuMapShowList(`จ.${province}`, users, 'ยังไม่มีผู้ใช้งานในจังหวัดนี้');
+};
 
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 15px; color:#64748b;">ไม่มีผู้ใช้งานในภาคนี้</td></tr>';
-        return;
-    }
-
-    let currentUserName = '';
-    try {
-        const identity = JSON.parse(localStorage.getItem('userIdentity') || '{}');
-        if (identity && identity.name) currentUserName = identity.name.trim();
-    } catch(e){}
-
-    filtered.forEach((user, index) => {
-        const rankNum = index + 1;
-        const minutes = user.totalMinutes || 0;
-        const hoursDisplay = Math.floor(minutes/60) + 'h ' + String(minutes%60).padStart(2, '0') + 'm';
-        
-        let rankInfo = { icon: '🔰', nameTh: 'เด็กฝึกหัด', color: '#94a3b8' };
-        if (typeof window.fcpGetRankInfo === 'function') {
-            rankInfo = window.fcpGetRankInfo(minutes);
-        }
-
-        const isMe = (user.name === currentUserName);
-        let isOnline = false;
-        if (window.onlineUsersSnapshot) {
-            const activeRooms = window.onlineUsersSnapshot.val() || {};
-            Object.values(activeRooms).forEach(room => {
-                if (room.ID === user.ID) isOnline = true;
-            });
-        }
-
-        const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid #334155';
-        if (isMe) row.style.background = 'rgba(59, 130, 246, 0.2)';
-
-        let medal = rankNum;
-        let numColor = '#94a3b8';
-        if (rankNum === 1) { medal = '🥇'; numColor = '#fbbf24'; row.style.background = isMe ? 'rgba(59,130,246,.3)' : 'rgba(251,191,36,.1)'; }
-        else if (rankNum === 2) { medal = '🥈'; numColor = '#cbd5e1'; }
-        else if (rankNum === 3) { medal = '🥉'; numColor = '#b45309'; }
-
-        const cellNum = document.createElement('td');
-        cellNum.style.cssText = 'padding:8px 6px;text-align:center;font-weight:bold;font-size:' + (rankNum <= 3 ? '1.1rem' : '0.9rem');
-        cellNum.style.color = numColor;
-        cellNum.textContent = medal;
-        row.appendChild(cellNum);
-
-        const cellPlayer = document.createElement('td');
-        cellPlayer.style.padding = '8px 6px';
-        const pName = document.createElement('div');
-        pName.textContent = (isOnline ? '● ' : '') + (user.name || 'Unknown');
-        pName.style.color = isOnline ? '#4ade80' : (isMe ? '#fff' : '#cbd5e1');
-        if (isMe) pName.style.fontWeight = 'bold';
-        const pRank = document.createElement('div');
-        pRank.style.fontSize = '0.75rem';
-        pRank.innerHTML = `<span style="color:${rankInfo.color}">${rankInfo.icon} ${rankInfo.nameTh}</span> <span style="color:#64748b;margin-left:5px">(${user.province || 'Unknown'})</span>`;
-        cellPlayer.appendChild(pName);
-        cellPlayer.appendChild(pRank);
-        row.appendChild(cellPlayer);
-
-        const cellTime = document.createElement('td');
-        cellTime.style.cssText = 'padding:8px 6px;text-align:right;color:' + (isMe ? '#93c5fd' : '#cbd5e1') + ';font-size:0.85rem;white-space:nowrap';
-        cellTime.textContent = hoursDisplay;
-        row.appendChild(cellTime);
-
-        tbody.appendChild(row);
-    });
+window.filterOnlineUsersByRegion = (region) => {
+    const provinces = thaiRegions[region] || [];
+    const users = cuMapUsers().filter((user) => user.province && provinces.some((p) => user.province.includes(p)));
+    cuMapShowList(`อันดับภาค${region}`, users, 'ไม่มีผู้ใช้งานในภาคนี้');
 };
 
 window.backToMapRegions = () => {
-    document.getElementById('thaiMapContainer').style.display = 'flex';
+    document.getElementById('thaiMapContainer').style.display = '';
     document.getElementById('mapUsersContainer').style.display = 'none';
 };
 

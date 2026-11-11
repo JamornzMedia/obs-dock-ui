@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=3.0.0';
-import { translations } from './languages.js?v=3.0.0';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.6.0b';
+import { translations } from './languages.js?v=2.9.6.0b';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -4965,7 +4965,7 @@ window.fcpAPI = {
 };
 
 // Import Remote Logic
-import './remote.js';
+import './remote.js?v=2.9.6.0b';
 
 // --- Welcome Screen Logic ---
 window.initWelcomeScreen = () => {
@@ -5915,7 +5915,7 @@ window.fcpOBS = obs;
 window.fcpChangeScore = changeScore;
 window.fcpChangeScore2 = changeScore2;
 window.runPlayScoreAction = runPlayScoreAction;
-window.fcpCreateObsSource = createObsSource; // V3.0.0: source manager (dock_shell.js)
+window.fcpCreateObsSource = createObsSource; // V2.9.6.0: source manager (dock_shell.js)
 if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
@@ -5923,8 +5923,8 @@ window.getSheetData = () => sheetData;
 import './volleyball_module_v2.js?v=2.9.5.8';
 import './display_table_module.js?v=2.9.5.2';
 import './snooker_module.js?v=2.9.5.8-2';
-import './futsal_module.js?v=3.0.0';
-import './dock_shell.js?v=3.0.0';
+import './futsal_module.js?v=2.9.6.0b';
+import './dock_shell.js?v=2.9.6.0b';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

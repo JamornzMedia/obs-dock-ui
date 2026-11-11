@@ -4,7 +4,7 @@
 export const translations = {
     // English
     en: {
-        appTitle: "Football Scoreboard Controller - V3.0.0 (OBSScore)",
+        appTitle: "Football Scoreboard Controller - V2.9.6.0 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "Load",
@@ -309,14 +309,23 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>Version 3.0.0</h5>
+                    <h5>Version 2.9.6.0</h5>
                     <ul>
+                        <li><strong>Province map:</strong> Online &amp; Ranking → Map now shows all 77 provinces. Zoom with the buttons, mouse wheel or two fingers, drag to move, tap a region chip to zoom to it, tap a province to see its users.</li>
+                        <li><strong>+2 / +3 buttons:</strong> dark buttons with an amber (+2) / cyan (+3) border and a white halo, clear on any team colour.</li>
+                        <li><strong>Online &amp; Ranking</strong> stays at the top; it cannot be moved or hidden.</li>
+                        <li><strong>Lighter:</strong> the map loads only when opened (the page is 40% smaller); futsal fouls only redraw when they change.</li>
+                    
                         <li><strong>New look (Pro):</strong> calmer panels with section names, one accent colour per sport. Settings → Display → Theme can switch back to Sport or Classic.</li>
                         <li><strong>Top bar:</strong> the current sport, "Source" and settings stay at the top.</li>
                         <li><strong>Choose a sport:</strong> sports grouped by type — football 11 / 7, futsal, basketball, 3x3, volleyball, sepak takraw, badminton, table tennis, boxing, snooker.</li>
                         <li><strong>Create sources by category:</strong> teams and scores, colours and logos, time, labels, ready-made HTML graphics, plugins. Shows what OBS already has and creates what is missing.</li>
                         <li><strong>Futsal fouls:</strong> accumulated fouls for both teams, DFK from the 6th foul, sent to PlayScore.</li>
                         <li><strong>Added time:</strong> a button next to + / − shows the added-time graphic in PlayScore.</li>
+                        <li><strong>Layout per sport:</strong> picking a sport arranges the groups and scoring buttons for it (can be turned off).</li>
+                        <li><strong>Arrange the page:</strong> move groups up or down, hide or show them, saved per sport.</li>
+                        <li><strong>Online &amp; Ranking:</strong> redesigned list for narrow docks, with search and your own rank.</li>
+                        <li><strong>Penalty shootout:</strong> no longer overflows in a narrow dock.</li>
                     </ul>
                 </li>
                 <li>
@@ -467,7 +476,7 @@ export const translations = {
     },
     // ภาษาไทย
     th: {
-        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V3.0.0 (OBSScore)",
+        appTitle: "โปรแกรมควบคุมสกอร์บอร์ดฟุตบอล - V2.9.6.0 (OBSScore)",
         excel: "Excel",
         matchId: "ID:",
         load: "โหลด",
@@ -773,14 +782,23 @@ export const translations = {
         changelogContent: `
             <ul class="changelog-list">
                 <li>
-                    <h5>เวอร์ชัน 3.0.0</h5>
+                    <h5>เวอร์ชัน 2.9.6.0</h5>
                     <ul>
+                        <li><strong>แผนที่ 77 จังหวัด:</strong> ออนไลน์และอันดับ → Map ซูมได้ด้วยปุ่ม ล้อเมาส์ หรือบีบสองนิ้ว ลากเพื่อเลื่อน กดชื่อภาคเพื่อซูมไปภาคนั้น กดจังหวัดเพื่อดูรายชื่อ</li>
+                        <li><strong>ปุ่ม +2 / +3:</strong> พื้นเข้ม ขอบเหลือง (+2) / ฟ้า (+3) มีขอบขาวรอบ ชัดบนทุกสีเสื้อ</li>
+                        <li><strong>ออนไลน์และอันดับ</strong> อยู่บนสุดเสมอ ย้ายหรือซ่อนไม่ได้</li>
+                        <li><strong>เบาลง:</strong> แผนที่โหลดเมื่อเปิดดูเท่านั้น (หน้า Dock เล็กลง 40%) ฟาวล์ฟุตซอลวาดใหม่เฉพาะตอนค่าเปลี่ยน</li>
+                    
                         <li><strong>หน้าตาใหม่ (Pro):</strong> แผงเรียบขึ้น มีชื่อแต่ละส่วน และสีเน้นตามกีฬา เปลี่ยนกลับเป็น Sport หรือ Classic ได้ที่ ตั้งค่า → Display → ธีม</li>
                         <li><strong>แถบบน:</strong> กีฬาที่ใช้อยู่ ปุ่ม Source และตั้งค่า อยู่บนสุดตลอด</li>
                         <li><strong>เลือกกีฬา:</strong> แบ่งหมวด ฟุตบอล 11 / 7 คน, ฟุตซอล, บาส, บาส 3x3, วอลเลย์, ตะกร้อ, แบด, เทเบิลเทนนิส, มวย, สนุกเกอร์</li>
                         <li><strong>สร้าง Source แบ่งหมวด:</strong> ทีมและคะแนน, สีและโลโก้, เวลา, ข้อความแมตช์, กราฟิกสำเร็จรูป (HTML), ปลั๊กอิน บอกว่าอันไหนมีแล้ว และสร้างที่ขาดได้ทีเดียว</li>
                         <li><strong>ฟาวล์สะสมฟุตซอล:</strong> ทั้ง 2 ทีม DFK ตั้งแต่ฟาวล์ที่ 6 ส่งไป PlayScore</li>
                         <li><strong>ทดเวลา:</strong> ปุ่มข้าง + / − กดโชว์กราฟิกทดเวลาใน PlayScore</li>
+                        <li><strong>หน้าตาตามกีฬา:</strong> เลือกกีฬาแล้วจัดกลุ่มและปุ่มคะแนนให้เข้ากับกีฬานั้น ปิดได้</li>
+                        <li><strong>จัดหน้าเอง:</strong> เลื่อนกลุ่มขึ้นลง ซ่อนหรือแสดง บันทึกแยกตามกีฬา</li>
+                        <li><strong>ออนไลน์และอันดับ:</strong> ออกแบบใหม่ อ่านง่ายใน Dock แคบ มีค้นหาและอันดับของคุณ</li>
+                        <li><strong>ยิงจุดโทษ:</strong> บีบ Dock แคบแล้วไม่ล้น</li>
                     </ul>
                 </li>
                 <li>

@@ -636,7 +636,33 @@
       margin-top: 6px;
       min-height: 1.2em;
     }
-  </style>
+  
+    /* Dock UI 2.9.6.0: works in a narrow Dock (down to about 220px wide) without sideways scrolling */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    .shootout-block { min-width: 0; }
+    .app-footer, .bottom-actions, #shootoutsContainer { box-sizing: border-box; }
+    .team-card, .team-info, .team-controls, .shootout-header { min-width: 0; }
+    .team-name { min-width: 0; }
+    .dots { flex-wrap: wrap; height: auto; min-height: 30px; row-gap: 6px; }
+    button { min-width: 0; }
+    .team-controls button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    dialog, .modal-content { max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
+    @media (max-width: 360px) {
+      body { padding: 0.4rem; }
+      .shootout-block { padding: 8px; }
+      .team-card { padding: 6px 8px; }
+      .shootout-header { flex-wrap: wrap; font-size: 0.85rem; }
+      .dots { gap: 5px; margin: 0.6rem 0; --panel-dot-size: 20px; }
+      .dot { width: min(var(--panel-dot-size, 24px), 20px); height: min(var(--panel-dot-size, 24px), 20px); }
+      .team-controls { gap: 3px; }
+      .team-controls button { padding: 0.45rem 0.3rem; font-size: 0.8rem; }
+      .bottom-actions button { flex: 1 1 calc(50% - 8px); padding: 0.45rem 0.4rem; font-size: 0.8rem; }
+    }
+    @media (max-width: 260px) {
+      .undo-btn { flex: 0 0 34px; }
+      .match-id-btn { padding: 2px 5px; }
+    }
+</style>
 </head>
 <body>
   

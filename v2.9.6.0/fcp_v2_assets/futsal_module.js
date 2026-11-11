@@ -109,10 +109,16 @@ function ensureCard() {
   return card;
 }
 
-function render() {
+let lastRender = '';
+function render(force = false) {
+  const active = isActive();
+  if (!active && !$('futsalFoulsCard')) return; // nothing to build until futsal is chosen
+  const a = getInt('fs_fouls_a'), b = getInt('fs_fouls_b');
+  const key = active ? `1|${a}|${b}|${$('nameA')?.textContent}|${$('nameB')?.textContent}` : '0';
+  if (!force && key === lastRender) return; // the DOM only changes when something changed
+  lastRender = key;
   const card = ensureCard();
   if (!card) return;
-  const active = isActive();
   card.style.display = active ? 'block' : 'none';
   if (!active) return;
   for (const team of ['A', 'B']) {
@@ -136,13 +142,19 @@ function watchHalf() {
 }
 
 function refresh() {
-  render();
+  render(true);
   publish(true);
 }
 
 function boot() {
   refresh();
-  setInterval(() => { watchHalf(); render(); publish(); }, 500);
+  // Cheap check twice a second; only half changes and new values touch the DOM / OBS.
+  setInterval(() => {
+    watchHalf();
+    if (!isActive()) { if (lastRender !== '0') render(); return; }
+    render();
+    publish();
+  }, 500);
 }
 
 window.futsalModule = { refresh, change, reset };

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════
-//  dock_shell.js — OBSScore V3.0.0 app bar, sport picker and source manager
+//  dock_shell.js — OBSScore V2.9.6.0 app bar, sport picker and source manager
 //
 //  Adds on top of the existing Dock (nothing old is removed):
 //   • a sticky bar: current sport, "Source" and settings
@@ -9,8 +9,9 @@
 //  The old controls (settings tab select, help table, module buttons) keep working.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { SPORTS, SPORT_GROUPS, getSport, currentSport } from './sports.js?v=3.0.0';
-import { SOURCE_CATEGORIES, SOURCES } from './source_catalog.js?v=3.0.0';
+import { SPORTS, SPORT_GROUPS, getSport, currentSport } from './sports.js?v=2.9.6.0b';
+import { SOURCE_CATEGORIES, SOURCES } from './source_catalog.js?v=2.9.6.0b';
+import { apply as applyLayout, startEdit } from './layout_manager.js?v=2.9.6.0b';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -39,6 +40,7 @@ function selectSport(id) {
   if (window.snookerModule) window.snookerModule.refresh();
   if (typeof window.pushPlayScore === 'function') window.pushPlayScore({ sport: sport.id });
   renderBar();
+  applyLayout(); // this sport's order of groups and its scoring controls
   toast(`กีฬา: ${sport.th}`, 'success');
 }
 
@@ -55,6 +57,9 @@ function buildBar() {
       <i class="fas fa-chevron-down fcp-caret" aria-hidden="true"></i>
     </button>
     <div class="fcp-appbar-actions">
+      <button type="button" class="fcp-icon-btn" id="fcpLayoutBtn" title="จัดหน้า: เลื่อนกลุ่มขึ้นลง ซ่อนหรือแสดง" aria-label="จัดหน้า">
+        <i class="fas fa-up-down" aria-hidden="true"></i>
+      </button>
       <button type="button" class="fcp-icon-btn" id="fcpSourcesBtn" title="สร้าง Source ใน OBS" aria-label="สร้าง Source ใน OBS">
         <i class="fas fa-layer-group" aria-hidden="true"></i><span>Source</span>
       </button>
@@ -67,6 +72,7 @@ function buildBar() {
   else document.body.prepend(bar);
   $('fcpSportBtn').addEventListener('click', openSportSheet);
   $('fcpSourcesBtn').addEventListener('click', openSourceSheet);
+  $('fcpLayoutBtn').addEventListener('click', startEdit);
   $('fcpSettingsBtn').addEventListener('click', () => $('settingsBtn')?.click());
   renderBar();
 }
@@ -288,6 +294,7 @@ function boot() {
       const s = currentSport();
       if (s.engine !== e.target.value) store.set('fcp_sport', (SPORTS.find((x) => x.engine === e.target.value) || s).id);
       renderBar();
+      applyLayout();
     }
   });
   if (typeof window.pushPlayScore === 'function') window.pushPlayScore({ sport: currentSport().id });
