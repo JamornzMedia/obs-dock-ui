@@ -1,0 +1,252 @@
+/* =============================================================================================
+   OBSScore Dock V3.0.0 — "Pro" look + app bar, sport picker and source manager
+   - Part 1 (all themes): the new app bar and sheets from dock_shell.js.
+   - Part 2 (html.theme-pro, on top of theme-sport.css): calmer surfaces, one accent colour
+     per sport, named sections, 12px minimum text, visible keyboard focus.
+   - Only CSS: ids, classes and JavaScript behaviour of the old Dock are unchanged.
+   ============================================================================================= */
+
+:root {
+    --pro-bg: #0b0e13;
+    --pro-surface: #131821;
+    --pro-surface-2: #1a212d;
+    --pro-line: #273142;
+    --pro-text: #eef2f7;      /* 15.6:1 on surface */
+    --pro-muted: #a3afc0;     /* 8.1:1 on surface */
+    --pro-accent: #a3e635;
+    --pro-on-accent: #0b0e13;
+    --pro-ok: #4ade80;
+    --pro-warn: #fbbf24;
+    --pro-bad: #f87171;
+    --pro-radius: 12px;
+    --pro-font: 'Inter', 'Leelawadee UI', 'Segoe UI', sans-serif;
+    --pro-font-num: 'Barlow Condensed', 'Bahnschrift', 'Arial Narrow', sans-serif;
+}
+/* One accent per sport (also used by the sport icon in the bar) */
+html[data-sport="football"]    { --pro-accent: #a3e635; }
+html[data-sport="football7"]   { --pro-accent: #38bdf8; }
+html[data-sport="futsal"]      { --pro-accent: #facc15; }
+html[data-sport="basketball"]  { --pro-accent: #fb923c; }
+html[data-sport="streetball"]  { --pro-accent: #22d3ee; }
+html[data-sport="volleyball"],
+html[data-sport="takraw"]      { --pro-accent: #fde047; }
+html[data-sport="badminton"],
+html[data-sport="tabletennis"] { --pro-accent: #2dd4bf; }
+html[data-sport="boxing"]      { --pro-accent: #f5c542; }
+html[data-sport="snooker"]     { --pro-accent: #fbbf24; }
+
+/* ---------- Part 1: app bar ---------- */
+.fcp-appbar {
+    position: sticky; top: 0; z-index: 900;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; margin: 0 0 6px;
+    background: rgba(11, 14, 19, 0.94);
+    border-bottom: 1px solid var(--pro-line);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-family: var(--pro-font);
+}
+.fcp-appbar button { box-shadow: none !important; }
+.fcp-sport-btn {
+    flex: 1 1 auto; min-width: 0; min-height: 44px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 12px 6px 6px !important;
+    background: var(--pro-surface) !important; color: var(--pro-text) !important;
+    border: 1px solid var(--pro-line) !important; border-radius: 12px !important;
+    text-align: left; cursor: pointer; font-family: var(--pro-font) !important; letter-spacing: 0 !important;
+}
+.fcp-sport-btn:hover { border-color: var(--pro-accent) !important; filter: none !important; }
+.fcp-sport-btn > .fas:first-child {
+    flex: 0 0 32px; height: 32px; display: grid; place-items: center;
+    border-radius: 9px; background: var(--pro-accent); color: var(--pro-on-accent); font-size: 1rem;
+}
+.fcp-sport-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.fcp-sport-text small { font-size: 12px; color: var(--pro-muted); font-weight: 600; }
+.fcp-sport-text b { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fcp-caret { margin-left: auto; color: var(--pro-muted); font-size: 12px; }
+.fcp-appbar-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.fcp-icon-btn {
+    min-width: 44px; min-height: 44px; padding: 0 12px !important;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--pro-surface) !important; color: var(--pro-text) !important;
+    border: 1px solid var(--pro-line) !important; border-radius: 12px !important;
+    font: 700 13px var(--pro-font) !important; letter-spacing: 0 !important; cursor: pointer;
+}
+.fcp-icon-btn:hover { border-color: var(--pro-accent) !important; filter: none !important; }
+@media (max-width: 330px) { #fcpSourcesBtn span { display: none; } }
+
+/* ---------- Part 1: sheets ---------- */
+.fcp-sheet {
+    position: fixed; inset: 0; z-index: 10050;
+    display: none; flex-direction: column;
+    background: var(--pro-bg); color: var(--pro-text);
+    font-family: var(--pro-font);
+}
+.fcp-sheet.is-open { display: flex; animation: fcpSheetIn .18s ease-out; }
+@keyframes fcpSheetIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fcp-sheet.is-open { animation: none; } }
+body.fcp-sheet-open { overflow: hidden; }
+.fcp-sheet-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px; border-bottom: 1px solid var(--pro-line); background: var(--pro-surface);
+}
+.fcp-sheet-head h2 { margin: 0; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.fcp-sheet-head h2 .fas { color: var(--pro-accent); }
+.fcp-sheet-body { flex: 1; overflow-y: auto; padding: 12px; max-width: 720px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+.fcp-note { font-size: 12px; color: var(--pro-muted); margin: 10px 2px; line-height: 1.5; }
+.fcp-dim { color: var(--pro-muted) !important; }
+
+/* Sport picker */
+.fcp-group h3 { margin: 6px 2px 8px; font-size: 13px; font-weight: 800; color: var(--pro-muted); text-transform: uppercase; letter-spacing: .6px; }
+.fcp-sport-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.fcp-sport-card {
+    position: relative; display: flex; align-items: flex-start; gap: 10px; text-align: left;
+    padding: 10px !important; min-height: 64px; cursor: pointer;
+    background: var(--pro-surface) !important; color: var(--pro-text) !important;
+    border: 1px solid var(--pro-line) !important; border-radius: 12px !important;
+    font-family: var(--pro-font) !important; letter-spacing: 0 !important; box-shadow: none !important;
+}
+.fcp-sport-card:hover { border-color: #3b4a61 !important; filter: none !important; }
+.fcp-sport-card.is-on { border: 2px solid var(--pro-accent) !important; padding: 9px !important; }
+.fcp-sport-ico { flex: 0 0 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: var(--pro-surface-2); color: var(--pro-text); font-size: 1.1rem; }
+.fcp-sport-card.is-on .fcp-sport-ico { background: var(--pro-accent); color: var(--pro-on-accent); }
+.fcp-sport-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fcp-sport-info b { font-size: 14px; font-weight: 800; }
+.fcp-sport-info small { font-size: 12px; color: #c9d2de; font-weight: 500; }
+.fcp-badge { font-style: normal; font-size: 12px; font-weight: 800; padding: 0 6px; border-radius: 6px; background: #1e3a5f; color: #bfdbfe; margin-left: 4px; }
+.fcp-check { position: absolute; top: 8px; right: 10px; font-size: 12px; font-weight: 800; color: var(--pro-accent); }
+
+/* Source manager */
+.fcp-src-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fcp-status { flex: 1 1 100%; display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 10px; background: var(--pro-surface); border: 1px solid var(--pro-line); }
+.fcp-status.is-ok .fas { color: var(--pro-ok); }
+.fcp-status.is-off .fas { color: var(--pro-warn); }
+.fcp-seg { flex: 1 1 auto; display: flex; padding: 3px; gap: 3px; background: var(--pro-surface); border: 1px solid var(--pro-line); border-radius: 12px; }
+.fcp-seg button {
+    flex: 1; min-height: 38px; padding: 0 10px !important; cursor: pointer;
+    background: transparent !important; color: var(--pro-muted) !important; border: none !important; border-radius: 9px !important;
+    font: 700 13px var(--pro-font) !important; letter-spacing: 0 !important; box-shadow: none !important;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fcp-seg button[aria-pressed="true"] { background: var(--pro-surface-2) !important; color: var(--pro-text) !important; }
+.fcp-cat { background: var(--pro-surface); border: 1px solid var(--pro-line); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+.fcp-cat summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; min-height: 44px; box-sizing: border-box; }
+.fcp-cat summary::-webkit-details-marker { display: none; }
+.fcp-cat summary > .fas { width: 20px; text-align: center; color: var(--pro-accent); }
+.fcp-cat-name { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; font-weight: 800; }
+.fcp-cat-name small { font-size: 12px; font-weight: 500; color: var(--pro-muted); }
+.fcp-count { font: 800 14px var(--pro-font-num); padding: 2px 8px; border-radius: 8px; background: #3a2a0a; color: #fde68a; }
+.fcp-count.is-full { background: #0f2e1b; color: #bbf7d0; }
+.fcp-src-list { border-top: 1px solid var(--pro-line); padding: 6px 8px 10px; }
+.fcp-src-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #1f2836; }
+.fcp-src-row:last-of-type { border-bottom: none; }
+.fcp-src-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fcp-src-name {
+    align-self: flex-start; max-width: 100%; padding: 0 !important; background: none !important; border: none !important; box-shadow: none !important;
+    color: var(--pro-text) !important; font: 700 13px Consolas, 'Cascadia Mono', monospace !important; letter-spacing: 0 !important;
+    cursor: copy; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;
+}
+.fcp-src-text small { font-size: 12px; color: var(--pro-muted); }
+.fcp-kind { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: #c9d2de; background: var(--pro-surface-2); border-radius: 6px; padding: 2px 6px; }
+.fcp-have { flex: 0 0 auto; font-size: 12px; font-weight: 800; color: var(--pro-ok); min-width: 64px; text-align: right; }
+.fcp-create, .fcp-create-all {
+    cursor: pointer; font: 800 13px var(--pro-font) !important; letter-spacing: 0 !important; box-shadow: none !important;
+    background: var(--pro-accent) !important; color: var(--pro-on-accent) !important; border: none !important; border-radius: 9px !important;
+}
+.fcp-create { flex: 0 0 auto; min-width: 64px; min-height: 34px; padding: 0 10px !important; }
+.fcp-create-all { width: 100%; min-height: 40px; margin-top: 8px; }
+.fcp-create:disabled, .fcp-create-all:disabled { background: #2a3342 !important; color: #8b97a8 !important; cursor: not-allowed; }
+@media (max-width: 340px) { .fcp-kind { display: none; } }
+
+/* Keyboard focus everywhere in the new parts */
+.fcp-appbar button:focus-visible, .fcp-sheet button:focus-visible, .fcp-cat summary:focus-visible {
+    outline: 2px solid #93c5fd !important; outline-offset: 2px;
+}
+
+/* ---------- Part 2: Pro theme ---------- */
+html.theme-pro body {
+    background: var(--pro-bg) !important;
+    background-attachment: fixed;
+    color: var(--pro-text);
+    font-family: var(--pro-font);
+}
+html.theme-pro .card {
+    background: var(--pro-surface) !important;
+    border: 1px solid var(--pro-line) !important;
+    border-left: 1px solid var(--pro-line) !important;
+    border-radius: var(--pro-radius) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px rgba(0,0,0,0.28) !important;
+    margin-bottom: 8px !important;
+}
+/* Section names, so the Dock reads top to bottom in the order of the work */
+html.theme-pro [data-panel-id="panelExcelLoad"],
+html.theme-pro [data-panel-id="panelTeamEditor"],
+html.theme-pro [data-panel-id="panelTimer"],
+html.theme-pro [data-panel-id="panelActionButtons"],
+html.theme-pro #score2Card { padding-top: 30px !important; }
+html.theme-pro [data-panel-id="panelExcelLoad"]::before,
+html.theme-pro [data-panel-id="panelTeamEditor"]::before,
+html.theme-pro [data-panel-id="panelTimer"]::before,
+html.theme-pro [data-panel-id="panelActionButtons"]::before,
+html.theme-pro #score2Card::before {
+    position: absolute; top: 8px; left: 12px;
+    font: 800 12px var(--pro-font); letter-spacing: .8px; text-transform: uppercase; color: var(--pro-muted);
+    display: flex; align-items: center; gap: 6px;
+}
+html.theme-pro [data-panel-id="panelExcelLoad"]::before    { content: "ข้อมูลแมตช์"; }
+html.theme-pro [data-panel-id="panelTeamEditor"]::before   { content: "ทีมและคะแนน"; }
+html.theme-pro [data-panel-id="panelTimer"]::before        { content: "เวลา"; }
+html.theme-pro [data-panel-id="panelActionButtons"]::before { content: "ปุ่ม Action"; }
+html.theme-pro #score2Card::before                         { content: "คะแนนรอง"; }
+html.theme-pro [data-panel-id="panelTeamEditor"],
+html.theme-pro [data-panel-id="panelTimer"] { border-top: 2px solid var(--pro-accent) !important; }
+
+/* Top info bar: quieter */
+html.theme-pro [data-panel-id="panelTopBar"] { padding: 6px 8px !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+html.theme-pro #onlineUserCount, html.theme-pro #userRankDisplay { font-size: 12px !important; }
+
+/* Buttons: flat, rounded, no pressed edge; the accent marks the main actions */
+html.theme-pro button { font-family: var(--pro-font) !important; letter-spacing: 0 !important; border-radius: 10px; box-shadow: none !important; }
+html.theme-pro button:hover { filter: brightness(1.1); }
+html.theme-pro button:active { transform: translateY(1px) !important; box-shadow: none !important; }
+html.theme-pro .btn-secondary { background: var(--pro-surface-2) !important; border: 1px solid var(--pro-line) !important; color: var(--pro-text) !important; }
+html.theme-pro .btn-primary { background: #2563eb !important; color: #fff !important; }
+html.theme-pro .btn-success { background: #15803d !important; color: #fff !important; }
+html.theme-pro .btn-danger  { background: #b91c1c !important; color: #fff !important; }
+html.theme-pro .btn-warning { background: var(--pro-warn) !important; color: #1a1300 !important; }
+html.theme-pro button:focus-visible, html.theme-pro input:focus-visible, html.theme-pro select:focus-visible {
+    outline: 2px solid #93c5fd !important; outline-offset: 2px;
+}
+
+/* Inputs */
+html.theme-pro input[type="text"], html.theme-pro input[type="number"], html.theme-pro select, html.theme-pro textarea {
+    background: #0e131b !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; border-radius: 9px !important;
+}
+
+/* Timer: the clock in the sport accent */
+html.theme-pro .timer-area-container { background: #0e131b !important; border: 1px solid var(--pro-line) !important; border-radius: 12px !important; }
+html.theme-pro #timerText { color: var(--pro-accent) !important; font-family: var(--pro-font-num) !important; text-shadow: none !important; }
+html.theme-pro #playBtn { background: #15803d !important; color: #fff !important; }
+html.theme-pro #pauseBtn { background: var(--pro-surface-2) !important; color: var(--pro-text) !important; }
+html.theme-pro #resetToZeroBtn { background: #b91c1c !important; color: #fff !important; }
+html.theme-pro #injuryShowBtn { background: var(--pro-accent) !important; color: var(--pro-on-accent) !important; }
+
+/* Swap: secondary, not the brightest thing on screen */
+html.theme-pro #swapBtn { background: var(--pro-surface-2) !important; color: var(--pro-text) !important; border: 1px solid var(--pro-line) !important; }
+html.theme-pro [data-panel-id="panelSwap"] { padding: 6px !important; }
+
+/* Match labels */
+html.theme-pro .labels-row div { background: #0e131b !important; border: 1px solid var(--pro-line) !important; color: #c9d2de !important; border-radius: 9px !important; font-size: 12px !important; }
+
+/* Popups / settings */
+html.theme-pro .popup-modal { background: var(--pro-surface) !important; border: 1px solid var(--pro-line) !important; border-radius: 14px !important; color: var(--pro-text) !important; }
+html.theme-pro .settings-tab-btn { border-radius: 9px !important; }
+html.theme-pro .settings-tab-btn.active { background: var(--pro-accent) !important; color: var(--pro-on-accent) !important; }
+
+/* Small text never below 12px */
+html.theme-pro .footer, html.theme-pro .footer * { font-size: 12px !important; }
+
+/* The old page styles every <button> (centred flex, padding, min-height on touch). Undo that inside the new parts. */
+.fcp-sport-card { justify-content: flex-start !important; align-items: flex-start !important; width: 100%; }
+.fcp-sport-info { align-items: flex-start; text-align: left; }
+.fcp-src-name { min-height: 0 !important; height: auto !important; line-height: 1.35 !important; display: block !important; }
+.fcp-src-row { min-height: 44px; }
