@@ -1,5 +1,6 @@
 // fcp_v2_assets/usage-tracker.js
 // ระบบติดตามเวลาการใช้งาน + ระดับขั้นผู้ใช้ + Firebase Sync
+import { VERSION } from './version.js';
 
 const USAGE_KEY = 'usageTracker';
 const USAGE_HISTORY_KEY = 'usageHistory';
@@ -22,6 +23,30 @@ const RANK_TIERS = [
     { name: 'Legend',       nameTh: 'ตำนาน',               hours: 635,   icon: '⚡', color: '#fbbf24' },
     { name: 'God',          nameTh: 'เทพ',                 hours: 720,   icon: '🔱', color: '#ff0000' },
 ];
+
+// --- jamornz.com activity log (Admin > Log การเข้าใช้งาน) ---
+// Fire-and-forget: never blocks or breaks the Dock if the site is offline.
+const ACTIVITY_LOG_URL = 'https://jamornz.com/api/client_log.php?action=public_log';
+function sendActivityLog(event, identity) {
+    try {
+        const data = getUsageData();
+        const isGuest = !identity || identity.isTemporary || String(identity.name || '').startsWith('Guest_');
+        const body = JSON.stringify({
+            app: 'DockUIOBSScore',
+            app_name: 'Dock UI OBS Score',
+            event,
+            dock_id: identity && identity.ID ? String(identity.ID) : '',
+            name: isGuest ? 'Guest' : String(identity.name || '').substring(0, 60),
+            province: identity && identity.province ? String(identity.province) : '',
+            version: VERSION,
+            platform: 'PC',
+            total_minutes: data.totalMinutes || 0,
+        });
+        // text/plain = no CORS preflight, works from the OBS dock (Origin: null)
+        fetch(ACTIVITY_LOG_URL, { method: 'POST', mode: 'cors', credentials: 'omit', keepalive: true,
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body }).catch(() => {});
+    } catch (e) { /* logging must never affect the Dock */ }
+}
 
 let trackingInterval = null;
 let firebaseSyncInterval = null;
@@ -202,11 +227,13 @@ export function startUsageTracking(identity) {
         if (minutesSinceLastSync >= 15) {
             minutesSinceLastSync = 0;
             syncToFirebase(identity);
+            sendActivityLog('heartbeat', identity);
         }
     }, 60000); // Every 1 minute
 
     // Initial sync to Firebase
     syncToFirebase(identity);
+    sendActivityLog('dock_open', identity);
 
     // Initial UI update
     updateRankDisplay();

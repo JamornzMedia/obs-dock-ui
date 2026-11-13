@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.5.8';
-import { translations } from './languages.js?v=2.9.5.8-6';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.6.0d';
+import { translations } from './languages.js?v=2.9.6.0e';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -75,6 +75,15 @@ let isCountdown = false;
 let countdownStartTime = 2700;
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
+// Cleans a pasted folder path: quotes from Windows "Copy as path", file:/// prefix, backslashes, trailing slash.
+const cleanLogoFolderPath = (p) => {
+    let v = String(p || '').trim().replace(/^["']+|["']+$/g, '').trim();
+    if (/^file:/i.test(v)) {
+        v = v.replace(/^file:\/*/i, '');
+        try { v = decodeURIComponent(v); } catch (e) { /* keep as is */ }
+    }
+    return v.replace(/\\/g, '/').replace(/\/+$/, '');
+};
 let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
@@ -111,6 +120,7 @@ const TEAM_COLORS_KEY = 'teamColorMemory';
 const VISIBILITY_KEY = 'cardVisibility';
 const KEYBINDS_KEY = 'customKeybinds';
 const ACTION_SETTINGS_KEY = 'actionButtonSettings';
+const TIMER_RULES_KEY = 'timerAutoRules';
 const LOGO_CACHE_KEY = 'logoDataCache';
 const ACTION_BUTTON_COUNT = 6;
 let maxHalves = parseInt(localStorage.getItem('maxHalves') || '2'); // Default 2
@@ -769,6 +779,7 @@ const toggleActionEditMode = (index, enable) => {
     const playGroupActionSelect = $(`action-playgroup-action-${index}`);
     const editButton = $(`action-edit-${index}`);
     const saveButton = $(`action-save-${index}`);
+    $(`action-auto-${index}`).disabled = !enable;
 
     if (enable) {
         nameInput.disabled = false;
@@ -796,16 +807,22 @@ const updateActionSettingsRowType = (index, editing) => {
     const sceneInput = $(`action-scene-input-${index}`);
     const actionSelect = $(`action-type-${index}`);
     const playGroupActionSelect = $(`action-playgroup-action-${index}`);
-    const isPlayGroup = actionSelect.value === 'PlayGroup';
+    const isPlayScore = actionSelect.value === 'PlayScore';
+    const isPlugin = actionSelect.value === 'PlayGroup' || isPlayScore;
+    const trans = translations[currentLang] || translations.en;
+    const targetInput = $(`action-playgroup-name-${index}`);
+    targetInput.setAttribute('list', isPlayScore ? 'playscore-graphics-list' : 'playgroup-groups-list');
+    targetInput.placeholder = isPlayScore ? trans.actionSettingsPlayScoreGraphicPlaceholder : trans.actionSettingsPlayGroupNamePlaceholder;
 
-    sourceInput.disabled = !editing || isPlayGroup;
-    sceneInput.disabled = !editing || isPlayGroup;
-    playGroupActionSelect.disabled = !editing || !isPlayGroup;
-    $(`action-playgroup-name-${index}`).disabled = !editing || !isPlayGroup;
-    if (editing && isPlayGroup) refreshPlayGroupGroups();
-    sourceInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
-    sceneInput.closest('td').classList.toggle('action-setting-inactive', isPlayGroup);
-    playGroupActionSelect.closest('td').classList.toggle('action-setting-inactive', !isPlayGroup);
+    sourceInput.disabled = !editing || isPlugin;
+    sceneInput.disabled = !editing || isPlugin;
+    playGroupActionSelect.disabled = !editing || !isPlugin;
+    targetInput.disabled = !editing || !isPlugin;
+    if (editing && isPlayScore) refreshPlayScoreGraphics();
+    else if (editing && isPlugin) refreshPlayGroupGroups();
+    sourceInput.closest('td').classList.toggle('action-setting-inactive', isPlugin);
+    sceneInput.closest('td').classList.toggle('action-setting-inactive', isPlugin);
+    playGroupActionSelect.closest('td').classList.toggle('action-setting-inactive', !isPlugin);
 };
 
 const saveActionSettingsRow = (index) => {
@@ -829,6 +846,7 @@ const saveActionSettingsRow = (index) => {
             actionType: actionSelect.value,
             playGroupAction: playGroupActionSelect.value,
             playGroupName: $(`action-playgroup-name-${idx}`).value.trim(),
+            autoSeconds: normalizeAutoSeconds($(`action-auto-${idx}`).value),
         };
     });
     localStorage.setItem(ACTION_SETTINGS_KEY, JSON.stringify(settings));
@@ -836,6 +854,13 @@ const saveActionSettingsRow = (index) => {
     toggleActionEditMode(index, false);
     showToast(translations[currentLang].toastActionSaved, 'success');
 }
+
+// Blank = off. A number = press this Action when the countdown reaches that many seconds left.
+const normalizeAutoSeconds = (value) => {
+    if (value === '' || value === null || value === undefined) return null;
+    const seconds = parseInt(value, 10);
+    return Number.isNaN(seconds) || seconds < 0 ? null : Math.min(seconds, 86400);
+};
 
 const loadActionSettings = () => {
     const savedSettings = JSON.parse(localStorage.getItem(ACTION_SETTINGS_KEY));
@@ -847,7 +872,8 @@ const loadActionSettings = () => {
             targetScene: setting.targetScene || '',
             actionType: setting.actionType || 'Toggle',
             playGroupAction: setting.playGroupAction || 'Toggle',
-            playGroupName: setting.playGroupName || ''
+            playGroupName: setting.playGroupName || '',
+            autoSeconds: normalizeAutoSeconds(setting.autoSeconds)
         }));
     }
     return defaultActionSettings.map(setting => ({ ...setting }));
@@ -872,6 +898,192 @@ const deleteActionButton = (index) => {
     populateActionSettingsTable(currentLang);
 };
 
+// What pressing an Action button does. The countdown automation calls this too.
+const runActionSetting = async (setting) => {
+    const targetSource = setting.targetSource;
+    const targetScene = setting.targetScene || '';
+    const actionType = setting.actionType;
+
+    if (actionType === 'PlayGroup') {
+        try {
+            await runPlayGroupAction(setting.playGroupAction, setting.playGroupName);
+            showToast(playGroupToastText(setting.playGroupAction, setting.playGroupName), 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+        return;
+    }
+    if (actionType === 'PlayScore') {
+        try {
+            const done = await runPlayScoreAction(setting.playGroupAction, setting.playGroupName);
+            showToast(`PlayScore ${done}${setting.playGroupName ? ` → ${setting.playGroupName}` : ''}`, 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+        return;
+    }
+    if (!targetSource) {
+        return showToast('Source Name is missing.', 'error');
+    }
+    let newState = null;
+    if (actionType === 'Show') {
+        newState = true;
+    } else if (actionType === 'Hide') {
+        newState = false;
+    } else if (actionType === 'Toggle') {
+        try {
+            newState = !(await getSourceVisibility(targetSource, targetScene));
+        } catch (err) {
+            showToast(`${translations[currentLang].toastActionControlFailed} ${targetSource} (${err.message})`, 'error');
+            return;
+        }
+    }
+
+    if (newState !== null) {
+        setSourceVisibility(targetSource, newState, targetScene)
+            .then(() => {
+                if (actionType === 'Toggle') {
+                    setting.internalState = newState;
+                }
+                showToast(`Source '${targetSource}' set to ${newState ? 'Show' : 'Hide'}`, 'success');
+            })
+            .catch(() => { });
+    }
+};
+
+// Called once for each second the countdown drops, so an Action fires one time per run.
+const runCountdownActions = (secondsLeft) => {
+    loadActionSettings()
+        .filter(setting => setting.autoSeconds === secondsLeft)
+        .forEach(setting => runActionSetting(setting));
+    loadTimerRules()
+        .filter(rule => rule.seconds === secondsLeft)
+        .forEach(rule => runActionSetting(timerRuleToAction(rule)));
+};
+
+// Time settings > Automatic: when the countdown reaches a number of seconds, do what an Action button does.
+// Rule: { seconds, target: "PlayScore" | "PlayGroup" | "Source", action: "Hide" | "Show" | "Toggle", name }
+const TIMER_RULE_TARGETS = ['PlayScore', 'PlayGroup', 'Source'];
+const TIMER_RULE_ACTIONS = ['Hide', 'Show', 'Toggle'];
+
+const loadTimerRules = () => {
+    let saved = null;
+    try {
+        saved = JSON.parse(localStorage.getItem(TIMER_RULES_KEY));
+    } catch {
+        saved = null;
+    }
+    if (!Array.isArray(saved)) return [];
+    return saved.map(rule => ({
+        seconds: normalizeAutoSeconds(rule?.seconds),
+        target: TIMER_RULE_TARGETS.includes(rule?.target) ? rule.target : 'PlayScore',
+        action: TIMER_RULE_ACTIONS.includes(rule?.action) ? rule.action : 'Hide',
+        name: String(rule?.name || '')
+    }));
+};
+
+const saveTimerRules = (rules) => {
+    localStorage.setItem(TIMER_RULES_KEY, JSON.stringify(rules));
+};
+
+// Uses the same code as pressing an Action button.
+const timerRuleToAction = (rule) => {
+    if (rule.target === 'Source') {
+        return { actionType: rule.action, targetSource: rule.name.trim(), targetScene: '' };
+    }
+    return { actionType: rule.target, playGroupAction: rule.action, playGroupName: rule.name };
+};
+
+const renderTimerRules = () => {
+    const container = document.getElementById('timerRulesList');
+    if (!container) return;
+    const trans = translations[currentLang] || translations.en;
+    const rules = loadTimerRules();
+    container.innerHTML = '';
+
+    const select = (options, value, label) => {
+        const element = document.createElement('select');
+        element.setAttribute('aria-label', label);
+        options.forEach(option => {
+            const item = document.createElement('option');
+            item.value = option;
+            item.textContent = option === 'Source' ? trans.timerRuleSource : option;
+            element.appendChild(item);
+        });
+        element.value = value;
+        return element;
+    };
+
+    rules.forEach((rule, index) => {
+        const row = document.createElement('div');
+        row.className = 'timer-rule-row';
+
+        const seconds = document.createElement('input');
+        seconds.type = 'number';
+        seconds.min = '0';
+        seconds.max = '86400';
+        seconds.value = rule.seconds ?? '';
+        seconds.className = 'timer-rule-seconds';
+        seconds.setAttribute('aria-label', trans.timerRuleSeconds);
+        const unit = document.createElement('span');
+        unit.textContent = trans.timerRuleSeconds;
+
+        const target = select(TIMER_RULE_TARGETS, rule.target, trans.timerRuleTarget);
+        const action = select(TIMER_RULE_ACTIONS, rule.action, trans.timerRuleAction);
+
+        const name = document.createElement('input');
+        name.type = 'text';
+        name.value = rule.name;
+        name.className = 'timer-rule-name';
+        const applyNameField = () => {
+            const isPlayScore = target.value === 'PlayScore';
+            name.style.display = isPlayScore ? 'none' : '';
+            name.placeholder = target.value === 'Source' ? trans.timerRuleSourceName : trans.timerRuleGroupName;
+            name.setAttribute('aria-label', name.placeholder);
+            if (target.value === 'PlayGroup') name.setAttribute('list', 'playgroup-groups-list');
+            else name.removeAttribute('list');
+        };
+        applyNameField();
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn-danger';
+        remove.title = trans.timerRuleDelete;
+        remove.setAttribute('aria-label', trans.timerRuleDelete);
+        remove.innerHTML = '<i class="fas fa-trash"></i>';
+        remove.addEventListener('click', () => {
+            const current = loadTimerRules();
+            current.splice(index, 1);
+            saveTimerRules(current);
+            renderTimerRules();
+        });
+
+        // Each change is saved at once, so closing the window never loses a rule.
+        const save = () => {
+            applyNameField();
+            const current = loadTimerRules();
+            current[index] = {
+                seconds: normalizeAutoSeconds(seconds.value),
+                target: target.value,
+                action: action.value,
+                name: name.value
+            };
+            saveTimerRules(current);
+        };
+        [seconds, target, action, name].forEach(field => field.addEventListener('change', save));
+
+        row.append(seconds, unit, target, action, name, remove);
+        container.appendChild(row);
+    });
+};
+
+const addTimerRule = () => {
+    const rules = loadTimerRules();
+    rules.push({ seconds: 10, target: 'PlayScore', action: 'Hide', name: '' });
+    saveTimerRules(rules);
+    renderTimerRules();
+};
+
 const renderActionButtons = () => {
     const settings = loadActionSettings();
 
@@ -885,48 +1097,14 @@ const renderActionButtons = () => {
         button.style.color = getContrastColor(setting.backgroundColor); // auto black/white text, same rule as the score
         button.style.height = `${setting.height}px`;
 
-        const targetSource = setting.targetSource;
-        const targetScene = setting.targetScene || '';
-        const actionType = setting.actionType;
+        if (setting.autoSeconds !== null && setting.autoSeconds !== undefined) {
+            const badge = document.createElement('span');
+            badge.style.cssText = 'margin-left:6px;font-size:0.72em;opacity:0.85;white-space:nowrap;';
+            badge.innerHTML = `<i class="fas fa-stopwatch"></i> ${setting.autoSeconds}s`;
+            button.appendChild(badge);
+        }
 
-        button.onclick = async () => {
-            if (actionType === 'PlayGroup') {
-                try {
-                    await runPlayGroupAction(setting.playGroupAction, setting.playGroupName);
-                    showToast(playGroupToastText(setting.playGroupAction, setting.playGroupName), 'success');
-                } catch (err) {
-                    showToast(err.message, 'error');
-                }
-                return;
-            }
-            if (!targetSource) {
-                return showToast('Source Name is missing.', 'error');
-            }
-            let newState = null;
-            if (actionType === 'Show') {
-                newState = true;
-            } else if (actionType === 'Hide') {
-                newState = false;
-            } else if (actionType === 'Toggle') {
-                try {
-                    newState = !(await getSourceVisibility(targetSource, targetScene));
-                } catch (err) {
-                    showToast(`${translations[currentLang].toastActionControlFailed} ${targetSource} (${err.message})`, 'error');
-                    return;
-                }
-            }
-
-            if (newState !== null) {
-                setSourceVisibility(targetSource, newState, targetScene)
-                    .then(() => {
-                        if (actionType === 'Toggle') {
-                            settings[i].internalState = newState;
-                        }
-                        showToast(`Source '${targetSource}' set to ${newState ? 'Show' : 'Hide'}`, 'success');
-                    })
-                    .catch(() => { });
-            }
-        };
+        button.onclick = () => runActionSetting(setting);
         elements.actionButtonsGrid.appendChild(button);
     });
 }
@@ -974,6 +1152,59 @@ const runPlayGroupAction = async (action, group = '') => {
         throw new Error(`${trans.actionSettingsPlayGroupUnavailable} (${data.error || 'unknown'})`);
     }
     return response;
+};
+
+// PlayScore plugin contract (OBS WebSocket vendor "PlayScore"):
+//   Show { graphic?: "<graphic name or id>" }, Hide {}, List {} -> { sources: [{ onAir, graphics }] }
+const callPlayScore = async (requestType, requestData = {}) => {
+    const unavailable = translations[currentLang].actionSettingsPlayScoreUnavailable;
+    if (!obs || typeof obs.call !== 'function') throw new Error(unavailable);
+    let response;
+    try {
+        response = await obs.call('CallVendorRequest', { vendorName: 'PlayScore', requestType, requestData });
+    } catch (err) {
+        console.error('PlayScore request failed:', err);
+        const detail = err?.message || err?.error || err?.code;
+        throw new Error(detail ? `${unavailable} (${detail})` : unavailable);
+    }
+    const data = response?.responseData;
+    if (data && data.ok === false) throw new Error(`${unavailable} (${data.error || 'unknown'})`);
+    return data;
+};
+
+// Returns the request that was sent ("Show" or "Hide").
+const runPlayScoreAction = async (action, graphic = '') => {
+    let wanted = String(action || 'Toggle');
+    if (wanted === 'Toggle') {
+        const list = await callPlayScore('List');
+        wanted = (list?.sources || []).some(source => source.onAir) ? 'Hide' : 'Show';
+    }
+    const name = String(graphic || '').trim();
+    await callPlayScore(wanted, wanted === 'Show' && name ? { graphic: name } : {});
+    return wanted;
+};
+
+// Fills a <datalist> with the graphics of the PlayScore sources.
+const refreshPlayScoreGraphics = async () => {
+    let list = document.getElementById('playscore-graphics-list');
+    if (!list) {
+        list = document.createElement('datalist');
+        list.id = 'playscore-graphics-list';
+        document.body.appendChild(list);
+    }
+    try {
+        const data = await callPlayScore('List');
+        list.innerHTML = '';
+        const names = new Set();
+        (data?.sources || []).forEach(source => (source.graphics || []).forEach(g => names.add(g.name)));
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            list.appendChild(option);
+        });
+    } catch (err) {
+        console.warn('PlayScore graphics list unavailable:', err);
+    }
 };
 
 // Fills the shared <datalist> with PlayGroup groups so the Group field can autocomplete.
@@ -1031,6 +1262,7 @@ const populateActionSettingsTable = (lang) => {
                     <option value="Hide" ${setting.actionType === 'Hide' ? 'selected' : ''}>Hide</option>
                     <option value="Scene" ${setting.actionType === 'Scene' ? 'selected' : ''}>Scene</option>
                     <option value="PlayGroup" ${setting.actionType === 'PlayGroup' ? 'selected' : ''}>PlayGroup</option>
+                    <option value="PlayScore" ${setting.actionType === 'PlayScore' ? 'selected' : ''}>PlayScore</option>
                 </select>
             </td>
             <td>
@@ -1042,6 +1274,8 @@ const populateActionSettingsTable = (lang) => {
                 <input type="text" id="action-playgroup-name-${index}" class="action-playgroup-name" list="playgroup-groups-list"
                     value="${escapeAttr(setting.playGroupName || '')}" placeholder="${escapeAttr(trans.actionSettingsPlayGroupNamePlaceholder)}" disabled>
             </td>
+            <td><input type="number" id="action-auto-${index}" value="${setting.autoSeconds ?? ''}" min="0" max="86400" style="width: 62px;"
+                placeholder="${escapeAttr(trans.actionSettingsAutoOff)}" title="${escapeAttr(trans.actionSettingsAutoHint)}" disabled></td>
             <td>
                 <div class="action-buttons">
                     <button id="action-edit-${index}" class="btn-secondary" title="${trans.edit}"><i class="fas fa-pencil-alt"></i></button>
@@ -1545,25 +1779,29 @@ const populateLogoCacheList = () => {
     }
 
     if (keys.length === 0) {
+        elements.logoCacheList.classList.remove('logo-cache-grid');
         elements.logoCacheList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted-color);">${translations[currentLang].logoCacheEmpty}</p>`;
         return;
     }
 
+    // V2.9.6.0: logos as a grid (see .logo-cache-grid in theme-pro.css) so the list stays short
+    elements.logoCacheList.classList.add('logo-cache-grid');
     keys.forEach(key => {
         const li = document.createElement('li');
-        li.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem; padding: 5px; border-radius: 4px; cursor: pointer; transition: background 0.2s;';
+        li.className = 'logo-cache-tile';
+        li.title = key;
         const img = document.createElement('img');
         img.src = logoCache[key];
         img.alt = key;
-        img.style.cssText = 'width: 24px; height: 24px; object-fit: contain; border-radius: 4px;';
+        img.loading = 'lazy';
         const span = document.createElement('span');
         span.textContent = key;
         li.appendChild(img);
         li.appendChild(span);
 
         li.onclick = () => {
-            Array.from(elements.logoCacheList.children).forEach(c => c.style.backgroundColor = '');
-            li.style.backgroundColor = 'var(--accent-color)';
+            Array.from(elements.logoCacheList.children).forEach(c => c.classList.remove('is-on'));
+            li.classList.add('is-on');
             copySourceName(key); // Copy name on click
         };
 
@@ -1784,7 +2022,12 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     // Logos that only exist in the Dock cache (jamornz.com / dropped images) are written to a
     // real PNG file first, then the Image source gets that full path.
     const cachedLogoSrc = resolveCachedLogo(masterTeam.logoFile);
-    const logoUpdatePromise = (cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc))
+    // Plain file names keep using the logo folder (as before), unless the logo itself is a URL or the
+    // Dock is working with jamornz.com logos.
+    const isDirectLogoUrl = /^(https?:|data:)/i.test(String(masterTeam.logoFile || '').trim());
+    const useCachedLogoFile = !!cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc)
+        && (isDirectLogoUrl || !!jamornzConnection || dataSourceMode === 'jamornz');
+    const logoUpdatePromise = useCachedLogoFile
         ? materializeLogoFile(masterTeam.logoFile, cachedLogoSrc)
             .then(path => setImage(obsLogoSource, path || masterTeam.logoFile))
         : setImage(obsLogoSource, masterTeam.logoFile);
@@ -2130,13 +2373,19 @@ const startTimer = () => {
     updateTimerDisplay(); // Update immediately
     syncJamornzMatch('live', true);
     interval = setInterval(() => {
+        let counted = false;
         if (isCountdown) {
-            if (timer > 0) timer--;
-            else stopTimer();
+            if (timer > 0) {
+                timer--;
+                counted = true;
+            } else {
+                stopTimer();
+            }
         } else {
             timer++;
         }
         updateTimerDisplay();
+        if (counted) runCountdownActions(timer);
     }, 1000);
 };
 
@@ -2178,6 +2427,8 @@ const openTimeSettings = () => {
     const seconds = countdownStartTime % 60;
     elements.startTimeMinutes.value = minutes;
     elements.startTimeSeconds.value = seconds;
+    renderTimerRules();
+    refreshPlayGroupGroups();
     openPopup(elements.timeSettingsPopup);
 };
 
@@ -4131,6 +4382,15 @@ const setupEventListeners = () => {
         switchSettingsTab('settingsTabLabelAll');
     });
 
+    // V2.9.6.1: Gear on the timer card opens Settings straight on the Timer tab
+    const timerSettingsBtn = document.getElementById('timerSettingsBtn');
+    if (timerSettingsBtn) timerSettingsBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        elements.settingsBtn.click();
+        switchSettingsTab('settingsTabTimer');
+    });
+
     const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
     if (cleanCheck) {
         cleanCheck.addEventListener('change', () => {
@@ -4194,6 +4454,7 @@ const setupEventListeners = () => {
     }
 
     elements.saveTimeSettingsBtn.addEventListener('click', saveTimeSettings);
+    document.getElementById('addTimerRuleBtn')?.addEventListener('click', addTimerRule);
     elements.saveAndUpdateTimeBtn.addEventListener('click', saveAndUpdateTime);
 
     elements.editBtnA.addEventListener('click', () => enterEditMode('A'));
@@ -4216,6 +4477,17 @@ const setupEventListeners = () => {
 
     elements.injuryTimePlusBtn.addEventListener('click', () => changeInjuryTime(1));
     elements.injuryTimeMinusBtn.addEventListener('click', () => changeInjuryTime(-1));
+    // V2.9.6.0: show the added time on air through PlayScore (graphic named "injury").
+    const injuryShowBtn = document.getElementById('injuryShowBtn');
+    if (injuryShowBtn) injuryShowBtn.addEventListener('click', async () => {
+        if (injuryTime <= 0) return showToast('ยังไม่ได้ใส่ทดเวลา กด + ก่อน', 'warning');
+        try {
+            await runPlayScoreAction('Show', 'injury');
+            showToast(`PlayScore: ทดเวลา +${injuryTime}`, 'success');
+        } catch (err) {
+            showToast(err.message || 'PlayScore ไม่ตอบสนอง', 'error');
+        }
+    });
 
     elements.logoPathBtn.addEventListener('click', () => {
         populateLogoCacheList();
@@ -4229,7 +4501,7 @@ const setupEventListeners = () => {
             elements.logoPathInput.focus();
             btnSpan.textContent = trans.save;
         } else {
-            const newPath = elements.logoPathInput.value.trim().replace(/\\/g, '/');
+            const newPath = cleanLogoFolderPath(elements.logoPathInput.value) || 'C:/OBSAssets/logos';
             logoFolderPath = newPath;
             localStorage.setItem('logoFolderPath', newPath);
             elements.currentLogoPath.textContent = newPath;
@@ -4238,6 +4510,11 @@ const setupEventListeners = () => {
             elements.logoPathInput.disabled = true;
             btnSpan.textContent = trans.edit;
             showToast(trans.toastSaved, 'success');
+            // Send the logos from the new folder to OBS right away.
+            lastQueuedImagePath.clear();
+            lastAppliedImagePath.clear();
+            updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+            updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
         }
     });
 
@@ -4390,7 +4667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const savedPath = localStorage.getItem('logoFolderPath');
     if (savedPath) {
-        logoFolderPath = savedPath.replace(/\\/g, '/');
+        logoFolderPath = cleanLogoFolderPath(savedPath) || logoFolderPath;
     }
 
     // LOAD DATA SOURCE SETTINGS
@@ -4720,7 +4997,7 @@ window.fcpAPI = {
 };
 
 // Import Remote Logic
-import './remote.js';
+import './remote.js?v=2.9.6.0d';
 
 // --- Welcome Screen Logic ---
 window.initWelcomeScreen = () => {
@@ -5669,13 +5946,17 @@ window.fcpOBS = obs;
 // V2.9.5.8: score helpers for sport add-ons (snooker_module.js). Same path as the +/- buttons (undo, OBS, sync).
 window.fcpChangeScore = changeScore;
 window.fcpChangeScore2 = changeScore2;
+window.runPlayScoreAction = runPlayScoreAction;
+window.fcpCreateObsSource = createObsSource; // V2.9.6.0: source manager (dock_shell.js)
 if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.8';
+import './volleyball_module_v2.js?v=2.9.6.0d';
 import './display_table_module.js?v=2.9.5.2';
 import './snooker_module.js?v=2.9.5.8-2';
+import './futsal_module.js?v=2.9.6.0b';
+import './dock_shell.js?v=2.9.6.0d';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

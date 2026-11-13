@@ -418,7 +418,7 @@
         }
       `;
     }
-    style.textContent = css;
+    if (style.textContent !== css) style.textContent = css; // only when the font changed
   }
 
   function render(state) {
@@ -532,10 +532,12 @@
   }
 
   // ─── BroadcastChannel Listener ────────────────────────────
+  let lastChannelAt = 0;
   try {
     const ch = new BroadcastChannel(VB_CHANNEL);
     ch.onmessage = e => {
       if (e.data?.type === 'vb_update') {
+        lastChannelAt = Date.now();
         render(e.data.payload);
       }
     };
@@ -543,6 +545,7 @@
 
   // ─── LocalStorage Fallback Listener ───────────────────────
   window.addEventListener('storage', e => {
+    if (Date.now() - lastChannelAt < 3000) return; // already received through the BroadcastChannel
     if (e.key === VB_STATE_KEY && e.newValue) {
       try { render(JSON.parse(e.newValue)); } catch (_) {}
     }

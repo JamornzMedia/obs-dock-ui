@@ -402,6 +402,13 @@ obs_names/{nameKey}/  # ดัชนีชื่อ → { ID, name }  (nameKey =
 - Action แบบ PlayGroup ไม่ใช้ `targetSource` หรือ `targetScene`; 1 ปุ่มสั่ง 1 Group (ไม่มีการสั่งรวมทุก Group)
 - ฟังก์ชัน: `triggerAction(index)` (line 2585) — index เป็น 1-based
 
+### ทำงานอัตโนมัติเมื่อเวลาเหลือ (หน้าตั้งเวลา, v2.9.5.9)
+
+- เก็บใน localStorage key `timerAutoRules`: `[{ seconds, target, action, name }]`
+- `target`: `PlayScore` (สั่งทุก Source ของ PlayScore ไม่ต้องใส่ชื่อ), `PlayGroup` (ใส่ชื่อ Group), `Source` (ใส่ชื่อ OBS Source ใน Scene ปัจจุบัน)
+- `action`: `Hide`, `Show`, `Toggle`
+- `runCountdownActions` เรียกทุกครั้งที่นับถอยหลังลดลง 1 วินาที และใช้ `runActionSetting` ทางเดียวกับปุ่ม Action
+
 ---
 
 ## 📊 Data Source System (Excel / Google Sheet / Jamornz.com)
