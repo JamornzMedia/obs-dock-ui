@@ -4133,6 +4133,9 @@ const setupEventListeners = () => {
         const applyScoreSwap = (swapped) => {
             const panel = document.getElementById('matchBoard') || document.querySelector('.score-panel-clean');
             if (panel) panel.style.flexDirection = swapped ? 'row-reverse' : 'row';
+            // V2.9.6.1: score 2 stays on the same side as its team's main score
+            const panel2 = document.querySelector('#score2Card .score-panel-clean');
+            if (panel2 && panel2 !== panel) panel2.style.flexDirection = swapped ? 'row-reverse' : 'row';
             swapState.innerHTML = swapped
                 ? '<span style="color:#fbbf24;">สลับแล้ว</span><br><span style="color:#fde68a;">B | A</span>'
                 : '<span style="color:#94a3b8;">ปกติ</span><br><span style="color:#cbd5e1;">A | B</span>';
@@ -5952,11 +5955,11 @@ if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.6.0d';
+import './volleyball_module_v2.js?v=2.9.6.1';
 import './display_table_module.js?v=2.9.5.2';
-import './snooker_module.js?v=2.9.5.8-2';
+import './snooker_module.js?v=2.9.6.1';
 import './futsal_module.js?v=2.9.6.0b';
-import './dock_shell.js?v=2.9.6.0d';
+import './dock_shell.js?v=2.9.6.1b';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

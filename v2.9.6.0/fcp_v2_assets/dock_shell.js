@@ -9,9 +9,9 @@
 //  The old controls (settings tab select, help table, module buttons) keep working.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { SPORTS, SPORT_GROUPS, getSport, currentSport } from './sports.js?v=2.9.6.0d';
+import { SPORTS, SPORT_GROUPS, getSport, currentSport, sportGfxOn } from './sports.js?v=2.9.6.1';
 import { SOURCE_CATEGORIES, SOURCES } from './source_catalog.js?v=2.9.6.0d';
-import { apply as applyLayout, startEdit, isGroupHidden, setGroupHidden } from './layout_manager.js?v=2.9.6.0d';
+import { apply as applyLayout, startEdit, isGroupHidden, setGroupHidden } from './layout_manager.js?v=2.9.6.1b';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -27,15 +27,11 @@ function selectSport(id) {
   if (!sport) return;
   store.set('fcp_sport', sport.id);
   store.set('vb_sport', sport.engine);
-  // Keep the settings-tab select in step; its change handler refreshes the old modules.
-  const sel = $('vb2-sport-select');
-  if (sel) {
-    if (![...sel.options].some((o) => o.value === sport.engine)) sel.add(new Option(sport.en, sport.engine));
-    sel.value = sport.engine;
-    sel.dispatchEvent(new Event('change'));
-  } else if (window.updateSportUI) {
-    window.updateSportUI();
-  }
+  // V2.9.6.1: Sport Graphics on/off follows the sport (remembered per sport)
+  store.set('vb_enabled', sportGfxOn(sport.id) ? 'true' : 'false');
+  // Settings > Sport Graphics (select, toggle, sections) and the score buttons follow
+  if (typeof window.vbSyncSettings === 'function') window.vbSyncSettings();
+  else if (window.updateSportUI) window.updateSportUI();
   if (window.futsalModule) window.futsalModule.refresh();
   if (window.snookerModule) window.snookerModule.refresh();
   if (typeof window.vbRefreshPanel === 'function') window.vbRefreshPanel(); // Sport Graphics card follows the sport
@@ -44,6 +40,12 @@ function selectSport(id) {
   applyLayout(); // this sport's order of groups and its scoring controls
   toast(`กีฬา: ${sport.th}`, 'success');
 }
+
+// The Sport Graphics settings tab picks the sport through here too.
+window.fcpSelectSport = selectSport;
+
+// Sport Graphics on/off always comes from the sport in use (its default, or what was set for it)
+store.set('vb_enabled', sportGfxOn(currentSport().id) ? 'true' : 'false');
 
 // ── App bar ─────────────────────────────────────────────────────────
 function buildBar() {

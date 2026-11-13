@@ -10,7 +10,7 @@
 //  graphics, display table) stay off when they do not apply.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { currentSport } from './sports.js?v=2.9.6.0d';
+import { currentSport } from './sports.js?v=2.9.6.1';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -41,7 +41,7 @@ const PROFILES = {
   '*': { order: ['data', 'teams', 'swap', 'timer', 'actions', 'score2', 'fouls', 'snooker', 'sportgfx', 'table', 'tools'], hidden: [] },
   football: { order: ['data', 'teams', 'swap', 'timer', 'actions', 'sportgfx', 'table', 'tools'], hidden: ['score2'] },
   football7: { order: ['data', 'teams', 'swap', 'timer', 'actions', 'sportgfx', 'table', 'tools'], hidden: ['score2'] },
-  futsal: { order: ['data', 'teams', 'fouls', 'timer', 'swap', 'actions', 'sportgfx', 'table', 'tools'], hidden: ['score2'] },
+  futsal: { order: ['data', 'teams', 'score2', 'fouls', 'timer', 'swap', 'actions', 'sportgfx', 'table', 'tools'], hidden: [] },
   basketball: { order: ['data', 'teams', 'score2', 'timer', 'swap', 'actions', 'sportgfx', 'table', 'tools'], hidden: [] },
   streetball: { order: ['data', 'teams', 'score2', 'timer', 'swap', 'actions', 'sportgfx', 'table', 'tools'], hidden: [] },
   volleyball: { order: ['data', 'teams', 'score2', 'sportgfx', 'swap', 'actions', 'table', 'tools'], hidden: ['timer'] },
@@ -94,6 +94,17 @@ export function setGroupHidden(groupId, hide, sportId) {
   setLayout(layout, key);
   apply();
 }
+
+// V2.9.6.1: futsal now shows score 2. Once, unhide it in a futsal layout saved before.
+(() => {
+  if (store.get('fcp_futsal_score2_v1', '') === '1') return;
+  const all = saved();
+  if (all.futsal && Array.isArray(all.futsal.hidden) && all.futsal.hidden.includes('score2')) {
+    all.futsal.hidden = all.futsal.hidden.filter((x) => x !== 'score2');
+    store.set(KEY, JSON.stringify(all));
+  }
+  store.set('fcp_futsal_score2_v1', '1');
+})();
 
 // ── Apply ───────────────────────────────────────────────────────────
 let applying = false;

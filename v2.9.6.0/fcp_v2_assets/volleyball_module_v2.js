@@ -12,6 +12,8 @@
 //    - window.fcpOBS      (exported handle, see bottom of this file)
 // ═══════════════════════════════════════════════════════════════════════
 
+import { SPORTS, getSport, currentSport, setSportGfxOn } from './sports.js?v=2.9.6.1';
+
 // ── Constants ────────────────────────────────────────────────────────
 const VB_STATE_KEY   = 'vb_state';
 const VB_HISTORY_KEY = 'vb_set_history';
@@ -661,16 +663,19 @@ function getSportEmoji(sport) {
 function updateSportUI() {
   const sport = localStorage.getItem('vb_sport') || 'volleyball';
   const vbEnabled = localStorage.getItem('vb_enabled') !== 'false';
-  const btnsA = document.getElementById('basketballBtnsA');
-  const btnsB = document.getElementById('basketballBtnsB');
-  
-  if (vbEnabled && (sport === 'basketball' || sport === 'streetball')) {
-    if (btnsA) btnsA.style.display = 'flex';
-    if (btnsB) btnsB.style.display = 'flex';
-  } else {
-    if (btnsA) btnsA.style.display = 'none';
-    if (btnsB) btnsB.style.display = 'none';
-  }
+  // V2.9.6.1: extra score buttons come from the sport (basketball +2 +3, 3x3 +2),
+  // whether Sport Graphics is on or off
+  const sp = currentSport();
+  const steps = (sp && sp.engine === sport && Array.isArray(sp.steps)) ? sp.steps
+    : (sport === 'basketball' ? [2, 3] : sport === 'streetball' ? [2] : []);
+  ['A', 'B'].forEach(t => {
+    const box = document.getElementById(`basketballBtns${t}`);
+    if (box) box.style.display = steps.length ? 'flex' : 'none';
+    const b2 = document.getElementById(`score${t}Plus2Btn`);
+    const b3 = document.getElementById(`score${t}Plus3Btn`);
+    if (b2) b2.style.display = steps.includes(2) ? '' : 'none';
+    if (b3) b3.style.display = steps.includes(3) ? '' : 'none';
+  });
   
   const bxSettings = document.getElementById('vb2-boxing-settings-container');
   const vLimit = document.getElementById('vb2-volleyball-limit-wrapper');
@@ -718,6 +723,22 @@ function updateSportUI() {
   }
 }
 window.updateSportUI = updateSportUI;
+
+// V2.9.6.1: called by the sport picker so this tab shows the sport and its on/off
+function syncSettings() {
+  const sel = document.getElementById('vb2-sport-select');
+  if (sel) sel.value = currentSport().id;
+  const on = isEnabled();
+  const tog = document.getElementById('vb2-enabled-toggle');
+  if (tog) tog.checked = on;
+  const name = document.getElementById('vb2-enabled-sport');
+  if (name) name.textContent = currentSport().th;
+  const sec = document.getElementById('vb2-scores-section');
+  if (sec) { sec.style.opacity = on ? '1' : '0.4'; sec.style.pointerEvents = on ? '' : 'none'; }
+  updateSportUI();
+  broadcast();
+}
+window.vbSyncSettings = syncSettings;
 // V2.9.6.0: the sport picker (dock_shell.js) calls this so the Sport Graphics card follows the sport at once
 window.vbRefreshPanel = () => broadcast();
 
@@ -772,7 +793,7 @@ function injectSettingsTab() {
     <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:8px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06);">
       <div>
         <div style="font-size:.9rem;font-weight:600;color:#e2e8f0;">เปิดใช้งานกราฟิกกีฬา / Enable Sport Graphics</div>
-        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">เปิดใช้งานระบบซิงค์แต้มและกราฟิกถ่ายทอดสด</div>
+        <div style="font-size:.75rem;color:#64748b;margin-top:2px;">เปิดใช้งานระบบซิงค์แต้มและกราฟิกถ่ายทอดสด · จำแยกตามกีฬา (<span id="vb2-enabled-sport">-</span>)</div>
       </div>
       <label class="container-toggle" style="display:flex;align-items:center;cursor:pointer;margin:0;">
         <div class="toggle-switch">
@@ -800,16 +821,9 @@ function injectSettingsTab() {
     <div style="margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
       <div style="font-size: .85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">🏆 Active Sport / เลือกประเภทกีฬา</div>
       <select id="vb2-sport-select" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #fff; font-size: 14px; appearance: auto;">
-        <option value="volleyball"${getVbState('vb_sport', 'volleyball') === 'volleyball' ? ' selected' : ''}>Volleyball / วอลเลย์บอล</option>
-        <option value="basketball"${getVbState('vb_sport', 'volleyball') === 'basketball' ? ' selected' : ''}>Basketball / บาสเกตบอล</option>
-        <option value="football"${getVbState('vb_sport', 'volleyball') === 'football' ? ' selected' : ''}>Football 11 / ฟุตบอล 11 คน</option>
-        <option value="football7"${getVbState('vb_sport', 'volleyball') === 'football7' ? ' selected' : ''}>Football 7 / ฟุตบอล 7 คน</option>
-        <option value="futsal"${getVbState('vb_sport', 'volleyball') === 'futsal' ? ' selected' : ''}>Futsal / ฟุตซอล (มีฟาวล์สะสม)</option>
-        <option value="streetball"${getVbState('vb_sport', 'volleyball') === 'streetball' ? ' selected' : ''}>Streetball / สตรีทบอล</option>
-        <option value="badminton"${getVbState('vb_sport', 'volleyball') === 'badminton' ? ' selected' : ''}>Badminton / แบดมินตัน</option>
-        <option value="boxing"${getVbState('vb_sport', 'volleyball') === 'boxing' ? ' selected' : ''}>Boxing / มวย</option>
-        <option value="snooker"${getVbState('vb_sport', 'volleyball') === 'snooker' ? ' selected' : ''}>Snooker / สนุกเกอร์</option>
+        ${SPORTS.map(sp => `<option value="${sp.id}"${sp.id === currentSport().id ? ' selected' : ''}>${sp.th} / ${sp.en}</option>`).join('')}
       </select>
+      <div style="font-size:.72rem;color:#64748b;margin-top:6px;">ตรงกับปุ่ม "กีฬา" ด้านบนของ Dock เปลี่ยนที่ไหนก็ได้ ปุ่มกดคะแนนและการ์ดควบคุมจะเปลี่ยนตามกีฬา</div>
     </div>
     
     <!-- Football Graphic Settings -->
@@ -1300,6 +1314,7 @@ function injectSettingsTab() {
   // Enable toggle
   document.getElementById('vb2-enabled-toggle').addEventListener('change', e => {
     localStorage.setItem(VB_ENABLED_KEY, e.target.checked ? 'true' : 'false');
+    setSportGfxOn(currentSport().id, e.target.checked); // V2.9.6.1: remembered for this sport
     document.getElementById('vb2-scores-section').style.opacity     = e.target.checked ? '1' : '0.4';
     document.getElementById('vb2-scores-section').style.pointerEvents = e.target.checked ? '' : 'none';
     updateMainPanelUI(readScores());
@@ -1314,9 +1329,12 @@ function injectSettingsTab() {
   
   // Sport select
   document.getElementById('vb2-sport-select').addEventListener('change', e => {
-    localStorage.setItem('vb_sport', e.target.value);
-    updateSportUI();
-    broadcast();
+    // V2.9.6.1: one sport for the whole Dock — same as picking it from the "กีฬา" button
+    if (typeof window.fcpSelectSport === 'function') { window.fcpSelectSport(e.target.value); return; }
+    const sp = getSport(e.target.value);
+    localStorage.setItem('fcp_sport', e.target.value);
+    localStorage.setItem('vb_sport', sp ? sp.engine : e.target.value);
+    syncSettings();
   });
 
   // Football settings
@@ -1703,7 +1721,7 @@ function poll() {
 function boot() {
   injectCustomFont();
   injectSettingsTab();
-  updateSportUI();
+  syncSettings();
   updatePointHistoryList();
   broadcast(); // push initial state
   setInterval(poll, POLL_MS);

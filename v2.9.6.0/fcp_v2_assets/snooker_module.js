@@ -58,7 +58,8 @@ const getInt = (k, d = 0) => { const n = parseInt(get(k), 10); return Number.isF
 const getBool = (k) => get(k) === 'true';
 const $ = (id) => document.getElementById(id);
 
-const isActive = () => localStorage.getItem('vb_enabled') !== 'false' && (localStorage.getItem('vb_sport') || 'volleyball') === 'snooker';
+// V2.9.6.1: the snooker card is how snooker is scored, so it follows the sport only
+const isActive = () => (localStorage.getItem('vb_sport') || 'volleyball') === 'snooker';
 
 // ── Dock score access ────────────────────────────────────────────────
 function readDock() {
