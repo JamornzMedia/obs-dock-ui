@@ -2433,6 +2433,20 @@
             display: inline-flex; align-items: center; justify-content: center;
         }
         .mb-gear:hover { background: rgba(0,0,0,0.6); }
+        /* V2.9.6.1: small gear on the timer card -> Settings > Timer tab */
+        [data-panel-id="panelTimer"] { position: relative; }
+        html:not(.theme-pro) [data-panel-id="panelTimer"] { padding-top: 28px !important; }
+        .timer-gear {
+            position: absolute; top: 4px; right: 6px; z-index: 2;
+            width: 24px; height: 24px; min-width: 0; min-height: 0; padding: 0; margin: 0;
+            border-radius: 6px; border: 1px solid transparent; background: transparent;
+            color: rgba(255,255,255,0.55); font-size: 0.8rem; line-height: 1; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            box-shadow: none !important; transform: none !important;
+        }
+        html.theme-sport .timer-gear, html.theme-pro .timer-gear { background: transparent !important; border-color: transparent !important; border-radius: 6px !important; }
+        body.touch-mode .timer-gear { min-height: 0; width: 30px; height: 30px; font-size: 0.95rem; top: 2px; }
+        .timer-gear:hover, .timer-gear:focus-visible, html[class] .timer-gear:hover { color: #fff; background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; }
         .mb-bib-badge {
             position: absolute; top: 2px; left: 2px; display: none; font-size: 0.95rem;
             background: rgba(0,0,0,0.45); border-radius: 8px; padding: 1px 5px;
@@ -3299,6 +3313,7 @@
     </div>
 
     <div class="card" data-panel-id="panelTimer">
+        <button type="button" id="timerSettingsBtn" class="timer-gear" title="ตั้งค่าเวลา / Timer settings" data-lang-title="timerSettingsHint"><i class="fas fa-cog"></i></button>
         <div class="row timer-area-container">
             <div id="halfBtnContainer" style="display: flex; gap: 4px; flex: 0 0 auto; align-items: stretch; flex-shrink: 0; min-width: max-content; height: 54px;">
                 <button id="halfBtn" class="btn-secondary"
@@ -3483,6 +3498,7 @@
             <button type="button" class="settings-tab-btn" data-tab="settingsTabActions" data-lang="settingsTabActions">🎮 Actions</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabKeybinds" data-lang="settingsTabKeybinds">⌨️ Keys</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabVisibility" data-lang="settingsTabVisibility">👁️ Display</button>
+            <button type="button" class="settings-tab-btn" data-tab="settingsTabTimer" data-lang="settingsTabTimer">⏱️ Timer</button>
             <button type="button" class="settings-tab-btn" data-tab="settingsTabCache" style="color:#ef4444;"><i class="fas fa-trash-alt"></i> Cache</button>
             </div>
             <button type="button" class="settings-tabs-arrow" id="settingsTabArrowRight"><i class="fas fa-chevron-right"></i></button>
@@ -3983,9 +3999,6 @@
                         <option value="2" selected data-lang="colorCount2">2 Colors</option>
                     </select>
                 </label>
-                <div class="popup-divider" style="margin: 10px 0;"></div>
-                <h5 style="margin: 0 0 5px 0; color: var(--accent-color);" data-lang="visControlTitle">Timer Controls
-                    Visibility</h5>
                 <style>
                     /* Toggle Switch CSS */
                     .toggle-switch {
@@ -4035,6 +4048,19 @@
                         transform: translateX(20px);
                     }
                 </style>
+            </div>
+            <div class="popup-divider"></div>
+            <div class="row center" style="margin-bottom: 0;">
+                <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span
+                        data-lang="resetColors"></span></button>
+            </div>
+        </div>
+
+        <!-- V2.9.6.1: Timer settings tab (opened from the gear on the timer card) -->
+        <div class="settings-tab-content" id="settingsTabTimer">
+            <h4 style="margin: 0;"><i class="fas fa-stopwatch"></i> <span data-lang="settingsTimerTitle">Timer Settings</span></h4>
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+                <h5 style="margin: 0 0 5px 0; color: var(--accent-color);" data-lang="visControlTitle">Timer Controls Visibility</h5>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <label class="container-toggle" style="display: flex; align-items: center; cursor: pointer;">
                         <div class="toggle-switch">
@@ -4072,11 +4098,6 @@
                         <span data-lang="visUndoHalf">Undo Half Btn</span>
                     </label>
                 </div>
-            </div>
-            <div class="popup-divider"></div>
-            <div class="row center" style="margin-bottom: 0;">
-                <button id="resetColorsBtn" class="btn-danger"><i class="fas fa-paint-brush"></i> <span
-                        data-lang="resetColors"></span></button>
             </div>
         </div>
 
@@ -4760,7 +4781,7 @@
         });
     </script>
 
-    <script type="module" src="fcp_v2_assets/main.js?v=2.9.6.0d"></script>
+    <script type="module" src="fcp_v2_assets/main.js?v=2.9.6.0e"></script>
 
     <!-- V2.9.5.9: team name auto-shrink (max 2 lines) + score digit count for the big score font -->
     <script>

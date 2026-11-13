@@ -1,7 +1,7 @@
 // fcp_v2_assets/main.js
 
 import { VERSION, UPDATE_DATE } from './version.js?v=2.9.6.0d';
-import { translations } from './languages.js?v=2.9.6.0b';
+import { translations } from './languages.js?v=2.9.6.0e';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
 // Update version text elements as early as possible
@@ -4380,6 +4380,15 @@ const setupEventListeners = () => {
         loadLabelAllSettings();
         openPopup(elements.detailsPopup);
         switchSettingsTab('settingsTabLabelAll');
+    });
+
+    // V2.9.6.1: Gear on the timer card opens Settings straight on the Timer tab
+    const timerSettingsBtn = document.getElementById('timerSettingsBtn');
+    if (timerSettingsBtn) timerSettingsBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        elements.settingsBtn.click();
+        switchSettingsTab('settingsTabTimer');
     });
 
     const cleanCheck = document.getElementById('labelAllAutoCleanCheck');
