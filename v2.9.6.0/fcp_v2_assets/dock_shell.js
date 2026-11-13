@@ -9,9 +9,9 @@
 //  The old controls (settings tab select, help table, module buttons) keep working.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { SPORTS, SPORT_GROUPS, getSport, currentSport } from './sports.js?v=2.9.6.0b';
-import { SOURCE_CATEGORIES, SOURCES } from './source_catalog.js?v=2.9.6.0b';
-import { apply as applyLayout, startEdit } from './layout_manager.js?v=2.9.6.0b';
+import { SPORTS, SPORT_GROUPS, getSport, currentSport } from './sports.js?v=2.9.6.0d';
+import { SOURCE_CATEGORIES, SOURCES } from './source_catalog.js?v=2.9.6.0d';
+import { apply as applyLayout, startEdit, isGroupHidden, setGroupHidden } from './layout_manager.js?v=2.9.6.0d';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,6 +38,7 @@ function selectSport(id) {
   }
   if (window.futsalModule) window.futsalModule.refresh();
   if (window.snookerModule) window.snookerModule.refresh();
+  if (typeof window.vbRefreshPanel === 'function') window.vbRefreshPanel(); // Sport Graphics card follows the sport
   if (typeof window.pushPlayScore === 'function') window.pushPlayScore({ sport: sport.id });
   renderBar();
   applyLayout(); // this sport's order of groups and its scoring controls
@@ -128,18 +129,41 @@ function openSportSheet() {
   body.innerHTML = SPORT_GROUPS.map((g) => {
     const items = SPORTS.filter((s) => s.group === g.id);
     if (!items.length) return '';
-    return `<section class="fcp-group"><h3>${esc(g.th)}</h3><div class="fcp-sport-grid">${items.map((s) => `
-      <button type="button" class="fcp-sport-card${s.id === now ? ' is-on' : ''}" data-sport="${s.id}" aria-pressed="${s.id === now}">
-        <span class="fcp-sport-ico"><i class="fas ${s.icon}" aria-hidden="true"></i></span>
-        <span class="fcp-sport-info">
-          <b>${esc(s.th)}${s.beta ? ' <em class="fcp-badge">ใหม่</em>' : ''}</b>
-          <small>${esc(s.features.join(' • '))}</small>
-          <small class="fcp-dim">PlayScore: ${esc(s.preset)}</small>
-        </span>
-        ${s.id === now ? '<span class="fcp-check"><i class="fas fa-check" aria-hidden="true"></i> ใช้อยู่</span>' : ''}
-      </button>`).join('')}</div></section>`;
-  }).join('') + `<p class="fcp-note"><i class="fas fa-circle-info" aria-hidden="true"></i> กีฬาที่มีป้าย "ใหม่" ใช้ระบบนับของกีฬาใกล้เคียง (ตะกร้อใช้ระบบวอลเลย์ เทเบิลเทนนิสใช้ระบบแบด) • ตั้งค่ากราฟิก HTML ของแต่ละกีฬาอยู่ที่ ตั้งค่า → กราฟิกกีฬา</p>`;
+    return `<section class="fcp-group"><h3>${esc(g.th)}</h3><div class="fcp-sport-grid">${items.map((s) => {
+      const timerOn = !isGroupHidden('timer', s.id);
+      return `
+      <div class="fcp-sport-item">
+        <button type="button" class="fcp-sport-card${s.id === now ? ' is-on' : ''}" data-sport="${s.id}" aria-pressed="${s.id === now}">
+          <span class="fcp-sport-ico"><i class="fas ${s.icon}" aria-hidden="true"></i></span>
+          <span class="fcp-sport-info">
+            <b>${esc(s.th)}${s.beta ? ' <em class="fcp-badge">ใหม่</em>' : ''}</b>
+            <small>${esc(s.features.join(' • '))}</small>
+            <small class="fcp-dim">PlayScore: ${esc(s.preset)}</small>
+          </span>
+          ${s.id === now ? '<span class="fcp-check"><i class="fas fa-check" aria-hidden="true"></i> ใช้อยู่</span>' : ''}
+        </button>
+        <button type="button" class="fcp-timer-chip${timerOn ? ' is-on' : ''}" data-timer="${s.id}" role="switch" aria-checked="${timerOn}"
+          title="แสดงหรือซ่อนแผงเวลาเมื่อใช้${esc(s.th)}" aria-label="แผงเวลาของ${esc(s.th)}">
+          <i class="fas ${timerOn ? 'fa-stopwatch' : 'fa-eye-slash'}" aria-hidden="true"></i> เวลา: ${timerOn ? 'แสดง' : 'ซ่อน'}
+        </button>
+      </div>`;
+    }).join('')}</div></section>`;
+  }).join('') + `<p class="fcp-note"><i class="fas fa-circle-info" aria-hidden="true"></i> ปุ่ม "เวลา" ใต้การ์ด = แสดง/ซ่อนแผงเวลาของกีฬานั้น (จำแยกตามกีฬา) • กีฬาที่มีป้าย "ใหม่" ใช้ระบบนับของกีฬาใกล้เคียง (ตะกร้อใช้ระบบวอลเลย์ เทเบิลเทนนิสใช้ระบบแบด) • ตั้งค่ากราฟิก HTML ของแต่ละกีฬาอยู่ที่ ตั้งค่า → กราฟิกกีฬา</p>`;
   body.querySelectorAll('[data-sport]').forEach((b) => b.addEventListener('click', () => { selectSport(b.dataset.sport); closeSheet(el); }));
+  // With "ปรับหน้าตาตามกีฬา" off all sports share one layout, so refresh every switch.
+  const paintChips = () => body.querySelectorAll('[data-timer]').forEach((c) => {
+    const on = !isGroupHidden('timer', c.dataset.timer);
+    c.classList.toggle('is-on', on);
+    c.setAttribute('aria-checked', String(on));
+    c.innerHTML = `<i class="fas ${on ? 'fa-stopwatch' : 'fa-eye-slash'}" aria-hidden="true"></i> เวลา: ${on ? 'แสดง' : 'ซ่อน'}`;
+  });
+  body.querySelectorAll('[data-timer]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.timer;
+    const show = isGroupHidden('timer', id);
+    setGroupHidden('timer', !show, id);
+    paintChips();
+    toast(`${getSport(id)?.th || ''}: ${show ? 'แสดง' : 'ซ่อน'}แผงเวลา`, 'info');
+  }));
   openSheetEl(el);
 }
 
@@ -192,6 +216,8 @@ async function createOne(item, btn) {
 }
 
 const isThere = (item) => (item.checks || [item.name]).every((n) => existing.has(n));
+// "soon" sources are listed but cannot be created yet: they never count as missing
+const isMissing = (item) => !item.soon && !isThere(item);
 
 function visibleSources() {
   const sport = currentSport().id;
@@ -201,7 +227,8 @@ function visibleSources() {
 function renderSources(el) {
   const body = el.querySelector('.fcp-sheet-body');
   const list = visibleSources();
-  const missingAll = list.filter((s) => !isThere(s)).length;
+  const missingAll = list.filter(isMissing).length;
+  const countable = list.filter((s) => !s.soon).length;
   const open = new Set([...body.querySelectorAll('details[open]')].map((d) => d.dataset.cat));
   const first = !body.dataset.ready;
   body.dataset.ready = '1';
@@ -209,7 +236,7 @@ function renderSources(el) {
     <div class="fcp-src-top">
       <div class="fcp-status ${obsOnline ? 'is-ok' : 'is-off'}" role="status">
         <i class="fas ${obsOnline ? 'fa-circle-check' : 'fa-plug-circle-xmark'}" aria-hidden="true"></i>
-        ${obsOnline ? `เชื่อมต่อ OBS แล้ว • ขาด ${missingAll} จาก ${list.length}` : 'ยังไม่ได้เชื่อมต่อ OBS (ดูได้ แต่สร้างไม่ได้)'}
+        ${obsOnline ? `เชื่อมต่อ OBS แล้ว • ขาด ${missingAll} จาก ${countable}` : 'ยังไม่ได้เชื่อมต่อ OBS (ดูได้ แต่สร้างไม่ได้)'}
       </div>
       <div class="fcp-seg" role="group" aria-label="ตัวกรอง">
         <button type="button" data-all="0" aria-pressed="${!showAll}">เฉพาะ ${esc(currentSport().th)}</button>
@@ -221,13 +248,17 @@ function renderSources(el) {
     ${SOURCE_CATEGORIES.map((c) => {
       const items = list.filter((s) => s.cat === c.id);
       if (!items.length) return '';
-      const have = items.filter(isThere).length;
-      const isOpen = first ? have < items.length : open.has(c.id);
+      const real = items.filter((s) => !s.soon);
+      const have = real.filter(isThere).length;
+      const missing = real.length - have;
+      const isOpen = first ? missing > 0 : open.has(c.id);
       return `<details class="fcp-cat" data-cat="${c.id}"${isOpen ? ' open' : ''}>
         <summary>
           <i class="fas ${c.icon}" aria-hidden="true"></i>
           <span class="fcp-cat-name">${esc(c.th)}<small>${esc(c.note)}</small></span>
-          <span class="fcp-count ${have === items.length ? 'is-full' : ''}">${have}/${items.length}</span>
+          ${real.length
+            ? `<span class="fcp-count ${missing === 0 ? 'is-full' : ''}">${have}/${real.length}</span>`
+            : '<span class="fcp-count is-soon">รออัปเดต</span>'}
         </summary>
         <div class="fcp-src-list">
           ${items.map((s) => `
@@ -237,11 +268,13 @@ function renderSources(el) {
                 <small>${esc(s.th)}</small>
               </div>
               <span class="fcp-kind">${KIND_LABEL[s.kind] || s.kind}</span>
-              ${isThere(s)
-                ? '<span class="fcp-have"><i class="fas fa-check" aria-hidden="true"></i> มีแล้ว</span>'
-                : `<button type="button" class="fcp-create" data-create="${esc(s.name)}" ${obsOnline ? '' : 'disabled'}><i class="fas fa-plus" aria-hidden="true"></i> สร้าง</button>`}
+              ${s.soon
+                ? '<span class="fcp-soon"><i class="fas fa-hourglass-half" aria-hidden="true"></i> รออัปเดต</span>'
+                : isThere(s)
+                  ? '<span class="fcp-have"><i class="fas fa-check" aria-hidden="true"></i> มีแล้ว</span>'
+                  : `<button type="button" class="fcp-create" data-create="${esc(s.name)}" ${obsOnline ? '' : 'disabled'}><i class="fas fa-plus" aria-hidden="true"></i> สร้าง</button>`}
             </div>`).join('')}
-          ${have < items.length ? `<button type="button" class="fcp-create-all" data-create-cat="${c.id}" ${obsOnline ? '' : 'disabled'}><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> สร้างที่ขาดในหมวดนี้ (${items.length - have})</button>` : ''}
+          ${missing > 0 ? `<button type="button" class="fcp-create-all" data-create-cat="${c.id}" ${obsOnline ? '' : 'disabled'}><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> สร้างที่ขาดในหมวดนี้ (${missing})</button>` : ''}
         </div>
       </details>`;
     }).join('')}`;
@@ -265,7 +298,7 @@ function renderSources(el) {
   }));
   body.querySelectorAll('[data-create-cat]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;
-    const items = visibleSources().filter((s) => s.cat === b.dataset.createCat && !isThere(s));
+    const items = visibleSources().filter((s) => s.cat === b.dataset.createCat && isMissing(s));
     let ok = 0;
     for (const item of items) {
       b.innerHTML = `<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ${esc(item.name)}`;

@@ -10,7 +10,7 @@
 //  graphics, display table) stay off when they do not apply.
 // ═══════════════════════════════════════════════════════════════════════
 
-import { currentSport } from './sports.js?v=2.9.6.0b';
+import { currentSport } from './sports.js?v=2.9.6.0d';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -78,6 +78,21 @@ function resetLayout(key = layoutKey()) {
   const all = saved();
   delete all[key];
   store.set(KEY, JSON.stringify(all));
+}
+
+// Show / hide one group for a sport (used by the sport picker's "เวลา" switch).
+// With "ปรับหน้าตาตามกีฬา" off every sport shares the "*" layout.
+const keyFor = (sportId) => (autoOn() ? sportId : '*');
+export function isGroupHidden(groupId, sportId) {
+  return getLayout(keyFor(sportId)).hidden.includes(groupId);
+}
+export function setGroupHidden(groupId, hide, sportId) {
+  const key = keyFor(sportId);
+  const layout = getLayout(key);
+  layout.hidden = layout.hidden.filter((x) => x !== groupId);
+  if (hide) layout.hidden.push(groupId);
+  setLayout(layout, key);
+  apply();
 }
 
 // ── Apply ───────────────────────────────────────────────────────────
@@ -220,7 +235,7 @@ function boot() {
   window.openLayoutEditor = startEdit;
 }
 
-window.fcpLayout = { apply, startEdit, stopEdit, getLayout, GROUPS };
+window.fcpLayout = { apply, startEdit, stopEdit, getLayout, isGroupHidden, setGroupHidden, GROUPS };
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 120));
 else setTimeout(boot, 120);

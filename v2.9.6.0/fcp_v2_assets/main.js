@@ -1,6 +1,6 @@
 // fcp_v2_assets/main.js
 
-import { VERSION, UPDATE_DATE } from './version.js?v=2.9.6.0b';
+import { VERSION, UPDATE_DATE } from './version.js?v=2.9.6.0d';
 import { translations } from './languages.js?v=2.9.6.0b';
 import { startUsageTracking, updateRankDisplay, getUsageData, getRank, formatUsageTime, fetchFirebaseUserData } from './usage-tracker.js';
 
@@ -75,6 +75,15 @@ let isCountdown = false;
 let countdownStartTime = 2700;
 let currentLang = 'th';
 let logoFolderPath = 'C:/OBSAssets/logos';
+// Cleans a pasted folder path: quotes from Windows "Copy as path", file:/// prefix, backslashes, trailing slash.
+const cleanLogoFolderPath = (p) => {
+    let v = String(p || '').trim().replace(/^["']+|["']+$/g, '').trim();
+    if (/^file:/i.test(v)) {
+        v = v.replace(/^file:\/*/i, '');
+        try { v = decodeURIComponent(v); } catch (e) { /* keep as is */ }
+    }
+    return v.replace(/\\/g, '/').replace(/\/+$/, '');
+};
 let logoCache = {};
 let dataSourceMode = 'excel';
 let googleSheetUrl = '';
@@ -1770,25 +1779,29 @@ const populateLogoCacheList = () => {
     }
 
     if (keys.length === 0) {
+        elements.logoCacheList.classList.remove('logo-cache-grid');
         elements.logoCacheList.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted-color);">${translations[currentLang].logoCacheEmpty}</p>`;
         return;
     }
 
+    // V2.9.6.0: logos as a grid (see .logo-cache-grid in theme-pro.css) so the list stays short
+    elements.logoCacheList.classList.add('logo-cache-grid');
     keys.forEach(key => {
         const li = document.createElement('li');
-        li.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.9rem; padding: 5px; border-radius: 4px; cursor: pointer; transition: background 0.2s;';
+        li.className = 'logo-cache-tile';
+        li.title = key;
         const img = document.createElement('img');
         img.src = logoCache[key];
         img.alt = key;
-        img.style.cssText = 'width: 24px; height: 24px; object-fit: contain; border-radius: 4px;';
+        img.loading = 'lazy';
         const span = document.createElement('span');
         span.textContent = key;
         li.appendChild(img);
         li.appendChild(span);
 
         li.onclick = () => {
-            Array.from(elements.logoCacheList.children).forEach(c => c.style.backgroundColor = '');
-            li.style.backgroundColor = 'var(--accent-color)';
+            Array.from(elements.logoCacheList.children).forEach(c => c.classList.remove('is-on'));
+            li.classList.add('is-on');
             copySourceName(key); // Copy name on click
         };
 
@@ -2009,7 +2022,12 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     // Logos that only exist in the Dock cache (jamornz.com / dropped images) are written to a
     // real PNG file first, then the Image source gets that full path.
     const cachedLogoSrc = resolveCachedLogo(masterTeam.logoFile);
-    const logoUpdatePromise = (cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc))
+    // Plain file names keep using the logo folder (as before), unless the logo itself is a URL or the
+    // Dock is working with jamornz.com logos.
+    const isDirectLogoUrl = /^(https?:|data:)/i.test(String(masterTeam.logoFile || '').trim());
+    const useCachedLogoFile = !!cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc)
+        && (isDirectLogoUrl || !!jamornzConnection || dataSourceMode === 'jamornz');
+    const logoUpdatePromise = useCachedLogoFile
         ? materializeLogoFile(masterTeam.logoFile, cachedLogoSrc)
             .then(path => setImage(obsLogoSource, path || masterTeam.logoFile))
         : setImage(obsLogoSource, masterTeam.logoFile);
@@ -4474,7 +4492,7 @@ const setupEventListeners = () => {
             elements.logoPathInput.focus();
             btnSpan.textContent = trans.save;
         } else {
-            const newPath = elements.logoPathInput.value.trim().replace(/\\/g, '/');
+            const newPath = cleanLogoFolderPath(elements.logoPathInput.value) || 'C:/OBSAssets/logos';
             logoFolderPath = newPath;
             localStorage.setItem('logoFolderPath', newPath);
             elements.currentLogoPath.textContent = newPath;
@@ -4483,6 +4501,11 @@ const setupEventListeners = () => {
             elements.logoPathInput.disabled = true;
             btnSpan.textContent = trans.edit;
             showToast(trans.toastSaved, 'success');
+            // Send the logos from the new folder to OBS right away.
+            lastQueuedImagePath.clear();
+            lastAppliedImagePath.clear();
+            updateTeamUI('A', masterTeamA.name, masterTeamA.logoFile, masterTeamA.color1, masterTeamA.color2);
+            updateTeamUI('B', masterTeamB.name, masterTeamB.logoFile, masterTeamB.color1, masterTeamB.color2);
         }
     });
 
@@ -4635,7 +4658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const savedPath = localStorage.getItem('logoFolderPath');
     if (savedPath) {
-        logoFolderPath = savedPath.replace(/\\/g, '/');
+        logoFolderPath = cleanLogoFolderPath(savedPath) || logoFolderPath;
     }
 
     // LOAD DATA SOURCE SETTINGS
@@ -4965,7 +4988,7 @@ window.fcpAPI = {
 };
 
 // Import Remote Logic
-import './remote.js?v=2.9.6.0b';
+import './remote.js?v=2.9.6.0d';
 
 // --- Welcome Screen Logic ---
 window.initWelcomeScreen = () => {
@@ -5920,11 +5943,11 @@ if (!window.showToast) window.showToast = showToast;
 // Also expose switchSettingsTab so the injected tab button can switch to it.
 window.switchSettingsTab = switchSettingsTab;
 window.getSheetData = () => sheetData;
-import './volleyball_module_v2.js?v=2.9.5.8';
+import './volleyball_module_v2.js?v=2.9.6.0d';
 import './display_table_module.js?v=2.9.5.2';
 import './snooker_module.js?v=2.9.5.8-2';
 import './futsal_module.js?v=2.9.6.0b';
-import './dock_shell.js?v=2.9.6.0b';
+import './dock_shell.js?v=2.9.6.0d';
 
 // ── Bib Color Overrides (เสื้อเอี้ยมชั่วคราว) ──────────────────────────
 const initBibOverride = (team) => {

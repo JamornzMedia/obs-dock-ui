@@ -216,6 +216,9 @@ window.initOnlinePresenceSystem = () => {
             const popup = document.getElementById('onlineUsersPopup');
             if (popup && popup.style.display !== 'none') {
                 renderOnlineUsersList();
+                // V2.9.6.0: keep the online markers on the map current while it is open
+                const mapHost = document.getElementById('thaiMapContainer');
+                if (cuMapView && mapHost && mapHost.offsetParent !== null) window.loadMapData();
             }
         } catch (e) {
             console.warn("Fetch online presence failed", e);
@@ -432,7 +435,7 @@ const cuMapUsers = () => window.allRegisteredUsersArray || [];
 const cuMapEnsure = async () => {
     const host = document.getElementById('thaiMapContainer');
     if (!host) return null;
-    if (!cuMapMod) cuMapMod = await import('./thailand_map.js?v=2.9.6.0b');
+    if (!cuMapMod) cuMapMod = await import('./thailand_map.js?v=2.9.6.0d');
     if (!cuMapView || !host.querySelector('.thm-svg')) {
         cuMapView = cuMapMod.mountMap(host, { onProvince: (province) => window.filterOnlineUsersByProvince(province) });
     }
@@ -464,7 +467,16 @@ window.loadMapData = async () => {
             const p = cuMapMod ? cuMapMod.provinceOf(user.province) : '';
             if (p) counts[p] = (counts[p] || 0) + 1;
         });
-        if (view) view.setCounts(counts);
+        // V2.9.6.0: people online now (PC presence com_*), per province
+        const online = {};
+        const rooms = window.onlineUsersSnapshot ? (window.onlineUsersSnapshot.val() || {}) : {};
+        Object.keys(rooms).forEach((key) => {
+            const room = rooms[key];
+            if (!key.startsWith('com_') || !room) return;
+            const p = cuMapMod ? cuMapMod.provinceOf(room.province) : '';
+            if (p) online[p] = (online[p] || 0) + 1;
+        });
+        if (view) view.setCounts(counts, online);
     } catch (e) {
         console.error("Failed to load map data", e);
     }

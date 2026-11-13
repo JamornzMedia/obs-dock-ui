@@ -377,8 +377,8 @@ function updateMainPanelUI(state) {
     panel.className = 'card';
     panel.style.border = '1px solid #f59e0b';
     panel.innerHTML = `
-      <div style="font-size:0.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;text-align:center;">🎨 ควบคุมกราฟิกกีฬา / Sport Graphics Control</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div id="vb-main-title" style="font-size:0.75rem;font-weight:700;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;text-align:center;">🎨 ควบคุมกราฟิกกีฬา / Sport Graphics Control</div>
+      <div id="vb-main-team-controls" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <!-- Team A controls -->
         <div style="display:flex;flex-direction:column;gap:5px;align-items:center;">
           <button id="vb-serve-a" class="btn-secondary" style="width:100%;font-size:0.8rem;padding:6px;">🏐 Serve A</button>
@@ -422,14 +422,26 @@ function updateMainPanelUI(state) {
     document.getElementById('vb-toggle-hist').onclick = function() { toggleVbSource('Volleyball_History', this); };
   }
   
-  const sport = state.sport || 'volleyball';
+  // Always read the sport fresh: the state passed in can be older than the sport picker.
+  const sport = localStorage.getItem('vb_sport') || state.sport || 'volleyball';
   // Snooker uses its own control card (snooker_module.js)
   if (sport === 'snooker') { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
 
+  // V2.9.6.0: only the controls that the sport has (football has no serve / timeout / sets)
+  const isFootballFam = sport === 'football' || sport === 'football7' || sport === 'futsal';
   const showServeBall = (state.showServeBall !== false);
-  const serveSupport = showServeBall && (sport !== 'boxing');
-  const timeoutSupport = (sport !== 'badminton') && (sport !== 'boxing');
+  const serveSupport = showServeBall && sport !== 'boxing' && !isFootballFam;
+  const timeoutSupport = sport !== 'badminton' && sport !== 'boxing' && !isFootballFam;
+  const setSupport = sport !== 'boxing' && !isFootballFam;
+
+  const title = document.getElementById('vb-main-title');
+  if (title) {
+    const sp = window.FCP_SPORTS?.currentSport?.();
+    title.textContent = `🎨 ควบคุมกราฟิกกีฬา · ${sp && sp.engine === sport ? sp.th : sport}`;
+  }
+  const teamControls = document.getElementById('vb-main-team-controls');
+  if (teamControls) teamControls.style.display = (serveSupport || timeoutSupport) ? 'grid' : 'none';
 
   const serveA = document.getElementById('vb-serve-a');
   const serveB = document.getElementById('vb-serve-b');
@@ -485,7 +497,7 @@ function updateMainPanelUI(state) {
   // Hide/Show Volleyball set actions when boxing
   const setActions = document.getElementById('vb-main-set-actions-wrapper');
   if (setActions) {
-    setActions.style.display = sport === 'boxing' ? 'none' : 'grid';
+    setActions.style.display = setSupport ? 'grid' : 'none';
   }
 
   // Adjust OBS main panel toggle buttons
@@ -500,7 +512,7 @@ function updateMainPanelUI(state) {
     };
   }
   if (toggleHist) {
-    toggleHist.style.display = sport === 'boxing' ? 'none' : 'block';
+    toggleHist.style.display = setSupport ? 'block' : 'none';
   }
 }
 
@@ -706,6 +718,8 @@ function updateSportUI() {
   }
 }
 window.updateSportUI = updateSportUI;
+// V2.9.6.0: the sport picker (dock_shell.js) calls this so the Sport Graphics card follows the sport at once
+window.vbRefreshPanel = () => broadcast();
 
 function injectSettingsTab() {
   if (document.getElementById(TAB_ID)) return; // Already injected

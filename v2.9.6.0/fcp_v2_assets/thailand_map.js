@@ -113,6 +113,10 @@ export const REGIONS = {
   'ตะวันตก': ['ตาก', 'กาญจนบุรี', 'ราชบุรี', 'เพชรบุรี', 'ประจวบคีรีขันธ์'],
   'ใต้': ['ชุมพร', 'ระนอง', 'สุราษฎร์ธานี', 'พังงา', 'นครศรีธรรมราช', 'ภูเก็ต', 'กระบี่', 'ตรัง', 'พัทลุง', 'สตูล', 'สงขลา', 'ปัตตานี', 'ยะลา', 'นราธิวาส'],
 };
+// One colour per region (fill strength = how many users; see .thm-p in theme-pro.css)
+export const REGION_COLORS = {
+  'เหนือ': '#a78bfa', 'อีสาน': '#fbbf24', 'กลาง': '#38bdf8', 'ตะวันออก': '#2dd4bf', 'ตะวันตก': '#f472b6', 'ใต้': '#fb923c',
+};
 const REGION_OF = {};
 for (const r in REGIONS) for (const p of REGIONS[r]) REGION_OF[p] = r;
 
@@ -159,6 +163,7 @@ export function mountMap(host, { onProvince } = {}) {
     path.setAttribute('class', 'thm-p');
     path.dataset.p = p.th;
     path.dataset.r = p.region;
+    path.style.setProperty('--rc', REGION_COLORS[p.region] || '#64748b');
     const title = document.createElementNS(NS, 'title');
     title.textContent = p.th;
     path.appendChild(title);
@@ -167,7 +172,10 @@ export function mountMap(host, { onProvince } = {}) {
   }
 
   let counts = {};
+  let online = {};
   let badges = [];
+  const badgeOf = new Map(); // province → badge <g>, so hover can light it up
+  let hot = null;
   let vb = { ...FULL };
   const setVB = () => {
     svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
@@ -223,10 +231,16 @@ export function mountMap(host, { onProvince } = {}) {
 
   let activeRegion = '';
   const renderChips = () => {
+    const sum = (obj, list) => list.reduce((a, p) => a + (obj[p] || 0), 0);
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    const list = [['', 'ทั้งหมด', total]].concat(Object.keys(REGIONS).map((r) => [r, r, REGIONS[r].reduce((a, p) => a + (counts[p] || 0), 0)]));
-    chips.innerHTML = list.map(([id, label, n]) =>
-      `<button type="button" class="thm-chip${id === activeRegion ? ' on' : ''}" data-r="${id}" aria-pressed="${id === activeRegion}">${label}<b>${n}</b></button>`).join('');
+    const totalOn = Object.values(online).reduce((a, b) => a + b, 0);
+    const list = [['', 'ทั้งหมด', total, totalOn]].concat(Object.keys(REGIONS).map((r) => [r, r, sum(counts, REGIONS[r]), sum(online, REGIONS[r])]));
+    chips.innerHTML = list.map(([id, label, n, on]) => {
+      const dot = id ? `<i class="thm-dot" style="background:${REGION_COLORS[id]}" aria-hidden="true"></i>` : '';
+      const live = on ? `<span class="thm-chip-live" title="ออนไลน์ ${on} คน">${on}</span>` : '';
+      return `<button type="button" class="thm-chip${id === activeRegion ? ' on' : ''}" data-r="${id}" aria-pressed="${id === activeRegion}"
+        aria-label="${id ? 'ภาค' + label : 'ทั้งหมด'} ${n} คน${on ? `, ออนไลน์ ${on}` : ''}">${dot}${label}<b>${n}</b>${live}</button>`;
+    }).join('');
   };
   const selectRegion = (r) => {
     activeRegion = r;
@@ -296,28 +310,51 @@ export function mountMap(host, { onProvince } = {}) {
   };
   svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', up);
+  // Numbers stay faint; the province under the mouse lights its number up.
+  const setHot = (name) => {
+    if (hot === name) return;
+    if (hot && badgeOf.get(hot)) badgeOf.get(hot).classList.remove('is-hot');
+    hot = name;
+    if (hot && badgeOf.get(hot)) badgeOf.get(hot).classList.add('is-hot');
+  };
   svg.addEventListener('pointerover', (e) => {
     const path = e.target.closest && e.target.closest('.thm-p');
-    if (path) info.textContent = `${path.dataset.p} · ภาค${path.dataset.r} · ${counts[path.dataset.p] || 0} คน`;
+    if (!path) return;
+    const p = path.dataset.p;
+    const on = online[p] || 0;
+    info.textContent = `${p} · ภาค${path.dataset.r} · ${counts[p] || 0} คน${on ? ` · 🟢 ออนไลน์ ${on}` : ''}`;
+    setHot(p);
   });
+  svg.addEventListener('pointerleave', () => setHot(null));
 
-  const setCounts = (next) => {
+  const setCounts = (next, nextOnline) => {
     counts = next || {};
+    online = nextOnline || {};
     const max = Math.max(1, ...Object.values(counts));
     gBadges.textContent = '';
     badges = [];
+    badgeOf.clear();
     for (const p of byTh.values()) {
       const n = counts[p.th] || 0;
+      const on = online[p.th] || 0;
       const lvl = n ? Math.min(4, 1 + Math.floor((n / max) * 4)) : 0;
       p.path.setAttribute('data-l', String(lvl));
-      p.title.textContent = `${p.th} — ${n} คน`;
-      if (!n) continue;
+      p.path.classList.toggle('is-online', on > 0);
+      p.title.textContent = `${p.th} — ${n} คน${on ? ` · ออนไลน์ ${on}` : ''}`;
+      if (!n && !on) continue;
       const g = document.createElementNS(NS, 'g');
-      g.setAttribute('class', 'thm-badge');
-      g.innerHTML = `<circle r="11"/><text dy="4">${n > 999 ? '999+' : n}</text>`;
+      g.setAttribute('class', `thm-badge${on ? ' has-live' : ''}`);
+      g.innerHTML = (on ? '<circle class="thm-live-ring" r="13"/>' : '')
+        + (n ? `<circle class="thm-num-bg" r="11"/><text class="thm-num" dy="4">${n > 999 ? '999+' : n}</text>` : '')
+        + (on ? `<circle class="thm-live" cx="${n ? 9 : 0}" cy="${n ? -9 : 0}" r="${n ? 5.5 : 7}"/>` : '');
+      if (on) g.appendChild(Object.assign(document.createElementNS(NS, 'title'), { textContent: `ออนไลน์ ${on}` }));
       gBadges.appendChild(g);
       badges.push([g, p.cx, p.cy]);
+      badgeOf.set(p.th, g);
     }
+    // Online provinces draw on top so their glow is never covered
+    badges.sort((a, b) => a[0].classList.contains('has-live') - b[0].classList.contains('has-live')).forEach(([g]) => gBadges.appendChild(g));
+    if (hot) { const h = hot; hot = null; setHot(h); }
     setVB();
     renderChips();
   };

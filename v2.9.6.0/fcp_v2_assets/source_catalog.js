@@ -8,6 +8,7 @@
 //                           (file is relative to the Dock page)
 //    playscore              PlayScore graphic (needs the PlayScore plugin)
 //    action                 runs a function of the Dock (fn = name on window)
+//  soon    true = listed but cannot be created yet (badge "รออัปเดต")
 //  sports  sport ids (sports.js) the source is meant for; leave out = every sport
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -61,7 +62,8 @@ export const SOURCES = [
   { cat: 'overlays', name: 'Half_Indicator_Overlay', kind: 'browser', file: 'half_indicator.html', w: 500, h: 150, th: 'ตัวบอกครึ่งเวลาแบบอนิเมชัน' },
   { cat: 'overlays', name: 'Display_Table_Overlay', kind: 'browser', file: 'display_table.html', w: 1920, h: 1080, th: 'ตารางแข่งขัน / ตารางคะแนน (เต็มจอ)' },
   // Plugins
-  { cat: 'plugins', name: 'PlayScore กราฟิก', kind: 'playscore', th: 'กราฟิก PlayScore (เลือก Preset ใน Dock PlayScore)' },
+  // soon: true = no create button yet, shows "รออัปเดต" (PlayScore is not released yet)
+  { cat: 'plugins', name: 'PlayScore กราฟิก', kind: 'playscore', th: 'กราฟิก PlayScore (เลือก Preset ใน Dock PlayScore)', soon: true },
 ];
 
 window.FCP_SOURCE_CATALOG = { SOURCE_CATEGORIES, SOURCES };

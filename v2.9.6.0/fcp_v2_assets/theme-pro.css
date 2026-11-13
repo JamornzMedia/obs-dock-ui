@@ -37,7 +37,8 @@ html[data-sport="snooker"]     { --pro-accent: #fbbf24; }
 
 /* ---------- Part 1: app bar ---------- */
 .fcp-appbar {
-    position: sticky; top: 0; z-index: 900;
+    /* z-index under every popup (.popup-overlay = 99) so the bar never covers settings or dialogs */
+    position: sticky; top: 0; z-index: 90;
     display: flex; align-items: center; gap: 8px;
     padding: 8px 10px; margin: 0 0 6px;
     background: rgba(11, 14, 19, 0.94);
@@ -114,6 +115,22 @@ body.fcp-sheet-open { overflow: hidden; }
 .fcp-sport-info small { font-size: 12px; color: #c9d2de; font-weight: 500; }
 .fcp-badge { font-style: normal; font-size: 12px; font-weight: 800; padding: 0 6px; border-radius: 6px; background: #1e3a5f; color: #bfdbfe; margin-left: 4px; }
 .fcp-check { position: absolute; top: 8px; right: 10px; font-size: 12px; font-weight: 800; color: var(--pro-accent); }
+/* V2.9.6.0: "เวลา: แสดง/ซ่อน" switch under each sport card */
+.fcp-sport-item { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fcp-sport-item .fcp-sport-card { flex: 1 1 auto; }
+.fcp-timer-chip {
+    align-self: flex-end; display: inline-flex !important; align-items: center; gap: 6px; width: auto !important;
+    min-height: 30px !important; padding: 0 10px !important; cursor: pointer; box-shadow: none !important;
+    background: var(--pro-surface-2) !important; color: var(--pro-muted) !important;
+    border: 1px dashed var(--pro-line) !important; border-radius: 999px !important;
+    font: 700 12px var(--pro-font) !important; letter-spacing: 0 !important;
+}
+.fcp-timer-chip.is-on { color: var(--pro-text) !important; border-style: solid !important; border-color: #3b4a61 !important; }
+.fcp-timer-chip.is-on .fas { color: var(--pro-ok); }
+.fcp-timer-chip:hover { border-color: var(--pro-accent) !important; filter: none !important; }
+.fcp-sheet .fcp-timer-chip:focus-visible { outline: 2px solid #93c5fd !important; outline-offset: 2px; }
+.fcp-soon { flex: 0 0 auto; font-size: 12px; font-weight: 800; color: #93c5fd; background: #13263f; border: 1px solid #1e3a5f; border-radius: 8px; padding: 4px 8px; white-space: nowrap; }
+.fcp-count.is-soon { background: #13263f; color: #bfdbfe; font: 800 12px var(--pro-font); }
 
 /* Source manager */
 .fcp-src-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -401,18 +418,52 @@ body.fcp-editing [data-panel-id], body.fcp-editing #score2Card { padding-top: 12
 .thm-stage { position: relative; height: min(62vh, 460px); min-height: 260px; border-radius: 10px; overflow: hidden; background: radial-gradient(circle at 50% 35%, #132033, #0b0f16 70%); }
 .thm-svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
 .thm-svg:active { cursor: grabbing; }
-.thm-p { fill: #1d2738; stroke: #0b0f16; stroke-width: 0.8; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .15s; }
-.thm-p[data-l="1"] { fill: #164e63; }
-.thm-p[data-l="2"] { fill: #0e7490; }
-.thm-p[data-l="3"] { fill: #0891b2; }
-.thm-p[data-l="4"] { fill: #22d3ee; }
-.thm-svg.has-region .thm-p:not(.in-region) { opacity: .28; }
-.thm-p:hover { fill: #38bdf8; }
+/* Each province takes its region colour (--rc, set in thailand_map.js); more users = stronger fill */
+.thm-p { fill: var(--rc, #64748b); fill-opacity: .22; stroke: #0b0f16; stroke-width: 0.8; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill-opacity .15s, stroke .15s; }
+.thm-p[data-l="1"] { fill-opacity: .42; }
+.thm-p[data-l="2"] { fill-opacity: .6; }
+.thm-p[data-l="3"] { fill-opacity: .78; }
+.thm-p[data-l="4"] { fill-opacity: .95; }
+.thm-svg.has-region .thm-p:not(.in-region) { opacity: .25; }
+.thm-p:hover { fill-opacity: 1; stroke: #ffffff; stroke-width: 1.6; }
+/* Online now: bright green outline on the province */
+.thm-p.is-online { stroke: #4ade80; stroke-width: 1.8; }
 .thm-badge { pointer-events: none; }
-.thm-badge circle { fill: #f8fafc; stroke: #0b0f16; stroke-width: 2; }
-.thm-badge text { fill: #0b0f16; font: 800 12px var(--pro-font-num); text-anchor: middle; }
+/* Count numbers: faint until the mouse is on that province */
+.thm-num-bg { fill: #f8fafc; stroke: #0b0f16; stroke-width: 2; opacity: .3; transition: opacity .15s; }
+.thm-num { fill: #0b0f16; font: 800 12px var(--pro-font-num); text-anchor: middle; opacity: .35; transition: opacity .15s; }
+.thm-badge.is-hot .thm-num-bg, .thm-badge.is-hot .thm-num { opacity: 1; }
+/* Online marker: solid green dot with a soft pulse, always bright */
+.thm-live { fill: #22c55e; stroke: #ecfdf5; stroke-width: 2; filter: drop-shadow(0 0 4px #4ade80); }
+.thm-live-ring { fill: none; stroke: #4ade80; stroke-width: 2.5; transform-box: fill-box; transform-origin: center; animation: thmPulse 1.8s ease-out infinite; }
+@keyframes thmPulse { 0% { transform: scale(.6); opacity: .95; } 100% { transform: scale(1.7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .thm-live-ring { animation: none; opacity: .6; } }
+.thm .thm-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
+.thm .thm-chip-live { display: inline-flex; align-items: center; gap: 3px; font: 800 12px var(--pro-font-num); color: #4ade80; }
+.thm .thm-chip-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #4ade80; }
+.thm .thm-chip.on .thm-chip-live { color: #065f46; }
 .thm-info { font: 500 12px var(--pro-font); color: var(--pro-muted); min-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .thm-credit { font: 400 12px var(--pro-font); color: #6b7889; }
+
+/* ---------- V2.9.6.0: Logo Cache as a grid, scrolls inside; Close button stays in view ---------- */
+#logoCacheList.logo-cache-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px;
+    margin: 6px 0 0; padding: 6px !important; max-height: min(42vh, 320px); overflow-y: auto;
+    background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+}
+.logo-cache-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+    padding: 6px 4px; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.04);
+    border: 1px solid transparent; transition: background .15s, border-color .15s;
+}
+.logo-cache-tile:hover { background: rgba(255,255,255,0.09); }
+.logo-cache-tile.is-on { border-color: var(--accent-color, #38bdf8); background: rgba(56,189,248,0.16); }
+.logo-cache-tile img { width: 44px; height: 44px; object-fit: contain; }
+.logo-cache-tile span { width: 100%; font-size: 11px; line-height: 1.25; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#logoPathPopup > .row.center:last-child {
+    position: sticky; bottom: -15px; margin-bottom: -15px !important; padding: 10px 0;
+    background: inherit; border-top: 1px solid rgba(255,255,255,0.08); z-index: 2;
+}
 
 /* ---------- V2.9.6.0: extra score buttons (+2 / +3) ----------
    Dark fill + coloured border + thin white halo: stands out on any kit colour (white, black or bright)
