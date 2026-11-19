@@ -1565,8 +1565,8 @@ const pushWebLogo = async (imageSourceName, logoValue, force = false) => {
 };
 
 // Downloads a logo once and keeps a small copy (data URL) in the Dock cache.
-const logoUrlToDataUrl = async (url) => {
-    const response = await fetch(url, { cache: 'force-cache' });
+const logoUrlToDataUrl = async (url, cacheMode = 'force-cache') => {
+    const response = await fetch(url, { cache: cacheMode });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const bitmap = await createImageBitmap(await response.blob());
     const scale = Math.min(1, WEB_LOGO_MAX_PX / Math.max(bitmap.width, bitmap.height));
@@ -1991,7 +1991,12 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
 
     score2El.textContent = masterTeam.score2;
 
-    if (masterTeam.logoFile) {
+    const tmLogo = getTournamentManagerLogo(masterTeam.logoFile);
+    if (tmLogo && tmLogo.src) {
+        logoEl.src = tmLogo.src;
+        logoEl.style.display = 'block';
+        initialsEl.style.display = 'none';
+    } else if (masterTeam.logoFile && !tmLogo) {
         const isRemoteLogo = /^(https?:|data:|blob:)/i.test(masterTeam.logoFile);
         if (isRemoteLogo) {
             logoEl.src = masterTeam.logoFile;
@@ -2027,11 +2032,18 @@ const updateTeamUI = (team, name, logoFile, color1, color2, score, score2) => {
     const isDirectLogoUrl = /^(https?:|data:)/i.test(String(masterTeam.logoFile || '').trim());
     const useCachedLogoFile = !!cachedLogoSrc && /^(data:|https?:)/i.test(cachedLogoSrc)
         && (isDirectLogoUrl || !!jamornzConnection || dataSourceMode === 'jamornz');
-    const logoUpdatePromise = useCachedLogoFile
+    const defaultLogoUpdate = () => useCachedLogoFile
         ? materializeLogoFile(masterTeam.logoFile, cachedLogoSrc)
             .then(path => setImage(obsLogoSource, path || masterTeam.logoFile))
         : setImage(obsLogoSource, masterTeam.logoFile);
-    pushWebLogo(obsLogoSource, masterTeam.logoFile).catch(() => {});
+    const logoUpdatePromise = !tmLogo
+        ? defaultLogoUpdate()
+        : tmLogo.path
+            ? setImage(obsLogoSource, tmLogo.path)
+            : tmLogo.src
+                ? materializeLogoFile(masterTeam.logoFile, tmLogo.src).then(path => setImage(obsLogoSource, path || ''))
+                : setImage(obsLogoSource, '');
+    pushWebLogo(obsLogoSource, tmLogo ? (tmLogo.src || '') : masterTeam.logoFile).catch(() => {});
     setSourceColor(obsColorSource1, effectiveColor1);
     setSourceColor(obsColorSource2, masterTeam.color2);
     setText(obsScoreSource, masterTeam.score);
@@ -3119,6 +3131,53 @@ function syncJamornzMatch(status = 'live', immediate = false) {
 window.syncJamornzMatch = syncJamornzMatch;
 
 
+// TournamentManager logos: the feed gives LogoA / LogoB as paths inside its TeamLogos folder, plus the
+// folder itself (logoRoot). Each logo is loaded once per feed load: the OBS Image source gets the real
+// file (TournamentManager on this computer) or a written copy, and the Dock preview / web logo sources
+// get a small copy. A logo that TournamentManager does not have stays empty (team initials).
+let tmLogoMap = new Map(); // feed logo value -> { path, src }
+let tmLogosLoaded = false;
+const isTournamentManagerLogoValue = (value) => {
+    const v = String(value || '').trim();
+    return !!v && !/^(https?:|data:|blob:)/i.test(v) && !/^([a-z]:[\\/]|\/)/i.test(v);
+};
+const loadTournamentManagerLogos = async (data, baseUrl) => {
+    const headers = Array.isArray(data.headers) ? data.headers : [];
+    const cols = ['LogoA', 'LogoB'].map(name => headers.indexOf(name)).filter(i => i !== -1);
+    const values = new Set();
+    (data.rows || []).forEach(row => cols.forEach(i => {
+        const v = String(row?.[i] ?? '').trim();
+        if (isTournamentManagerLogoValue(v)) values.add(v);
+    }));
+    let isLocal = false;
+    try { isLocal = ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(baseUrl).hostname); } catch (e) { isLocal = false; }
+    const root = isLocal ? String(data.logoRoot || '').replace(/\\/g, '/').replace(/\/+$/, '') : '';
+    const next = new Map();
+    let missing = 0;
+    await Promise.all([...values].map(async (value) => {
+        const rel = value.replace(/\\/g, '/').replace(/^\/+/, '');
+        const url = `${baseUrl}/TeamLogos/${rel.split('/').map(encodeURIComponent).join('/')}`;
+        try {
+            const src = await logoUrlToDataUrl(url, 'no-store');
+            next.set(value, { path: root ? `${root}/${rel}` : '', src });
+        } catch (e) {
+            missing += 1;
+            console.warn('[Logo] TournamentManager logo not found:', value, e);
+        }
+    }));
+    tmLogoMap = next;
+    tmLogosLoaded = true;
+    return { found: next.size, missing };
+};
+// { path, src } for a TournamentManager logo, { missing: true } when TournamentManager has no such file
+// (and no logo with that name was added to the Dock by hand), null when the logo is not from TournamentManager.
+const getTournamentManagerLogo = (value) => {
+    if (dataSourceMode !== 'tournamentManager' || !tmLogosLoaded || !isTournamentManagerLogoValue(value)) return null;
+    const found = tmLogoMap.get(String(value).trim());
+    if (found) return found;
+    return resolveCachedLogo(value) ? null : { missing: true };
+};
+
 const fetchTournamentManagerFeed = async () => {
     const urlInput = document.getElementById('localManagerUrlInput');
     const dateSelect = document.getElementById('localManagerDateSelect');
@@ -3173,6 +3232,13 @@ const fetchTournamentManagerFeed = async () => {
         // Build sheetData: [headers, ...rows]
         sheetData = [data.headers, ...data.rows];
 
+        let logoSummary = null;
+        try {
+            logoSummary = await loadTournamentManagerLogos(data, baseUrl);
+        } catch (e) {
+            console.warn('[Logo] TournamentManager logos could not be loaded', e);
+        }
+
         // Build in-memory workbook for Display Table
         if (typeof XLSX !== 'undefined') {
             const ws = XLSX.utils.aoa_to_sheet(sheetData);
@@ -3186,7 +3252,7 @@ const fetchTournamentManagerFeed = async () => {
             statusDiv.style.background = 'rgba(16, 185, 129, 0.2)';
             statusDiv.style.border = '1px solid #10b981';
             statusDiv.style.color = '#34d399';
-            statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่`;
+            statusDiv.innerHTML = `<i class="fas fa-check-circle"></i> เชื่อมต่อสำเร็จ! โหลดตาราง ${data.rows.length} คู่${logoSummary ? ` · โลโก้ทีม ${logoSummary.found} ไฟล์${logoSummary.missing ? ` (ไม่พบ ${logoSummary.missing})` : ''}` : ''}`;
         }
 
         showToast(`เชื่อมต่อ Tournament Manager สำเร็จ (${data.rows.length} คู่)`, 'success');
