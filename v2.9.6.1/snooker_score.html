@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snooker Score Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Kanit:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sn-width: 1000px;
+    --sn-font: 30px;
+    --sn-bar: #1e3a8a;
+    --sn-bar2: #172554;
+    --sn-name: #ffffff;
+    --sn-points-bg: #f1f5f9;
+    --sn-points-txt: #0f172a;
+    --sn-frames: #facc15;
+    --sn-bestof: #e2e8f0;
+    --sn-indicator: #ef4444;
+    --sn-info-bg: #0f172a;
+    --sn-info-txt: #ffffff;
+    --sn-font-team: 'Kanit', sans-serif;
+    --sn-font-score: 'Barlow Condensed', sans-serif;
+  }
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  body { display: flex; justify-content: center; padding-top: 6px; }
+  #sn { width: var(--sn-width); font-size: var(--sn-font); }
+
+  .bar {
+    position: relative; display: grid;
+    grid-template-columns: 1.2em minmax(0, 1fr) auto minmax(0, 1fr) 1.2em;
+    align-items: stretch; height: 1.75em;
+    background: linear-gradient(180deg, var(--sn-bar) 0%, var(--sn-bar2) 100%);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    border-top: 1px solid rgba(255,255,255,0.18);
+  }
+  .ind { display: flex; align-items: center; justify-content: center; }
+  .ind i {
+    width: 0; height: 0; border-top: 0.32em solid transparent; border-bottom: 0.32em solid transparent;
+    opacity: 0; transition: opacity .2s;
+  }
+  #indA i { border-left: 0.42em solid var(--sn-indicator); }
+  #indB i { border-right: 0.42em solid var(--sn-indicator); }
+  .ind.on i { opacity: 1; }
+  .name {
+    display: flex; align-items: center; padding: 0 0.5em; min-width: 0;
+    color: var(--sn-name); font-family: var(--sn-font-team); font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.01em;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .name span { overflow: hidden; text-overflow: ellipsis; }
+  #nameA { justify-content: center; }
+  #nameB { justify-content: center; }
+  .name.team-bg { background: var(--team); }
+
+  .center { display: flex; align-items: stretch; font-family: var(--sn-font-score); font-weight: 800; }
+  .pts {
+    min-width: 2.1em; padding: 0 0.25em; display: flex; align-items: center; justify-content: center;
+    background: var(--sn-points-bg); color: var(--sn-points-txt); font-size: 1.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .frames {
+    min-width: 1.15em; padding: 0 0.2em; display: flex; align-items: center; justify-content: center;
+    color: var(--sn-frames); font-size: 1.05em; font-variant-numeric: tabular-nums;
+  }
+  .bestof {
+    display: flex; align-items: center; justify-content: center; padding: 0 0.15em;
+    color: var(--sn-bestof); font-size: 0.82em; font-weight: 700; white-space: nowrap;
+  }
+  .bestof.hidden { display: none; }
+
+  .info {
+    display: grid; grid-template-columns: 1fr auto 1fr; margin-top: 2px; height: 1.05em;
+    font-family: var(--sn-font-score); font-weight: 700; font-size: 0.72em; color: var(--sn-info-txt);
+  }
+  .info .cell { display: flex; align-items: center; }
+  .info .tag {
+    background: var(--sn-info-bg); padding: 0 0.6em; height: 100%; display: flex; align-items: center; gap: 0.35em;
+    letter-spacing: 0.06em; box-shadow: 0 3px 8px rgba(0,0,0,0.4); opacity: 0; transform: translateY(-4px);
+    transition: opacity .25s, transform .25s;
+  }
+  .info .tag.show { opacity: 1; transform: none; }
+  .info .tag b { color: var(--sn-frames); font-size: 1.15em; }
+  #infoA { justify-content: center; }
+  #infoB { justify-content: center; }
+  #infoMid { justify-content: center; }
+  .bump { animation: bump .35s ease-out; }
+  @keyframes bump { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+</style>
+</head>
+<body>
+<div id="sn">
+  <div class="bar">
+    <div class="ind" id="indA"><i></i></div>
+    <div class="name" id="nameA"><span id="nameAText">PLAYER A</span></div>
+    <div class="center">
+      <div class="pts"><span id="ptsA">0</span></div>
+      <div class="frames"><span id="framesA">0</span></div>
+      <div class="bestof" id="bestOf">(19)</div>
+      <div class="frames"><span id="framesB">0</span></div>
+      <div class="pts"><span id="ptsB">0</span></div>
+    </div>
+    <div class="name" id="nameB"><span id="nameBText">PLAYER B</span></div>
+    <div class="ind" id="indB"><i></i></div>
+  </div>
+  <div class="info">
+    <div class="cell" id="infoA"><div class="tag" id="breakA">BREAK <b id="breakAVal">0</b></div></div>
+    <div class="cell" id="infoMid"><div class="tag" id="remainTag">REMAINING <b id="remainVal">147</b></div></div>
+    <div class="cell" id="infoB"><div class="tag" id="breakB">BREAK <b id="breakBVal">0</b></div></div>
+  </div>
+</div>
+
+<script>
+  const SN_CHANNEL = 'sn_score_channel';
+  const SN_STATE_KEY = 'sn_state';
+  const root = document.documentElement;
+  const prev = {};
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const v = String(value);
+    if (el.textContent !== v) {
+      el.textContent = v;
+      if (prev[id] !== undefined) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+      prev[id] = v;
+    }
+  }
+
+  function injectFont(id, data, family) {
+    if (!data || !family) return;
+    let style = document.getElementById(id);
+    if (!style) { style = document.createElement('style'); style.id = id; document.head.appendChild(style); }
+    const css = `@font-face { font-family: '${family}'; src: url('${data}'); }`;
+    if (style.textContent !== css) style.textContent = css;
+  }
+
+  function render(p) {
+    if (!p) return;
+    const s = p.settings || {};
+    const on = k => s[k] === 'true';
+    const vars = {
+      '--sn-width': (parseInt(s.sn_bar_width, 10) || 1000) + 'px',
+      '--sn-font': (parseInt(s.sn_font_size, 10) || 30) + 'px',
+      '--sn-bar': s.sn_c_bar, '--sn-bar2': s.sn_c_bar2, '--sn-name': s.sn_c_name,
+      '--sn-points-bg': s.sn_c_points_bg, '--sn-points-txt': s.sn_c_points_txt,
+      '--sn-frames': s.sn_c_frames, '--sn-bestof': s.sn_c_bestof, '--sn-indicator': s.sn_c_indicator,
+      '--sn-info-bg': s.sn_c_info_bg, '--sn-info-txt': s.sn_c_info_txt,
+    };
+    Object.entries(vars).forEach(([k, v]) => { if (v) root.style.setProperty(k, v); });
+
+    injectFont('sn-font-team', p.customFontDataTeam, p.customFontFamilyTeam);
+    injectFont('sn-font-score', p.customFontDataScore, p.customFontFamilyScore);
+    if (p.fontTeam) root.style.setProperty('--sn-font-team', p.fontTeam);
+    if (p.fontScore) root.style.setProperty('--sn-font-score', p.fontScore);
+
+    setText('nameAText', (p.nameA || 'PLAYER A').replace(/\s*\n\s*/g, ' '));
+    setText('nameBText', (p.nameB || 'PLAYER B').replace(/\s*\n\s*/g, ' '));
+    setText('ptsA', p.pointsA ?? 0);
+    setText('ptsB', p.pointsB ?? 0);
+    setText('framesA', p.framesA ?? 0);
+    setText('framesB', p.framesB ?? 0);
+
+    const nameA = document.getElementById('nameA');
+    const nameB = document.getElementById('nameB');
+    const teamBg = on('sn_use_team_colors');
+    nameA.classList.toggle('team-bg', teamBg);
+    nameB.classList.toggle('team-bg', teamBg);
+    nameA.style.setProperty('--team', p.colorA || 'transparent');
+    nameB.style.setProperty('--team', p.colorB || 'transparent');
+
+    const bestOf = document.getElementById('bestOf');
+    bestOf.classList.toggle('hidden', !on('sn_show_bestof'));
+    bestOf.textContent = on('sn_show_frame_no') ? `(F${p.frameNo})` : `(${p.bestOf})`;
+
+    const showInd = on('sn_show_indicator');
+    document.getElementById('indA').classList.toggle('on', showInd && p.atTable === 'A');
+    document.getElementById('indB').classList.toggle('on', showInd && p.atTable === 'B');
+
+    const showBreak = on('sn_show_break') && p.break > 0;
+    document.getElementById('breakA').classList.toggle('show', showBreak && p.atTable === 'A');
+    document.getElementById('breakB').classList.toggle('show', showBreak && p.atTable === 'B');
+    setText('breakAVal', p.atTable === 'A' ? p.break : 0);
+    setText('breakBVal', p.atTable === 'B' ? p.break : 0);
+
+    document.getElementById('remainTag').classList.toggle('show', on('sn_show_remaining'));
+    setText('remainVal', p.remaining ?? 0);
+  }
+
+  try {
+    const ch = new BroadcastChannel(SN_CHANNEL);
+    ch.onmessage = e => { if (e.data && e.data.type === 'sn_update') render(e.data.payload); };
+  } catch (_) {}
+  window.addEventListener('storage', e => {
+    if (e.key === SN_STATE_KEY && e.newValue) { try { render(JSON.parse(e.newValue)); } catch (_) {} }
+  });
+  // Fallback poll (some OBS builds do not deliver storage events to browser sources)
+  let lastRaw = '';
+  setInterval(() => {
+    try {
+      const raw = localStorage.getItem(SN_STATE_KEY);
+      if (raw && raw !== lastRaw) { lastRaw = raw; render(JSON.parse(raw)); }
+    } catch (_) {}
+  }, 500);
+  try { const saved = localStorage.getItem(SN_STATE_KEY); if (saved) { lastRaw = saved; render(JSON.parse(saved)); } } catch (_) {}
+</script>
+</body>
+</html>

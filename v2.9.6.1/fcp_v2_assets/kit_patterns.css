@@ -1,0 +1,65 @@
+/* Kit patterns (ลายเสื้อ) — shared by the Dock (team cards, settings tiles) and kit_color.html (OBS source).
+   The primary colour is the background behind the pattern; --c2 is the secondary colour, --c3 the third
+   colour (falls back to the secondary colour when a team has no third colour). */
+.kit-pat { --c2: var(--team-color2, #000); --c3: var(--team-color3, var(--c2)); }
+.pat-solid { background: none; }
+.pat-stripes { background: repeating-linear-gradient(90deg, var(--c2) 0 14px, transparent 14px 28px); }
+.pat-hoops { background: repeating-linear-gradient(180deg, var(--c2) 0 12px, transparent 12px 24px); }
+.pat-sash { background: linear-gradient(135deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
+.pat-halves { background: linear-gradient(90deg, transparent 0 50%, var(--c2) 50% 100%); }
+.pat-centre { background: linear-gradient(90deg, transparent 0 38%, var(--c2) 38% 62%, transparent 62%); }
+.pat-pinstripes { background: repeating-linear-gradient(90deg, var(--c2) 0 2px, transparent 2px 11px); }
+.pat-checkered { background: conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 26px 26px; }
+.pat-quarters { background: conic-gradient(from 0deg at 50% 50%, transparent 0 90deg, var(--c2) 90deg 180deg, transparent 180deg 270deg, var(--c2) 270deg); }
+.pat-chevron { background:
+    linear-gradient(32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) left top / 50% 70% no-repeat,
+    linear-gradient(-32deg, transparent 0 47%, var(--c2) 47% 63%, transparent 63%) right top / 50% 70% no-repeat; }
+.pat-yoke { background: linear-gradient(180deg, var(--c2) 0 20%, transparent 20%); }
+.pat-sides { background: linear-gradient(90deg, var(--c2) 0 13%, transparent 13% 87%, var(--c2) 87%); }
+.pat-fade { background: linear-gradient(155deg, var(--c2) 0%, transparent 62%); }
+.pat-twinbars { background: linear-gradient(90deg, transparent 0 36%, var(--c2) 36% 45%, transparent 45% 55%, var(--c2) 55% 64%, transparent 64%); }
+.pat-diamond { background:
+    repeating-linear-gradient(45deg, var(--c2) 0 2px, transparent 2px 15px),
+    repeating-linear-gradient(-45deg, var(--c2) 0 2px, transparent 2px 15px); }
+.pat-zigzag { background:
+    linear-gradient(135deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+    linear-gradient(225deg, var(--c2) 25%, transparent 25%) -11px 0 / 22px 22px,
+    linear-gradient(315deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px,
+    linear-gradient(45deg, var(--c2) 25%, transparent 25%) 0 0 / 22px 22px; }
+.pat-dots { background: radial-gradient(circle, var(--c2) 0 3px, transparent 3.5px) 0 0 / 14px 14px; }
+.pat-camo { background:
+    radial-gradient(ellipse 22% 14% at 20% 30%, var(--c2) 98%, transparent 100%),
+    radial-gradient(ellipse 16% 11% at 72% 18%, var(--c2) 98%, transparent 100%),
+    radial-gradient(ellipse 24% 13% at 58% 62%, var(--c2) 98%, transparent 100%),
+    radial-gradient(ellipse 14% 12% at 16% 80%, var(--c2) 98%, transparent 100%),
+    radial-gradient(ellipse 13% 9% at 88% 78%, var(--c2) 98%, transparent 100%),
+    radial-gradient(ellipse 11% 8% at 42% 12%, var(--c2) 98%, transparent 100%); background-size: 110px 110px; }
+.pat-pixel { background:
+    conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0) 0 0 / 10px 10px; }
+/* V2.9.5.9: big centre bands + horizontal versions (bands sit in the upper, visible part of the card) */
+.pat-bigcentre { background: linear-gradient(90deg, transparent 0 25%, var(--c2) 25% 75%, transparent 75%); }
+.pat-bigtwin { background: linear-gradient(90deg, transparent 0 16%, var(--c2) 16% 42%, transparent 42% 58%, var(--c2) 58% 84%, transparent 84%); }
+.pat-centre-h { background: linear-gradient(180deg, transparent 0 22%, var(--c2) 22% 36%, transparent 36%); }
+.pat-bigcentre-h { background: linear-gradient(180deg, transparent 0 14%, var(--c2) 14% 44%, transparent 44%); }
+.pat-twinbars-h { background: linear-gradient(180deg, transparent 0 16%, var(--c2) 16% 23%, transparent 23% 30%, var(--c2) 30% 37%, transparent 37%); }
+.pat-bigtwin-h { background: linear-gradient(180deg, transparent 0 8%, var(--c2) 8% 22%, transparent 22% 30%, var(--c2) 30% 44%, transparent 44%); }
+.pat-halves-h { background: linear-gradient(180deg, transparent 0 30%, var(--c2) 30% 100%); }
+.pat-pinstripes-h { background: repeating-linear-gradient(180deg, var(--c2) 0 2px, transparent 2px 11px); }
+.pat-sash-r { background: linear-gradient(45deg, transparent 0 36%, var(--c2) 36% 54%, transparent 54%); }
+/* V2.9.6.1: more vertical (แนวตั้ง) patterns and three-colour patterns */
+.pat-stripes-wide { background: repeating-linear-gradient(90deg, var(--c2) 0 26px, transparent 26px 52px); }
+.pat-stripes-thin { background: repeating-linear-gradient(90deg, var(--c2) 0 7px, transparent 7px 14px); }
+.pat-stripes-3 { background: repeating-linear-gradient(90deg, transparent 0 14px, var(--c2) 14px 28px, var(--c3) 28px 42px); }
+.pat-pinstripes-3 { background: repeating-linear-gradient(90deg, var(--c2) 0 2px, transparent 2px 10px, var(--c3) 10px 12px, transparent 12px 20px); }
+.pat-tricolour { background: linear-gradient(90deg, transparent 0 33.34%, var(--c2) 33.34% 66.67%, var(--c3) 66.67%); }
+.pat-halves-3 { background: linear-gradient(90deg, transparent 0 47%, var(--c3) 47% 53%, var(--c2) 53%); }
+.pat-centre-trim { background: linear-gradient(90deg, transparent 0 34%, var(--c3) 34% 38%, var(--c2) 38% 62%, var(--c3) 62% 66%, transparent 66%); }
+.pat-bigcentre-3 { background: linear-gradient(90deg, transparent 0 25%, var(--c2) 25% 45%, var(--c3) 45% 55%, var(--c2) 55% 75%, transparent 75%); }
+.pat-triple { background: linear-gradient(90deg, transparent 0 28%, var(--c2) 28% 36%, transparent 36% 46%, var(--c2) 46% 54%, transparent 54% 64%, var(--c2) 64% 72%, transparent 72%); }
+.pat-twinbars-3 { background: linear-gradient(90deg, transparent 0 33%, var(--c2) 33% 43%, var(--c3) 43% 57%, var(--c2) 57% 67%, transparent 67%); }
+.pat-sides-3 { background: linear-gradient(90deg, var(--c2) 0 9%, var(--c3) 9% 14%, transparent 14% 86%, var(--c3) 86% 91%, var(--c2) 91%); }
+.pat-left-band { background: linear-gradient(90deg, transparent 0 14%, var(--c2) 14% 30%, transparent 30%); }
+.pat-stripes-fade { background: linear-gradient(180deg, transparent 35%, var(--c3) 100%), repeating-linear-gradient(90deg, var(--c2) 0 14px, transparent 14px 28px); }
+.pat-hoops-3 { background: repeating-linear-gradient(180deg, transparent 0 12px, var(--c2) 12px 24px, var(--c3) 24px 36px); }
+.pat-tricolour-h { background: linear-gradient(180deg, transparent 0 33.34%, var(--c2) 33.34% 66.67%, var(--c3) 66.67%); }
+.pat-sash-3 { background: linear-gradient(135deg, transparent 0 33%, var(--c3) 33% 37%, var(--c2) 37% 53%, var(--c3) 53% 57%, transparent 57%); }

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kit Color</title>
+<!--
+  Kit Color — OBS Browser Source that shows a team's shirt colours and pattern (ลายเสื้อ) from the Dock, live.
+  URL options (add after kit_color.html?):
+    team=A | B                 which team (default A)
+    shape=rect | shirt | circle | bar | stripe-v | stripe-h
+                               rect = fills the whole source (use it as a background or mask in OBS)
+                               shirt = jersey shape, circle = round badge, bar = rounded pill,
+                               stripe-v / stripe-h = the team's colours as plain bands (1, 2 or 3 colours)
+    radius=12                  corner radius in px for rect / bar
+    shade=0                    turn off the soft shading
+    border=0                   border width in px, borderColor=ffffff (hex without #)
+    demo=1                     show sample colours when the Dock has not sent anything yet
+  Example: kit_color.html?team=B&shape=shirt
+-->
+<link rel="stylesheet" href="fcp_v2_assets/kit_patterns.css?v=2.9.6.1e">
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; background: transparent; overflow: hidden; }
+  #kit {
+    position: absolute; inset: 0; box-sizing: border-box;
+    background: var(--team-color, transparent);
+    transition: background-color .25s ease;
+  }
+  #kit > .kit-pat { position: absolute; inset: 0; }
+  #kit > .shade { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,.18) 100%); }
+  body.no-shade #kit > .shade { display: none; }
+  body.empty #kit { display: none; }
+
+  /* shapes */
+  body.shape-circle #kit { inset: 0; margin: auto; width: min(100vw, 100vh); height: min(100vw, 100vh); border-radius: 50%; overflow: hidden; }
+  body.shape-bar #kit { border-radius: 999px; overflow: hidden; }
+  body.shape-rect #kit { overflow: hidden; }
+  body.shape-shirt #kit {
+    margin: auto; width: min(100vw, 100vh); height: min(100vw, 100vh);
+    -webkit-mask: var(--shirt-mask) center / contain no-repeat;
+            mask: var(--shirt-mask) center / contain no-repeat;
+  }
+  body.shape-stripe-v #kit, body.shape-stripe-h #kit { background: none; overflow: hidden; }
+  body.shape-stripe-v #kit { display: flex; flex-direction: row; }
+  body.shape-stripe-h #kit { display: flex; flex-direction: column; }
+  .band { flex: 1; transition: background-color .25s ease; }
+</style>
+</head>
+<body class="shape-rect empty">
+<div id="kit"></div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const team = (q.get('team') || 'A').toUpperCase() === 'B' ? 'B' : 'A';
+  const shapes = ['rect', 'shirt', 'circle', 'bar', 'stripe-v', 'stripe-h'];
+  const shape = shapes.includes(q.get('shape')) ? q.get('shape') : 'rect';
+  const kit = document.getElementById('kit');
+  const hex = v => /^[0-9a-f]{6}$/i.test(v || '') ? '#' + v : '';
+  const isColor = v => /^#[0-9a-f]{6}$/i.test(String(v || ''));
+
+  document.body.className = 'shape-' + shape + ' empty';
+  if (q.get('shade') === '0') document.body.classList.add('no-shade');
+  if (q.get('radius') && (shape === 'rect' || shape === 'bar')) kit.style.borderRadius = Math.max(0, parseInt(q.get('radius')) || 0) + 'px';
+  const border = Math.max(0, parseInt(q.get('border')) || 0);
+  if (border && shape !== 'shirt') kit.style.border = `${border}px solid ${hex(q.get('borderColor')) || '#ffffff'}`;
+
+  // Jersey silhouette (100 x 100), used as a mask so the pattern shows only inside the shirt.
+  const shirt = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M33 6h10c2 5 4 7 7 7s5-2 7-7h10l29 17-10 19-11-6v58H25V36l-11 6L4 23z'/></svg>";
+  document.documentElement.style.setProperty('--shirt-mask', `url("data:image/svg+xml,${encodeURIComponent(shirt)}")`);
+
+  let last = '';
+  function render(state) {
+    const t = state && state[team];
+    if (!t || !isColor(t.color1)) return;
+    const key = JSON.stringify(t) + shape;
+    if (key === last) return;
+    last = key;
+    const c1 = t.color1, c2 = isColor(t.color2) ? t.color2 : '#000000', c3 = isColor(t.color3) ? t.color3 : '';
+    kit.style.setProperty('--team-color', c1);
+    kit.style.setProperty('--team-color2', c2);
+    if (c3) kit.style.setProperty('--team-color3', c3); else kit.style.removeProperty('--team-color3');
+    if (shape === 'stripe-v' || shape === 'stripe-h') {
+      // Plain colour bands: primary, secondary, and the third colour when the team has one.
+      kit.innerHTML = [c1, c2, c3].filter(Boolean).map(c => `<div class="band" style="background:${c}"></div>`).join('');
+    } else {
+      const pattern = /^[a-z0-9-]+$/.test(t.pattern || '') ? t.pattern : 'solid';
+      kit.innerHTML = `<div class="kit-pat pat-${pattern}"></div><div class="shade"></div>`;
+    }
+    document.body.classList.remove('empty');
+  }
+
+  const read = () => { try { return JSON.parse(localStorage.getItem('kitColorState') || 'null'); } catch (e) { return null; } };
+  const saved = read();
+  if (saved) render(saved);
+  else if (q.get('demo') === '1') render({ A: { color1: '#dc2626', color2: '#ffffff', color3: '#1e3a8a', pattern: 'stripes-3' }, B: { color1: '#1d4ed8', color2: '#facc15', color3: '', pattern: 'halves' } });
+
+  try { new BroadcastChannel('kit_color_channel').onmessage = e => render(e.data); } catch (e) {}
+  window.addEventListener('storage', e => { if (e.key === 'kitColorState') render(read()); });
+  // Fallback for hosts where neither event reaches this page.
+  setInterval(() => { const s = read(); if (s) render(s); }, 1500);
+})();
+</script>
+</body>
+</html>
